@@ -1,0 +1,108 @@
+{
+  "name": "(new-project.mjs sets this to the folder name)",
+  "title": "Tên bài giảng – từ cơ bản đến nâng cao",
+  "message": "Một câu: người học mang về điều gì sau bài giảng",
+  "arc": "Mở đầu → Cơ bản → Trung cấp → Nâng cao → Tổng kết",
+  "audience": "ABM learners, beginners, Vietnamese",
+  "voice": {
+    "id": "Thanh Bình",
+    "temperature": 0.55,
+    "sampleRate": 48000,
+    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu."
+  },
+  "spokenOverrides": {},
+  "timing": {
+    "lead": 0.25,
+    "titleLead": 0.8,
+    "gap": 0.5,
+    "tail": 0.7,
+    "pad": 0.08
+  },
+  "budget": {
+    "targetS": [
+      570,
+      630
+    ],
+    "frames": [
+      45,
+      65
+    ],
+    "maxSentenceSyllables": 26,
+    "syllables": {
+      "total": 2050,
+      "range": [
+        1950,
+        2100
+      ]
+    }
+  },
+  "scenes": {
+    "types": [
+      "kinetic",
+      "typewriter",
+      "terminal",
+      "flow",
+      "split",
+      "hub",
+      "cards",
+      "stat",
+      "journey",
+      "zoom",
+      "anchor",
+      "title",
+      "metaphor"
+    ],
+    "terminalChapters": [],
+    "maxShotS": 10
+  },
+  "design": {
+    "canvas": "#0B1026",
+    "surface": "#141B3A",
+    "ink": "#F4F1E8",
+    "accent": "#FFD23F",
+    "accent2": "#3EE6D0",
+    "warn": "#FF6B6B",
+    "muted": "#8E93B5",
+    "hueBase": 230,
+    "hueStep": 12
+  },
+  "fonts": [
+    {
+      "family": "Be Vietnam Pro",
+      "weights": [
+        500,
+        600,
+        800
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400,
+        700
+      ]
+    }
+  ],
+  "karaoke": {
+    "maxChars": 110,
+    "lead": 0.1,
+    "linger": 0.35
+  },
+  "chapterLabel": {
+    "overlay": "Chương {n} · {title}",
+    "chapters": "Chương {n} – {title}"
+  },
+  "cli": {
+    "pin": "0.7.99"
+  },
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js",
+  "render": {
+    "quality": "high",
+    "fps": 30
+  },
+  "loudness": {
+    "i": -16,
+    "tp": -1.5,
+    "lra": 11
+  }
+}

@@ -1,0 +1,82 @@
+# Project delta for frame workers (read after `_role.md` and your packet; it wins on conflicts)
+
+Project: Vietnamese e-learning lesson "{{TITLE}}", 1920×1080,
+rendered with **HyperFrames CLI 0.7.99** (the skill docs describe 0.8.x — where they differ, this file wins).
+
+## Start from the shared skeleton
+
+Copy `tools/frame-skeleton.html` verbatim to your frame's `src` path, then replace:
+- `FRAME_ID` → your frame id (the `data-composition-id` your packet/dispatch names, e.g. `08-vong-lap-cua-mot-agent`);
+- `PFX` → `f` + your two-digit frame number (e.g. `f08`). **Every element id and class you author starts with `PFX-`** — ids must not start with a digit (`#08-…` is an invalid CSS/GSAP selector; lint `id_requires_css_escape`);
+- `DURATION` → your frame's `duration` in seconds (number only), everywhere;
+- `HUE` → `{{HUE_BASE}} + {{HUE_STEP}} × chapter number` (ch0 → {{HUE_BASE}}, ch1 → {{HUE_CH1}}, …).
+Only the stage content, frame-specific CSS and the timeline body differ between frames. Keep the
+`@font-face` block, ground clip, stage box, full-span anchor and the `__timelines` guard.
+
+## 0.7.99 rules (lint errors otherwise)
+
+- `window.__timelines = window.__timelines || {};` must precede the registration (skeleton has it).
+- Use `tl.set` for instant state changes (color swaps, show/hide of inner nodes); avoid two tweens on
+  the same property of the same element overlapping in time (`overlapping_gsap_tweens`).
+- Never tween `.clip` elements themselves (opacity/visibility/autoAlpha) — animate children.
+- Never pair a CSS `transform` with a GSAP tween on the same element; set initial state in `fromTo`.
+- No `<br>` in text; no `<audio>`/`<video>`; no `Math.random`, `Date.now`, `setTimeout`,
+  `requestAnimationFrame`, `repeat: -1`, network fetches.
+- CLI, if you ever need it: only `npx -y hyperframes@0.7.99 …`. Never run `hyperframes add`,
+  `skills`, `upgrade`, `init`, `lint`, `render` — the orchestrator lints after each wave.
+
+## Timing = the voice
+
+- Your storyboard block has `- cues: word@seconds, …` — aligned, frame-relative times of the keywords.
+  Land each reveal of a keyword's visual **on its cue time** (±0.1 s). Scene windows and `shots` are
+  already retimed to the real `duration`; follow them. Nothing appears before it is said.
+- The karaoke band already shows every spoken word at the bottom (y ≥ 918). On-screen text is short
+  motion-graphics copy (1–5 words: the keyword, a number, a label) — never a full narration sentence.
+  Exception: real terminal text (commands/output) inside a terminal window.
+
+## Registry references (read-only ideas, not imports)
+
+When your `focal` names a registry block (e.g. `code-terminal-run`, `svg-stroke-trace`,
+`constellation-hub`, `count-up`), read `.hyperframes/registry-ref/<name>.html` for the idea and easing,
+then **hand-build a seek-safe equivalent on your own timeline**, scaled to your cues. Never mount,
+copy-include or `add` those files.
+
+## Facts and text
+
+- On-screen claims, numbers and commands come only from your voiceover, `capture/terminal/*.txt`
+  or `capture/extracted/visible-text.txt`. Vietnamese text keeps its diacritics exactly.
+- Terminal windows: surface panel, three muted dots, mono title, cyan `$` prompt, typed-on text.
+
+## Self-check before you finish (you cannot run lint)
+
+1. File exists at your `src`; it is exactly one `<template>…</template>`.
+2. `data-composition-id` on `#root` and the `__timelines` key both equal your frame id; no element id starts with a digit.
+3. `data-duration` on root and both skeleton clips equals your `duration`; every tween ends ≤ duration.
+4. Every cue in your `cues` bullet has a visible reveal at that time.
+5. Everything stays inside x 80–1840, y 60–880 at every moment (including during motion).
+6. No `http` other than the GSAP script tag; no forbidden APIs listed above.
+
+## Times of words that are not cues
+
+`cues` lists only the keywords. For any other spoken word, read its exact frame-relative time from
+`audio_meta.json` → `voices[]` entry whose `frame` equals your frame number → `words[]`
+(`text`, `start`, `end`). Never guess a word time.
+
+## Motion properties
+
+Animate only transforms and paint (`x`, `y`, `xPercent`, `yPercent`, `scale`, `rotation`, `opacity`,
+`filter`, SVG `attr`/`strokeDashoffset`). **Never tween `left`, `top`, `width`, `height`, `margin`,
+`padding` or `font-size`** — lint `gsap_non_transform_motion` is an error on 0.7.99 (it stutters in the
+seek-by-frame capture). To move a dot along a bar, put it in a full-width mover and tween `xPercent`.
+
+## Initial hidden state
+
+Set an element's initial hidden state with CSS (`opacity: 0`) or `gsap.set(...)` **before** building the
+timeline — never `tl.set(..., 0)` (a zero-duration set at 0 does not render at frame 0; lint
+`gsap_timeline_set_initial_hide`). Entrances use `tl.fromTo`.
+
+## Counting numbers
+
+GSAP parses numeric strings: `textContent: "64.000"` becomes 64. Count integers with
+`tl.fromTo(el, {textContent: 0}, {textContent: N, snap: {textContent: 1}, …})` and put separators or
+suffixes (".000", "+", "%") in a static sibling span.

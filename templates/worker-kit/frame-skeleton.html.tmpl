@@ -1,0 +1,54 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: {{INK}};
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: {{CANVAS}}; --surface: {{SURFACE}}; --ink: {{INK}}; --gold: {{ACCENT}};
+      --cyan: {{ACCENT2}}; --warn: {{WARN}}; --muted: {{MUTED}};
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = {{HUE_BASE}} + {{HUE_STEP}} × chapter */
+    #PFX-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(HUE, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #PFX-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+  </style>
+
+  <div id="root" data-composition-id="FRAME_ID" data-width="1920" data-height="1080" data-duration="DURATION">
+    <div id="PFX-ground" class="clip" data-start="0" data-duration="DURATION" data-track-index="0"></div>
+    <div id="PFX-stage" class="clip" data-start="0" data-duration="DURATION" data-track-index="1">
+      <!-- shots go here; reveal each element on its cue -->
+    </div>
+  </div>
+
+  <script src="{{GSAP}}"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      // build the shot sequence here with gsap.fromTo / tl.set at the cue times
+      tl.to({}, { duration: DURATION }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["FRAME_ID"] = tl;
+    })();
+  </script>
+</template>

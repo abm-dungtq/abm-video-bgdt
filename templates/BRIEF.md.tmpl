@@ -1,0 +1,33 @@
+---
+workflow: faceless-explainer
+flow: automation
+storyboard: no
+message: "{{MESSAGE}}"
+destination: e-learning
+aspect: 1920x1080
+language: vi
+audience: "ABM learners, beginners, Vietnamese"
+length: 10min
+angle: concept
+voice: "{{VOICE}} (VieNeu-TTS, local)"
+---
+
+## Intent
+
+Bài giảng điện tử "{{TITLE}}" cho học viên ABM, bằng tiếng Việt đơn giản, dễ hiểu cho người mới bắt đầu.
+
+## Customizations (skill abm-video-bgdt)
+
+- Narration: VieNeu-TTS MCP, voice {{VOICE}}. This replaces the faceless-explainer HeyGen/Kokoro TTS step.
+- Captions: karaoke in the bottom 15% (a 162 px band). Each sentence shows whole and its words reveal one by one with the voice (tools/build-karaoke.mjs).
+- Visuals, effects, keyframes and key text change often, land on the spoken keyword, and look novel.
+- Overlay: a progress bar, a chapter label, and the courier-trail motif at each chapter start (tools/build-overlay.mjs).
+
+## Notes
+
+- Music: none. No logo, unless the user asks for one.
+- Hard user gates:
+  - script approval before any TTS
+  - voice pace on the pilot
+  - karaoke style
+  - draft approval before the final render

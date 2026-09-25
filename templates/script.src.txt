@@ -1,0 +1,24 @@
+// Authoring source for script.json. Build: node tools/src-to-script.mjs script.src.txt script.json
+// Format:
+//   # <chapter-id> | <chapter title> | <level: basic|intermediate|advanced>
+//   ## <n> | <scene_hint> | <frame title>     (n is renumbered 1..N; the first frame of every chapter is `title`)
+//   > visual note for the storyboard (optional)
+//   One sentence per line, ≤ 26 syllables. *keyword* = on-screen key text, cued to the spoken word.
+//   {F-01,F-02} at the end cites facts from capture/extracted/visible-text.txt.
+// scene_hint ∈ video.config.json scenes.types. Replace this sample with the real lesson.
+
+# ch0 | Mở đầu | basic
+## 1 | title | Tên bài giảng
+Chào mừng bạn đến với bài học về *chủ* *đề* *mới*.
+## 2 | kinetic | Vì sao nên học
+> Hook: one bold word lands on the voice, then the promise of the lesson.
+Chủ đề này giúp bạn làm việc *nhanh* *hơn* mỗi ngày. {F-01}
+Sau bài học, bạn sẽ biết *bắt* *đầu* từ đâu.
+
+# ch1 | Khái niệm cơ bản | basic
+## 3 | title | Khái niệm cơ bản
+Chương một: những *khái* *niệm* *cơ* *bản*.
+## 4 | split | Trước và sau
+> Before/after split: the old way on the left, the new way on the right.
+Trước đây, mọi việc đều phải *làm* *tay*.
+Bây giờ, công cụ làm giúp bạn phần *lặp* *lại*. {F-02}

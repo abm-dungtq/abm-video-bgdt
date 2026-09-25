@@ -1,0 +1,83 @@
+#!/usr/bin/env node
+// new-project.mjs — scaffold a lesson-video project from the abm-video-bgdt skill.
+//
+//   node <skill>/scripts/new-project.mjs <project-dir> [--title "Tiêu đề bài giảng"]
+//   node <skill>/scripts/new-project.mjs <project-dir> --update-tools
+//
+// New project: HyperFrames init (pinned CLI, skills left untouched), then the skill's scripts are
+// copied into <project>/tools/ (the project keeps its own copy, like the CLI pin) together with
+// tools/worker-kit/ templates, video.config.json, BRIEF.md, script.src.txt and the capture folders.
+// --update-tools refreshes only <project>/tools/ from the skill (never the config or content).
+
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SKILL = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const args = process.argv.slice(2);
+const dir = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--title");
+const title = args.includes("--title") ? args[args.indexOf("--title") + 1] : null;
+if (!dir) {
+  console.error('usage: new-project.mjs <project-dir> [--title "…"] [--update-tools]');
+  process.exit(1);
+}
+const P = resolve(dir);
+const name = basename(P);
+
+function copyTools() {
+  mkdirSync(join(P, "tools"), { recursive: true });
+  for (const f of readdirSync(join(SKILL, "scripts"))) {
+    if (f === "new-project.mjs") continue;
+    cpSync(join(SKILL, "scripts", f), join(P, "tools", f), { recursive: true });
+  }
+  cpSync(join(SKILL, "templates/worker-kit"), join(P, "tools/worker-kit"), { recursive: true });
+}
+
+if (args.includes("--update-tools")) {
+  if (!existsSync(join(P, "video.config.json"))) throw new Error(`${P} is not an abm-video-bgdt project`);
+  copyTools();
+  console.log(`tools refreshed from ${SKILL}`);
+  process.exit(0);
+}
+if (existsSync(join(P, "video.config.json"))) {
+  console.error(`✗ ${P} already has video.config.json (use --update-tools to refresh tools only)`);
+  process.exit(1);
+}
+
+const config = JSON.parse(readFileSync(join(SKILL, "templates/video.config.json"), "utf8"));
+config.name = name;
+if (title) config.title = title;
+
+execSync(
+  `npx -y hyperframes@${config.cli.pin} init "${P}" --non-interactive --example=blank --skill=faceless-explainer --resolution landscape`,
+  { stdio: "inherit", env: { ...process.env, HYPERFRAMES_SKIP_SKILLS: "1" } },
+);
+copyTools();
+writeFileSync(join(P, "video.config.json"), JSON.stringify(config, null, 2) + "\n");
+writeFileSync(join(P, "BRIEF.md"), readFileSync(join(SKILL, "templates/BRIEF.md.tmpl"), "utf8")
+  .replaceAll("{{TITLE}}", config.title).replaceAll("{{VOICE}}", config.voice.id).replaceAll("{{MESSAGE}}", config.message));
+cpSync(join(SKILL, "templates/script.src.txt"), join(P, "script.src.txt"));
+for (const d of [".probe", "audio/clips", "capture/extracted", "capture/terminal", "capture/assets/fonts", "assets/fonts", "renders"]) {
+  mkdirSync(join(P, d), { recursive: true });
+}
+cpSync(join(SKILL, "templates/visible-text.txt"), join(P, "capture/extracted/visible-text.txt"));
+for (const d of ["capture/assets/fonts", "assets/fonts"]) cpSync(join(SKILL, "templates/fonts"), join(P, d), { recursive: true });
+
+// The init-generated agent notes tell agents to upgrade the pin and to route through
+// /faceless-explainer's own audio and captions; this project overrides both.
+const override = `
+
+## abm-video-bgdt project (overrides the notes above)
+
+This is an e-learning lesson built with the \`abm-video-bgdt\` skill. Load that skill before any work here.
+- The CLI stays pinned at \`hyperframes@${config.cli.pin}\` (video.config.json \`cli.pin\`). Never run \`upgrade\`, \`skills update\` or \`add\`; bump the pin only after \`node tools/fixture-check.mjs\` passes on the new version.
+- Narration comes from the vieneu-tts MCP and captions from \`tools/build-karaoke.mjs\`. Do not use faceless-explainer's \`audio.mjs\` TTS or \`captions.mjs\`.
+- Re-run stages with \`pwsh tools/run-pipeline.ps1 -From <stage> -To <stage>\`.
+`;
+for (const f of ["CLAUDE.md", "AGENTS.md"]) {
+  const p = join(P, f);
+  if (existsSync(p)) writeFileSync(p, readFileSync(p, "utf8") + override);
+}
+console.log(`\nproject ready: ${P}
+next: edit video.config.json (title, message, audience, arc, palette), then follow the skill's stage 1.`);

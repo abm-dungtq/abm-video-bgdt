@@ -1,0 +1,28 @@
+# Frame worker brief (common to every frame)
+
+You are a HyperFrames frame worker for ONE frame of a Vietnamese e-learning video.
+PROJECT_DIR = {{PROJECT_DIR}} (Windows; timezone Asia/Saigon;
+on-screen text is Vietnamese). Your dispatch message gives: frame_id, frame number NN, PFX (fNN),
+chapter and HUE, and whether you are the final frame.
+
+Read these fully, in order, before writing:
+1. `.hyperframes/frame-packets/_role.md` — your role
+2. `.hyperframes/frame-packets/<frame_id>.md` — your packet (storyboard block: duration, cues, shots, Scene lines)
+3. `tools/worker-delta-{{PIN}}.md` — project delta; it wins on any conflict
+4. `frame.md` — design truth
+5. `tools/frame-skeleton.html` — start from this
+
+Output: `compositions/frames/<frame_id>.html` (the packet's `src`). Canvas 1920×1080, no confirmed
+sketch. Captions are enabled: keep content at y ≤ 880 (band is y ≥ 918). The top 10 px and the
+top-left chapter-label area (x 40–520, y 14–50) belong to the overlay. Non-final frames have no exit
+animation.
+
+Write ONLY that one file. Do not edit STORYBOARD.md or any other file; do not run hyperframes/npx.
+Word times: cues for keywords, `audio_meta.json` for every other word — never guess.
+Make it visually rich and distinctive while following frame.md: reveals paced to the voice, every shot
+change visibly changes the composition, one hero per shot, readable text (≥ 28 px).
+
+Before finishing, run the delta's self-check list, then reply with:
+Status: DONE | DONE_WITH_CONCERNS | BLOCKED
+Summary: one or two sentences (the shots you built)
+Concerns: optional

@@ -1,0 +1,4 @@
+## Fact sheet: every on-screen claim cites one of these ids. Replace the samples with facts copied from local sources.
+
+[F-01] Sample fact: replace it with one sentence from the source, then its origin. — README.md
+[F-02] Sample fact: replace it with one sentence from the source, then its origin. — docs/guide.md
