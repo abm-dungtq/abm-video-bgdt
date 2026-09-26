@@ -194,6 +194,38 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    - `renders/qa-report.md`.
    Write a journal entry.
 
+## Stage 7: Cleanup (after delivery)
+
+A finished 10-minute lesson leaves 380–480 MB of regenerable files in the project: drafts, previews, `master-raw.mp4`,
+trimmed clips, the voice concat, and probe audio. `tools/clean-project.mjs` lists them against fixed rules and
+moves them to the Windows Recycle Bin. It never deletes permanently.
+
+1. Run `node tools/clean-project.mjs`. This is a dry run at level `delivered`: it prints each item, its size, and why it can go.
+   The script refuses to run unless the final MP4 has video and audio streams, `renders/qa-report.md` exists, and
+   `audio/clips` holds a clip for every TTS job.
+2. Read the list. If the user may still ask for changes to this video, stop here: `delivered` keeps every input that
+   `-From render -To post` needs, but a late change after cleaning costs a full re-render because `master-raw.mp4` is gone.
+3. Run `node tools/clean-project.mjs --apply`. The result is appended to `renders/cleanup-log.txt`.
+4. When the project is closed for good, run `node tools/clean-project.mjs --level archive --apply`. It also recycles
+   `assets/voice` (rebuilt byte for byte by `R -From voice -To meta`) and `.hyperframes/frame-packets`. Rebuild the voice before
+   rendering again.
+5. Empty the Recycle Bin yourself when you are sure. An agent never empties it.
+
+What the script never touches:
+- **Deliverables:** `renders/<name>.mp4`, the 720p copy, `chapters.txt`, `qa-report.md`, and `sync*.json`.
+- **Sources:**
+  - `audio/clips`: re-synthesizing costs one MCP call per sentence, and the result never sounds identical;
+  - `script.src.txt`, `script.json`, `STORYBOARD.md`, `SCRIPT*.md`;
+  - `compositions/`, `frame.md`, `index.html`;
+  - `capture/`, `assets/fonts`, `assets/screens`;
+  - `audio_meta.json`, `audio/align`, `audio/offsets.json`, `audio/tts-jobs.json`;
+  - `.probe/rate.json` and `.probe/pronunciation.md`, plus any other `.probe/*.md` notes that match no rule;
+  - `tools/`, `video.config.json`.
+- **Outside the project:**
+  - `vieneu-mcp/outputs/` holds voice samples from choosing voices. Ask the user before removing them.
+  - `.backup/` holds rollback copies. Remove each one only after the change it protects has been verified.
+  - The machine caches are needed for the next video: `~/.cache/torch` (the MMS_FA model, 1.2 GB), `~/.cache/huggingface` (VieNeu), and `~/.cache/hyperframes` (headless Chrome).
+
 ## Changing text late (after the storyboard has visual fields)
 
 1. Edit `script.src.txt`, then run `R -From script -To script`. Gate 2 applies again if the meaning changed.

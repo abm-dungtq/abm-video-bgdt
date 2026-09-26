@@ -75,6 +75,7 @@ Detailed steps, commands and pass conditions are in [references/pipeline-stages.
 | 4 | Design and storyboard | `build-design-kit.mjs`, `build-frame.mjs --preset`, catalog, `fetch-registry-refs.mjs`, visual fields | `variety-lint.mjs` ok |
 | 5 | Frames | `-From cues -To cues`, `frame-packets.mjs`, workers in waves, `wave-check.mjs`, `-From karaoke -To assemble` | each wave: 0 lint errors; **Gate 3**; `transitions verify` |
 | 6 | QA and delivery | `-From check -To check` (runs `privacy-check.mjs`), draft render, `sync-report.mjs`, `-From render -To post` (sync on the render, then the voice master is muxed in, then `blank-check.mjs`) | privacy clean; sync ≤ 0.15 s; **Gate 4**; −16 ±1 LUFS, true peak ≤ −1.5; no empty stage ≥ 2 s |
+| 7 | Cleanup (after delivery) | `node tools/clean-project.mjs` (dry run) → `--apply`; `--level archive` when the project is closed | the dry-run list was reviewed; files go to the Recycle Bin |
 
 Stages 2b, 3 and 4 may run in parallel once gate 2 is passed: stage 3 owns `audio/` and `audio_meta.json`,
 and stage 4 owns `frame.md` and the visual fields of `STORYBOARD.md`.
