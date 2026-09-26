@@ -84,6 +84,38 @@ Each entry gives the symptom, then the cause and fix. Every fix is now in the sc
 - **Colours overlapped on short words.** The reveal tween outlived the colour reset. The active colour now switches with
   `tl.set`, and the reveal duration is capped to the word's own span.
 
+## Renderer limits (learned by motion-video-skill, MIT, bestagentkits/motion-video-skill)
+
+Not yet hit in our lessons, but the same HyperFrames 0.7.99 renderer produced them there:
+- About 40 or more elements with `radial-gradient`, `filter: blur()` or `clip-path` on screen at once rendered
+  **black frames**. Count per moment across the frame, including the skeleton's ground glow. Bake textures (halftone,
+  grain, noise) into PNG tiles under `assets/images/` and use them as `background-image` or `mask-image`.
+- Attach an SVG filter only while its effect runs (`tl.set(el, {filter: "url(#x)"})`, then back to `none`).
+- For heavy full-frame layers, toggling `visibility` is cheaper than `opacity: 0`.
+
+## Final audio (skill 0.3.0)
+
+- **The voice was AAC-encoded twice.** The renderer mixes the per-frame `<audio>` clips into AAC, and loudnorm re-encoded
+  that. `postprocess` now muxes `audio/voice-concat.wav` instead (one encode) and stream-copies the picture.
+- **Mono measures 3 dB quieter than the renderer's dual mono.** Upmix with `pan=stereo|c0=c0|c1=c0`. `aformat` splits
+  the power (−3 dB per channel), which forced a +3.9 dB gain and heavy limiting.
+- **AAC adds about 0.7 dB of intersample overshoot.** Loudnorm at TP −1.5 gave −0.8 dBFS after encoding, so loudnorm now
+  aims at `loudness.tp − 1` and the delivered file is asserted against `loudness.tp` (measured: −2.2 dBFS).
+- **The renderer's audio lags the voice master by a constant ~20 ms** (about the 21.3 ms AAC priming). The muxed voice
+  master is the picture-aligned one; 20 ms is far below what anyone notices.
+- **Never run `sync-report` on the final file.** Its audio is the reference itself; measure the render before `postprocess`.
+- **`spawnSync` default `maxBuffer`** (1 MB) silently truncates ffmpeg's `ebur128` per-frame log; raise it.
+
+## Empty-stage check (skill 0.3.0)
+
+Stock `blackdetect` finds nothing on these videos because the canvas is dark, not black. `blank-check.mjs` crops the stage
+(y 60–880) and uses `d=2, pix_th=0.25, pic_th=0.999`, calibrated on 2026-09-26:
+- a looped ground-only frame is caught;
+- the Claude (875 s) and Hermes (612 s) finals give 0 hits;
+- the sparsest intended beats last ≤ 1 s.
+A frame drawn with thin strokes on the dark canvas already counts as "empty" at `pix_th=0.20` and `pic_th=0.97`, so keep
+`pic_th` high and rely on the 2 s duration.
+
 ## Render and delivery
 
 - CSS 3D (`perspective`) forces the slower screenshot capture: the draft took 11 min and the final at 30 fps took 17 min.

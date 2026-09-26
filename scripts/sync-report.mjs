@@ -6,8 +6,9 @@
 //                                                       exits 1 when it exceeds 0.15 s or a point is unmeasured
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { loadStoryboardParser, VENV } from "./lib/config.mjs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { VENV } from "./lib/config.mjs";
+import { buildVoiceConcat, storyboardFrames, VOICE_CONCAT } from "./lib/voice-concat.mjs";
 
 if (process.argv.includes("--max")) {
   const rows = JSON.parse(readFileSync("renders/sync.json", "utf8"));
@@ -18,15 +19,10 @@ if (process.argv.includes("--max")) {
 }
 
 const render = process.argv[2] ?? "renders/draft.mp4";
-const { parseStoryboard } = await loadStoryboardParser();
-const { frames } = parseStoryboard(readFileSync("STORYBOARD.md", "utf8"));
+const frames = await storyboardFrames();
 
 // reference: the voice wavs laid end to end exactly as the assembler places them
-if (!existsSync("audio/voice-concat.wav")) {
-  const list = frames.map((f) => `file '../assets/voice/${String(f.number).padStart(2, "0")}.wav'`).join("\n");
-  writeFileSync("audio/voice-list.txt", list);
-  execFileSync("ffmpeg", ["-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", "audio/voice-list.txt", "-c", "copy", "audio/voice-concat.wav"]);
-}
+buildVoiceConcat(frames);
 
 // chapter windows → start+5, middle, end−5
 const chapters = [];
@@ -41,7 +37,7 @@ for (const f of frames) {
 const points = chapters.flatMap((c) => [c.start + 5, (c.start + c.end) / 2, c.end - 5].map((x) => +x.toFixed(2)));
 
 execFileSync("uv", ["run", "--directory", VENV, "python", `${process.cwd()}/tools/xcorr.py`,
-  "--render", `${process.cwd()}/${render}`, "--reference", `${process.cwd()}/audio/voice-concat.wav`,
+  "--render", `${process.cwd()}/${render}`, "--reference", `${process.cwd()}/${VOICE_CONCAT}`,
   "--at", points.join(","), "--out", `${process.cwd()}/renders/sync.json`], { stdio: "inherit" });
 
 mkdirSync("renders/spot", { recursive: true });

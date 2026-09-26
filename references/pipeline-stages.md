@@ -176,12 +176,17 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    ```
 4. **Gate 4.** Send the draft, or the 720p copy and the spot clips. Ask: approve, or a list of frame ids to change.
    Use the late-change rule below to make changes, then re-render the draft.
-5. Run `R -From render -To post`. It renders `renders/master-raw.mp4` with the config's quality and fps (about 17 min at 30 fps with CSS 3D),
-   then `postprocess.mjs` normalizes loudness in two passes and writes `renders/<name>.mp4` and `renders/chapters.txt`.
+5. Run `R -From render -To post`. It renders `renders/master-raw.mp4` with the config's quality and fps (17–25 min at 30 fps).
+   The `post` stage then, in this order:
+   1. `sync-report.mjs renders/master-raw.mp4` and `--max`: the drift of the renderer's audio against the voice master (≤ 0.15 s);
+   2. `postprocess.mjs`: the picture is stream-copied, and the audio is `audio/voice-concat.wav` upmixed to dual mono,
+      two-pass loudnorm with 1 dB of headroom for the AAC encode, then one AAC encode. It asserts the delivered
+      loudness (−16 ±1 LUFS, true peak ≤ `loudness.tp`) and writes `renders/<name>.mp4` and `renders/chapters.txt`;
+   3. `blank-check.mjs`: no stretch ≥ 2 s where the stage shows only the ground.
+   Never run `sync-report` on the final file: its audio is the reference itself, so it would always pass.
 6. Verify:
-   - `ffprobe` shows 1920×1080, a duration inside `budget.targetS`, and both video and audio streams.
-   - `ffmpeg -i renders/<name>.mp4 -af ebur128 -f null -` gives an integrated loudness of −16 ±1 LUFS.
-   - `node tools/sync-report.mjs renders/<name>.mp4` followed by `--max` is ≤ 0.15 s.
+   - `ffprobe` shows 1920×1080, a duration inside `budget.targetS`, a video stream, and a stereo audio stream.
+   - The `post` stage printed `postprocess: … I -16.x LUFS, true peak ≤ -1.5` and `blank-check ok`.
 7. Deliver:
    - the final MP4 (files over 30 MB can only be opened in the desktop app);
    - a 720p copy for phones;
@@ -211,4 +216,4 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 | `assemble` | `assemble-index` → `transitions inject` → `inject-overlay` → `transitions verify` |
 | `check` | `lint` → `privacy-check` → `check --timeout <cli.checkTimeoutMs>` |
 | `render` | `render` with the config's quality and fps, and the frames cache |
-| `post` | `postprocess.mjs` (loudness and chapters) |
+| `post` | `sync-report` on the render → `--max` → `postprocess.mjs` (voice master, loudness, chapters) → `blank-check.mjs` |

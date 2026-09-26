@@ -111,5 +111,12 @@
   "guard": {
     "missingGlyphs": "①②③✳✕✓→",
     "railPatterns": []
+  },
+  "qa": {
+    "blank": {
+      "minS": 2,
+      "pixTh": 0.25,
+      "picTh": 0.999
+    }
   }
 }

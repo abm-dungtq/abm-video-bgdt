@@ -56,6 +56,8 @@ copy-include or `add` those files.
 5. Everything stays inside x 80–1840, y 60–880 at every moment (including during motion).
 6. No `http` other than the GSAP script tag; no forbidden APIs listed above.
 7. Every late `fromTo` has `immediateRender: false`; no vars object is shared between tweens; none of ① ② ③ ✳ ✕ ✓ → appears outside comments.
+8. At no moment are about 40 or more elements with `radial-gradient`, `filter: blur()` or `clip-path` on screen (the
+   renderer outputs black frames). Bake repeated textures into a PNG under `assets/images/` instead.
 
 ## Timeline traps
 

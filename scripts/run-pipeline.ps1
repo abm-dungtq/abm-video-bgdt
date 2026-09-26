@@ -79,6 +79,13 @@ Step render {
   npx -y $HF render --quality $CFG.render.quality --fps $CFG.render.fps --frames-cache-dir $CACHE --output renders/master-raw.mp4
 }
 Step post {
+  # sync is measured on the renderer's own audio first; postprocess then replaces it with the voice master
+  node tools/sync-report.mjs renders/master-raw.mp4
+  if ($LASTEXITCODE -ne 0) { throw "sync-report failed on renders/master-raw.mp4" }
+  node tools/sync-report.mjs --max
+  if ($LASTEXITCODE -ne 0) { throw "sync drift above 0.15 s on renders/master-raw.mp4" }
   node tools/postprocess.mjs
+  if ($LASTEXITCODE -ne 0) { throw "postprocess: delivered loudness out of spec" }
+  node tools/blank-check.mjs
 }
 Write-Host "pipeline ok: $From -> $To" -ForegroundColor Green
