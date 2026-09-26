@@ -211,6 +211,9 @@ moves them to the Windows Recycle Bin. It never deletes permanently.
    rendering again.
 5. Empty the Recycle Bin yourself when you are sure. An agent never empties it.
 
+Measured on 2026-09-26: level `delivered` recycled 380 MB from the Hermes project (665 MB → 284 MB) and 482 MB from the Claude intro
+project (865 MB → 382 MB). Both final MP4s kept their video and audio streams.
+
 What the script never touches:
 - **Deliverables:** `renders/<name>.mp4`, the 720p copy, `chapters.txt`, `qa-report.md`, and `sync*.json`.
 - **Sources:**
