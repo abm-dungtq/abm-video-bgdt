@@ -75,8 +75,17 @@ if (totalEst < TARGET_S[0] || totalEst > TARGET_S[1])
 
 if (mode === "check") {
   for (const e of errors) console.error(`✗ ${e}`);
+  // spokenOverrides applied silently in src-to-script; show how many tokens they reached so a
+  // matching bug (e.g. punctuation eating "5.5") is visible at gate 2
+  const tokens = frames.flatMap((f) => f.sentences.flatMap((s) => s.tokens));
+  const overridden = tokens.filter((t) => t.spoken !== t.display).length;
+  const unused = Object.keys(cfg.spokenOverrides ?? {}).filter((k) => !tokens.some((t) => t.display.includes(k)));
+  if (unused.length) console.warn(`⚠ spokenOverrides never used: ${unused.join(", ")}`);
+  // after the voice stage: real/estimated ratio, to calibrate the next script for this voice
+  const totalFile = join(root, "audio/total.txt");
+  const real = existsSync(totalFile) ? ` real=${Number(readFileSync(totalFile, "utf8")).toFixed(1)}s ratio=${(Number(readFileSync(totalFile, "utf8")) / totalEst).toFixed(3)}` : "";
   const budget = script.meta.budget?.total ?? "?";
-  console.log(`syllables=${totalSyl} budget=${budget} frames=${frames.length} est=${totalEst.toFixed(1)}s ${errors.length ? "FAIL" : "ok"}`);
+  console.log(`syllables=${totalSyl} budget=${budget} frames=${frames.length} est=${totalEst.toFixed(1)}s${real} overrides=${overridden} ${errors.length ? "FAIL" : "ok"}`);
   process.exit(errors.length ? 1 : 0);
 }
 

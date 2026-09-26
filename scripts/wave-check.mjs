@@ -9,15 +9,24 @@
 //        also mounts the karaoke band and overlay and renders a draft clip (frames must be 1..k,
 //        because caption times are absolute): the preview for the karaoke-style gate
 //
-// Scratch project: <project>/../.wave-<name>-<pid> (fresh per run; delete old ones when unlocked).
+// Scratch project: <project>/../.wave-<name>-<pid>-<time> (fresh per run, so concurrent runs never share
+// one). Scratch folders of this project older than 6 h are removed at start (locked ones are skipped).
 // It sits outside the project so the project-level lint never scans it.
+// After lint, tools/frame-guard.mjs checks the wave's frames (glyphs, optional rail geometry).
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { cfg, FE_SCRIPTS as SK, HF, ROOT as P } from "./lib/config.mjs";
+import { cfg, CHECK_TIMEOUT, FE_SCRIPTS as SK, HF, ROOT as P } from "./lib/config.mjs";
 
-const W = resolve(P, `../.wave-${cfg.name}-${process.pid}`);
+const W = resolve(P, `../.wave-${cfg.name}-${process.pid}-${Date.now().toString(36)}`);
+const parent = resolve(P, "..");
+for (const d of readdirSync(parent)) {
+  if (!d.startsWith(`.wave-${cfg.name}-`)) continue;
+  try {
+    if (Date.now() - statSync(join(parent, d)).mtimeMs > 6 * 3600e3) rmSync(join(parent, d), { recursive: true, force: true });
+  } catch {} // still locked by a running render or snapshot
+}
 const argv = process.argv.slice(2);
 const renderOut = argv.includes("--render") ? resolve(P, argv[argv.indexOf("--render") + 1]) : null;
 const args = argv.filter((a, i) => a !== "--render" && argv[i - 1] !== "--render").map((a) => a.split("@"));
@@ -30,7 +39,10 @@ rmSync(W, { recursive: true, force: true });
 mkdirSync(join(W, "compositions/frames"), { recursive: true });
 mkdirSync(join(W, "assets/voice"), { recursive: true });
 for (const f of ["hyperframes.json", "meta.json", "package.json", "frame.md", "index.html", "video.config.json"]) cpSync(join(P, f), join(W, f));
-cpSync(join(P, "assets/fonts"), join(W, "assets/fonts"), { recursive: true });
+// every asset folder except the voice (only the wave's clips are copied below): fonts, screens, images…
+for (const d of readdirSync(join(P, "assets"))) {
+  if (d !== "voice") cpSync(join(P, "assets", d), join(W, "assets", d), { recursive: true });
+}
 
 // storyboard with only the wave's frames (frontmatter kept)
 const sb = readFileSync(join(P, "STORYBOARD.md"), "utf8");
@@ -73,10 +85,18 @@ try {
 }
 const findings = lint.split("\n").filter((l) => /✗|⚠/.test(l));
 console.log(findings.join("\n") || "(no findings)");
-const summary = lint.split("\n").find((l) => /errors?,/.test(l)) ?? "";
+// the CLI prints "0 errors, 0 warnings" when clean but "0 error(s), 1 warning(s)" when warnings exist
+const summary = lint.split("\n").find((l) => /error(s|\(s\))?,/.test(l)) ?? "";
 console.log(summary.trim());
+let guardOk = true;
 try {
-  run(`npx -y ${HF} snapshot --timeout 60000 --at ${mids.join(",")}`);
+  console.log(execSync(`node "${P}/tools/frame-guard.mjs" ${nums.join(" ")}`, { cwd: P, encoding: "utf8" }).trim());
+} catch (e) {
+  console.log((e.stdout || e.message).trim());
+  guardOk = false;
+}
+try {
+  run(`npx -y ${HF} snapshot --timeout ${CHECK_TIMEOUT} --at ${mids.join(",")}`);
   console.log(`snapshots: ${W}/snapshots (midpoints ${mids.join(", ")})`);
 } catch (e) {
   console.error("✗ snapshot failed:", (e.stderr || e.message).slice(0, 400));
@@ -91,4 +111,4 @@ if (renderOut) {
     process.exit(1);
   }
 }
-process.exit(/ 0 errors/.test(summary) ? 0 : 1);
+process.exit(/\b0 error(s|\(s\))?,/.test(summary) && guardOk ? 0 : 1);

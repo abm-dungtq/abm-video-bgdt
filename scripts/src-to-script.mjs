@@ -50,7 +50,7 @@ for (const [i, raw] of lines.entries()) {
     const tokens = text.split(/\s+/).map((w) => {
       const keyword = /\*[^*]+\*/.test(w);
       const display = w.replace(/\*/g, "");
-      const bare = display.replace(/[.,!?;:…"“”()]/g, "");
+      const bare = display.replace(/^[.,!?;:…"“”()]+|[.,!?;:…"“”()]+$/g, "");
       const tok = { display, spoken: SPOKEN_OVERRIDES[bare] ? display.replace(bare, SPOKEN_OVERRIDES[bare]) : display };
       if (keyword) tok.keyword = true;
       return tok;

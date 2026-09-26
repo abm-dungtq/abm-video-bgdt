@@ -17,6 +17,7 @@ $CFG = Get-Content -Raw -Encoding utf8 "$P/video.config.json" | ConvertFrom-Json
 $VENV = $env:VIENEU_VENV ?? "D:/TQD/Claude-Video/VieNeu-TTS"
 $SK = "$($env:HF_SKILLS_DIR ?? "$HOME/.agents/skills")/faceless-explainer/scripts"
 $HF = "hyperframes@$($CFG.cli.pin)"
+$TIMEOUT = $CFG.cli.checkTimeoutMs ?? 240000
 $CACHE = $env:HF_CACHE_DIR ?? (Join-Path $P "../../.hf-cache")
 $stages = "script","tts","voice","align","meta","cues","karaoke","assemble","check","render","post"
 $run = $stages[$stages.IndexOf($From)..$stages.IndexOf($To)]
@@ -33,6 +34,7 @@ function Step([string]$name, [scriptblock]$body) {
 Step script {
   node tools/src-to-script.mjs script.src.txt script.json
   node tools/script-to-md.mjs --check script.json
+  node tools/facts-check.mjs
   node tools/script-to-md.mjs --review script.json
   node tools/tts-manifest.mjs
 }
@@ -70,7 +72,8 @@ Step assemble {
 }
 Step check {
   npx -y $HF lint
-  npx -y $HF check --timeout 60000
+  node tools/privacy-check.mjs
+  npx -y $HF check --timeout $TIMEOUT
 }
 Step render {
   npx -y $HF render --quality $CFG.render.quality --fps $CFG.render.fps --frames-cache-dir $CACHE --output renders/master-raw.mp4

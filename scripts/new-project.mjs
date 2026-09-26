@@ -58,10 +58,13 @@ writeFileSync(join(P, "video.config.json"), JSON.stringify(config, null, 2) + "\
 writeFileSync(join(P, "BRIEF.md"), readFileSync(join(SKILL, "templates/BRIEF.md.tmpl"), "utf8")
   .replaceAll("{{TITLE}}", config.title).replaceAll("{{VOICE}}", config.voice.id).replaceAll("{{MESSAGE}}", config.message));
 cpSync(join(SKILL, "templates/script.src.txt"), join(P, "script.src.txt"));
-for (const d of [".probe", "audio/clips", "capture/extracted", "capture/terminal", "capture/assets/fonts", "assets/fonts", "renders"]) {
+for (const d of [".probe", "audio/clips", "capture/extracted", "capture/terminal", "capture/screens/raw",
+  "capture/screens/redacted", "capture/assets/fonts", "assets/fonts", "renders"]) {
   mkdirSync(join(P, d), { recursive: true });
 }
 cpSync(join(SKILL, "templates/visible-text.txt"), join(P, "capture/extracted/visible-text.txt"));
+cpSync(join(SKILL, "templates/COVERAGE.md"), join(P, "capture/COVERAGE.md"));
+cpSync(join(SKILL, "templates/screens-INDEX.md"), join(P, "capture/screens/INDEX.md"));
 for (const d of ["capture/assets/fonts", "assets/fonts"]) cpSync(join(SKILL, "templates/fonts"), join(P, d), { recursive: true });
 
 // The init-generated agent notes tell agents to upgrade the pin and to route through

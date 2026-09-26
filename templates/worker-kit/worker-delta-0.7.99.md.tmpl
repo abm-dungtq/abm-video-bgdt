@@ -55,6 +55,21 @@ copy-include or `add` those files.
 4. Every cue in your `cues` bullet has a visible reveal at that time.
 5. Everything stays inside x 80–1840, y 60–880 at every moment (including during motion).
 6. No `http` other than the GSAP script tag; no forbidden APIs listed above.
+7. Every late `fromTo` has `immediateRender: false`; no vars object is shared between tweens; none of ① ② ③ ✳ ✕ ✓ → appears outside comments.
+
+## Timeline traps
+
+- A `fromTo` placed late on the timeline applies its from-state at time 0 by default (`immediateRender`), which
+  can blank the frame from the start. Give every `fromTo` that does not start at 0, or that follows another tween
+  on the same element, `immediateRender: false` in its to-vars, and set the initial state with CSS or `gsap.set`.
+- Never reuse one vars object for several tweens (`const v = {…}; tl.to(a, v); tl.to(b, v)`). GSAP mutates
+  it, so the later tweens misbehave; write a fresh object literal per tween.
+
+## Glyphs the fonts lack
+
+The shipped fonts have no ① ② ③ ✳ ✕ ✓ →. The browser silently swaps in another font, so these look wrong in
+the render. Draw them as inline SVG (circle + digit, spark, cross, tick, arrow), and use plain digits in number
+badges. The orchestrator's `frame-guard` rejects these characters outside comments.
 
 ## Times of words that are not cues
 

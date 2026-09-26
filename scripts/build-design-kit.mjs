@@ -4,6 +4,9 @@
 //   tools/worker-brief.md           filled from tools/worker-kit/worker-brief.md.tmpl
 //   tools/worker-delta-<pin>.md     filled from tools/worker-kit/worker-delta-<pin>.md.tmpl
 //   tools/frame-skeleton.html       filled from tools/worker-kit/frame-skeleton.html.tmpl
+//   tools/worker-screen-addendum.md filled from tools/worker-kit/worker-screen-addendum.md.tmpl
+// The skeleton's @font-face lines come from video.config.json `fonts`: an entry's `faces`
+// ([{weight, file}], file in assets/fonts/) or, for the fonts the skill ships, the built-in list below.
 // Run whenever the title, palette or CLI pin changes, and always before dispatching frame workers.
 //
 //   node tools/build-design-kit.mjs
@@ -33,6 +36,22 @@ const tokens = {
 mkdirSync("capture/extracted", { recursive: true });
 writeFileSync("capture/extracted/tokens.json", JSON.stringify(tokens, null, 2) + "\n");
 
+// the font files the skill ships in templates/fonts (weights without a file fall back to the nearest face)
+const SHIPPED_FACES = {
+  "Be Vietnam Pro": [
+    { weight: "800", file: "BeVietnamPro-ExtraBold.ttf" },
+    { weight: "500", file: "BeVietnamPro-Medium.ttf" },
+    { weight: "600", file: "BeVietnamPro-SemiBold.ttf" },
+  ],
+  "JetBrains Mono": [{ weight: "400", file: "JetBrainsMono-Regular.ttf" }],
+};
+const fontFaces = cfg.fonts.flatMap((f) => {
+  const faces = f.faces ?? SHIPPED_FACES[f.family];
+  if (!faces) throw new Error(`fonts: "${f.family}" needs "faces": [{"weight": "700", "file": "<file in assets/fonts>"}]`);
+  return faces.map(({ weight, file }) =>
+    `@font-face{font-family:"${f.family}";font-weight:${weight};font-style:normal;font-display:block;src:url("assets/fonts/${file}") format("truetype");}`);
+});
+
 const vars = {
   PROJECT_DIR: ROOT,
   TITLE: cfg.title,
@@ -41,6 +60,9 @@ const vars = {
   CANVAS: d.canvas, SURFACE: d.surface, INK: d.ink, ACCENT: d.accent,
   ACCENT2: d.accent2, WARN: d.warn, MUTED: d.muted,
   HUE_BASE: d.hueBase, HUE_STEP: d.hueStep, HUE_CH1: d.hueBase + d.hueStep,
+  // saturation, lightness, alpha of the ground's radial glow (hsla(HUE, …))
+  GLOW: d.glow ?? "70%, 45%, 0.28",
+  FONT_FACES: fontFaces.join("\n    "),
 };
 const fill = (s) => s.replace(/\{\{(\w+)\}\}/g, (m, k) => {
   if (!(k in vars)) throw new Error(`unknown placeholder ${m}`);
@@ -51,6 +73,7 @@ const kit = [
   ["worker-brief.md.tmpl", "worker-brief.md"],
   [`worker-delta-${cfg.cli.pin}.md.tmpl`, `worker-delta-${cfg.cli.pin}.md`],
   ["frame-skeleton.html.tmpl", "frame-skeleton.html"],
+  ["worker-screen-addendum.md.tmpl", "worker-screen-addendum.md"],
 ];
 for (const [tmpl, out] of kit) {
   const src = `tools/worker-kit/${tmpl}`;

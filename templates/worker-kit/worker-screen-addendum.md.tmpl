@@ -1,0 +1,58 @@
+# Addendum for `screen` frames
+
+Read this after `tools/worker-brief.md`. It applies only to frames whose storyboard `scene` is `screen`, or whose `shots` contain `screen@…`.
+
+The worker brief still governs everything else:
+- seek-safety;
+- the stage and safe area;
+- the karaoke band;
+- lint.
+
+## Two kinds of screen frame
+
+- **Real screenshot.** The storyboard `focal` names a file, for example `focal: assets/screens/24-project-page.png – vùng tài liệu mẫu`. Show that file. Every file in `assets/screens/` was approved by the user at gate 2b.
+- **"Minh họa".** `focal` starts with `MINH HỌA`, and there is no screenshot.
+  - Build a simplified mock of the UI in HTML from the frame's facts: text and shapes only, no logos.
+  - Add one element `class="PFX-minh-hoa-kicker minh-hoa-kicker"` that reads `MINH HỌA`. Set it in JetBrains Mono, 28 px, colour `var(--muted)`.
+  - Pin it to the top-left of the mock. It stays visible for the whole shot.
+
+## Source and layout
+
+- Reference the image from the project root, the same way fonts are referenced: `<img src="assets/screens/<file>" alt="">`.
+  - Never use `../`, an absolute URL or a remote URL.
+  - Never reference anything under `capture/`: those are raw or unapproved files.
+- Screenshots are 1920×1080. Place the image inside a viewport `div` inside the stage safe area (x 80–1840, y 60–880). The viewport has:
+  - `overflow:hidden`;
+  - `border-radius:16px`;
+  - a 1 px border in `var(--ink)` at about 10 % opacity.
+- Default viewport: 1456×819 px (the whole screenshot scaled to 0.758), centred horizontally, top at about y 30 inside the stage. Nothing may enter the karaoke band (y ≥ 918).
+- Put the `<img>` inside a wrapper element that you animate. Never animate the viewport itself.
+
+## Motion grammar (seek-safe)
+
+Everything lives on the frame's paused timeline registered on `window.__timelines`. Use GSAP only. Do not use:
+- CSS transitions or animations;
+- `Date.now` or `Math.random`;
+- `setTimeout`;
+- `repeat:-1`.
+
+1. **Reveal:** the wrapper goes from `opacity:0, scale:0.96` to `opacity:1, scale:1` over about 0.6 s.
+2. **Pan and zoom:** tween the wrapper's `x`, `y` and `scale` so the region the narration is about moves to the centre.
+   - Keep scale at or below **1.4**. Screenshots are upscaled from about 1600 px, so text blurs beyond that.
+   - Time the move to the keyword cue.
+3. **Callout:** both parts appear on the keyword cue.
+   - A rectangle outline (2–3 px, `var(--gold)`, radius 10 px) around the UI element being described.
+   - A label of 1–5 words (≥ 28 px, Be Vietnam Pro 600) outside or beside the image region. It never covers UI text.
+4. **Crop zoom:** end on a tighter zoom of the described region, then hold for about 2 s before the next shot.
+
+The callout rectangle lives in the wrapper's coordinate space, so it moves with the pan and zoom.
+
+## Shots
+
+`variety-lint` forbids two consecutive shots of the same type and any shot longer than 10 s. A screen frame therefore alternates `screen` with another type, for example `screen@0-7, kinetic@7-11` or `kinetic@0-3, screen@3-10`. The non-screen shot carries the keyword text reveal (1–5 words).
+
+## Truth rule
+
+- Never edit, blur, or overdraw text inside a screenshot. The image is already redacted.
+- Callouts and labels only surround the image; they never replace UI content.
+- Do not invent UI that is not in the image.

@@ -12,7 +12,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join, resolve } from "node:path";
-import { cfg, FE_SCRIPTS as SK, HF, ROOT } from "./lib/config.mjs";
+import { cfg, CHECK_TIMEOUT, FE_SCRIPTS as SK, HF, ROOT } from "./lib/config.mjs";
 
 const W = resolve(ROOT, `../.fixture-${cfg.name}-${process.pid}`);
 const frames = [
@@ -70,7 +70,7 @@ step("transitions inject", `node "${SK}/transitions.mjs" inject --storyboard ./S
 step("transitions verify", `node "${SK}/transitions.mjs" verify --storyboard ./STORYBOARD.md --index ./index.html`);
 const lint = step("lint", `npx -y ${HF} lint`);
 console.log(lint.split("\n").filter((l) => /✗|⚠|error/.test(l)).join("\n"));
-step("check", `npx -y ${HF} check --timeout 60000`);
-step("snapshot", `npx -y ${HF} snapshot --timeout 60000 --at 1.5,4.5`);
+step("check", `npx -y ${HF} check --timeout ${CHECK_TIMEOUT}`);
+step("snapshot", `npx -y ${HF} snapshot --timeout ${CHECK_TIMEOUT} --at 1.5,4.5`);
 rmSync(W, { recursive: true, force: true });
 console.log(`fixture-check ok: ${HF} + ${SK}`);

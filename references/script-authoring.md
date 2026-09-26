@@ -32,6 +32,19 @@ syllables / rate + lead (titleLead for title frames) + tail + gap × (sentences 
 
 The first video's estimate ended within 1.5 % of the real voice (604 s estimated, 612 s real).
 
+### Calibrating the estimate
+
+After the voice stage, `--check` prints `real=` and `ratio=` (real ÷ estimate).
+
+| Video | Voice | Estimate | Real | Ratio |
+|---|---|---|---|---|
+| Hermes Agent | Thanh Bình, 0.55 | 604 s | 612 s | 1.013 |
+| Claude intro | Thanh Bình, 0.55 | 845 s | 875 s | 1.035 |
+
+- Aim the estimate at `targetS` ÷ ratio, so the real voice lands inside the range. With a 1.035 ratio, an 880 s ceiling means an estimate of at most 850 s.
+- A first draft that is far short (the Claude script first estimated 667 s against an 810 s floor) fails `--check`. Add examples, not filler, before gate 2.
+- Add each new video's row to this table.
+
 ## Structure that worked for a 10-minute lesson
 
 | Chapter | Content | Frames |

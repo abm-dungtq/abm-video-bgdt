@@ -51,6 +51,7 @@ lines and inline `~N s` hints are rescaled and snapped to cues automatically aft
 | `anchor` | recap or checklist (fixed anchor, cycling items) | `fixed-anchor-cycle` |
 | `title` | chapter cards; the trail writes the number | `titlecard-reveal` (Adapt) |
 | `metaphor` | analogies | `compose` |
+| `screen` | a real UI screenshot from `assets/screens/` (gate 2b), or a `MINH HỌA` mockup; pan, zoom and callout on the cue | `tools/worker-screen-addendum.md` |
 
 The blueprints are described in `~/.agents/skills/faceless-explainer/references/visual-design.md` and `cut-catalog.md`.
 
@@ -66,9 +67,16 @@ These are not linted but are still required:
 
 6. Every `*keyword*` token gets an on-screen key-text reveal at its cue time.
 7. Every chapter has at least one held beat, a still read of 2 s or more, placed after its densest reveal.
-8. For an "advanced / standout points" chapter, use the **analyze pattern**. Its first frame builds a three-slot rail
+8. A `screen` frame alternates `screen` with another type (for example `screen@0-7, kinetic@7-11`). Its `focal` names
+   the file (`assets/screens/<file> – region`) or starts with `MINH HỌA`.
+9. For an "advanced / standout points" chapter, use the **analyze pattern**. Its first frame builds a three-slot rail
    (① Tính năng · ② Vì sao nổi bật · ③ Bạn được gì) that stays small at the top of the following frames,
    and each slot lights as a separate cued reveal.
+   - Give every frame that shows the rail a `- rail: ①@t · ②@t · ③@t` bullet.
+   - Pin the rail's resting geometry in one frame and copy it everywhere else. Add its CSS signatures as regexes to
+     `guard.railPatterns` in `video.config.json`; `frame-guard` then rejects a rail frame that drifts (the Claude video
+     used left 480px / top 4px / 1068px wide, pills 340px with radius 22px).
+   - The slot numbers are plain digits or SVG badges. The fonts have no ① ② ③.
 
 ## Video direction block
 

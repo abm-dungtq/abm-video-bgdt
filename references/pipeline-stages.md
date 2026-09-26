@@ -53,12 +53,20 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 
 ## Stage 2: Facts and script (about 3 h)
 
-1. **Facts.** Read only local sources (README, docs, `--help` output). Write
+1. **Facts.** Read only local sources (README, docs, `--help` output, or web pages saved to `capture/sources/`). Write
    `capture/extracted/visible-text.txt` as `[F-NN] one fact — source`, grouped under `##` headings. Save
    read-only terminal output that the video will show to `capture/terminal/*.txt`.
+   - When the sources are saved web pages, list them in `capture/sources/INDEX.md`, a table whose first column is
+     the slug used after `—`, with URL, published and accessed dates.
+   - For a feature survey, fill `capture/COVERAGE.md`: one row per feature, with its F-NN, source, accessed date,
+     chapter pick and visual (`real | minh-hoa | graphic | omitted`).
 2. **Script.** Write `script.src.txt` following [script-authoring.md](script-authoring.md).
-3. Run `R -From script -To script`. This runs `src-to-script`, `--check`, `--review` and `tts-manifest`.
-   Verify: it prints `… ok` and the pipeline finishes with `pipeline ok: script -> script`.
+3. Run `R -From script -To script`. This runs `src-to-script`, `--check`, `facts-check`, `--review` and `tts-manifest`.
+   Verify:
+   - the pipeline finishes with `pipeline ok: script -> script`;
+   - `facts-check ok` is printed: every F-NN in the script, storyboard and coverage is defined, and each fact's source
+     has a row in `capture/sources/INDEX.md` when that file exists;
+   - when `spokenOverrides` is set, the `--check` line shows `overrides=` above 0 and no `⚠ spokenOverrides never used`.
    - If the estimate is too long, propose specific supporting sentences to cut and ask the user. Never cut silently.
    - If it is too short, add examples.
 4. **Gate 2.** Send `SCRIPT-REVIEW.md`, which shows chapters, per-frame text, the time estimate and the cited facts. Ask:
@@ -68,6 +76,23 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 6. Run `node tools/script-to-md.mjs script.json` **once**. It writes `SCRIPT.md` and the outline
    `STORYBOARD.md`, where every frame has `src`, `duration`, `transition_in`, `scene`, `chapter` and `voiceover`.
    Never run write mode again after stage 4 has started.
+
+## Stage 2b: Screenshots (only when the lesson shows real UI)
+
+1. Write a shot list: feature, the UI state to show, and the demo actions it needs. Ask the user to approve the
+   demo actions in their account before doing any of them.
+2. **Capture.** Use a desktop computer-use tool (Orca on the first run) on the user's browser, in fullscreen, with the
+   lesson's theme. Save PNGs to `capture/screens/raw/`.
+   - Claude in Chrome screenshots are low-resolution JPEGs, so do not use them.
+   - F11 may not be available to the tool. Use the browser menu for fullscreen, and ask the user to leave it.
+3. **Redact.** Cover every personal item (names, emails, account chips, private chat text) with solid boxes in the
+   surface colour, never blur. Upscale with lanczos to 1920×1080, and save to `capture/screens/redacted/`.
+4. Add one row per shot to `capture/screens/INDEX.md`: `<redacted file> → assets/screens/<file>`, F-NN, feature,
+   UI state, date, redactions, and approved.
+5. **Gate 2b.** Send the redacted shots. Ask the user to approve each one, or to name more redactions.
+   - Set the last column to `Y` for approved shots, and copy only those files to `assets/screens/`.
+   - A feature that cannot be captured becomes a `MINH HỌA` mockup; record it in `COVERAGE.md`.
+6. Verify: `node tools/privacy-check.mjs` prints `privacy-check ok`.
 
 ## Stage 3: Voice and alignment (about 1–2 h, mostly TTS)
 
@@ -86,6 +111,8 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    - Verify reports `bad=0`.
    - The meta line reports `0 failed`. A `syllable` fallback count above 0 is allowed; spot-check those sentences.
 4. Check the total with `cat audio/total.txt`. It must lie inside `budget.targetS`.
+   `node tools/script-to-md.mjs --check script.json` now also prints `real=` and `ratio=` (real / estimate).
+   Record the ratio in the journal; see script-authoring.md § "Calibrating the estimate".
 
 ## Stage 4: Design and visual storyboard (about 2 h; can run alongside stage 3)
 
@@ -114,7 +141,7 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 3. Run `node $SK/frame-packets.mjs --project "$P" --storyboard "$P/STORYBOARD.md"`. It writes `.hyperframes/frame-packets/`.
 4. Dispatch the workers (see SKILL.md § Frame workers). Each worker gets `tools/worker-brief.md` plus its dispatch
    context. After each wave:
-   1. `node tools/wave-check.mjs <nums>`. Verify: `0 errors`.
+   1. `node tools/wave-check.mjs <nums>`. Verify: `0 errors` and `frame-guard ok`.
    2. Read the snapshots. Use `N@t` to look at a specific cue.
    3. Send back failures together with the exact lint line.
    4. Set `- status: animated` for the frames that passed.
@@ -127,8 +154,10 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 
 ## Stage 6: QA, render, delivery (about 2 h plus render time)
 
-1. Run `R -From check -To check`.
+1. Run `R -From check -To check`. It runs lint, `privacy-check.mjs`, then `check --timeout <cli.checkTimeoutMs>`
+   (default 240000; 60 s timed out on a loaded machine).
    - Lint must show 0 errors.
+   - `privacy-check ok … privacy: clean`. Copy that line into `renders/qa-report.md`.
    - Runtime must show 0 errors.
    - For every `content_overlap` finding, take a snapshot at the flagged time with `wave-check.mjs N@t`. On the first video
      all eight were false positives, caused by elements at opacity 0, clipped, or on flip cards. Record each verdict in
@@ -172,7 +201,7 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 
 | Stage | Runs |
 |-------|------|
-| `script` | `src-to-script` → `script-to-md --check` → `--review` → `tts-manifest` |
+| `script` | `src-to-script` → `script-to-md --check` → `facts-check` → `--review` → `tts-manifest` |
 | `tts` | always stops with instructions: TTS runs through the MCP |
 | `voice` | `build-voice.py --qa` → build → `--verify` |
 | `align` | `align-words.py` (MMS_FA, falling back to syllables) |
@@ -180,6 +209,6 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 | `cues` | `audio.mjs sync-durations` → `retime-and-cue` → `--check` → `variety-lint` |
 | `karaoke` | `build-karaoke` → `--check` → `build-overlay` |
 | `assemble` | `assemble-index` → `transitions inject` → `inject-overlay` → `transitions verify` |
-| `check` | `lint` → `check --timeout 60000` |
+| `check` | `lint` → `privacy-check` → `check --timeout <cli.checkTimeoutMs>` |
 | `render` | `render` with the config's quality and fps, and the frames cache |
 | `post` | `postprocess.mjs` (loudness and chapters) |

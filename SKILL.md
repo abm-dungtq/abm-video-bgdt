@@ -5,8 +5,8 @@ user-invocable: true
 argument-hint: "<topic or project dir> [--from <stage>]"
 metadata:
   author: ABM
-  version: "0.1.0"
-  proven-on: "videos/hermes-agent-explainer (612 s, 63 frames, 2026-09-25)"
+  version: "0.2.0"
+  proven-on: "videos/hermes-agent-explainer (612 s, 63 frames, 2026-09-25); videos/claude-intro-explainer (875 s, 79 frames, real screenshots, 2026-09-25)"
 ---
 
 # abm-video-bgdt: e-learning lesson video
@@ -33,11 +33,15 @@ VieNeu-TTS venv with torchaudio and uroman. The first alignment downloads the 1.
   version, then write `tools/worker-kit/worker-delta-<pin>.md.tmpl` from its lint output.
 - **HeyGen skills stay read-only.** Never edit `~/.agents/skills/`. Every `init` runs with `HYPERFRAMES_SKIP_SKILLS=1`
   (the scripts do this for you).
-- **Four user gates**, each asked with AskUserQuestion. Never skip one:
-  1. pronunciation and voice pace, on the probe clips;
-  2. the script (`SCRIPT-REVIEW.md`), **before any TTS for the lesson**;
-  3. the karaoke style, on a short preview clip. Default: whole sentence, words reveal one by one;
-  4. the draft video, before the final render (11–17 min).
+- **Four user gates**, plus gate 2b when the lesson shows real screenshots. Ask each one with AskUserQuestion,
+  and never skip one:
+  - **Gate 1:** pronunciation and voice pace, on the probe clips.
+  - **Gate 2:** the script (`SCRIPT-REVIEW.md`), **before any TTS for the lesson**.
+  - **Gate 2b:** every redacted screenshot, before a worker may use it. Only approved files go to `assets/screens/`.
+  - **Gate 3:** the karaoke style, on a short preview clip. Default: whole sentence, words reveal one by one.
+  - **Gate 4:** the draft video, before the final render (11–25 min).
+- **Screenshots come only from actions the user approved**, in their own account. Redact with solid boxes, never blur.
+  `privacy-check.mjs` must pass before gate 4.
 - **Facts come only from local sources** listed in `capture/extracted/visible-text.txt` as `[F-NN]`.
   Record terminal output only from read-only commands (`--help`, `--version`).
 - **Never regenerate `STORYBOARD.md` after the visual fields exist.** A text change patches the
@@ -65,13 +69,14 @@ Detailed steps, commands and pass conditions are in [references/pipeline-stages.
 |---|-------|---------------|--------------|
 | 0 | Scaffold | `node $SKILL/scripts/new-project.mjs videos/<slug> --title "…"`, edit `video.config.json` | – |
 | 1 | Probes | `build-design-kit.mjs`, `fixture-check.mjs`; pronunciation and rate probes via MCP; `measure-rate.mjs` | **Gate 1**; fixture 0 errors; rate 2.5–6 syl/s |
-| 2 | Facts and script | `visible-text.txt`, `script.src.txt`, `run-pipeline.ps1 -From script -To script` | `--check` ok; **Gate 2**; then `script-to-md.mjs script.json` once |
+| 2 | Facts and script | `visible-text.txt`, `script.src.txt`, `run-pipeline.ps1 -From script -To script` (runs `facts-check.mjs`) | `--check` ok, `overrides=` > 0 when overrides exist; facts-check ok; **Gate 2**; then `script-to-md.mjs script.json` once |
+| 2b | Screenshots (only if the lesson shows real UI) | capture, redact, `capture/screens/INDEX.md`, copy approved files to `assets/screens/` | **Gate 2b** |
 | 3 | Voice | `tts-manifest.mjs --pending` → MCP `text_to_speech` per job → `-From voice -To meta` | QA flagged=0; verify bad=0; the align report lists 0 failed |
 | 4 | Design and storyboard | `build-design-kit.mjs`, `build-frame.mjs --preset`, catalog, `fetch-registry-refs.mjs`, visual fields | `variety-lint.mjs` ok |
 | 5 | Frames | `-From cues -To cues`, `frame-packets.mjs`, workers in waves, `wave-check.mjs`, `-From karaoke -To assemble` | each wave: 0 lint errors; **Gate 3**; `transitions verify` |
-| 6 | QA and delivery | `-From check -To check`, draft render, `sync-report.mjs`, `-From render -To post` | sync ≤ 0.15 s; **Gate 4**; −16 ±1 LUFS |
+| 6 | QA and delivery | `-From check -To check` (runs `privacy-check.mjs`), draft render, `sync-report.mjs`, `-From render -To post` | privacy clean; sync ≤ 0.15 s; **Gate 4**; −16 ±1 LUFS |
 
-Stages 3 and 4 may run in parallel once gate 2 is passed: stage 3 owns `audio/` and `audio_meta.json`,
+Stages 2b, 3 and 4 may run in parallel once gate 2 is passed: stage 3 owns `audio/` and `audio_meta.json`,
 and stage 4 owns `frame.md` and the visual fields of `STORYBOARD.md`.
 
 ## Frame workers
@@ -79,11 +84,13 @@ and stage 4 owns `frame.md` and the visual fields of `STORYBOARD.md`.
 Dispatch one `general-purpose` subagent per frame. Run at most 20 concurrently; waves of 6–10 are easier to check.
 Each prompt contains:
 - `tools/worker-brief.md`, verbatim;
+- for a `screen` frame, also `tools/worker-screen-addendum.md`, verbatim;
 - the frame id, the number NN, the prefix PFX (`fNN`), the chapter, and HUE (`hueBase + hueStep × chapter`);
 - whether this is the final frame.
 
 A worker writes exactly one file, `compositions/frames/<id>.html`. After each wave, the orchestrator:
-- runs `node tools/wave-check.mjs <numbers>`;
+- runs `node tools/wave-check.mjs <numbers>`. It lints, runs `frame-guard.mjs` (glyphs the fonts lack, optional
+  rail geometry from `guard.railPatterns`), and takes snapshots;
 - looks at the snapshots, and uses `N@t` to check the look at a cue time;
 - sends failing frames back to their worker with the exact lint line;
 - marks passing frames `status: animated` in `STORYBOARD.md`. Workers never touch `STORYBOARD.md`.
@@ -94,7 +101,8 @@ A worker writes exactly one file, `compositions/frames/<id>.html`. After each wa
 - [references/script-authoring.md](references/script-authoring.md): the `script.src.txt` grammar, budget math, and plain-language rules
 - [references/visual-storyboard.md](references/visual-storyboard.md): scene catalog, shot rules, storyboard fields, and design system
 - [references/gotchas.md](references/gotchas.md): what broke on the first video and how it was fixed
-- `templates/worker-kit/*.tmpl`: worker brief, delta for CLI 0.7.99, and frame skeleton (filled by `build-design-kit.mjs`)
+- `templates/worker-kit/*.tmpl`: worker brief, delta for CLI 0.7.99, screen addendum, and frame skeleton (filled by `build-design-kit.mjs`;
+  the skeleton's `@font-face` lines come from `fonts`, using each entry's `faces` for fonts the skill does not ship)
 
 ## Updating the skill
 

@@ -19,6 +19,13 @@ export const FE_SCRIPTS = `${SKILLS_DIR}/faceless-explainer/scripts`;
 export const VENV = slash(process.env.VIENEU_VENV ?? "D:/TQD/Claude-Video/VieNeu-TTS");
 export const CACHE_DIR = slash(process.env.HF_CACHE_DIR ?? resolve(ROOT, "../../.hf-cache"));
 export const HF = `hyperframes@${cfg.cli.pin}`;
+// full-project check/snapshot navigation timeout; 60 s timed out on a loaded machine (2026-09-25)
+export const CHECK_TIMEOUT = cfg.cli.checkTimeoutMs ?? 240000;
+// frame-guard rules: glyphs the shipped fonts lack, and optional regexes every `- rail:` frame must carry
+export const GUARD = {
+  missingGlyphs: cfg.guard?.missingGlyphs ?? "①②③✳✕✓→",
+  railPatterns: (cfg.guard?.railPatterns ?? []).map((p) => new RegExp(p)),
+};
 
 /** "#0B1026" → "11,16,38" */
 export const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",");
