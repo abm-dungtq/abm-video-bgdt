@@ -1,0 +1,275 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f06-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f06-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f06- */
+    #f06-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f06-glow {
+      position: absolute; left: 40px; top: 60px; width: 800px; height: 700px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(62,230,208,.10), transparent 65%);
+    }
+    #f06-divider {
+      position: absolute; left: 879px; top: 60px; width: 2px; height: 700px;
+      background: rgba(244,241,232,.16); transform-origin: 50% 0;
+    }
+    /* left half: chat window */
+    #f06-chat {
+      position: absolute; left: 40px; top: 60px; width: 800px; height: 700px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      transform-origin: 50% 50%;
+    }
+    #f06-head {
+      position: absolute; left: 0; top: 0; right: 0; height: 90px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; gap: 18px; padding: 0 32px;
+    }
+    #f06-bot-ava {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(62,230,208,.16); border: 2px solid var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f06-head-name { font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+    #f06-head-name b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    #f06-status { width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); margin-left: auto; }
+    #f06-list { position: absolute; left: 40px; top: 110px; width: 720px; height: 570px; }
+    .f06-msg {
+      position: absolute; border-radius: 22px; display: flex; align-items: center;
+      font-size: 34px; font-weight: 600; line-height: 1.2; padding: 0 30px;
+    }
+    .f06-user { right: 0; background: rgba(244,241,232,.10); border: 1px solid rgba(244,241,232,.22); border-bottom-right-radius: 6px; transform-origin: 100% 100%; }
+    .f06-bot { left: 0; background: rgba(62,230,208,.12); border: 1px solid rgba(62,230,208,.45); border-bottom-left-radius: 6px; transform-origin: 0 100%; }
+    #f06-m1 { top: 0; height: 90px; font-size: 56px; font-weight: 800; padding: 0 38px; }
+    #f06-m2 { top: 120px; width: 460px; height: 150px; }
+    #f06-m3 { top: 300px; height: 86px; }
+    #f06-m4 { top: 416px; height: 86px; }
+    #f06-dots { position: absolute; left: 30px; top: 58px; display: flex; gap: 12px; }
+    .f06-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--cyan); }
+    .f06-line { position: absolute; left: 30px; height: 16px; border-radius: 8px; background: rgba(244,241,232,.55); transform-origin: 0 50%; }
+    #f06-l1 { top: 34px; width: 390px; }
+    #f06-l2 { top: 66px; width: 340px; }
+    #f06-l3 { top: 98px; width: 220px; }
+    #f06-stopbar {
+      position: absolute; left: 0; top: 534px; width: 500px; height: 10px; border-radius: 5px;
+      background: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); transform-origin: 0 50%;
+    }
+    #f06-stopchip {
+      position: absolute; left: 524px; top: 518px; height: 42px; display: flex; align-items: center; gap: 12px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--gold);
+      transform-origin: 0 50%;
+    }
+    #f06-stopchip i { width: 20px; height: 20px; background: var(--gold); border-radius: 3px; display: block; }
+    /* right half: dim, waiting */
+    #f06-void {
+      position: absolute; left: 920px; top: 60px; width: 800px; height: 700px;
+      border: 2px dashed rgba(142,147,181,.45); border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f06-q { font-size: 360px; font-weight: 800; line-height: 1.05; color: var(--muted); }
+    /* shot 2: the chore pile on "bạn" */
+    #f06-kicker {
+      position: absolute; left: 120px; top: 90px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    #f06-kicker b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    #f06-heap { position: absolute; left: 100px; top: 100px; width: 600px; height: 700px; transform-origin: 20px 700px; }
+    #f06-me {
+      position: absolute; left: 20px; top: 500px; width: 520px; height: 200px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.18); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 32px; padding: 0 40px;
+    }
+    #f06-me-ava {
+      width: 120px; height: 120px; border-radius: 50%; background: rgba(244,241,232,.08);
+      border: 2px solid rgba(244,241,232,.5); display: flex; align-items: center; justify-content: center;
+    }
+    #f06-me-name { font-size: 64px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1; }
+    .f06-card {
+      position: absolute; width: 480px; height: 96px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.2);
+      box-shadow: 0 16px 40px rgba(0,0,0,.4);
+      display: flex; align-items: center; gap: 22px; padding: 0 28px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; color: var(--ink);
+      transform-origin: 50% 100%;
+    }
+    .f06-card svg { flex: none; }
+    #f06-c1 { left: 40px; top: 394px; border-color: var(--gold); color: var(--gold); }
+    #f06-c1 svg { filter: drop-shadow(0 0 10px rgba(255,210,63,.55)); }
+    #f06-c2 { left: 26px; top: 292px; }
+    #f06-c3 { left: 52px; top: 190px; }
+    #f06-c4 { left: 34px; top: 88px; }
+  </style>
+
+  <div id="root" data-composition-id="06-chatbot-chi-tra-loi" data-width="1920" data-height="1080" data-duration="13.44">
+    <div id="f06-ground" class="clip" data-start="0" data-duration="13.44" data-track-index="0"></div>
+    <div id="f06-stage" class="clip" data-start="0" data-duration="13.44" data-track-index="1">
+      <div id="f06-cam">
+        <div id="f06-glow"></div>
+        <div id="f06-divider"></div>
+
+        <div id="f06-void"><div id="f06-q">?</div></div>
+
+        <div id="f06-chat">
+          <div id="f06-head">
+            <div id="f06-bot-ava">
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#3EE6D0" stroke-width="2.5" stroke-linecap="round">
+                <rect x="5" y="9" width="20" height="15" rx="4"/><line x1="15" y1="4" x2="15" y2="9"/>
+                <circle cx="11" cy="16" r="1.6" fill="#3EE6D0"/><circle cx="19" cy="16" r="1.6" fill="#3EE6D0"/>
+              </svg>
+            </div>
+            <div id="f06-head-name"><b>◆</b>Chatbot</div>
+            <div id="f06-status"></div>
+          </div>
+          <div id="f06-list">
+            <div id="f06-m1" class="f06-msg f06-user">?</div>
+            <div id="f06-m2" class="f06-msg f06-bot">
+              <div id="f06-dots"><div class="f06-dot"></div><div class="f06-dot"></div><div class="f06-dot"></div></div>
+              <div id="f06-l1" class="f06-line"></div>
+              <div id="f06-l2" class="f06-line"></div>
+              <div id="f06-l3" class="f06-line"></div>
+            </div>
+            <div id="f06-m3" class="f06-msg f06-user">Bạn hỏi</div>
+            <div id="f06-m4" class="f06-msg f06-bot">Nó đáp</div>
+            <div id="f06-stopbar"></div>
+            <div id="f06-stopchip"><i></i>DỪNG LẠI</div>
+          </div>
+        </div>
+
+        <div id="f06-kicker"><b>◆</b>MỌI VIỆC CÒN LẠI</div>
+        <div id="f06-heap">
+          <div id="f06-me">
+            <div id="f06-me-ava">
+              <svg width="70" height="70" viewBox="0 0 70 70" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round">
+                <circle cx="35" cy="25" r="12"/><path d="M13 60c3-12 12-18 22-18s19 6 22 18"/>
+              </svg>
+            </div>
+            <div id="f06-me-name">Bạn</div>
+          </div>
+          <div id="f06-c1" class="f06-card">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#FFD23F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 22V10a3 3 0 0 1 6 0v10"/><path d="M20 19V7a3 3 0 0 1 6 0v12"/><path d="M26 19v-9a3 3 0 0 1 6 0v14c0 9-5 14-12 14s-10-4-13-10l-3-6a3 3 0 0 1 5-3l5 5"/>
+            </svg>
+            <span>Tự làm</span>
+          </div>
+          <div id="f06-c2" class="f06-card">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linejoin="round">
+              <path d="M5 12a3 3 0 0 1 3-3h9l4 5h15a3 3 0 0 1 3 3v17a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/>
+            </svg>
+            <span>Mở file</span>
+          </div>
+          <div id="f06-c3" class="f06-card">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round">
+              <circle cx="19" cy="19" r="11"/><line x1="27" y1="27" x2="38" y2="38"/>
+            </svg>
+            <span>Tìm kiếm</span>
+          </div>
+          <div id="f06-c4" class="f06-card">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="32" height="32" rx="7"/><path d="M14 22l6 6 10-12"/>
+            </svg>
+            <span>Kiểm tra kết quả</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var S = "";
+
+      /* ---- Scene 1 (0–3.39): split — left lit, right dim ---- */
+      tl.fromTo(S + "#f06-divider", { scaleY: 0 }, { scaleY: 1, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo(S + "#f06-chat", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo(S + "#f06-glow", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power3.out" }, 0.1);
+      tl.fromTo(S + "#f06-void", { opacity: 0 }, { opacity: 0.35, duration: 0.6, ease: "power3.out" }, 0.2);
+      tl.fromTo(S + "#f06-q", { opacity: 0, scale: 0.9 }, { opacity: 0.45, scale: 1, duration: 0.7, ease: "power3.out" }, 0.3);
+      // "chatbot" @0.47 — the bot identity lights up
+      tl.fromTo(S + "#f06-bot-ava", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.47);
+      tl.fromTo(S + "#f06-head-name", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.52);
+      tl.fromTo(S + "#f06-status", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 0.6);
+      // user asks "?"
+      tl.fromTo(S + "#f06-m1", { opacity: 0, scale: 0.8, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.2);
+      // "trả lời" @1.78 / 1.94 — bot bubble types its answer
+      tl.fromTo(S + "#f06-m2", { opacity: 0, scale: 0.8, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.78);
+      tl.fromTo(S + "#f06-dots .f06-dot", { opacity: 0.25 }, { opacity: 1, duration: 0.12, stagger: 0.04, ease: "none" }, 1.8);
+      tl.set(S + "#f06-dots", { autoAlpha: 0 }, 1.94);
+      tl.fromTo(S + "#f06-l1", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "none" }, 1.94);
+      tl.fromTo(S + "#f06-l2", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "none" }, 2.29);
+      tl.fromTo(S + "#f06-l3", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "none" }, 2.64);
+
+      /* ---- Scene 2 (3.39–5.93): ask / answer once, then the stop ---- */
+      tl.fromTo(S + "#f06-m3", { opacity: 0, scale: 0.8, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.5);
+      tl.fromTo(S + "#f06-m4", { opacity: 0, scale: 0.8, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.1);
+      // "dừng" @4.87 — gold stop-bar slams in, the window jolts
+      tl.fromTo(S + "#f06-stopbar", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.18, ease: "power3.out" }, 4.87);
+      tl.fromTo(S + "#f06-chat", { y: 10 }, { y: 0, duration: 0.3, ease: "power3.out", immediateRender: false }, 4.9);
+      // "lại" @5.04 — chip lands, the chat freezes
+      tl.fromTo(S + "#f06-stopchip", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 5.04);
+      tl.set(S + "#f06-status", { backgroundColor: "#8E93B5" }, 5.04);
+      tl.to(S + "#f06-list .f06-msg", { opacity: 0.45, duration: 0.35, ease: "power2.inOut" }, 5.1);
+      tl.to(S + "#f06-glow", { opacity: 0.2, duration: 0.5, ease: "power2.inOut" }, 5.1);
+
+      /* ---- Scene 3 (5.93–12.94): halves clear, chores pile onto "bạn" ---- */
+      tl.to(S + "#f06-chat", { x: 860, y: -10, scale: 0.55, opacity: 0.4, duration: 0.8, ease: "power2.inOut" }, 5.93);
+      tl.to(S + "#f06-void", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 5.93);
+      tl.to(S + "#f06-divider", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 5.93);
+      tl.to(S + "#f06-glow", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 5.93);
+      tl.fromTo(S + "#f06-cam", { scale: 1 }, { scale: 1.02, duration: 6.99, ease: "none" }, 5.94);
+      tl.fromTo(S + "#f06-me", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 6.05);
+      tl.fromTo(S + "#f06-kicker", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.15);
+
+      // chore cards drop onto the pile, each on its cue; the heap thuds on impact
+      var drops = [
+        ["#f06-c1", 7.69, -1.5],  // "tự làm"
+        ["#f06-c2", 9.18, 2],     // "mở file"
+        ["#f06-c3", 10.33, -2.5], // "tìm kiếm"
+        ["#f06-c4", 11.52, 1.5]   // "kiểm tra kết quả"
+      ];
+      drops.forEach(function (d) {
+        tl.fromTo(S + d[0],
+          { opacity: 0, y: -90, scale: 1.12, rotation: d[2] * 5 },
+          { opacity: 1, y: 0, scale: 1, rotation: d[2], duration: 0.42, ease: "power3.out" }, d[1]);
+        tl.fromTo(S + "#f06-heap", { y: 8 }, { y: 0, duration: 0.3, ease: "power3.out", immediateRender: false }, d[1] + 0.3);
+      });
+
+      // the pile tilts under its weight, then holds
+      tl.fromTo(S + "#f06-heap", { rotation: 0 }, { rotation: -3, duration: 0.7, ease: "power2.inOut" }, 12.15);
+
+      tl.to({}, { duration: 12.94 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-chatbot-chi-tra-loi"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,310 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f07-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(25, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f07-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f07-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f07-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f07-spk { position: absolute; display: block; }
+    .f07-spk svg { display: block; width: 100%; height: 100%; }
+    .f07-kicker {
+      position: absolute;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Scene 1 — one spark splits into a family */
+    #f07-s1-kick { left: 0; top: 110px; width: 1760px; text-align: center; opacity: 0; }
+    #f07-bigspark { left: 815px; top: 175px; width: 130px; height: 130px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f07-sp1 { left: 560px; top: 220px; width: 40px; height: 40px; opacity: 0; }
+    #f07-sp2 { left: 755px; top: 215px; width: 50px; height: 50px; opacity: 0; }
+    #f07-sp3 { left: 949px; top: 209px; width: 62px; height: 62px; opacity: 0; }
+    #f07-sp4 { left: 1142px; top: 202px; width: 76px; height: 76px; opacity: 0; }
+    #f07-s1-title {
+      position: absolute;
+      left: 0; top: 400px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 128px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-top: 8px;
+    }
+    #f07-s1-title span { display: inline-block; opacity: 0; }
+
+    /* Scene 2 — four paper cards, one size step larger each */
+    .f07-card {
+      position: absolute;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f07-card1 { left: 50px;   top: 400px; width: 300px; height: 300px; }
+    #f07-card2 { left: 400px;  top: 330px; width: 350px; height: 370px; }
+    #f07-card3 { left: 800px;  top: 260px; width: 400px; height: 440px; }
+    #f07-card4 { left: 1250px; top: 180px; width: 460px; height: 520px; border: 2px solid var(--gold); }
+    #f07-slot4 {
+      position: absolute;
+      left: 1250px; top: 180px; width: 460px; height: 520px;
+      box-sizing: border-box;
+      border: 2px dashed rgba(240,238,230,.28);
+      border-radius: 16px;
+      opacity: 0;
+    }
+    .f07-idx { position: absolute; left: 36px; top: 28px; font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em; color: var(--muted); }
+    .f07-segs { position: absolute; left: 36px; top: 84px; display: flex; gap: 8px; }
+    .f07-seg { position: relative; width: 40px; height: 10px; border-radius: 5px; background: rgba(240,238,230,.12); overflow: hidden; }
+    .f07-seg i { position: absolute; left: 0; top: 0; width: 40px; height: 10px; border-radius: 5px; background: var(--ink); transform-origin: 0 50%; }
+    .f07-name { position: absolute; left: 36px; bottom: 30px; font-family: "Lora", serif; font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; white-space: nowrap; padding-top: 6px; }
+    #f07-card1 .f07-name { font-size: 52px; }
+    #f07-card2 .f07-name { font-size: 58px; }
+    #f07-card3 .f07-name { font-size: 66px; }
+    #f07-card4 .f07-name { font-size: 82px; }
+    #f07-card4-spk { right: 34px; top: 26px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f07-card4-kick { left: 36px; top: 124px; opacity: 0; }
+
+    /* Scene 3 — the row becomes a staircase */
+    #f07-s3-svg { opacity: 1; }
+    .f07-station {
+      position: absolute;
+      font-size: 30px;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f07-st1 { left: 64px;  top: 660px; }
+    #f07-st2 { left: 304px; top: 520px; }
+    #f07-st3 { left: 544px; top: 380px; }
+    #f07-st4 { left: 784px; top: 240px; }
+    #f07-topglow {
+      position: absolute;
+      left: 700px; top: 110px;
+      width: 360px; height: 220px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(217,119,87,.34), rgba(217,119,87,0) 68%);
+      opacity: 0;
+    }
+    #f07-climber { left: 138px; top: 590px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f07-strong {
+      position: absolute;
+      left: 1270px; top: 300px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-top: 8px;
+    }
+    #f07-strong span { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="07-ho-nha-claude" data-width="1920" data-height="1080" data-duration="13.799">
+    <div id="f07-ground" class="clip" data-start="0" data-duration="13.799" data-track-index="0"></div>
+    <div id="f07-stage" class="clip" data-start="0" data-duration="13.799" data-track-index="1">
+
+      <!-- Scene 1: one spark -> four sparks -> "Họ mô hình" -->
+      <div id="f07-s1" class="f07-layer">
+        <div id="f07-s1-kick" class="f07-kicker">Claude</div>
+        <div id="f07-s1-sparks" class="f07-layer">
+          <div id="f07-bigspark" class="f07-spk f07-spark"></div>
+          <div id="f07-sp1" class="f07-spk f07-spark"></div>
+          <div id="f07-sp2" class="f07-spk f07-spark"></div>
+          <div id="f07-sp3" class="f07-spk f07-spark"></div>
+          <div id="f07-sp4" class="f07-spk f07-spark"></div>
+        </div>
+        <div id="f07-s1-title"><span id="f07-w-ho">Họ</span> <span id="f07-w-mo">mô</span> <span id="f07-w-hinh">hình</span></div>
+      </div>
+
+      <!-- Scene 2: four model cards growing left -> right -->
+      <div id="f07-s2" class="f07-layer">
+        <div id="f07-slot4"></div>
+        <div id="f07-card1" class="f07-card">
+          <div class="f07-idx">01</div>
+          <div class="f07-segs"><span class="f07-seg"><i></i></span><span class="f07-seg"></span><span class="f07-seg"></span><span class="f07-seg"></span></div>
+          <div class="f07-name">Haiku</div>
+        </div>
+        <div id="f07-card2" class="f07-card">
+          <div class="f07-idx">02</div>
+          <div class="f07-segs"><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span><span class="f07-seg"></span><span class="f07-seg"></span></div>
+          <div class="f07-name">Sonnet</div>
+        </div>
+        <div id="f07-card3" class="f07-card">
+          <div class="f07-idx">03</div>
+          <div class="f07-segs"><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span><span class="f07-seg"></span></div>
+          <div class="f07-name">Opus</div>
+        </div>
+        <div id="f07-card4" class="f07-card">
+          <div class="f07-idx">04</div>
+          <div id="f07-card4-spk" class="f07-spk f07-spark"></div>
+          <div class="f07-segs"><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span><span class="f07-seg"><i></i></span></div>
+          <div id="f07-card4-kick" class="f07-kicker">Cao nhất</div>
+          <div class="f07-name">Fable</div>
+        </div>
+      </div>
+
+      <!-- Scene 3: staircase journey + rising arrow -->
+      <div id="f07-s3" class="f07-layer">
+        <div id="f07-topglow"></div>
+        <svg id="f07-s3-svg" class="f07-svgfull" viewBox="0 0 1760 820">
+          <path id="f07-stair-fill" d="M40 720 L40 640 L280 640 L280 500 L520 500 L520 360 L760 360 L760 220 L1000 220 L1000 720 Z" fill="#2A2926" stroke="none" opacity="0"/>
+          <path id="f07-stair" d="M40 720 L41 641 Q160 636 279 641 L281 501 Q400 496 519 501 L521 361 Q640 356 759 361 L761 221 Q880 216 1000 221 L1001 720 Q520 724 40 720" fill="none" stroke="#F0EEE6" stroke-opacity="0.7" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f07-toptread" d="M762 219 Q880 213 999 219" fill="none" stroke="#D97757" stroke-width="6" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f07-arrow" d="M1140 722 C 1158 600, 1128 470, 1162 350 S 1196 220, 1204 176" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f07-arrowhead" d="M1168 214 Q1188 194 1205 172 Q1218 196 1236 218" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f07-st1" class="f07-station">Haiku</div>
+        <div id="f07-st2" class="f07-station">Sonnet</div>
+        <div id="f07-st3" class="f07-station">Opus</div>
+        <div id="f07-st4" class="f07-station">Fable</div>
+        <div id="f07-climber" class="f07-spk f07-spark"></div>
+        <div id="f07-strong"><span id="f07-w-manh">Mạnh</span> <span id="f07-w-hon">hơn</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="07-ho-nha-claude"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f07-spark').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // tier segments start empty; they fill after each card lands
+      gsap.set(qa('.f07-seg i'), { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+
+      // ---- Scene 1 (0–3.91) kinetic: one spark, "không phải một" -> four sparks, "Họ mô hình"
+      tl.fromTo('#f07-bigspark', popFrom, popTo, 0.1);
+      tl.fromTo('#f07-s1-kick', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 0.31);
+      // split on "một," (0.915)
+      tl.to('#f07-bigspark', { scale: 0.2, rotation: 45, opacity: 0, duration: 0.35, ease: 'power2.in' }, 0.92);
+      [['#f07-sp1', 300], ['#f07-sp2', 100], ['#f07-sp3', -100], ['#f07-sp4', -300]].forEach(function (s, i) {
+        tl.fromTo(s[0], { x: s[1], scale: 0, rotation: -40, opacity: 0 },
+          { x: 0, scale: 1, rotation: 0, opacity: 1, duration: 0.6, ease: IN }, 1.0 + i * 0.07);
+      });
+      tl.fromTo('#f07-s1-sparks', { scale: 1 }, { scale: 1.04, transformOrigin: '880px 240px', duration: 2.2, ease: 'power1.inOut' }, 1.3);
+      // "Họ" 2.125 · "mô" 2.347 · "hình" 2.508
+      tl.fromTo('#f07-w-ho', { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 2.13);
+      tl.fromTo('#f07-w-mo', { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 2.35);
+      tl.fromTo('#f07-w-hinh', { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 2.51);
+      // inverse zoom out of the kinetic shot before the cards
+      tl.to('#f07-s1', { scale: 0.86, opacity: 0, filter: 'blur(8px)', transformOrigin: '880px 380px', duration: 0.4, ease: 'power2.in' }, 3.48);
+
+      // ---- Scene 2 (3.91–9.24) cards: cascade on each model name
+      var cards = [
+        ['#f07-card1', 3.91, 0.94],
+        ['#f07-card2', 4.80, 0.94],
+        ['#f07-card3', 5.52, 0.94],
+        ['#f07-card4', 7.02, 0.84]
+      ];
+      cards.forEach(function (c) {
+        tl.fromTo(c[0], { y: 90, scale: c[2], opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.55, ease: IN }, c[1]);
+        tl.fromTo(qa(c[0] + ' .f07-seg i'), { scaleX: 0 }, { scaleX: 1, duration: 0.22, ease: 'power2.out', stagger: 0.08 }, c[1] + 0.3);
+      });
+      // empty top slot waits while "bậc cao nhất" is said (cao 6.462)
+      tl.fromTo('#f07-slot4', { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out' }, 6.46);
+      tl.set('#f07-slot4', { opacity: 0 }, 7.4);
+      // Fable pops its spark and glows
+      tl.fromTo('#f07-card4-spk', popFrom, popTo, 7.22);
+      tl.fromTo('#f07-card4', { filter: 'drop-shadow(0 0 0px rgba(217,119,87,0))' }, { filter: 'drop-shadow(0 0 22px rgba(217,119,87,0.45))', duration: 0.5, ease: 'power2.out' }, 7.3);
+      tl.fromTo('#f07-card4-kick', { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 7.4);
+      // row reads still with a faint push-in
+      tl.fromTo('#f07-s2', { scale: 1 }, { scale: 1.015, transformOrigin: '880px 440px', duration: 0.8, ease: 'power1.inOut' }, 7.6);
+
+      // ---- Scene 3 (≈8.45–13.3) journey: the row tilts into a staircase
+      var moves = [
+        ['#f07-card1', -40, 30],
+        ['#f07-card2', -175, -75],
+        ['#f07-card3', -360, -180],
+        ['#f07-card4', -600, -280]
+      ];
+      moves.forEach(function (m, i) {
+        tl.to(m[0], { x: m[1], y: m[2], scale: 0.3, opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 8.45 + i * 0.05);
+      });
+      tl.fromTo('#f07-stair', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: 'none' }, 8.5);
+      tl.fromTo('#f07-stair-fill', { opacity: 0 }, { opacity: 0.9, duration: 0.5, ease: 'power2.out' }, 8.7);
+      ['#f07-st1', '#f07-st2', '#f07-st3', '#f07-st4'].forEach(function (s, i) {
+        tl.fromTo(s, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, 8.85 + i * 0.08);
+      });
+      // spark lands on the first station
+      tl.fromTo('#f07-climber', popFrom, popTo, 9.1);
+      // "mạnh." 9.237: arrow rises beside the stairs, label "Mạnh"
+      tl.fromTo('#f07-arrow', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: 'none' }, 9.24);
+      tl.fromTo('#f07-arrowhead', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: 'none' }, 9.82);
+      tl.fromTo('#f07-w-manh', { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 9.24);
+      // spark climbs station to station
+      [9.6, 10.5, 11.45].forEach(function (t, k) {
+        var baseY = -140 * (k + 1);
+        tl.to('#f07-climber', { x: 240 * (k + 1), duration: 0.5, ease: 'power2.inOut' }, t);
+        tl.to('#f07-climber', { y: baseY - 60, duration: 0.3, ease: 'power2.out' }, t);
+        tl.to('#f07-climber', { y: baseY, duration: 0.2, ease: 'power2.in' }, t + 0.3);
+        tl.to('#f07-climber', { rotation: 90 * (k + 1), duration: 0.5, ease: 'power2.inOut' }, t);
+      });
+      // "mạnh" 12.095: top station glows · "hơn" 12.277
+      tl.fromTo('#f07-toptread', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 12.1);
+      tl.fromTo('#f07-topglow', { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN }, 12.1);
+      tl.set('#f07-st4', { color: '#F0EEE6' }, 12.1);
+      tl.to('#f07-climber', { scale: 1.5, duration: 0.4, ease: IN }, 12.1);
+      tl.fromTo('#f07-w-manh', { scale: 1 }, { scale: 1.05, transformOrigin: '0% 60%', duration: 0.18, ease: 'power2.out' }, 12.1);
+      tl.to('#f07-w-manh', { scale: 1, duration: 0.3, ease: 'power2.inOut' }, 12.28);
+      tl.fromTo('#f07-w-hon', { y: 44, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 12.28);
+      // hold with a faint drift
+      tl.fromTo('#f07-s3', { scale: 1 }, { scale: 1.012, transformOrigin: '880px 420px', duration: 0.5, ease: 'power1.out' }, 12.79);
+
+      tl.to({}, { duration: 13.299 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["07-ho-nha-claude"] = tl;
+    })();
+  </script>
+</template>

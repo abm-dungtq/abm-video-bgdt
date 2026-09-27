@@ -1,0 +1,302 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f46-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f46-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f46-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f46-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f46-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f46-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f46-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f46-spark { display: block; overflow: visible; }
+    .f46-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* the pinned note (hero) */
+    #f46-notew { position: absolute; left: 240px; top: 110px; width: 560px; height: 440px; }
+    #f46-glow {
+      position: absolute; left: -90px; top: -70px; width: 740px; height: 580px; opacity: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(217,119,87,.30), rgba(217,119,87,0) 62%);
+    }
+    #f46-note {
+      position: absolute; inset: 0; box-sizing: border-box; opacity: 0;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      padding: 58px 48px 0 48px;
+    }
+    #f46-head {
+      font: 400 40px/1.2 "JetBrains Mono", monospace; letter-spacing: .02em; color: #F0EEE6;
+      white-space: nowrap; opacity: 0;
+    }
+    #f46-hrule { margin-top: 18px; height: 2px; background: rgba(240,238,230,.14); transform-origin: 0 50%; }
+    .f46-row { display: flex; align-items: center; gap: 18px; margin-top: 30px; }
+    .f46-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: #9A968C; opacity: 0; }
+    .f46-bar { height: 14px; border-radius: 7px; background: rgba(240,238,230,.22); transform-origin: 0 50%; }
+    #f46-pin {
+      position: absolute; left: 263px; top: -17px; width: 34px; height: 34px; border-radius: 50%;
+      background: radial-gradient(circle at 36% 34%, #EBA488 0%, #D97757 48%, #A9523A 100%);
+      box-shadow: 0 6px 12px rgba(0,0,0,.45);
+    }
+
+    /* scene 1 — right text */
+    #f46-s1txt { position: absolute; left: 1000px; top: 170px; width: 740px; height: 420px; }
+    #f46-title {
+      position: absolute; left: 0; top: 0; white-space: nowrap;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    .f46-w { display: inline-block; opacity: 0; }
+    #f46-ul { position: absolute; left: -8px; top: 112px; width: 600px; height: 40px; overflow: visible; }
+    .f46-draw { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f46-every {
+      position: absolute; left: 0; top: 250px; white-space: nowrap;
+      font: 600 56px/1.2 "Be Vietnam Pro", sans-serif; color: #8FB8A8;
+    }
+    #f46-every .f46-w { margin-right: 18px; }
+
+    /* scene 1 — session cards beneath the note */
+    #f46-ties { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f46-tie { fill: none; stroke: #8FB8A8; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .85; }
+    .f46-sess {
+      position: absolute; top: 640px; width: 200px; height: 96px; box-sizing: border-box; opacity: 0;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(143,184,168,.45);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center;
+      font: 600 30px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f46-se1 { left: 200px; }
+    #f46-se2 { left: 420px; }
+    #f46-se3 { left: 640px; }
+
+    /* scene 2 — left: repeated reminders, struck through */
+    #f46-divider { position: absolute; left: 879px; top: 120px; width: 2px; height: 620px; background: rgba(240,238,230,.10); opacity: 0; transform-origin: 50% 0; }
+    .f46-bub { position: absolute; width: 470px; height: 120px; opacity: 0; }
+    .f46-bub-box {
+      position: absolute; inset: 0; box-sizing: border-box; border-radius: 22px;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.10);
+      display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 0 40px;
+    }
+    .f46-bub-tail { position: absolute; left: 44px; top: 112px; width: 36px; height: 30px; overflow: visible; }
+    .f46-bub-bar { height: 13px; border-radius: 7px; background: rgba(154,150,140,.45); }
+    #f46-bb1 { left: 110px; top: 150px; }
+    #f46-bb2 { left: 190px; top: 330px; }
+    #f46-bb3 { left: 270px; top: 510px; }
+    #f46-strike { position: absolute; left: 0; top: 0; width: 900px; height: 820px; overflow: visible; }
+    #f46-daily {
+      position: absolute; left: 270px; top: 700px; opacity: 0; white-space: nowrap;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+    }
+
+    /* scene 2 — key text over the right half */
+    #f46-key {
+      position: absolute; left: 940px; top: 540px; width: 720px; height: 150px;
+      display: flex; align-items: center; justify-content: center; gap: 26px;
+      font: 700 120px/1.08 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #f46-key .f46-spark { width: 44px; height: 44px; opacity: 0; flex: none; }
+  </style>
+
+  <div id="root" data-composition-id="46-claude-md-bang-noi-quy" data-width="1920" data-height="1080" data-duration="9.996">
+    <div id="f46-ground" class="clip" data-start="0" data-duration="9.996" data-track-index="0"></div>
+    <div id="f46-stage" class="clip" data-start="0" data-duration="9.996" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f46-rail">
+        <div id="f46-pill1" class="f46-pill"><span id="f46-b1" class="f46-badge">1</span>Tính năng<svg id="f46-ps1" class="f46-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f46-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f46-pill2" class="f46-pill"><span id="f46-b2" class="f46-badge">2</span>Vì sao nổi bật<svg id="f46-ps2" class="f46-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f46-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f46-pill3" class="f46-pill"><span id="f46-b3" class="f46-badge">3</span>Bạn được gì<svg id="f46-ps3" class="f46-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1 support: sage ties + session cards -->
+      <div id="f46-s1low">
+        <svg id="f46-ties" viewBox="0 0 1760 820">
+          <path class="f46-tie" id="f46-tie1" pathLength="1" d="M 470 556 C 440 600, 320 590, 300 638"/>
+          <path class="f46-tie" id="f46-tie2" pathLength="1" d="M 520 556 C 530 585, 512 610, 520 638"/>
+          <path class="f46-tie" id="f46-tie3" pathLength="1" d="M 570 556 C 600 600, 720 590, 740 638"/>
+        </svg>
+        <div class="f46-sess" id="f46-se1">phiên 1</div>
+        <div class="f46-sess" id="f46-se2">phiên 2</div>
+        <div class="f46-sess" id="f46-se3">phiên 3</div>
+      </div>
+
+      <!-- Scene 1 right text -->
+      <div id="f46-s1txt">
+        <div id="f46-title"><span class="f46-w" id="f46-t1">bảng</span> <span class="f46-w" id="f46-t2">nội</span> <span class="f46-w" id="f46-t3">quy</span></div>
+        <svg id="f46-ul" viewBox="0 0 600 40"><path class="f46-draw" id="f46-ulp" pathLength="1" d="M8 22 C 90 12, 190 30, 300 20 S 480 12, 590 24"/></svg>
+        <div id="f46-every"><span class="f46-w" id="f46-e1">mọi</span><span class="f46-w" id="f46-e2">phiên</span></div>
+      </div>
+
+      <!-- Scene 2 left: repeated reminders -->
+      <div id="f46-divider"></div>
+      <div class="f46-bub" id="f46-bb1">
+        <div class="f46-bub-box"><div class="f46-bub-bar" style="width: 330px"></div><div class="f46-bub-bar" style="width: 220px"></div></div>
+        <svg class="f46-bub-tail" viewBox="0 0 36 30"><path d="M0 0 L36 0 L6 30 Z" fill="#2A2926"/></svg>
+      </div>
+      <div class="f46-bub" id="f46-bb2">
+        <div class="f46-bub-box"><div class="f46-bub-bar" style="width: 330px"></div><div class="f46-bub-bar" style="width: 220px"></div></div>
+        <svg class="f46-bub-tail" viewBox="0 0 36 30"><path d="M0 0 L36 0 L6 30 Z" fill="#2A2926"/></svg>
+      </div>
+      <div class="f46-bub" id="f46-bb3">
+        <div class="f46-bub-box"><div class="f46-bub-bar" style="width: 330px"></div><div class="f46-bub-bar" style="width: 220px"></div></div>
+        <svg class="f46-bub-tail" viewBox="0 0 36 30"><path d="M0 0 L36 0 L6 30 Z" fill="#2A2926"/></svg>
+      </div>
+      <svg id="f46-strike" viewBox="0 0 900 820"><path class="f46-draw" id="f46-strk" pathLength="1" style="stroke-width: 5" d="M 100 150 C 300 260, 400 380, 500 420 S 700 600, 760 680"/></svg>
+      <div id="f46-daily">MỖI NGÀY</div>
+
+      <!-- the pinned note (hero, persists across both shots) -->
+      <div id="f46-notew">
+        <div id="f46-glow"></div>
+        <div id="f46-note">
+          <div id="f46-head">CLAUDE.md</div>
+          <div id="f46-hrule"></div>
+          <div class="f46-row"><span class="f46-dot"></span><span class="f46-bar" style="width: 380px"></span></div>
+          <div class="f46-row"><span class="f46-dot"></span><span class="f46-bar" style="width: 300px"></span></div>
+          <div class="f46-row"><span class="f46-dot"></span><span class="f46-bar" style="width: 410px"></span></div>
+          <div class="f46-row"><span class="f46-dot"></span><span class="f46-bar" style="width: 250px"></span></div>
+          <div class="f46-row"><span class="f46-dot"></span><span class="f46-bar" style="width: 340px"></span></div>
+          <div id="f46-pin"></div>
+        </div>
+      </div>
+
+      <!-- Scene 2 key text -->
+      <div id="f46-key"><span class="f46-w" id="f46-k1">quy</span><span class="f46-w" id="f46-k2">ước</span><svg class="f46-spark" id="f46-ks" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="46-claude-md-bang-noi-quy"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // initial states (before the timeline)
+      gsap.set(q("#f46-pin"), { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(qa("#f46-note .f46-bar"), { scaleX: 0 });
+      gsap.set(q("#f46-hrule"), { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light each slot (0.3 s); slot 3 waits for "Bạn được gì" (6.10) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f46-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f46-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f46-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 0.1);
+      lightRail(2, 3.1);
+      lightRail(3, 6.1);
+
+      // ---- Scene 1 (0–5.6): the note drops, pin pops, rules get written ----
+      var note = q("#f46-note");
+      tl.fromTo(note, { opacity: 0, y: -60, rotation: -7 }, { opacity: 1, y: 0, rotation: -2, duration: 0.45, ease: "power3.out", transformOrigin: "50% 0%" }, 0.0);
+      tl.fromTo(q("#f46-head"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.31);
+      tl.fromTo(q("#f46-pin"), { scale: 0 }, { scale: 1, duration: 0.3, ease: "power3.out" }, 0.4);
+      tl.fromTo(q("#f46-hrule"), { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out" }, 0.6);
+      var bars = qa("#f46-note .f46-bar"), dots = qa("#f46-note .f46-dot");
+      var barT = [1.62, 1.96, 2.15, 2.49, 2.81];
+      for (var i = 0; i < bars.length; i++) {
+        tl.fromTo(dots[i], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, barT[i]);
+        tl.fromTo(bars[i], { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power3.out" }, barT[i] + 0.04);
+      }
+
+      // "bảng nội quy" word by word + hand-drawn underline
+      tl.fromTo(q("#f46-t1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.62);
+      tl.fromTo(q("#f46-t2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.82);
+      tl.fromTo(q("#f46-t3"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.96);
+      tl.fromTo(q("#f46-ulp"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.05);
+      tl.fromTo(q("#f46-title"), { scale: 1 }, { scale: 1.02, duration: 2.3, ease: "none", transformOrigin: "0% 50%" }, 2.5); // quiet drift
+
+      // "mọi phiên": three sessions tie back to the note
+      tl.fromTo(q("#f46-e1"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 4.82);
+      tl.fromTo(q("#f46-e2"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.0);
+      [["#f46-se1", "#f46-tie1", 4.82], ["#f46-se2", "#f46-tie2", 4.94], ["#f46-se3", "#f46-tie3", 5.06]].forEach(function (s) {
+        tl.fromTo(q(s[0]), { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, s[2]);
+        tl.fromTo(q(s[1]), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, s[2] + 0.1);
+      });
+
+      // ---- shot change (5.6–6.2): split 50/50, note glides to the right half ----
+      tl.to(q("#f46-s1txt"), { opacity: 0, x: 60, duration: 0.35, ease: "power2.in" }, 5.6);
+      tl.to(q("#f46-s1low"), { opacity: 0, y: 30, duration: 0.35, ease: "power2.in" }, 5.6);
+      tl.fromTo(q("#f46-notew"), { x: 0, y: 0, scale: 1 }, { x: 780, y: -10, scale: 0.86, duration: 0.65, ease: "power2.inOut", transformOrigin: "50% 0%", immediateRender: false }, 5.65);
+      tl.to(note, { rotation: 0, duration: 0.65, ease: "power2.inOut" }, 5.65);
+      tl.fromTo(q("#f46-divider"), { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.5, ease: "power3.out" }, 5.9);
+
+      // left: the same reminder, over and over
+      [["#f46-bb1", 5.85], ["#f46-bb2", 6.05], ["#f46-bb3", 6.25]].forEach(function (b) {
+        tl.fromTo(q(b[0]), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, b[1]);
+      });
+
+      // right: the note lights up ("Bạn được gì?")
+      tl.fromTo(q("#f46-glow"), { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 6.24);
+      tl.fromTo(note, { borderColor: "rgba(240,238,230,0.10)" }, { borderColor: "rgba(217,119,87,0.85)", duration: 0.5, ease: "power2.out", immediateRender: false }, 6.24);
+
+      // "Không phải nhắc lại": the stroke strikes the reminders out
+      tl.fromTo(q("#f46-strk"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.65, ease: "none" }, 7.0);
+      tl.to(qa(".f46-bub"), { opacity: 0.4, duration: 0.4, ease: "power2.out" }, 7.65);
+
+      // "quy ước" lands over the right half with the spark
+      tl.fromTo(q("#f46-k1"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.67);
+      tl.fromTo(q("#f46-k2"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.85);
+      tl.fromTo(q("#f46-ks"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 7.85);
+
+      // "mỗi ngày" under the struck reminders, then hold
+      tl.fromTo(q("#f46-daily"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 8.33);
+      tl.fromTo(q("#f46-key"), { scale: 1 }, { scale: 1.015, duration: 1.1, ease: "none" }, 8.35);
+
+      tl.to({}, { duration: 9.496 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["46-claude-md-bang-noi-quy"] = tl;
+    })();
+  </script>
+</template>

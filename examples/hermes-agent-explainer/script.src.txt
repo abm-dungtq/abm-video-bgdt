@@ -1,0 +1,286 @@
+// Authoring source for script.json. Build: node tools/src-to-script.mjs script.src.txt script.json
+// Format: "# chapter | title | level", "## id | scene_hint | frame title", "> visual note",
+// one sentence per line, *keyword* marks on-screen key text, {F-NN} cites the fact sheet.
+
+# ch0 | Mở đầu | basic
+## 1 | title | Hermes Agent – từ cơ bản đến nâng cao
+Chào mừng bạn đến với bài học về *Hermes* *Agent*.
+## 2 | kinetic | Một trợ lý biết tự học
+> Hook: a helper that never forgets; the courier trail writes "tự học".
+Hãy tưởng tượng bạn có một trợ lý *không* *bao* *giờ* *quên*. {F-04}
+Mỗi lần làm xong một việc khó, nó tự rút ra *kinh* *nghiệm* cho lần sau. {F-04}
+Đó chính là *Hermes* *Agent*, do *Nous* *Research* tạo ra. {F-01}
+## 3 | stat | Miễn phí và chạy ở đâu cũng được
+> MIT badge; three devices light up: laptop, $5 VPS, cloud.
+Hermes là phần mềm *mã* *nguồn* *mở*, theo giấy phép *MIT*. {F-02}
+Bạn có thể chạy nó trên máy tính cá nhân, một máy chủ *năm* *đô* *la*, hay trên *đám* *mây*. {F-06}
+Và Hermes *không* *thu* *thập* dữ liệu sử dụng của bạn. {F-88}
+## 4 | anchor | Sau bài học này
+> Learning objectives checklist, three items tick in on cue.
+Sau mười phút, bạn sẽ hiểu *agent* là gì và khác *chatbot* ra sao.
+Bạn sẽ biết cách *cài* *đặt*, trò chuyện, và dạy Hermes *tự* *học*.
+Và bạn sẽ nắm được những *điểm* *nổi* *bật* nâng cao của nó.
+
+# ch1 | Agent là gì? | basic
+## 5 | title | Agent là gì?
+Chương một: *agent* là gì?
+## 6 | split | Chatbot chỉ trả lời
+> Left side only for now: a chat bubble answers and stops.
+Một *chatbot* thông thường chỉ biết *trả* *lời* câu hỏi của bạn.
+Bạn hỏi, nó đáp, rồi *dừng* *lại* ở đó.
+Mọi việc còn lại, bạn vẫn phải *tự* *làm*.
+Nó không tự mở file, không tự *tìm* *kiếm*, cũng không tự *kiểm* *tra* kết quả.
+## 7 | metaphor | Agent thì bắt tay vào làm
+> An assistant figure picks up tools from a belt; counter "60+".
+Còn *agent* thì khác: nó *bắt* *tay* *vào* *làm* việc.
+Giống như một người trợ lý thật, nó có *công* *cụ* trong tay. {F-29}
+Hermes có sẵn *hơn* *sáu* *mươi* công cụ, từ đọc file đến tìm kiếm trên mạng. {F-29,F-30}
+## 8 | flow | Vòng lặp của một agent
+> Circular loop: suy nghĩ → hành động → quan sát, a spark runs around it.
+Mỗi agent làm việc theo một *vòng* *lặp* đơn giản.
+Đầu tiên, nó *suy* *nghĩ* xem cần làm gì.
+Sau đó, nó *hành* *động* bằng một công cụ.
+Rồi nó *quan* *sát* kết quả, và lặp lại cho đến khi xong việc.
+Nhờ vòng lặp này, agent có thể *tự* *sửa* *sai* khi gặp kết quả bất ngờ.
+## 9 | typewriter | Một ví dụ đời thường
+> The request types itself; three step chips appear: tìm, đọc, viết.
+Ví dụ, bạn nhờ nó tóm tắt *tin* *tức* AI hôm nay.
+Agent sẽ tự *tìm* *kiếm*, *đọc* từng bài, rồi *viết* bản tóm tắt.
+Bạn chỉ cần *giao* *việc*, không cần chỉ từng bước.
+Nếu một trang web không mở được, nó sẽ *thử* *nguồn* *khác*.
+## 10 | zoom | Hermes không chỉ là chatbot
+> Zoom out from a chat bubble to a whole autonomous workspace.
+Tài liệu của Hermes nói rõ: đây không phải một *chatbot* bọc quanh một API. {F-08}
+Nó là một *agent* *tự* *chủ*, càng chạy lâu càng *giỏi* hơn. {F-08}
+## 11 | anchor | Tóm tắt chương một
+Tóm lại: chatbot *trả* *lời*, còn agent *làm* *việc*.
+
+# ch2 | Cài đặt và trò chuyện đầu tiên | basic
+## 12 | title | Cài đặt và trò chuyện đầu tiên
+Chương hai: cài đặt và *trò* *chuyện* đầu tiên.
+## 13 | terminal | Một dòng lệnh là xong
+> Two terminal tabs: PowerShell one-liner, then the curl one-liner (from the fact sheet).
+Cài Hermes chỉ cần *một* *dòng* *lệnh*. {F-13,F-14}
+Trên Windows, bạn mở *PowerShell* và dán lệnh cài đặt vào. {F-14}
+Trên Linux hay macOS, bạn dùng lệnh *curl* tương tự. {F-13}
+Sau vài phút, lệnh *hermes* đã sẵn sàng trên máy của bạn. {F-15}
+## 0 | journey | Cách nhanh nhất cho người mới
+> Three doors: Quick Setup (Nous Portal), Full Setup, Blank Slate; the trail walks through the first.
+Cách nhanh nhất cho người mới là lệnh *hermes* *setup*. {F-21}
+Trình thiết lập có *ba* *lựa* *chọn*: cài nhanh với Nous Portal, cài đầy đủ, hoặc bắt đầu trống. {F-21}
+Với Nous Portal, bạn có *hơn* *ba* *trăm* mô hình trong một gói đăng ký. {F-20}
+## 14 | cards | Trình cài đặt lo hết
+> Package cards drop into a box: Python, Node.js, Git Bash, ripgrep, ffmpeg.
+Trình cài đặt tự chuẩn bị *mọi* *thứ* cần thiết. {F-28}
+Python, Node, Git và các công cụ khác đều được cài sẵn, không cần quyền *quản* *trị*. {F-28}
+Bạn không phải tự cài từng thứ một, rất phù hợp cho *người* *mới*. {F-28}
+## 15 | terminal | Chọn bộ não cho Hermes
+> Replay of capture/terminal/model-help.txt, provider names ticker.
+Tiếp theo, bạn gõ *hermes* *model* để chọn *mô* *hình* AI. {F-18}
+Hermes dùng được *rất* *nhiều* nhà cung cấp, như OpenRouter, Anthropic hay Nous Portal. {F-25}
+Muốn đổi mô hình, bạn *không* *cần* *sửa* *code*. {F-07}
+Bạn có thể đổi bất cứ lúc nào, *không* *bị* *ràng* *buộc* vào một hãng nào. {F-07}
+## 16 | stat | Lưu ý về bộ nhớ ngữ cảnh
+> Count-up to 64,000 tokens; a small model is bounced away.
+Một lưu ý nhỏ: mô hình cần *ngữ* *cảnh* ít nhất *sáu* *mươi* *tư* *nghìn* token. {F-17}
+Mô hình nhỏ hơn sẽ bị *từ* *chối* ngay khi khởi động. {F-17}
+Vì vậy, hãy chọn mô hình có *ngữ* *cảnh* *đủ* *lớn* ngay từ đầu. {F-17}
+## 17 | split | Hai giao diện dòng lệnh
+> Classic CLI vs TUI side by side; the slash autocomplete dropdown pops.
+Sau đó, chỉ cần gõ *hermes* là bắt đầu trò chuyện. {F-23}
+Nếu thích giao diện hiện đại hơn, bạn thêm tùy chọn *tui*. {F-23}
+Cả hai đều *tự* *động* *gợi* *ý* lệnh khi bạn gõ dấu gạch chéo. {F-27}
+Muốn tiếp tục cuộc trò chuyện hôm trước, bạn thêm tùy chọn *continue*. {F-24}
+## 18 | zoom | Thanh trạng thái
+> Zoom into the status bar; model, tokens, context bar, cost light up in order.
+Ở dưới màn hình, *thanh* *trạng* *thái* cho bạn biết mô hình đang dùng. {F-26}
+Nó còn hiện số token, mức đầy của ngữ cảnh, và *chi* *phí* ước tính. {F-26}
+## 0 | split | Khóa bí mật và cài đặt
+> Two drawers: a locked .env (secrets) and an open config.yaml (settings).
+Các *khóa* *bí* *mật*, như khóa API, được lưu riêng trong tệp *env*. {F-22}
+Còn các cài đặt thông thường nằm trong tệp *config*. {F-22}
+## 19 | anchor | Tóm tắt chương hai
+Nhớ nhé: *cài* *đặt*, *chọn* *mô* *hình*, rồi *trò* *chuyện*.
+
+# ch3 | Công cụ và bộ công cụ | basic
+## 20 | title | Công cụ và bộ công cụ
+Chương ba: *công* *cụ* và bộ công cụ.
+## 21 | cards | Những công cụ quen thuộc
+> Tool cards deal in: file, terminal, web, ảnh, Python.
+Công cụ là *đôi* *tay* của agent.
+Hermes có công cụ để *đọc* và *ghi* file, chạy lệnh trong *terminal*, và *duyệt* *web*. {F-30,F-31,F-35}
+Nó còn có thể *tạo* *ảnh*, *đọc* *ảnh*, và *chạy* *code* Python. {F-35}
+## 22 | metaphor | Bộ công cụ là gì?
+> Tools fly into labelled toolboxes.
+Các công cụ được gom thành từng nhóm, gọi là *toolset*. {F-12}
+Bạn có thể hình dung toolset như những *hộp* *đồ* *nghề*. {F-12}
+Mỗi hộp phục vụ một kiểu *công* *việc* riêng. {F-12}
+Có hộp cho *lập* *trình*, hộp cho *tìm* *kiếm*, và hộp *chỉ* *để* *đọc*. {F-32,F-36}
+## 23 | hub | Hộp đồ nghề cho lập trình
+> Hub "coding" with spokes; then a small locked hub "safe".
+Ví dụ, toolset *coding* gom công cụ về file, terminal, web, trình duyệt và bộ nhớ. {F-32}
+Còn toolset *safe* chỉ cho phép *tìm* *kiếm* và *đọc*, không được sửa gì trên máy. {F-36}
+Mỗi máy chủ *MCP* bạn thêm vào cũng trở thành *một* *toolset* riêng. {F-37}
+## 24 | terminal | Bật tắt công cụ
+> Curses-style toggle list; one toolset flips off.
+Gõ lệnh *hermes* *tools* để bật hoặc tắt từng bộ công cụ. {F-33}
+Ngay trong cuộc trò chuyện, bạn cũng đổi được bằng lệnh *tools*. {F-34}
+Ví dụ, bạn có thể *tắt* *trình* *duyệt* khi không cần đến nó. {F-34}
+## 25 | kinetic | Vì sao nên chọn lọc?
+Vì sao phải chọn lọc? Vì agent chỉ làm được những gì bạn *cho* *phép*.
+Ít công cụ hơn nghĩa là *an* *toàn* hơn và *tập* *trung* hơn.
+## 26 | anchor | Tóm tắt chương ba
+Tóm lại: công cụ là *đôi* *tay*, toolset là *hộp* *đồ* *nghề*.
+
+# ch4 | Vòng học khép kín | intermediate
+## 27 | title | Vòng học khép kín
+Chương bốn: *vòng* *học* khép kín.
+## 28 | flow | Vòng học là gì?
+> The signature loop: ghi nhớ → kỹ năng → hiểu bạn, closing into a ring.
+Điểm đặc biệt nhất của Hermes là *vòng* *học* *khép* *kín*. {F-04}
+Nó tự *ghi* *nhớ*, tự *tạo* *kỹ* *năng*, và hiểu bạn *hơn* *mỗi* *ngày*. {F-04}
+Nói cách khác, bạn dùng *càng* *nhiều*, Hermes làm *càng* *tốt*. {F-04}
+## 29 | cards | Hai cuốn sổ ghi nhớ
+> Two notebooks: MEMORY.md (việc) and USER.md (bạn).
+Hermes có hai cuốn sổ *ghi* *nhớ*. {F-38}
+Một cuốn ghi chú về *công* *việc*, một cuốn ghi lại thông tin về *bạn*. {F-38}
+Mỗi phiên làm việc mới, Hermes đọc lại hai cuốn sổ này *trước* *tiên*. {F-39}
+Hai cuốn sổ có *giới* *hạn* độ dài, nên Hermes chỉ ghi những điều *quan* *trọng*. {F-38}
+## 30 | terminal | Tìm lại cuộc trò chuyện cũ
+> A search box finds last week's conversation in a scrolling transcript.
+Bạn quên mất đã bàn gì tuần trước? Không sao cả.
+Hermes có thể *tìm* *lại* mọi cuộc trò chuyện cũ nhờ công cụ *session* *search*. {F-41}
+Toàn bộ lịch sử được lưu *ngay* *trên* *máy* của bạn. {F-41}
+## 31 | metaphor | Kỹ năng là trí nhớ về cách làm
+> A recipe card titled "cách làm" slides into a card index.
+*Kỹ* *năng*, hay skill, là những ghi chú về *cách* *làm* một việc. {F-43}
+Tài liệu gọi đó là *trí* *nhớ* *quy* *trình* của agent. {F-45}
+Mỗi kỹ năng cài vào sẽ tự động trở thành *một* *lệnh* *mới*. {F-44}
+## 32 | flow | Tự tạo và tự cải thiện
+> Task done → a new skill card is written → reused → version 2 glows.
+Sau một nhiệm vụ khó, Hermes có thể *tự* *viết* một kỹ năng mới. {F-04,F-45}
+Lần sau gặp việc tương tự, nó dùng lại và *cải* *thiện* kỹ năng đó. {F-04}
+Đây là cách Hermes *tích* *lũy* *kinh* *nghiệm* theo thời gian. {F-04}
+## 0 | hub | Kho kỹ năng cộng đồng
+> Skills Hub shelf; a skill passes through a security scanner gate before install.
+Bạn cũng có thể cài kỹ năng do *cộng* *đồng* chia sẻ từ *Skills* *Hub*. {F-47}
+Mọi kỹ năng tải về đều được *quét* *bảo* *mật* trước khi cài. {F-48}
+## 33 | typewriter | Dạy Hermes bằng lệnh learn
+> "/learn" types itself; a document, a web page, a book turn into a skill card.
+Bạn cũng có thể chủ động dạy nó bằng lệnh *learn*. {F-46}
+Đưa cho nó một tài liệu, một trang web, hay cả một cuốn sách, nó sẽ biến thành *kỹ* *năng*. {F-46}
+## 34 | stat | Người dọn dẹp kỹ năng
+> Timeline 0 → 14 → 30 days: active, stale, archived.
+Có một người *dọn* *dẹp* chạy ngầm, gọi là *curator*. {F-49}
+Kỹ năng không dùng sau *mười* *bốn* *ngày* sẽ bị đánh dấu cũ, sau *ba* *mươi* ngày thì được cất đi. {F-50}
+## 35 | hub | Hiểu bạn sâu hơn với Honcho
+> A portrait of "you" assembles from conversation fragments.
+Muốn Hermes hiểu bạn sâu hơn nữa, bạn có thể gắn thêm *Honcho*. {F-51,F-52}
+Honcho *suy* *ngẫm* sau mỗi cuộc trò chuyện để xây dựng *chân* *dung* về bạn. {F-51}
+Bạn có thể xem lại mọi điều Hermes đã học bằng lệnh *journey*. {F-53}
+## 36 | anchor | Tóm tắt chương bốn
+Nhớ nhé: *ghi* *nhớ*, *tìm* *lại*, *kỹ* *năng*, ba mảnh ghép của vòng học.
+
+# ch5 | Luôn bên bạn | intermediate
+## 37 | title | Luôn bên bạn
+Chương năm: Hermes *luôn* *bên* *bạn*.
+## 38 | hub | Trò chuyện từ ứng dụng quen thuộc
+> Hermes at the centre; Telegram, Discord, Slack, WhatsApp orbit in.
+Bạn không cần ngồi trước máy tính để dùng Hermes. {F-06}
+Nhờ *gateway*, bạn nhắn tin cho nó qua *Telegram*, *Discord*, *Slack* hay *WhatsApp*. {F-54}
+Kể cả khi đang ở ngoài đường, bạn vẫn *giao* *việc* được cho nó. {F-54}
+## 39 | stat | Hơn hai mươi nền tảng
+> Count-up "20+"; one background process icon.
+Gateway hỗ trợ *hơn* *hai* *mươi* nền tảng nhắn tin. {F-55}
+Tất cả chạy trong *một* *tiến* *trình* duy nhất ở chế độ nền. {F-56}
+Tiến trình này vừa *nhận* *tin* *nhắn*, vừa *chạy* các việc theo lịch. {F-56}
+## 40 | terminal | Thiết lập gateway
+> Two commands replayed: hermes gateway setup, hermes gateway start.
+Để bắt đầu, bạn gõ *hermes* *gateway* *setup* và làm theo hướng dẫn. {F-57}
+Sau đó, chạy *hermes* *gateway* *start* là xong. {F-57}
+Để an toàn, mặc định gateway *từ* *chối* *người* *lạ* cho đến khi bạn cho phép. {F-91}
+## 41 | metaphor | Việc tự động theo lịch
+> An alarm clock rings and hands a task to Hermes.
+Hermes còn biết làm việc *theo* *lịch*, giống như một chiếc *đồng* *hồ* *báo* *thức*. {F-58}
+Bạn chỉ cần nói bằng lời thường, ví dụ *mỗi* *sáng* *thứ* *hai* lúc chín giờ. {F-59}
+Hoặc ngắn gọn hơn, như *sau* *ba* *mươi* *phút*, hay *mỗi* *hai* *giờ*. {F-59}
+## 42 | typewriter | Ví dụ lịch tự động
+> A morning news digest lands in a Telegram chat; a 30-minute reminder pops.
+Ví dụ, mỗi sáng Hermes *tóm* *tắt* *tin* *tức* và gửi vào Telegram của bạn. {F-54,F-59}
+Hay nhắc bạn *kiểm* *tra* công việc sau ba mươi phút nữa. {F-63}
+Các việc theo lịch còn có thể *nối* *tiếp* nhau, việc sau dùng kết quả của việc trước. {F-61}
+## 43 | anchor | Tóm tắt chương năm
+Tóm lại: *gateway* để trò chuyện mọi nơi, *cron* để tự động theo lịch.
+
+# ch6 | Nâng cao: những điểm nổi bật | advanced
+## 44 | title | Nâng cao: những điểm nổi bật
+Chương sáu: *nâng* *cao*, những điểm nổi bật.
+## 45 | kinetic | Chỉ cần nắm ý chính
+> Signpost card: "ý chính · vì sao đặc biệt · bạn được gì".
+Phần này là nâng cao, bạn chỉ cần nắm *ý* *chính* và *vì* *sao* nó *đặc* *biệt*.
+## 46 | flow | Agent con làm việc song song
+> One agent splits into parallel child agents; only summary cards return.
+Điểm nổi bật đầu tiên: Hermes có thể sinh ra *agent* *con*. {F-10}
+Mỗi agent con nhận một phần việc, làm *song* *song*, rồi chỉ gửi lại *bản* *tóm* *tắt*. {F-64,F-65}
+Nhờ vậy, việc lớn xong nhanh hơn, mà cuộc trò chuyện chính vẫn *gọn* *gàng*. {F-64}
+## 47 | split | Viết code để gọi công cụ
+> Left: many back-and-forth steps. Right: one Python script, one turn.
+Điểm thứ hai: Hermes có thể tự viết một đoạn *Python* để gọi nhiều công cụ cùng lúc. {F-11}
+Nhiều bước gộp lại thành *một* *lượt*, tiết kiệm *thời* *gian* và *chi* *phí*. {F-11}
+Những quy trình dài giờ đây chỉ cần *một* *lần* *suy* *nghĩ*. {F-11}
+## 48 | hub | MCP – cổng cắm chung
+> A universal socket; GitHub, database, internal API plug in.
+Điểm thứ ba là *MCP*, một kiểu *cổng* *cắm* *chung* cho công cụ. {F-68}
+Qua MCP, Hermes kết nối được với *GitHub*, cơ sở dữ liệu hay hệ thống nội bộ của bạn. {F-68}
+Bạn chỉ cần gõ *hermes* *mcp* để chọn từ danh mục có sẵn. {F-70}
+## 49 | stat | Bảy môi trường chạy lệnh
+> Count "7"; seven backend tiles: local, Docker, SSH, Singularity, Modal, Daytona, Vercel Sandbox.
+Điểm thứ tư: Hermes có *bảy* môi trường để chạy lệnh. {F-71}
+Từ máy của bạn, *Docker*, *SSH*, cho đến các dịch vụ đám mây như *Modal* và *Daytona*. {F-71}
+## 50 | zoom | Ngủ đông khi rảnh
+> A cloud box dims to sleep, cost meter near zero, then wakes.
+Với Modal và Daytona, môi trường của agent *ngủ* *đông* khi rảnh và *thức* *dậy* khi cần. {F-72}
+Nghĩa là bạn gần như *không* *tốn* *tiền* giữa các lần làm việc. {F-72}
+## 51 | metaphor | SOUL.md – linh hồn của agent
+> A glowing SOUL.md file shapes the agent's voice (tone sliders).
+Điểm thứ năm là tệp *SOUL.md*, nơi bạn đặt *tính* *cách* cho agent. {F-79}
+Bạn quyết định giọng điệu, phong cách, và cách nó *giao* *tiếp* với bạn. {F-79}
+Nhờ SOUL.md, mỗi người có thể có một Hermes mang *cá* *tính* *riêng*. {F-79}
+## 52 | cards | Tệp ngữ cảnh cho dự án
+> AGENTS.md cards stack from the repo root down to the working folder.
+Ngoài ra, Hermes tự đọc các tệp như *AGENTS.md* trong thư mục dự án. {F-80}
+Nhờ đó, nó *hiểu* *quy* *tắc* của từng dự án mà bạn không cần nhắc lại. {F-80,F-81}
+Trước khi nạp, mọi tệp ngữ cảnh đều được *quét* để chặn *nội* *dung* *độc* *hại*. {F-82}
+## 0 | journey | Vì sao những điều này quan trọng?
+> Analysis beat: the trail links the five highlights into one path, ending at 'bạn được gì'.
+Vì sao những điểm này quan trọng? Vì Hermes *không* *bị* *giới* *hạn* trong một máy tính. {F-06}
+Nó làm được việc *lớn* *hơn*, ở *xa* *hơn*, mà vẫn theo *phong* *cách* của bạn. {F-06,F-79}
+## 53 | anchor | Tóm tắt chương sáu
+Năm điểm nổi bật: *agent* *con*, code gọi công cụ, *MCP*, *bảy* môi trường, và *SOUL.md*.
+
+# ch7 | Dùng an toàn và tổng kết | all
+## 54 | title | Dùng an toàn và tổng kết
+Chương bảy: dùng Hermes *an* *toàn*.
+## 55 | split | Hỏi trước khi làm việc nguy hiểm
+> Three lanes: safe (green, runs), dangerous (coral, blocked), unclear (gold, asks you).
+Hermes có cơ chế *phê* *duyệt* thông minh cho các lệnh. {F-83}
+Lệnh an toàn chạy luôn, lệnh nguy hiểm bị *chặn*, còn lệnh chưa rõ thì *hỏi* *bạn*. {F-83}
+Nếu bạn không trả lời trong *năm* *phút*, lệnh đó sẽ tự động *bị* *từ* *chối*. {F-84}
+Và một danh sách đen luôn chặn những lệnh *cực* *kỳ* *nguy* *hiểm*, như xóa sạch ổ đĩa. {F-85}
+## 56 | cards | Bảo vệ bí mật của bạn
+> Lock cards over .ssh, .env; redaction bars sweep over a key; a local-disk badge.
+Hermes không cho sửa các tệp chứa *mật* *khẩu* và *khóa* bí mật. {F-86}
+Nó còn tự *che* các chuỗi giống khóa API trước khi ghi vào nhật ký. {F-87}
+Và dữ liệu của bạn được *lưu* *trên* *máy*, không gửi đi đâu cả. {F-88}
+## 57 | journey | Luôn có đường lui
+> Snapshot flash before an edit; a rewind arrow travels back along the trail.
+Trước khi sửa hay xóa file, Hermes tự *chụp* *lại* dự án. {F-92}
+Nếu có gì sai, bạn chỉ cần gõ lệnh *rollback* để *quay* *lại*. {F-92}
+## 58 | anchor | Tổng kết bài học
+> Whole-lesson checklist; each chapter tick lights on the progress bar.
+Hôm nay bạn đã học: agent là gì, cách *cài* *đặt*, *công* *cụ*, và *vòng* *học*.
+Bạn cũng đã biết về *gateway*, *lịch* *tự* *động*, và những điểm nâng cao.
+## 59 | kinetic | Bước tiếp theo
+> Final: the courier trail writes "Bắt đầu thôi!".
+Bước tiếp theo? Hãy *cài* Hermes và giao cho nó *việc* *đầu* *tiên* của bạn.
+Chúc bạn học vui, và hẹn gặp lại ở bài sau!

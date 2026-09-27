@@ -1,0 +1,260 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f12-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f12-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f12- */
+
+    /* warm radial behind the numeral (background, dimmed) */
+    #f12-glow {
+      position: absolute;
+      left: 380px;
+      top: 60px;
+      width: 1000px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 45%, hsla(28, 55%, 42%, 0.34), hsla(28, 55%, 42%, 0.10) 45%, transparent 70%);
+      opacity: 0.4;
+    }
+
+    /* camera group: drifts slowly during the hold */
+    #f12-cam {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* faint spark present before the voice starts */
+    #f12-ghost {
+      position: absolute;
+      left: 810px;
+      top: 300px;
+      width: 140px;
+      height: 140px;
+      opacity: 0.12;
+    }
+    #f12-ghost svg { width: 100%; height: 100%; display: block; }
+
+    /* kicker: spark + CHƯƠNG + 2 */
+    #f12-kicker {
+      position: absolute;
+      left: 0;
+      top: 130px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f12-kicker svg { width: 28px; height: 28px; display: block; }
+    #f12-kdigit { display: inline-block; opacity: 0; }
+
+    /* numeral box: terracotta trail (behind, offset echo) + cream Lora "2" on top */
+    #f12-num {
+      position: absolute;
+      left: 730px;
+      top: 190px;
+      width: 300px;
+      height: 320px;
+    }
+    #f12-trailwrap {
+      position: absolute;
+      left: 14px;
+      top: 10px;
+      width: 300px;
+      height: 320px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f12-trail {
+      width: 300px;
+      height: 320px;
+      display: block;
+      overflow: visible;
+    }
+    #f12-trail path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f12-digit {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 300px;
+      height: 320px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 320px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+
+    /* chapter title */
+    #f12-title {
+      position: absolute;
+      left: 0;
+      top: 560px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f12-w {
+      display: inline-block;
+      opacity: 0;
+      margin: 0 12px;
+    }
+    /* "Cơ bản" group carries the hand-drawn underline and the spark at its tip */
+    #f12-grp {
+      display: inline-block;
+      position: relative;
+    }
+    #f12-uline {
+      position: absolute;
+      left: 8px;
+      top: 104px;
+      width: 300px;
+      height: 30px;
+      overflow: visible;
+    }
+    #f12-uline path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f12-spark {
+      position: absolute;
+      left: 292px;
+      top: 88px;
+      width: 40px;
+      height: 40px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f12-spark svg { width: 100%; height: 100%; display: block; }
+  </style>
+
+  <div id="root" data-composition-id="12-co-ban-tren-claude-ai" data-width="1920" data-height="1080" data-duration="4.647">
+    <div id="f12-ground" class="clip" data-start="0" data-duration="4.647" data-track-index="0"></div>
+    <div id="f12-stage" class="clip" data-start="0" data-duration="4.647" data-track-index="1">
+      <div id="f12-glow"></div>
+
+      <div id="f12-cam">
+        <!-- faint spark: the only thing on screen before the voice -->
+        <div id="f12-ghost">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M22 22 L78 78 M78 22 L22 78" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div id="f12-kicker">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/>
+          </svg>
+          <span>Chương</span>
+          <span id="f12-kdigit">2</span>
+        </div>
+
+        <div id="f12-num">
+          <div id="f12-trailwrap">
+            <svg id="f12-trail" viewBox="0 0 300 320" aria-hidden="true">
+              <path pathLength="1" d="M-150 170 C -110 120, -40 150, 20 126 C 50 114, 64 104, 76 96 C 88 60, 122 40, 156 40 C 204 42, 232 76, 226 118 C 220 162, 176 200, 72 278 C 130 276, 190 282, 238 276"/>
+            </svg>
+          </div>
+          <div id="f12-digit">2</div>
+        </div>
+
+        <div id="f12-title"><span id="f12-grp"><span class="f12-w" id="f12-w1">Cơ</span><span class="f12-w" id="f12-w2">bản</span><svg id="f12-uline" viewBox="0 0 330 30" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M4 18 C 60 10, 120 22, 180 14 C 230 8, 280 16, 326 10"/></svg><div id="f12-spark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></div></span><span class="f12-w" id="f12-w3">trên</span><span class="f12-w" id="f12-w4">claude.ai</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // calm micro drift under the whole card
+      tl.fromTo("#f12-cam", { scale: 1.0 }, { scale: 1.012, duration: 4.147, ease: "none" }, 0);
+
+      // pre-voice: faint spark turns slowly, then hands off as the numeral is written
+      tl.fromTo("#f12-ghost", { rotation: 0 }, { rotation: 18, duration: 1.06, ease: "none" }, 0);
+      tl.fromTo("#f12-ghost", { opacity: 0.12, scale: 1 }, { opacity: 0, scale: 1.3, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 1.06);
+
+      // "Chương" (0.86): muted mono kicker fades in
+      tl.fromTo("#f12-kicker", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.86);
+
+      // "hai" (1.061): kicker digit appears and the terracotta stroke writes the "2"
+      tl.fromTo("#f12-kdigit", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 1.06);
+      tl.fromTo("#f12-trail path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 1.06);
+      tl.fromTo("#f12-glow", { opacity: 0.4, scale: 0.94 }, { opacity: 0.85, scale: 1, duration: 0.8, ease: "power2.inOut", immediateRender: false }, 1.06);
+      // cream Lora numeral settles over its terracotta echo as the stroke finishes
+      tl.fromTo("#f12-digit", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 1.4);
+
+      // title slides up, each word on its spoken time: Cơ 2.14 · bản 2.26 · trên 2.48 · claude.ai 2.685
+      tl.fromTo("#f12-w1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.14);
+      tl.fromTo("#f12-w2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.26);
+      tl.fromTo("#f12-w3", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.48);
+      tl.fromTo("#f12-w4", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.685);
+
+      // "cơ bản": hand-drawn underline writes under the pair, spark pops at its tip
+      tl.fromTo("#f12-uline path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 2.14);
+      tl.fromTo("#f12-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 2.6);
+
+      // hold still to the end
+      tl.to({}, { duration: 4.147 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["12-co-ban-tren-claude-ai"] = tl;
+    })();
+  </script>
+</template>

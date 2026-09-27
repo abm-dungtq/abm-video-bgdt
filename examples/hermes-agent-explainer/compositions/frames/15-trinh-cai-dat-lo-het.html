@@ -1,0 +1,371 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f15-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    #f15-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: radial-gradient(rgba(142, 147, 181, 0.35) 1.5px, transparent 1.6px);
+      background-size: 48px 48px;
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f15-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f15- */
+    #f15-cam, #f15-s3 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 460px;
+    }
+    #f15-kicker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 18px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 34px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f15-kicker .f15-dia { color: var(--gold); margin-right: 14px; }
+    #f15-caret {
+      display: inline-block;
+      width: 16px;
+      height: 34px;
+      margin-left: 6px;
+      vertical-align: -5px;
+      background: var(--gold);
+    }
+    #f15-box {
+      position: absolute;
+      inset: 0;
+    }
+    #f15-back {
+      position: absolute;
+      left: 416px;
+      top: 488px;
+      width: 928px;
+      height: 34px;
+      background: #0a0e22;
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+    }
+    .f15-flap {
+      position: absolute;
+      top: 496px;
+      width: 464px;
+      height: 26px;
+      background: linear-gradient(180deg, #202a5c, #172049);
+      border: 1px solid rgba(244, 241, 232, 0.16);
+      border-radius: 6px;
+    }
+    #f15-flapL { left: 416px; transform-origin: 0% 100%; }
+    #f15-flapR { left: 880px; transform-origin: 100% 100%; }
+    .f15-card {
+      position: absolute;
+      top: 170px;
+      width: 168px;
+      height: 150px;
+      background: linear-gradient(180deg, #1d2654, #141b3a);
+      border: 1px solid rgba(244, 241, 232, 0.16);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      transform-origin: 50% 100%;
+    }
+    .f15-card-in { position: absolute; inset: 0; }
+    .f15-card-label {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 22px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 29px;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f15-card-bar {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      top: 12px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--cyan);
+      opacity: 0.8;
+    }
+    .f15-card-icon {
+      position: absolute;
+      left: 54px;
+      top: 72px;
+      width: 60px;
+      height: 60px;
+    }
+    #f15-front {
+      position: absolute;
+      left: 416px;
+      top: 520px;
+      width: 928px;
+      height: 270px;
+      transform-origin: 50% 100%;
+    }
+    #f15-front-panel {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #1c2552, #141b3a 70%);
+      border: 1px solid rgba(244, 241, 232, 0.14);
+      border-radius: 4px 4px 18px 18px;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+    }
+    #f15-ready {
+      position: absolute;
+      inset: -1px;
+      border: 3px solid var(--cyan);
+      border-radius: 4px 4px 18px 18px;
+      box-shadow: 0 0 36px rgba(62, 230, 208, 0.35), inset 0 0 30px rgba(62, 230, 208, 0.12);
+    }
+    #f15-arrow {
+      position: absolute;
+      left: 424px;
+      top: 34px;
+      width: 80px;
+      height: 96px;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    #f15-badge {
+      position: absolute;
+      left: 234px;
+      top: 150px;
+      width: 460px;
+      height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      border: 3px solid var(--cyan);
+      border-radius: 42px;
+      background: rgba(11, 16, 38, 0.92);
+      color: var(--cyan);
+      font-size: 36px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 0 30px rgba(62, 230, 208, 0.3);
+    }
+    #f15-badge svg { width: 38px; height: 42px; }
+    /* Scene 3 — kinetic */
+    #f15-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 150px;
+      text-align: center;
+      font-size: 84px;
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+    .f15-w { display: inline-block; margin: 0 12px; }
+    #f15-trail {
+      position: absolute;
+      left: 300px;
+      top: 262px;
+      width: 1160px;
+      height: 40px;
+      overflow: visible;
+    }
+    #f15-k2 {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 400px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #f15-k2 .f15-dia { color: var(--gold); margin-right: 14px; }
+    #f15-pay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 470px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 36px;
+    }
+    .f15-pw {
+      display: inline-block;
+      font-size: 132px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 14px rgba(255, 210, 63, 0.45));
+      white-space: nowrap;
+    }
+    #f15-check { width: 130px; height: 130px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="15-trinh-cai-dat-lo-het" data-width="1920" data-height="1080" data-duration="12.258">
+    <div id="f15-ground" class="clip" data-start="0" data-duration="12.258" data-track-index="0">
+      <div id="f15-field"></div>
+    </div>
+    <div id="f15-stage" class="clip" data-start="0" data-duration="12.258" data-track-index="1">
+
+      <!-- Scenes 1–2: open install box, package cards drop in -->
+      <div id="f15-cam">
+        <div id="f15-kicker"><span class="f15-dia">◆</span><span id="f15-ktext"><span class="f15-kc">M</span><span class="f15-kc">Ọ</span><span class="f15-kc">I</span><span class="f15-kc"> </span><span class="f15-kc">T</span><span class="f15-kc">H</span><span class="f15-kc">Ứ</span><span class="f15-kc"> </span><span class="f15-kc">C</span><span class="f15-kc">Ầ</span><span class="f15-kc">N</span><span class="f15-kc"> </span><span class="f15-kc">T</span><span class="f15-kc">H</span><span class="f15-kc">I</span><span class="f15-kc">Ế</span><span class="f15-kc">T</span></span><span id="f15-caret"></span></div>
+
+        <div id="f15-box">
+          <div id="f15-back"></div>
+          <div id="f15-flapL" class="f15-flap"></div>
+          <div id="f15-flapR" class="f15-flap"></div>
+
+          <div id="f15-c0" class="f15-card" style="left:436px"><div class="f15-card-in"><div class="f15-card-bar"></div><div class="f15-card-label">Python</div>
+            <svg class="f15-card-icon" viewBox="0 0 60 60"><path d="M30 6 L52 18 L52 42 L30 54 L8 42 L8 18 Z M8 18 L30 30 L52 18 M30 30 L30 54" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+          <div id="f15-c1" class="f15-card" style="left:616px"><div class="f15-card-in"><div class="f15-card-bar"></div><div class="f15-card-label">Node.js</div>
+            <svg class="f15-card-icon" viewBox="0 0 60 60"><path d="M30 6 L52 18 L52 42 L30 54 L8 42 L8 18 Z M8 18 L30 30 L52 18 M30 30 L30 54" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+          <div id="f15-c2" class="f15-card" style="left:796px"><div class="f15-card-in"><div class="f15-card-bar"></div><div class="f15-card-label">Git Bash</div>
+            <svg class="f15-card-icon" viewBox="0 0 60 60"><path d="M30 6 L52 18 L52 42 L30 54 L8 42 L8 18 Z M8 18 L30 30 L52 18 M30 30 L30 54" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+          <div id="f15-c3" class="f15-card" style="left:976px"><div class="f15-card-in"><div class="f15-card-bar"></div><div class="f15-card-label">ripgrep</div>
+            <svg class="f15-card-icon" viewBox="0 0 60 60"><path d="M30 6 L52 18 L52 42 L30 54 L8 42 L8 18 Z M8 18 L30 30 L52 18 M30 30 L30 54" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+          <div id="f15-c4" class="f15-card" style="left:1156px"><div class="f15-card-in"><div class="f15-card-bar"></div><div class="f15-card-label">ffmpeg</div>
+            <svg class="f15-card-icon" viewBox="0 0 60 60"><path d="M30 6 L52 18 L52 42 L30 54 L8 42 L8 18 Z M8 18 L30 30 L52 18 M30 30 L30 54" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg></div></div>
+
+          <div id="f15-front">
+            <div id="f15-front-panel"></div>
+            <div id="f15-ready"></div>
+            <svg id="f15-arrow" viewBox="0 0 80 96"><path d="M40 6 L40 62 M16 40 L40 64 L64 40 M10 88 L70 88" fill="none" stroke="#ffd23f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div id="f15-badge">
+              <svg viewBox="0 0 38 42"><path d="M19 3 L34 9 L34 21 C34 30 27 37 19 39 C11 37 4 30 4 21 L4 9 Z" fill="none" stroke="#3ee6d0" stroke-width="3.5" stroke-linejoin="round"/><path d="M12 21 L17 26 L26 16" fill="none" stroke="#3ee6d0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>không cần admin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: kinetic payoff -->
+      <div id="f15-s3">
+        <div id="f15-line"><span id="f15-w0" class="f15-w">Không</span><span id="f15-w1" class="f15-w">phải</span><span id="f15-w2" class="f15-w">tự</span><span id="f15-w3" class="f15-w">cài</span><span id="f15-w4" class="f15-w">từng</span><span id="f15-w5" class="f15-w">thứ</span></div>
+        <svg id="f15-trail" viewBox="0 0 1160 40"><path id="f15-trail-path" d="M4 22 C 240 8, 420 34, 620 20 S 980 8, 1156 20" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/></svg>
+        <div id="f15-k2"><span class="f15-dia">◆</span>rất phù hợp cho</div>
+        <div id="f15-pay">
+          <span id="f15-p0" class="f15-pw">người</span><span id="f15-p1" class="f15-pw">mới</span>
+          <svg id="f15-check" viewBox="0 0 130 130"><circle id="f15-check-ring" cx="65" cy="65" r="58" fill="none" stroke="#ffd23f" stroke-width="7"/><path id="f15-check-tick" d="M36 67 L57 88 L96 45" fill="none" stroke="#ffd23f" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var D = 11.758;
+
+      // ---- Scene 1 (0–2.86): open install box, kicker types "mọi thứ cần thiết" ----
+      tl.fromTo("#f15-box", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f15-flapL", { rotation: 0 }, { rotation: -120, duration: 0.6, ease: "power2.inOut" }, 0.55);
+      tl.fromTo("#f15-flapR", { rotation: 0 }, { rotation: 120, duration: 0.6, ease: "power2.inOut" }, 0.55);
+      tl.fromTo("#f15-arrow", { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.9);
+      // slow camera push under Scenes 1–2
+      tl.fromTo("#f15-cam", { scale: 1 }, { scale: 1.03, duration: 7.1, ease: "none" }, 0.05);
+
+      // kicker typing: MỌI @1.31, THỨ @1.51, CẦN @1.81, THIẾT @2.04 (audio word starts)
+      var kc = gsap.utils.toArray("#f15-ktext .f15-kc");
+      tl.set(kc, { opacity: 0 }, 0);
+      tl.set("#f15-kicker .f15-dia", { opacity: 0 }, 0);
+      tl.set("#f15-caret", { opacity: 0 }, 0);
+      tl.set("#f15-kicker .f15-dia", { opacity: 1 }, 1.25);
+      tl.set("#f15-caret", { opacity: 1 }, 1.25);
+      var groups = [[0, 3, 1.31, 0.16], [3, 7, 1.51, 0.12], [7, 11, 1.81, 0.15], [11, 17, 2.04, 0.19]];
+      groups.forEach(function (g) {
+        var n = g[1] - g[0];
+        for (var i = 0; i < n; i++) tl.set(kc[g[0] + i], { opacity: 1 }, g[2] + (g[3] * i) / n);
+      });
+      tl.set("#f15-caret", { opacity: 0 }, 2.5);
+
+      // ---- Scene 2 (2.86–7.2): cards drop into the box on their spoken words ----
+      // Python @2.85, Node @3.74, Git @4.40, ripgrep ~"công" @4.88, ffmpeg ~"khác" @5.21
+      var cues = [2.85, 3.74, 4.40, 4.88, 5.21];
+      var tilt = [-3, 2, -1.5, 2.5, -2];
+      cues.forEach(function (c, i) {
+        var id = "#f15-c" + i;
+        tl.fromTo(id + " .f15-card-in", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out" }, c);
+        tl.fromTo(id, { y: 0, rotation: 0 }, { y: 270, rotation: tilt[i], duration: 0.32, ease: "power2.in" }, c + 0.3);
+        tl.fromTo("#f15-front", { scaleY: 0.975 }, { scaleY: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, c + 0.62);
+      });
+      // "sẵn" @5.89 — box turns ready (cyan)
+      tl.fromTo("#f15-ready", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 5.89);
+      tl.fromTo(".f15-card-bar", { opacity: 0.8 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 5.89);
+      // "quản" @7.02 — badge stamps onto the box
+      tl.fromTo("#f15-badge", { opacity: 0, scale: 1.6, rotation: -8 }, { opacity: 1, scale: 1, rotation: -4, duration: 0.28, ease: "power3.out" }, 7.02);
+
+      // ---- Scene 3 (7.2–11.76): box closes and slides out; kinetic payoff ----
+      tl.fromTo(".f15-card", { y: 270 }, { y: 390, immediateRender: false, duration: 0.3, ease: "power2.in" }, 7.2);
+      tl.fromTo("#f15-flapL", { rotation: -120 }, { rotation: 0, immediateRender: false, duration: 0.42, ease: "power2.inOut" }, 7.25);
+      tl.fromTo("#f15-flapR", { rotation: 120 }, { rotation: 0, immediateRender: false, duration: 0.42, ease: "power2.inOut" }, 7.25);
+      tl.fromTo("#f15-kicker", { opacity: 1, y: 0 }, { opacity: 0, immediateRender: false, y: -20, duration: 0.35, ease: "power2.in" }, 7.6);
+      tl.fromTo("#f15-box", { x: 0, scale: 1, opacity: 1 }, { x: -320, immediateRender: false, scale: 0.85, opacity: 0, duration: 0.45, ease: "power2.in" }, 7.72);
+
+      // words: Không 8.22, phải 8.38, tự 8.54, cài 8.74, từng 8.94, thứ 9.13
+      var wt = [8.22, 8.38, 8.54, 8.74, 8.94, 9.13];
+      wt.forEach(function (t, i) {
+        tl.fromTo("#f15-w" + i, { opacity: 0, y: 40, filter: "blur(8px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, t);
+      });
+      // courier trail underline draws on "thứ một"
+      tl.fromTo("#f15-trail-path", { strokeDasharray: 1200, strokeDashoffset: 1200 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 9.13);
+      // "rất" @9.85 — kicker
+      tl.fromTo("#f15-k2", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.85);
+      // "người" @10.53, "mới" @10.74 — gold payoff + check
+      tl.fromTo("#f15-line", { opacity: 1 }, { opacity: 0.55, immediateRender: false, duration: 0.4, ease: "power2.out" }, 10.53);
+      tl.fromTo("#f15-trail", { opacity: 1 }, { opacity: 0.35, immediateRender: false, duration: 0.4, ease: "power2.out" }, 10.53);
+      tl.fromTo("#f15-p0", { opacity: 0, y: 50, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 10.53);
+      tl.fromTo("#f15-p1", { opacity: 0, y: 50, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 10.74);
+      tl.fromTo("#f15-check-ring", { strokeDasharray: 370, strokeDashoffset: 370 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.74);
+      tl.fromTo("#f15-check-tick", { strokeDasharray: 100, strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 11.0);
+      // quiet hold drift
+      tl.fromTo("#f15-s3", { scale: 1 }, { scale: 1.015, duration: D - 8.2, ease: "none" }, 8.2);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["15-trinh-cai-dat-lo-het"] = tl;
+    })();
+  </script>
+</template>

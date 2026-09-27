@@ -1,0 +1,603 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f59-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(314, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f59-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f59- */
+    #f59-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: radial-gradient(circle, rgba(244,241,232,.22) 1.6px, transparent 2px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 55%, #000 20%, transparent 72%);
+      mask-image: radial-gradient(ellipse at 50% 55%, #000 20%, transparent 72%);
+    }
+    .f59-full { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f59-diamond {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      margin-right: 18px;
+      vertical-align: middle;
+      position: relative;
+      top: -3px;
+    }
+    .f59-kicker {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ---------- Scene 1: title ---------- */
+    #f59-title { position: absolute; left: 0; top: 250px; width: 1760px; height: 240px; }
+    #f59-kick1 { position: absolute; left: 0; top: 0; width: 1760px; text-align: center; opacity: 0; }
+    #f59-hero {
+      position: absolute;
+      left: 0;
+      top: 60px;
+      width: 1760px;
+      text-align: center;
+      font-size: 104px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .f59-w { display: inline-block; opacity: 0; margin: 0 0.12em; }
+    .f59-gold { color: var(--gold); }
+    #f59-trail1 { position: absolute; left: 0; top: 190px; width: 1760px; height: 40px; overflow: visible; }
+
+    /* ---------- Scene 2: lanes ---------- */
+    .f59-lane { position: absolute; left: 0; width: 1760px; height: 150px; }
+    .f59-l1 { top: 150px; }
+    .f59-l2 { top: 350px; }
+    .f59-l3 { top: 550px; }
+    .f59-track { position: absolute; left: 0; top: 0; width: 1760px; height: 150px; overflow: visible; }
+    .f59-lab {
+      position: absolute;
+      left: 20px;
+      top: 45px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f59-dot { width: 22px; height: 22px; border-radius: 50%; }
+    .f59-chip {
+      position: absolute;
+      left: 400px;
+      top: 43px;
+      width: 150px;
+      height: 64px;
+      box-sizing: border-box;
+      border-radius: 14px;
+      border: 3px solid var(--muted);
+      background: var(--surface);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      line-height: 58px;
+      text-align: center;
+      color: var(--ink);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      opacity: 0;
+    }
+    #f59-bar {
+      position: absolute;
+      left: 1262px;
+      top: 20px;
+      width: 12px;
+      height: 110px;
+      border-radius: 6px;
+      background: var(--warn);
+      box-shadow: 0 0 18px rgba(255,107,107,.55);
+      opacity: 0;
+    }
+    .f59-out {
+      position: absolute;
+      left: 1320px;
+      top: 38px;
+      height: 74px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f59-badge {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      box-sizing: border-box;
+      border: 4px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* ---------- Scene 3: countdown ---------- */
+    #f59-s3 { opacity: 0; }
+    #f59-card {
+      position: absolute;
+      left: 60px;
+      top: 170px;
+      width: 700px;
+      height: 460px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f59-cardkick { position: absolute; left: 48px; top: 44px; }
+    #f59-qbadge {
+      position: absolute;
+      left: 48px;
+      top: 120px;
+      width: 130px;
+      height: 130px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 6px solid var(--gold);
+      color: var(--gold);
+      font-size: 84px;
+      font-weight: 800;
+      line-height: 118px;
+      text-align: center;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.45));
+    }
+    #f59-ask {
+      position: absolute;
+      left: 214px;
+      top: 128px;
+      font-size: 84px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+    #f59-wait {
+      position: absolute;
+      left: 48px;
+      top: 330px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f59-pd { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); opacity: 0.3; }
+    #f59-ringwrap { position: absolute; left: 900px; top: 110px; width: 620px; height: 620px; opacity: 0; }
+    #f59-ring { position: absolute; left: 0; top: 0; width: 620px; height: 620px; overflow: visible; }
+    #f59-clock {
+      position: absolute;
+      left: 0;
+      top: 220px;
+      width: 620px;
+      text-align: center;
+      font-size: 150px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    #f59-secs {
+      position: absolute;
+      left: 0;
+      top: 400px;
+      width: 620px;
+      text-align: center;
+      opacity: 0;
+    }
+    #f59-stamp {
+      position: absolute;
+      left: 130px;
+      top: 490px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 28px;
+      border: 5px solid var(--warn);
+      border-radius: 14px;
+      background: rgba(11,16,38,.88);
+      color: var(--warn);
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    /* ---------- Scene 4: vault ---------- */
+    #f59-s4 { opacity: 0; }
+    #f59-kick4 { position: absolute; left: 60px; top: 200px; opacity: 0; }
+    #f59-bl {
+      position: absolute;
+      left: 60px;
+      top: 250px;
+      font-size: 88px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+    .f59-bw { display: inline-block; opacity: 0; margin-right: 0.22em; }
+    #f59-pill {
+      position: absolute;
+      left: 60px;
+      top: 400px;
+      padding: 10px 30px;
+      border: 2px solid var(--warn);
+      border-radius: 999px;
+      background: rgba(255,107,107,.12);
+      color: var(--warn);
+      font-size: 36px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f59-wipe {
+      position: absolute;
+      left: 60px;
+      top: 520px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 44px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f59-trail4 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f59-vault {
+      position: absolute;
+      left: 940px;
+      top: 90px;
+      width: 660px;
+      height: 640px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 3px solid rgba(244,241,232,.18);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f59-open {
+      position: absolute;
+      left: 33px;
+      top: 33px;
+      width: 588px;
+      height: 568px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 50%, rgba(255,107,107,.28), transparent 65%), #070a1a;
+    }
+    .f59-door {
+      position: absolute;
+      top: 0;
+      width: 294px;
+      height: 568px;
+      box-sizing: border-box;
+      background:
+        repeating-linear-gradient(0deg, rgba(244,241,232,.05) 0, rgba(244,241,232,.05) 2px, transparent 2px, transparent 71px),
+        linear-gradient(180deg, #1f2854, #151c3d);
+      border: 2px solid rgba(244,241,232,.14);
+    }
+    #f59-doorL { left: 0; border-radius: 14px 0 0 14px; }
+    #f59-doorR { left: 294px; border-radius: 0 14px 14px 0; }
+    .f59-bolt {
+      position: absolute;
+      width: 56px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--muted);
+      box-shadow: 0 6px 16px rgba(0,0,0,.4);
+    }
+    .f59-bL { left: 0; }
+    .f59-bR { left: 532px; }
+    .f59-bT { top: 110px; }
+    .f59-bB { top: 424px; }
+    #f59-port {
+      position: absolute;
+      left: 144px;
+      top: 134px;
+      width: 300px;
+      height: 300px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 10px solid #2b3668;
+      background: #070a1a;
+      overflow: hidden;
+      opacity: 0;
+    }
+    #f59-rm {
+      position: absolute;
+      left: 30px;
+      top: 95px;
+      width: 220px;
+      height: 90px;
+      box-sizing: border-box;
+      border: 2px solid var(--warn);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--warn);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 36px;
+      line-height: 86px;
+      text-align: center;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f59-xbar {
+      position: absolute;
+      left: -30px;
+      top: 134px;
+      width: 340px;
+      height: 12px;
+      border-radius: 6px;
+      background: var(--warn);
+      box-shadow: 0 0 16px rgba(255,107,107,.6);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="59-hoi-truoc-khi-lam-viec-nguy-hiem" data-width="1920" data-height="1080" data-duration="17.014">
+    <div id="f59-ground" class="clip" data-start="0" data-duration="17.014" data-track-index="0"></div>
+    <div id="f59-stage" class="clip" data-start="0" data-duration="17.014" data-track-index="1">
+      <div id="f59-field"></div>
+
+      <!-- Scene 1: kinetic title, becomes the header in Scene 2 -->
+      <div id="f59-title">
+        <div id="f59-kick1" class="f59-kicker"><span class="f59-diamond"></span>Hermes</div>
+        <div id="f59-hero"><span class="f59-w" id="f59-w1">phê</span><span class="f59-w" id="f59-w2">duyệt</span><span class="f59-w f59-gold" id="f59-w3">thông</span><span class="f59-w f59-gold" id="f59-w4">minh</span></div>
+        <svg id="f59-trail1" viewBox="0 0 1760 40">
+          <path id="f59-t1path" d="M 400 20 C 640 4, 900 36, 1140 18 S 1320 10, 1370 20" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="1000" stroke-dashoffset="1000" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"></path>
+          <circle id="f59-t1spark" cx="1370" cy="20" r="10" fill="#ffd23f" opacity="0"></circle>
+        </svg>
+      </div>
+
+      <!-- Scene 2: three command lanes -->
+      <div id="f59-lanes" class="f59-full">
+        <div class="f59-lane f59-l1">
+          <svg class="f59-track" viewBox="0 0 1760 150"><line id="f59-tr1" x1="400" y1="75" x2="1250" y2="75" stroke="#3ee6d0" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round" stroke-dasharray="850" stroke-dashoffset="850"></line></svg>
+          <div class="f59-lab" id="f59-lab1"><span class="f59-dot" style="background:#3ee6d0"></span><span>an toàn</span></div>
+          <div class="f59-chip" id="f59-chip1">lệnh</div>
+          <div class="f59-out" id="f59-out1" style="color:#3ee6d0">
+            <span class="f59-badge"><svg width="38" height="38" viewBox="0 0 38 38"><path d="M 6 20 L 15 29 L 32 9" fill="none" stroke="#3ee6d0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+            <span>chạy luôn</span>
+          </div>
+        </div>
+        <div class="f59-lane f59-l2">
+          <svg class="f59-track" viewBox="0 0 1760 150"><line id="f59-tr2" x1="400" y1="75" x2="1250" y2="75" stroke="#ff6b6b" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round" stroke-dasharray="850" stroke-dashoffset="850"></line></svg>
+          <div class="f59-lab" id="f59-lab2"><span class="f59-dot" style="background:#ff6b6b"></span><span>nguy hiểm</span></div>
+          <div class="f59-chip" id="f59-chip2">lệnh</div>
+          <div id="f59-bar"></div>
+          <div class="f59-out" id="f59-out2" style="color:#ff6b6b">
+            <span class="f59-badge"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M 7 7 L 27 27 M 27 7 L 7 27" fill="none" stroke="#ff6b6b" stroke-width="6" stroke-linecap="round"></path></svg></span>
+            <span>chặn</span>
+          </div>
+        </div>
+        <div class="f59-lane f59-l3">
+          <svg class="f59-track" viewBox="0 0 1760 150"><line id="f59-tr3" x1="400" y1="75" x2="1250" y2="75" stroke="#ffd23f" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round" stroke-dasharray="850" stroke-dashoffset="850"></line></svg>
+          <div class="f59-lab" id="f59-lab3"><span class="f59-dot" style="background:#ffd23f"></span><span>chưa rõ</span></div>
+          <div class="f59-chip" id="f59-chip3">lệnh</div>
+          <div class="f59-out" id="f59-out3" style="color:#ffd23f">
+            <span class="f59-badge">?</span>
+            <span>hỏi bạn</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: zoom into the gold lane, 5-minute countdown -->
+      <div id="f59-s3" class="f59-full">
+        <div id="f59-card">
+          <div id="f59-cardkick" class="f59-kicker"><span class="f59-diamond"></span>Lệnh chưa rõ</div>
+          <div id="f59-qbadge">?</div>
+          <div id="f59-ask">hỏi bạn</div>
+          <div id="f59-wait"><span>chờ trả lời</span><span class="f59-pd" id="f59-pd1"></span><span class="f59-pd" id="f59-pd2"></span><span class="f59-pd" id="f59-pd3"></span></div>
+        </div>
+        <div id="f59-ringwrap">
+          <svg id="f59-ring" viewBox="0 0 620 620">
+            <circle id="f59-ringtrack" cx="310" cy="310" r="270" fill="none" stroke="#8e93b5" stroke-opacity="0.25" stroke-width="20"></circle>
+            <circle id="f59-ringprog" cx="310" cy="310" r="270" fill="none" stroke="#ffd23f" stroke-width="20" stroke-linecap="round" stroke-dasharray="1696.46" stroke-dashoffset="0" transform="rotate(-90 310 310)" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"></circle>
+          </svg>
+          <div id="f59-clock">5:00</div>
+          <div id="f59-secs" class="f59-kicker">300 giây</div>
+        </div>
+        <div id="f59-stamp">
+          <svg width="40" height="40" viewBox="0 0 40 40"><path d="M 8 8 L 32 32 M 32 8 L 8 32" fill="none" stroke="#ff6b6b" stroke-width="7" stroke-linecap="round"></path></svg>
+          <span>tự động từ chối</span>
+        </div>
+      </div>
+
+      <!-- Scene 4: sealed blocklist vault -->
+      <div id="f59-s4" class="f59-full">
+        <div id="f59-kick4" class="f59-kicker"><span class="f59-diamond"></span>Hardline blocklist</div>
+        <div id="f59-bl"><span class="f59-bw" id="f59-b1">danh</span><span class="f59-bw" id="f59-b2">sách</span><span class="f59-bw" id="f59-b3">đen</span></div>
+        <div id="f59-pill">luôn chặn</div>
+        <div id="f59-wipe">
+          <svg width="40" height="40" viewBox="0 0 40 40"><path d="M 8 8 L 32 32 M 32 8 L 8 32" fill="none" stroke="#ff6b6b" stroke-width="7" stroke-linecap="round"></path></svg>
+          <span>xóa sạch ổ đĩa</span>
+        </div>
+        <svg id="f59-trail4" viewBox="0 0 1760 820">
+          <path id="f59-t4path" d="M 760 320 C 820 290, 870 350, 925 318" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="200" stroke-dashoffset="200" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"></path>
+        </svg>
+        <div id="f59-vault">
+          <div id="f59-open">
+            <div class="f59-door" id="f59-doorL"></div>
+            <div class="f59-door" id="f59-doorR"></div>
+            <div class="f59-bolt f59-bL f59-bT" id="f59-bolt1"></div>
+            <div class="f59-bolt f59-bL f59-bB" id="f59-bolt2"></div>
+            <div class="f59-bolt f59-bR f59-bT" id="f59-bolt3"></div>
+            <div class="f59-bolt f59-bR f59-bB" id="f59-bolt4"></div>
+            <div id="f59-port">
+              <div id="f59-rm">rm -rf /</div>
+              <div class="f59-xbar" id="f59-x1"></div>
+              <div class="f59-xbar" id="f59-x2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (id) { return document.getElementById(id); };
+      // initial states (before the timeline is built)
+      gsap.set(q("f59-doorL"), { x: -294 });
+      gsap.set(q("f59-doorR"), { x: 294 });
+      gsap.set([q("f59-bolt1"), q("f59-bolt2")], { x: -64 });
+      gsap.set([q("f59-bolt3"), q("f59-bolt4")], { x: 64 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0–2.94): "phê duyệt thông minh" ---------- */
+      tl.fromTo(q("f59-kick1"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.29);
+      [["f59-w1", 1.42], ["f59-w2", 1.60], ["f59-w3", 1.82], ["f59-w4", 2.02]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("f59-t1path"), { strokeDashoffset: 1000 }, { strokeDashoffset: 0, duration: 0.65, ease: "none" }, 2.2);
+      tl.fromTo(q("f59-t1spark"), { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out" }, 2.8);
+
+      /* ---------- Scene 2 (2.94–6.76): title docks as header, lanes route commands ---------- */
+      tl.to(q("f59-kick1"), { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 2.94);
+      tl.to(q("f59-title"), { y: -322, scale: 0.45, transformOrigin: "50% 117px", duration: 0.6, ease: "power2.inOut" }, 2.94);
+      tl.to([q("f59-w3"), q("f59-w4")], { color: "#f4f1e8", duration: 0.4, ease: "power2.inOut" }, 2.94);
+      tl.fromTo(q("f59-tr1"), { strokeDashoffset: 850 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.0);
+      tl.fromTo(q("f59-tr2"), { strokeDashoffset: 850 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.12);
+      tl.fromTo(q("f59-tr3"), { strokeDashoffset: 850 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.24);
+
+      // lane 1 — safe → runs
+      tl.fromTo(q("f59-lab1"), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.65);
+      tl.fromTo(q("f59-chip1"), { opacity: 0, x: 0 }, { opacity: 1, x: 700, duration: 0.4, ease: "power2.inOut" }, 3.60);
+      tl.set(q("f59-chip1"), { borderColor: "#3ee6d0" }, 3.93);
+      tl.fromTo(q("f59-out1"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.93);
+
+      // lane 2 — dangerous → blocked
+      tl.fromTo(q("f59-lab2"), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.73);
+      tl.fromTo(q("f59-chip2"), { opacity: 0, x: 0 }, { opacity: 1, x: 680, duration: 0.42, ease: "power2.in" }, 4.73);
+      tl.fromTo(q("f59-bar"), { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.14, ease: "power3.out" }, 5.07);
+      tl.set(q("f59-chip2"), { borderColor: "#ff6b6b", color: "#ff6b6b" }, 5.15);
+      tl.to(q("f59-chip2"), { x: 630, duration: 0.3, ease: "power3.out" }, 5.15);
+      tl.fromTo(q("f59-out2"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 5.22);
+
+      // lane 3 — unclear → asks you
+      tl.fromTo(q("f59-lab3"), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 6.08);
+      tl.fromTo(q("f59-chip3"), { opacity: 0, x: 0 }, { opacity: 1, x: 700, duration: 0.45, ease: "power2.inOut" }, 6.08);
+      tl.set(q("f59-chip3"), { borderColor: "#ffd23f" }, 6.53);
+      tl.fromTo(q("f59-out3"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 6.58);
+
+      /* ---------- Scene 3 (6.76–11.74): zoom into the gold lane, countdown ---------- */
+      tl.to(q("f59-title"), { opacity: 0, duration: 0.3, ease: "power2.in" }, 6.76);
+      tl.to(q("f59-lanes"), { scale: 2.4, opacity: 0, filter: "blur(10px)", transformOrigin: "1500px 625px", duration: 0.45, ease: "power2.in" }, 6.76);
+      tl.fromTo(q("f59-s3"), { opacity: 0, scale: 0.7, filter: "blur(10px)", transformOrigin: "410px 400px" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 6.8);
+
+      tl.fromTo(q("f59-wait"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.11);
+      // finite pulsing dots (the machine is waiting) — die the instant time runs out
+      var dots = [q("f59-pd1"), q("f59-pd2"), q("f59-pd3")];
+      for (var t = 8.2; t + 0.6 <= 10.44; t += 0.6) {
+        dots.forEach(function (d, i) {
+          tl.to(d, { opacity: 1, duration: 0.14, ease: "power2.inOut" }, t + i * 0.12);
+          tl.to(d, { opacity: 0.3, duration: 0.14, ease: "power2.inOut" }, t + i * 0.12 + 0.16);
+        });
+      }
+      tl.set(dots, { opacity: 0 }, 10.44);
+
+      tl.fromTo(q("f59-ringwrap"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 8.55);
+      tl.fromTo(q("f59-secs"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 8.71);
+      tl.fromTo(q("f59-ringprog"), { strokeDashoffset: 0 }, { strokeDashoffset: 1696.46, duration: 1.45, ease: "none" }, 8.95);
+      [["4:00", 9.24], ["3:00", 9.53], ["2:00", 9.82], ["1:00", 10.11], ["0:00", 10.40]].forEach(function (s) {
+        tl.set(q("f59-clock"), { textContent: s[0] }, s[1]);
+      });
+      tl.set(q("f59-clock"), { color: "#ff6b6b" }, 10.44);
+      tl.set(q("f59-ringtrack"), { attr: { stroke: "#ff6b6b" }, strokeOpacity: 0.85 }, 10.44);
+      tl.set(q("f59-ringprog"), { attr: { stroke: "#ff6b6b" } }, 10.44);
+      tl.fromTo(q("f59-stamp"), { opacity: 0, scale: 1.6, rotation: -6 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.25, ease: "power3.out" }, 10.62);
+      tl.to(q("f59-card"), { opacity: 0.55, duration: 0.3, ease: "power2.inOut" }, 10.78);
+
+      /* ---------- Scene 4 (11.74–16.51): the blocklist vault ---------- */
+      tl.to(q("f59-s3"), { opacity: 0, scale: 0.9, filter: "blur(8px)", duration: 0.4, ease: "power2.in" }, 11.74);
+      tl.fromTo(q("f59-s4"), { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 11.8);
+      tl.fromTo(q("f59-vault"), { scale: 1.12 }, { scale: 1, duration: 0.5, ease: "power3.out" }, 11.8);
+
+      tl.fromTo(q("f59-kick4"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 12.0);
+      [["f59-b1", 12.0], ["f59-b2", 12.18], ["f59-b3", 12.36]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("f59-t4path"), { strokeDashoffset: 200 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 12.4);
+
+      // door slams shut on "luôn chặn"
+      tl.fromTo(q("f59-pill"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 12.61);
+      tl.to(q("f59-doorL"), { x: 0, duration: 0.34, ease: "power2.in" }, 12.61);
+      tl.to(q("f59-doorR"), { x: 0, duration: 0.34, ease: "power2.in" }, 12.61);
+      tl.to([q("f59-bolt1"), q("f59-bolt2"), q("f59-bolt3"), q("f59-bolt4")], { x: 0, duration: 0.18, ease: "power3.out" }, 12.95);
+      tl.to(q("f59-vault"), { scale: 1.025, duration: 0.07, ease: "power2.out" }, 12.95);
+      tl.to(q("f59-vault"), { scale: 1, duration: 0.25, ease: "power2.inOut" }, 13.02);
+      tl.fromTo(q("f59-port"), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 12.97);
+
+      // the dangerous command is locked inside on "cực kỳ nguy hiểm"
+      tl.fromTo(q("f59-rm"), { opacity: 0, y: -220 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 13.39);
+      tl.to(q("f59-port"), { borderColor: "#ff6b6b", duration: 0.2, ease: "power2.out" }, 13.59);
+      tl.fromTo(q("f59-x1"), { opacity: 0, scaleX: 0, rotation: 45 }, { opacity: 1, scaleX: 1, rotation: 45, duration: 0.2, ease: "power3.out" }, 13.77);
+      tl.fromTo(q("f59-x2"), { opacity: 0, scaleX: 0, rotation: -45 }, { opacity: 1, scaleX: 1, rotation: -45, duration: 0.2, ease: "power3.out" }, 13.97);
+
+      tl.fromTo(q("f59-wipe"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 15.03);
+      // hold still to the end (chapter held beat)
+
+      tl.to({}, { duration: 16.514 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["59-hoi-truoc-khi-lam-viec-nguy-hiem"] = tl;
+    })();
+  </script>
+</template>

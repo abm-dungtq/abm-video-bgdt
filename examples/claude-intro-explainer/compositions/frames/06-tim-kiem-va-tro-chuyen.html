@@ -1,0 +1,332 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f06-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(25, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f06-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f06-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f06-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f06-spk { display: block; }
+    .f06-spk svg { display: block; width: 100%; height: 100%; }
+    .f06-w { display: inline-block; opacity: 0; }
+    .f06-card {
+      position: absolute;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f06-line { position: absolute; height: 16px; border-radius: 8px; background: rgba(240,238,230,.78); }
+
+    /* Scene 1–2: split */
+    #f06-divider { position: absolute; left: 879px; top: 80px; width: 2px; height: 680px; background: rgba(240,238,230,.25); }
+    #f06-search {
+      left: 60px; top: 100px; width: 740px; height: 96px;
+      border-radius: 48px;
+      border: 2px solid rgba(240,238,230,.22);
+    }
+    #f06-mag { position: absolute; left: 30px; top: 24px; width: 46px; height: 46px; }
+    #f06-query { position: absolute; left: 100px; top: 40px; width: 320px; height: 16px; border-radius: 8px; background: rgba(240,238,230,.5); }
+    #f06-caret { position: absolute; left: 438px; top: 26px; width: 4px; height: 44px; border-radius: 2px; background: var(--ink); opacity: 0; }
+    #f06-links-label { position: absolute; left: 64px; top: 226px; font-size: 38px; font-weight: 600; line-height: 1.3; white-space: nowrap; color: var(--ink); }
+    .f06-link { position: absolute; left: 60px; width: 740px; height: 58px; }
+    .f06-fav { position: absolute; left: 0; top: 8px; width: 40px; height: 40px; box-sizing: border-box; border: 2px solid rgba(154,150,140,.8); border-radius: 10px; }
+    .f06-lt { position: absolute; left: 64px; top: 10px; height: 16px; border-radius: 8px; background: rgba(154,150,140,.85); }
+    .f06-lu { position: absolute; left: 64px; top: 38px; height: 10px; border-radius: 5px; background: rgba(154,150,140,.45); }
+
+    #f06-claude-head { position: absolute; left: 960px; top: 96px; display: flex; align-items: center; gap: 20px; }
+    #f06-claude-spark { width: 48px; height: 48px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); opacity: 0; }
+    #f06-claude-name { font-family: "Lora", serif; font-weight: 700; font-size: 64px; line-height: 1.12; opacity: 0; }
+    #f06-chips { position: absolute; left: 960px; top: 226px; display: flex; align-items: center; gap: 18px; }
+    .f06-chip {
+      box-sizing: border-box; padding: 8px 30px; border-radius: 30px;
+      border: 2px solid var(--cyan); font-size: 34px; font-weight: 600; line-height: 1.3; white-space: nowrap;
+      color: var(--ink); background: rgba(143,184,168,.08); opacity: 0;
+    }
+    .f06-chev { width: 34px; height: 24px; overflow: visible; }
+    #f06-answer { left: 960px; top: 330px; width: 740px; height: 400px; opacity: 0; }
+    #f06-ask {
+      position: absolute; left: 44px; top: 300px; height: 62px; box-sizing: border-box;
+      padding: 0 26px 0 22px; display: flex; align-items: center; gap: 18px;
+      border: 2px solid var(--cyan); border-radius: 31px 31px 31px 8px; opacity: 0;
+    }
+    #f06-ask-q { font-family: "Lora", serif; font-weight: 700; font-size: 36px; color: var(--cyan); line-height: 1; }
+    #f06-ask-l { width: 180px; height: 12px; border-radius: 6px; background: rgba(143,184,168,.6); }
+
+    /* Scene 3: flow strip */
+    #f06-strip { left: 60px; top: 190px; width: 1640px; height: 440px; }
+    .f06-node {
+      position: absolute; box-sizing: border-box; width: 150px; height: 150px; border-radius: 50%;
+      border: 3px solid var(--ink); background: var(--canvas);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 60px; line-height: 1; opacity: 0;
+    }
+    #f06-simple { left: 185px; top: 250px; }
+    #f06-simple-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--cyan); }
+    #f06-n1 { left: 825px; top: 250px; }
+    #f06-n2 { left: 1125px; top: 250px; }
+    #f06-n3 { left: 1425px; top: 250px; }
+    .f06-flabel { position: absolute; top: 430px; width: 460px; text-align: center; font-family: "Lora", serif; font-weight: 700; font-size: 60px; line-height: 1.15; white-space: nowrap; }
+    #f06-simple-label { left: 30px; }
+    #f06-steps-label { left: 970px; }
+    #f06-or { position: absolute; left: 520px; top: 302px; width: 220px; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: 0.14em; color: var(--muted); opacity: 0; }
+    #f06-runner { position: absolute; left: 878px; top: 206px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    /* Scene 4: metaphor */
+    .f06-page { position: absolute; width: 360px; height: 460px; box-sizing: border-box; background: var(--surface); border: 2px solid rgba(154,150,140,.55); border-radius: 12px; opacity: 0; }
+    .f06-pl { position: absolute; left: 36px; height: 12px; border-radius: 6px; background: rgba(154,150,140,.5); }
+    #f06-label4 { position: absolute; left: 780px; top: 70px; display: flex; align-items: center; gap: 22px; }
+    #f06-label4-spark { width: 50px; height: 50px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f06-label4-text { font-family: "Lora", serif; font-weight: 700; font-size: 72px; line-height: 1.12; white-space: nowrap; padding-top: 6px; }
+    .f06-bub { position: absolute; box-sizing: border-box; opacity: 0; }
+    #f06-b1 { left: 1240px; top: 250px; width: 460px; height: 124px; border-radius: 30px 30px 8px 30px; background: rgba(240,238,230,.10); border: 1px solid rgba(240,238,230,.14); }
+    #f06-b2 { left: 780px; top: 410px; width: 720px; height: 230px; border-radius: 30px 30px 30px 8px; }
+    #f06-b3 { left: 1360px; top: 676px; width: 340px; height: 96px; border-radius: 30px 30px 8px 30px; background: rgba(240,238,230,.10); border: 1px solid rgba(240,238,230,.14); }
+    .f06-bl { position: absolute; left: 40px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.7); }
+    .f06-bl-dim { background: rgba(240,238,230,.4); }
+  </style>
+
+  <div id="root" data-composition-id="06-tim-kiem-va-tro-chuyen" data-width="1920" data-height="1080" data-duration="15.431">
+    <div id="f06-ground" class="clip" data-start="0" data-duration="15.431" data-track-index="0"></div>
+    <div id="f06-stage" class="clip" data-start="0" data-duration="15.431" data-track-index="1">
+
+      <!-- Scenes 1–2: the 50/50 split -->
+      <div id="f06-s12" class="f06-layer">
+        <div id="f06-divider"></div>
+
+        <div id="f06-left" class="f06-layer">
+          <div id="f06-search" class="f06-card">
+            <svg id="f06-mag" viewBox="0 0 46 46" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round">
+              <circle cx="19" cy="19" r="13"/>
+              <path d="M29 29 L42 42"/>
+            </svg>
+            <div id="f06-query"></div>
+            <div id="f06-caret"></div>
+          </div>
+          <div id="f06-links-label"><span class="f06-w" id="f06-l1">Danh</span> <span class="f06-w" id="f06-l2">sách</span> <span class="f06-w" id="f06-l3">đường</span> <span class="f06-w" id="f06-l4">link</span></div>
+          <div id="f06-links">
+            <div class="f06-link" style="top:300px"><div class="f06-fav"></div><div class="f06-lt" style="width:520px"></div><div class="f06-lu" style="width:300px"></div></div>
+            <div class="f06-link" style="top:378px"><div class="f06-fav"></div><div class="f06-lt" style="width:440px"></div><div class="f06-lu" style="width:260px"></div></div>
+            <div class="f06-link" style="top:456px"><div class="f06-fav"></div><div class="f06-lt" style="width:580px"></div><div class="f06-lu" style="width:340px"></div></div>
+            <div class="f06-link" style="top:534px"><div class="f06-fav"></div><div class="f06-lt" style="width:480px"></div><div class="f06-lu" style="width:280px"></div></div>
+            <div class="f06-link" style="top:612px"><div class="f06-fav"></div><div class="f06-lt" style="width:540px"></div><div class="f06-lu" style="width:320px"></div></div>
+            <div class="f06-link" style="top:690px"><div class="f06-fav"></div><div class="f06-lt" style="width:400px"></div><div class="f06-lu" style="width:240px"></div></div>
+          </div>
+        </div>
+
+        <div id="f06-right" class="f06-layer">
+          <div id="f06-claude-head"><div id="f06-claude-spark" class="f06-spk"></div><div id="f06-claude-name">Claude</div></div>
+          <div id="f06-chips">
+            <div class="f06-chip" id="f06-c1">Đọc</div>
+            <svg class="f06-chev" viewBox="0 0 34 24"><path id="f06-cv1" d="M2 12 H30 M20 3 L31 12 L20 21" fill="none" stroke="#F0EEE6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+            <div class="f06-chip" id="f06-c2">Hiểu</div>
+            <svg class="f06-chev" viewBox="0 0 34 24"><path id="f06-cv2" d="M2 12 H30 M20 3 L31 12 L20 21" fill="none" stroke="#F0EEE6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+            <div class="f06-chip" id="f06-c3">Trả lời</div>
+          </div>
+          <div id="f06-answer" class="f06-card">
+            <div class="f06-line f06-aline" style="left:44px;top:56px;width:640px"></div>
+            <div class="f06-line f06-aline" style="left:44px;top:102px;width:600px"></div>
+            <div class="f06-line f06-aline" style="left:44px;top:148px;width:652px"></div>
+            <div class="f06-line f06-aline" style="left:44px;top:194px;width:520px"></div>
+            <div class="f06-line f06-aline" style="left:44px;top:240px;width:380px"></div>
+            <div id="f06-ask"><span id="f06-ask-q">?</span><span id="f06-ask-l"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: flow strip — one simple node vs a multi-step chain -->
+      <div id="f06-s3" class="f06-layer">
+        <div id="f06-strip" class="f06-card"></div>
+        <svg class="f06-svgfull" viewBox="0 0 1760 820" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <path id="f06-a1" d="M986 322 C 1020 314, 1060 332, 1112 324" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f06-a1h" d="M1096 308 L1114 324 L1094 340" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f06-a2" d="M1286 324 C 1322 332, 1362 314, 1412 324" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f06-a2h" d="M1396 308 L1414 324 L1394 340" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f06-simple" class="f06-node"><div id="f06-simple-dot"></div></div>
+        <div id="f06-simple-label" class="f06-flabel"><span class="f06-w" id="f06-sw1">Đơn</span> <span class="f06-w" id="f06-sw2">giản</span></div>
+        <div id="f06-or">HOẶC</div>
+        <div id="f06-n1" class="f06-node">1</div>
+        <div id="f06-n2" class="f06-node">2</div>
+        <div id="f06-n3" class="f06-node">3</div>
+        <div id="f06-steps-label" class="f06-flabel"><span class="f06-w" id="f06-nw1">Nhiều</span> <span class="f06-w" id="f06-nw2">bước</span></div>
+        <div id="f06-runner" class="f06-spk"></div>
+      </div>
+
+      <!-- Scene 4: metaphor 40/60 — page pile vs a conversation -->
+      <div id="f06-s4" class="f06-layer">
+        <div id="f06-pages">
+          <div class="f06-page" id="f06-p0" style="left:120px;top:294px"></div>
+          <div class="f06-page" id="f06-p1" style="left:136px;top:278px"></div>
+          <div class="f06-page" id="f06-p2" style="left:152px;top:262px"></div>
+          <div class="f06-page" id="f06-p3" style="left:168px;top:246px"></div>
+          <div class="f06-page" id="f06-p4" style="left:184px;top:230px"></div>
+        </div>
+        <svg class="f06-svgfull" viewBox="0 0 1760 820">
+          <path id="f06-under" d="M852 178 C 980 190, 1140 172, 1280 184 S 1400 188, 1440 178" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f06-label4"><div id="f06-label4-spark" class="f06-spk"></div><div id="f06-label4-text"><span class="f06-w" id="f06-hw1">Người</span> <span class="f06-w" id="f06-hw2">hiểu</span> <span class="f06-w" id="f06-hw3">việc</span></div></div>
+        <div id="f06-b1" class="f06-bub">
+          <div class="f06-bl f06-bl-dim" style="top:38px;width:340px"></div>
+          <div class="f06-bl f06-bl-dim" style="top:72px;width:220px"></div>
+        </div>
+        <div id="f06-b2" class="f06-bub f06-card">
+          <div class="f06-bl f06-b2l" style="top:44px;width:620px"></div>
+          <div class="f06-bl f06-b2l" style="top:86px;width:580px"></div>
+          <div class="f06-bl f06-b2l" style="top:128px;width:636px"></div>
+          <div class="f06-bl f06-b2l" style="top:170px;width:400px"></div>
+        </div>
+        <div id="f06-b3" class="f06-bub">
+          <div class="f06-bl f06-bl-dim" style="top:40px;width:220px"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="06-tim-kiem-va-tro-chuyen"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f06-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // initial hidden states (before the timeline is built)
+      gsap.set(['#f06-s3', '#f06-s4'], { opacity: 0 });
+      gsap.set(qa('.f06-link'), { opacity: 0 });
+      gsap.set(qa('.f06-aline'), { scaleX: 0, transformOrigin: '0% 50%' });
+      gsap.set(qa('.f06-b2l'), { scaleX: 0, transformOrigin: '0% 50%' });
+      gsap.set('#f06-strip', { scaleX: 0, transformOrigin: '50% 50%' });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+      var word = function (sel, t) {
+        tl.fromTo(sel, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, t);
+      };
+
+      // ---- Scene 1 (0–3.39): search box, then the list of links on "danh sách đường link"
+      tl.fromTo('#f06-divider', { scaleY: 0, transformOrigin: '50% 0%' }, { scaleY: 1, duration: 0.6, ease: 'power2.inOut' }, 0.1);
+      tl.fromTo('#f06-search', { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: IN }, 0.2);
+      tl.fromTo('#f06-query', { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: 0.5, ease: 'none' }, 0.69);
+      tl.set('#f06-caret', { opacity: 1 }, 1.19);
+      tl.set('#f06-caret', { opacity: 0 }, 1.6);
+      tl.set('#f06-caret', { opacity: 1 }, 2.0);
+      tl.set('#f06-caret', { opacity: 0 }, 2.34);
+      word('#f06-l1', 2.34);
+      word('#f06-l2', 2.58);
+      word('#f06-l3', 2.86);
+      word('#f06-l4', 3.06);
+      qa('.f06-link').forEach(function (el, i) {
+        tl.fromTo(el, { y: -26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 2.34 + i * 0.12);
+      });
+
+      // ---- Scene 2 (3.39–6.88): the spark enters the right half; read → understand → answer
+      tl.to('#f06-links', { opacity: 0.4, duration: 0.5, ease: 'power2.inOut' }, 3.92);
+      tl.fromTo('#f06-claude-spark', { x: -80, scale: 0, rotation: -20, opacity: 0 }, { x: 0, scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: IN }, 4.16);
+      tl.fromTo('#f06-claude-name', { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 4.2);
+      tl.fromTo('#f06-c1', { y: 20, scale: 0.9, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: IN }, 4.44);
+      tl.fromTo('#f06-cv1', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 4.74);
+      tl.fromTo('#f06-c2', { y: 20, scale: 0.9, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: IN }, 5.04);
+      tl.fromTo('#f06-cv2', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: 'none' }, 5.26);
+      tl.fromTo('#f06-c3', { y: 20, scale: 0.9, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: IN }, 5.45);
+      tl.fromTo('#f06-answer', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 5.45);
+      qa('.f06-aline').forEach(function (el, i) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, duration: 0.2, ease: 'none' }, 5.72 + i * 0.18);
+      });
+      tl.fromTo('#f06-ask', { scale: 0.6, opacity: 0, transformOrigin: '0% 100%' }, { scale: 1, opacity: 1, duration: 0.35, ease: IN }, 6.62);
+
+      // ---- Scene 3 (6.88–10.95): the split collapses into a strip; simple vs multi-step
+      tl.to('#f06-left', { x: 300, opacity: 0, filter: 'blur(8px)', duration: 0.42, ease: 'power2.in' }, 6.88);
+      tl.to('#f06-right', { x: -300, opacity: 0, filter: 'blur(8px)', duration: 0.42, ease: 'power2.in' }, 6.88);
+      tl.to('#f06-divider', { scaleY: 0, transformOrigin: '50% 50%', duration: 0.35, ease: 'power2.in' }, 6.88);
+      tl.set('#f06-s3', { opacity: 1 }, 7.2);
+      tl.fromTo('#f06-strip', { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: 'power2.inOut' }, 7.3);
+      tl.fromTo('#f06-simple', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: IN }, 8.18);
+      word('#f06-sw1', 8.18);
+      word('#f06-sw2', 8.36);
+      tl.fromTo('#f06-or', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, 8.98);
+      tl.fromTo('#f06-n1', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: IN }, 9.62);
+      tl.fromTo('#f06-a1', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: 'none' }, 9.86);
+      tl.fromTo('#f06-a1h', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.08, ease: 'none' }, 10.06);
+      tl.fromTo('#f06-n2', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: IN }, 10.02);
+      tl.fromTo('#f06-a2', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.18, ease: 'none' }, 10.12);
+      tl.fromTo('#f06-a2h', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.08, ease: 'none' }, 10.3);
+      tl.fromTo('#f06-n3', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: IN }, 10.26);
+      word('#f06-nw1', 10.02);
+      word('#f06-nw2', 10.26);
+      // the spark runs along the chain, lighting each step
+      tl.fromTo('#f06-runner', popFrom, { scale: 1, rotation: 0, opacity: 1, duration: 0.2, ease: IN }, 10.3);
+      tl.fromTo('#f06-runner', { x: 0 }, { x: 600, duration: 0.5, ease: 'power2.inOut' }, 10.42);
+      tl.set('#f06-n1', { borderColor: '#8FB8A8' }, 10.42);
+      tl.set('#f06-n2', { borderColor: '#8FB8A8' }, 10.67);
+      tl.set('#f06-n3', { borderColor: '#8FB8A8' }, 10.9);
+
+      // ---- Scene 4 (10.95–14.93): zoom through into the conversation metaphor
+      tl.to('#f06-s3', { scale: 1.06, opacity: 0, filter: 'blur(8px)', transformOrigin: '880px 400px', duration: 0.32, ease: 'power2.in' }, 10.95);
+      tl.set('#f06-s4', { opacity: 1 }, 11.0);
+      qa('.f06-page').forEach(function (el, i) {
+        tl.fromTo(el, { y: 30, opacity: 0 }, { y: 0, opacity: 0.85, duration: 0.45, ease: IN }, 11.02 + i * 0.06);
+      });
+      tl.fromTo('#f06-b1', { x: 50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 11.37);
+      tl.fromTo('#f06-b2', { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 11.79);
+      qa('.f06-b2l').forEach(function (el, i) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, duration: 0.22, ease: 'none' }, 11.95 + i * 0.22);
+      });
+      tl.fromTo('#f06-label4-spark', popFrom, popTo, 12.09);
+      word('#f06-hw1', 12.09);
+      word('#f06-hw2', 12.27);
+      word('#f06-hw3', 12.45);
+      tl.fromTo('#f06-under', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: 'none' }, 12.55);
+      tl.fromTo('#f06-b3', { x: 50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 12.85);
+      // the page pile riffles, page by page, and dims
+      ['#f06-p4', '#f06-p3', '#f06-p2', '#f06-p1', '#f06-p0'].forEach(function (sel, i) {
+        tl.fromTo(sel, { x: 0, rotation: 0 }, { x: -50, rotation: -9, duration: 0.3, ease: 'power2.out' }, 13.41 + i * 0.14);
+        tl.to(sel, { opacity: 0.3, duration: 0.3, ease: 'power2.out' }, 13.41 + i * 0.14);
+      });
+      // quiet hold: a 1% drift on the conversation
+      tl.fromTo(['#f06-b1', '#f06-b2', '#f06-b3'], { y: 0 }, { y: -6, duration: 1.2, ease: 'power1.inOut' }, 13.6);
+
+      tl.to({}, { duration: 14.931 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-tim-kiem-va-tro-chuyen"] = tl;
+    })();
+  </script>
+</template>

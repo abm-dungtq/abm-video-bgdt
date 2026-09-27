@@ -1,0 +1,326 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f08-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(25, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f08-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f08-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f08-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f08-spk { display: block; }
+    .f08-spk svg { display: block; width: 100%; height: 100%; }
+    .f08-kicker {
+      position: absolute;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f08-kicker span { display: inline-block; opacity: 0; }
+    .f08-paper {
+      position: absolute;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+
+    /* Scene 1 — three helper cards */
+    .f08-card { opacity: 0; }
+    #f08-c1 { left: 130px; top: 300px; width: 380px; height: 420px; }
+    #f08-c2 { left: 590px; top: 230px; width: 440px; height: 490px; }
+    #f08-c3 { left: 1110px; top: 160px; width: 500px; height: 560px; }
+    .f08-person { position: absolute; left: 0; right: 0; margin: 0 auto; overflow: visible; }
+    #f08-c1 .f08-person { top: 90px; width: 150px; height: 150px; }
+    #f08-c2 .f08-person { top: 105px; width: 180px; height: 180px; }
+    #f08-c3 .f08-person { top: 120px; width: 210px; height: 210px; }
+    .f08-pips { position: absolute; left: 0; right: 0; bottom: 64px; display: flex; justify-content: center; gap: 16px; }
+    .f08-pip { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(240,238,230,.35); box-sizing: border-box; }
+    .f08-pip.f08-on { background: var(--ink); border-color: var(--ink); }
+    #f08-badge-wrap { position: absolute; left: 0; right: 0; top: -34px; text-align: center; opacity: 0; }
+    #f08-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #1F1E1D;
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.2;
+      padding: 12px 30px;
+      border-radius: 34px;
+      white-space: nowrap;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f08-badge span { display: inline-block; }
+    #f08-b-mac, #f08-b-dinh { opacity: 0; }
+    #f08-s1-spark { position: absolute; right: -26px; top: -70px; width: 44px; height: 44px; opacity: 0; }
+    #f08-tick { position: absolute; right: 36px; bottom: 44px; width: 56px; height: 56px; overflow: visible; }
+    #f08-s1-kick { left: 130px; top: 70px; }
+
+    /* Scene 2 — split: the default helper vs the hard task */
+    #f08-stack { position: absolute; left: 1150px; top: 0; width: 340px; height: 820px; }
+    .f08-slab { position: absolute; left: 0; width: 340px; height: 64px; opacity: 0; }
+    .f08-slab i { position: absolute; top: 18px; height: 8px; border-radius: 4px; background: rgba(240,238,230,.22); }
+    .f08-slab i + i { top: 36px; background: rgba(240,238,230,.12); }
+    #f08-task-label {
+      position: absolute;
+      left: 1070px; top: 710px;
+      width: 500px;
+      text-align: center;
+      font-size: 44px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    #f08-task-label span { display: inline-block; opacity: 0; }
+    #f08-t-kho { font-weight: 800; }
+    #f08-fable {
+      left: 1100px; top: 150px;
+      width: 440px; height: 540px;
+      border: 3px solid var(--gold);
+      opacity: 0;
+    }
+    #f08-fable .f08-person { top: 90px; width: 220px; height: 220px; }
+    #f08-fable-name {
+      position: absolute;
+      left: 0; right: 0; top: 360px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 88px;
+      line-height: 1.1;
+    }
+
+    /* Scene 3 — the official document */
+    #f08-doc { left: 430px; top: 150px; width: 900px; height: 600px; opacity: 0; }
+    #f08-doc-head {
+      position: absolute;
+      left: 72px; top: 56px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 64px;
+      line-height: 1.15;
+      white-space: pre;
+    }
+    .f08-ch { display: none; }
+    #f08-caret {
+      display: inline-block;
+      width: 5px; height: 62px;
+      margin-left: 4px;
+      vertical-align: -10px;
+      background: var(--ink);
+      opacity: 0;
+    }
+    .f08-line { position: absolute; left: 72px; height: 12px; border-radius: 6px; background: rgba(240,238,230,.18); }
+    #f08-stamp { position: absolute; right: 56px; top: 50px; width: 72px; height: 72px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f08-chip {
+      position: absolute;
+      right: 64px; bottom: 50px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      color: var(--muted);
+      padding: 8px 20px;
+      border: 1px solid rgba(240,238,230,.18);
+      border-radius: 22px;
+      opacity: 0;
+    }
+    #f08-s3-kick { left: 430px; top: 80px; }
+  </style>
+
+  <div id="root" data-composition-id="08-chon-model-nhu-chon-nguoi-giup-viec" data-width="1920" data-height="1080" data-duration="11.111">
+    <div id="f08-ground" class="clip" data-start="0" data-duration="11.111" data-track-index="0"></div>
+    <div id="f08-stage" class="clip" data-start="0" data-duration="11.111" data-track-index="1">
+
+      <!-- Scene 1: triptych of helpers; the middle one gets the default badge -->
+      <div id="f08-s1" class="f08-layer">
+        <div id="f08-s1-kick" class="f08-kicker"><span id="f08-k-chon">Chọn</span> <span id="f08-k-gi">gì?</span></div>
+        <div id="f08-c1" class="f08-card f08-paper">
+          <svg class="f08-person" viewBox="0 0 100 100" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="32" r="16" vector-effect="non-scaling-stroke"/><path d="M18 90 C18 66 34 56 50 56 C66 56 82 66 82 90" vector-effect="non-scaling-stroke"/></svg>
+          <div class="f08-pips"><div class="f08-pip f08-on"></div><div class="f08-pip"></div><div class="f08-pip"></div></div>
+        </div>
+        <div id="f08-c2" class="f08-card f08-paper">
+          <svg class="f08-person" viewBox="0 0 100 100" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="32" r="16" vector-effect="non-scaling-stroke"/><path d="M18 90 C18 66 34 56 50 56 C66 56 82 66 82 90" vector-effect="non-scaling-stroke"/></svg>
+          <div class="f08-pips"><div class="f08-pip f08-on"></div><div class="f08-pip f08-on"></div><div class="f08-pip"></div></div>
+          <div id="f08-badge-wrap"><div id="f08-badge"><span id="f08-b-model">Model</span> <span id="f08-b-mac">mặc</span> <span id="f08-b-dinh">định</span></div></div>
+          <div id="f08-s1-spark" class="f08-spk"></div>
+          <svg id="f08-tick" viewBox="0 0 56 56" fill="none"><path id="f08-tick-path" d="M8 30 L22 44 L48 12" stroke="#8FB8A8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+        </div>
+        <div id="f08-c3" class="f08-card f08-paper">
+          <svg class="f08-person" viewBox="0 0 100 100" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="32" r="16" vector-effect="non-scaling-stroke"/><path d="M18 90 C18 66 34 56 50 56 C66 56 82 66 82 90" vector-effect="non-scaling-stroke"/></svg>
+          <div class="f08-pips"><div class="f08-pip f08-on"></div><div class="f08-pip f08-on"></div><div class="f08-pip f08-on"></div></div>
+        </div>
+      </div>
+
+      <!-- Scene 2: split — hard-task stack on the right, Fable card slides over it -->
+      <div id="f08-s2" class="f08-layer">
+        <svg class="f08-svgfull" viewBox="0 0 1760 820">
+          <path id="f08-divider" d="M880 150 C 874 280, 886 420, 878 540 S 882 660, 880 720" fill="none" stroke="rgba(240,238,230,.28)" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f08-stack">
+          <div class="f08-slab f08-paper" style="top:620px;left:0px;"><i style="left:28px;width:180px;"></i><i style="left:28px;width:110px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:544px;left:14px;"><i style="left:28px;width:150px;"></i><i style="left:28px;width:200px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:468px;left:-10px;"><i style="left:28px;width:210px;"></i><i style="left:28px;width:90px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:392px;left:10px;"><i style="left:28px;width:130px;"></i><i style="left:28px;width:170px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:316px;left:-14px;"><i style="left:28px;width:190px;"></i><i style="left:28px;width:120px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:240px;left:6px;"><i style="left:28px;width:160px;"></i><i style="left:28px;width:210px;"></i></div>
+          <div class="f08-slab f08-paper" style="top:164px;left:-6px;"><i style="left:28px;width:200px;"></i><i style="left:28px;width:140px;"></i></div>
+        </div>
+        <div id="f08-task-label"><span id="f08-t-viec">Việc</span> <span id="f08-t-kho">khó</span></div>
+        <div id="f08-fable" class="f08-paper">
+          <svg class="f08-person" viewBox="0 0 100 100" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="32" r="16" vector-effect="non-scaling-stroke"/><path d="M18 90 C18 66 34 56 50 56 C66 56 82 66 82 90" vector-effect="non-scaling-stroke"/></svg>
+          <div id="f08-fable-name">Fable</div>
+        </div>
+      </div>
+
+      <!-- Scene 3: official document, heading types on -->
+      <div id="f08-s3" class="f08-layer">
+        <div id="f08-s3-kick" class="f08-kicker"><span id="f08-k-loi">Lời</span> <span id="f08-k-khuyen">khuyên</span></div>
+        <div id="f08-doc" class="f08-paper">
+          <div id="f08-doc-head"><span id="f08-type"></span><span id="f08-caret"></span></div>
+          <svg class="f08-svgfull" viewBox="0 0 900 600" style="width:900px;height:600px;">
+            <path id="f08-underline" d="M70 150 C 180 160, 300 142, 420 152 S 600 160, 700 146" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f08-line" style="top:220px;width:700px;"></div>
+          <div class="f08-line" style="top:272px;width:640px;"></div>
+          <div class="f08-line" style="top:324px;width:720px;"></div>
+          <div class="f08-line" style="top:376px;width:520px;"></div>
+          <div class="f08-line" style="top:428px;width:660px;"></div>
+          <div class="f08-line" style="top:480px;width:380px;"></div>
+          <div id="f08-stamp" class="f08-spk"></div>
+          <div id="f08-chip">Anthropic</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="08-chon-model-nhu-chon-nguoi-giup-viec"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f08-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // heading characters, each word typed inside its spoken window
+      var words = [
+        ['Tài', 8.46, 8.60], ['liệu', 8.62, 8.80], ['chính', 8.84, 9.00], ['thức', 9.02, 9.19]
+      ];
+      var typeEl = q('#f08-type');
+      var typed = [];
+      words.forEach(function (w, wi) {
+        if (wi > 0) {
+          var sp = document.createElement('span');
+          sp.className = 'f08-ch';
+          sp.textContent = ' ';
+          typeEl.appendChild(sp);
+          typed.push([sp, w[1]]);
+        }
+        var chars = Array.from(w[0].normalize('NFC'));
+        chars.forEach(function (c, i) {
+          var s = document.createElement('span');
+          s.className = 'f08-ch';
+          s.textContent = c;
+          typeEl.appendChild(s);
+          typed.push([s, w[1] + (w[2] - w[1]) * i / chars.length]);
+        });
+      });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+
+      // ---- Scene 1 (0–4.07): three helpers of growing size
+      tl.fromTo('#f08-c1', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: IN }, 0.1);
+      tl.fromTo('#f08-c2', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: IN }, 0.22);
+      tl.fromTo('#f08-c3', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: IN }, 0.34);
+      tl.fromTo('#f08-k-chon', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 1.01);
+      tl.fromTo('#f08-k-gi', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 1.17);
+      // "model mặc định": the badge drops onto the middle card, word by word
+      tl.fromTo('#f08-badge-wrap', { y: -70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 2.52);
+      tl.fromTo('#f08-b-mac', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 2.84);
+      tl.fromTo('#f08-b-dinh', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 2.98);
+      tl.to(['#f08-c1', '#f08-c3'], { opacity: 0.3, duration: 0.5, ease: 'power2.out' }, 2.84);
+      tl.fromTo('#f08-c2', { scale: 1 }, { scale: 1.06, duration: 0.5, ease: 'power2.inOut' }, 2.84);
+      tl.fromTo('#f08-s1-spark', popFrom, popTo, 2.98);
+      // "đề xuất": a sage tick on the recommended helper
+      tl.fromTo('#f08-tick-path', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: 'none' }, 3.42);
+
+      // ---- Scene 2 (4.07–7.0): split — default helper left, hard task right
+      tl.to('#f08-s1-kick', { opacity: 0, duration: 0.3, ease: 'power2.out' }, 4.07);
+      tl.to('#f08-c1', { x: -80, opacity: 0, duration: 0.4, ease: 'power2.in' }, 4.07);
+      tl.to('#f08-c3', { x: 80, opacity: 0, duration: 0.4, ease: 'power2.in' }, 4.07);
+      tl.to('#f08-c2', { x: -370, duration: 0.6, ease: 'power2.inOut' }, 4.07);
+      tl.fromTo('#f08-divider', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: 'none' }, 4.2);
+      qa('.f08-slab').forEach(function (el, i) {
+        tl.fromTo(el, { y: -50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 4.48 + i * 0.075);
+      });
+      tl.fromTo('#f08-t-viec', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 4.48);
+      tl.fromTo('#f08-t-kho', { y: 16, scale: 1.2, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.45, ease: IN }, 4.98);
+      // "Fable": a larger helper slides in over the task stack
+      tl.to('#f08-c2', { opacity: 0.35, duration: 0.4, ease: 'power2.out' }, 6.33);
+      tl.to('#f08-stack', { opacity: 0.3, duration: 0.4, ease: 'power2.out' }, 6.33);
+      tl.fromTo('#f08-fable', { x: 200, rotation: 3, opacity: 0 }, { x: 0, rotation: 0, opacity: 1, duration: 0.6, ease: IN }, 6.33);
+
+      // ---- Scene 3 (7.0–10.61): the official document
+      tl.to(['#f08-s1', '#f08-s2'], { scale: 0.9, opacity: 0, filter: 'blur(8px)', transformOrigin: '880px 410px', duration: 0.4, ease: 'power2.in' }, 7.0);
+      tl.fromTo('#f08-doc', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: IN }, 7.33);
+      tl.fromTo('#f08-k-loi', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 7.82);
+      tl.fromTo('#f08-k-khuyen', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 7.98);
+      qa('.f08-line').forEach(function (el, i) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, transformOrigin: '0% 50%', duration: 0.35, ease: IN }, 7.7 + i * 0.07);
+      });
+      // caret waits, then the heading types on with the voice
+      tl.set('#f08-caret', { opacity: 1 }, 8.1);
+      typed.forEach(function (t) { tl.set(t[0], { display: 'inline' }, t[1]); });
+      tl.fromTo('#f08-underline', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: 'none' }, 9.23);
+      tl.fromTo('#f08-stamp', { scale: 1.8, rotation: -30, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.4, ease: IN }, 9.45);
+      tl.fromTo('#f08-chip', { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 9.45);
+      tl.set('#f08-caret', { opacity: 0 }, 9.55);
+      tl.set('#f08-caret', { opacity: 1 }, 9.9);
+      tl.set('#f08-caret', { opacity: 0 }, 10.25);
+      // hold: a slow 1.5 % drift
+      tl.fromTo('#f08-s3', { scale: 1 }, { scale: 1.015, transformOrigin: '880px 450px', duration: 0.7, ease: 'power1.inOut' }, 9.9);
+
+      tl.to({}, { duration: 10.611 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["08-chon-model-nhu-chon-nguoi-giup-viec"] = tl;
+    })();
+  </script>
+</template>

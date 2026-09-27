@@ -1,0 +1,466 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f43-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* background field: faint dot grid, dimmed ~35% */
+    #f43-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: radial-gradient(circle, rgba(142, 147, 181, 0.45) 1.6px, transparent 2px);
+      background-size: 48px 48px;
+      background-position: 24px 24px;
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f43-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f43- */
+    .f43-kicker {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .f43-diamond {
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+    #f43-kick1 { left: 220px; top: 80px; }
+    #f43-kick2 { left: 170px; top: 330px; }
+
+    /* terminal (canvas x 300–1620, top 220); origin top-centre for push-in + dock */
+    #f43-termwrap {
+      position: absolute;
+      left: 220px;
+      top: 160px;
+      width: 1320px;
+      transform-origin: 660px 0px;
+    }
+    #f43-term {
+      width: 1320px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+    .f43-bar {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 26px;
+      border-bottom: 1px solid rgba(244, 241, 232, 0.08);
+      background: rgba(11, 16, 38, 0.45);
+    }
+    .f43-dot3 {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(142, 147, 181, 0.55);
+    }
+    .f43-title {
+      margin-left: 18px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .f43-body {
+      padding: 36px 44px 40px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 44px;
+      line-height: 68px;
+    }
+    .f43-ln {
+      position: relative;
+      min-height: 68px;
+      white-space: pre;
+      color: var(--ink);
+    }
+    .f43-pr { color: var(--cyan); }
+    .f43-caret {
+      display: inline-block;
+      width: 0.55em;
+      height: 1.05em;
+      vertical-align: -0.2em;
+      background: var(--ink);
+      opacity: 0;
+    }
+    #f43-l2 { padding: 6px 0 10px 2ch; }
+    #f43-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      padding: 2px 26px 4px 22px;
+      border-radius: 999px;
+      border: 2px solid var(--gold);
+      background: rgba(255, 210, 63, 0.10);
+      color: var(--gold);
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-size: 44px;
+      font-weight: 600;
+      line-height: 1.3;
+      transform-origin: 0% 50%;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.35));
+    }
+    #f43-chip svg { display: block; }
+    #f43-l3 { opacity: 0; }
+    #f43-l4 {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-size: 44px;
+      font-weight: 600;
+      color: var(--cyan);
+      opacity: 0;
+    }
+    #f43-run {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      margin-left: 6px;
+    }
+    #f43-run-core,
+    #f43-run-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+    }
+    #f43-run-core {
+      background: var(--cyan);
+      box-shadow: 0 0 16px rgba(62, 230, 208, 0.8);
+    }
+    #f43-run-ring {
+      border: 3px solid var(--cyan);
+      opacity: 0;
+    }
+
+    /* split: overlay svg drawn in canvas coordinates */
+    #f43-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f43-pillar { filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55)); }
+    #f43-shield { opacity: 0; }
+
+    .f43-card {
+      position: absolute;
+      top: 530px;
+      width: 400px;
+      height: 180px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f43-cardL { left: 170px; }
+    #f43-cardR { left: 1170px; }
+    .f43-avatar {
+      position: absolute;
+      left: 30px;
+      top: 30px;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    #f43-avL { border: 3px solid var(--muted); color: var(--muted); }
+    #f43-avR { border: 3px solid var(--cyan); color: var(--cyan); }
+    .f43-name {
+      position: absolute;
+      left: 128px;
+      top: 36px;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f43-msg {
+      position: absolute;
+      left: 30px;
+      height: 14px;
+      border-radius: 7px;
+      background: rgba(142, 147, 181, 0.35);
+    }
+    .f43-m1 { top: 128px; width: 300px; }
+    .f43-m2 { top: 152px; width: 190px; opacity: 0.6; }
+
+    .f43-gate {
+      position: absolute;
+      top: 460px;
+      width: 16px;
+      height: 280px;
+      border-radius: 8px;
+      opacity: 0;
+    }
+    #f43-gateL {
+      left: 652px;
+      background: var(--gold);
+      box-shadow: 0 0 22px rgba(255, 210, 63, 0.55);
+    }
+    #f43-gateR {
+      left: 1092px;
+      background: rgba(244, 241, 232, 0.4);
+    }
+    #f43-deny {
+      position: absolute;
+      left: 530px;
+      top: 390px;
+      width: 260px;
+      height: 64px;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--canvas);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    #f43-allow {
+      position: absolute;
+      right: 22px;
+      top: -30px;
+      height: 58px;
+      padding: 0 24px 0 18px;
+      border-radius: 999px;
+      background: var(--cyan);
+      color: var(--canvas);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0;
+      box-shadow: 0 0 20px rgba(62, 230, 208, 0.45);
+    }
+  </style>
+
+  <div id="root" data-composition-id="43-thiet-lap-gateway" data-width="1920" data-height="1080" data-duration="12.307">
+    <div id="f43-ground" class="clip" data-start="0" data-duration="12.307" data-track-index="0">
+      <div id="f43-field"></div>
+    </div>
+    <div id="f43-stage" class="clip" data-start="0" data-duration="12.307" data-track-index="1">
+      <div id="f43-kick1" class="f43-kicker"><span class="f43-diamond"></span><span>Bắt đầu</span></div>
+
+      <svg id="f43-svg" viewBox="80 60 1760 820" width="1760" height="820">
+        <line id="f43-pillar" x1="960" y1="344" x2="960" y2="850" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"></line>
+        <line id="f43-pass" x1="1250" y1="680" x2="966" y2="680" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round"></line>
+        <g id="f43-shield">
+          <path d="M 960 396 L 994 409 L 994 438 C 994 458, 980 472, 960 482 C 940 472, 926 458, 926 438 L 926 409 Z" fill="#141B3A" stroke="#FFD23F" stroke-width="4" stroke-linejoin="round"></path>
+          <path d="M 945 438 L 956 449 L 976 427" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </g>
+      </svg>
+
+      <div id="f43-termwrap">
+        <div id="f43-term">
+          <div class="f43-bar">
+            <span class="f43-dot3"></span><span class="f43-dot3"></span><span class="f43-dot3"></span>
+            <span class="f43-title">hermes — gateway</span>
+          </div>
+          <div class="f43-body">
+            <div id="f43-l1" class="f43-ln"><span class="f43-pr">$ </span><span id="f43-cmd1"></span><span id="f43-c1" class="f43-caret"></span></div>
+            <div id="f43-l2" class="f43-ln"><span id="f43-chip"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M 4 15 L 24 15 M 16 7 L 24 15 L 16 23" fill="none" stroke="#FFD23F" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>làm theo hướng dẫn</span></span></div>
+            <div id="f43-l3" class="f43-ln"><span class="f43-pr">$ </span><span id="f43-cmd3"></span><span id="f43-c3" class="f43-caret"></span></div>
+            <div id="f43-l4" class="f43-ln"><span id="f43-run"><span id="f43-run-ring"></span><span id="f43-run-core"></span></span><span>đang chạy</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="f43-kick2" class="f43-kicker"><span class="f43-diamond"></span><span>Mặc định</span></div>
+
+      <div id="f43-gateL" class="f43-gate"></div>
+      <div id="f43-gateR" class="f43-gate"></div>
+      <div id="f43-deny"><svg width="28" height="28" viewBox="0 0 28 28"><path d="M 5 5 L 23 23 M 23 5 L 5 23" fill="none" stroke="#0B1026" stroke-width="4.5" stroke-linecap="round"></path></svg><span>từ chối</span></div>
+
+      <div id="f43-cardL" class="f43-card">
+        <div id="f43-avL" class="f43-avatar">?</div>
+        <div id="f43-nameL" class="f43-name">người lạ</div>
+        <div class="f43-msg f43-m1"></div>
+        <div class="f43-msg f43-m2"></div>
+      </div>
+      <div id="f43-cardR" class="f43-card">
+        <div id="f43-avR" class="f43-avatar">B</div>
+        <div class="f43-name">bạn</div>
+        <div class="f43-msg f43-m1"></div>
+        <div class="f43-msg f43-m2"></div>
+        <div id="f43-allow"><svg width="28" height="28" viewBox="0 0 28 28"><path d="M 4 15 L 11 22 L 24 7" fill="none" stroke="#0B1026" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path></svg><span>cho phép</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 11.807;
+
+      // draw-on lines (fixed lengths → deterministic)
+      var PL = 506, SL = 284;
+      var pillar = document.getElementById("f43-pillar");
+      var pass = document.getElementById("f43-pass");
+      pillar.setAttribute("stroke-dasharray", PL + " " + PL);
+      pillar.setAttribute("stroke-dashoffset", PL);
+      pass.setAttribute("stroke-dasharray", SL + " " + SL);
+      pass.setAttribute("stroke-dashoffset", SL);
+
+      // initial hidden states (before the timeline is built)
+      gsap.set(["#f43-kick1", "#f43-kick2", "#f43-termwrap", "#f43-nameL"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // typed text: spans filled from a proxy count (seek-safe, deterministic)
+      function typer(el, segs, t0, t1) {
+        var parts = [], total = 0;
+        segs.forEach(function (s) {
+          var sp = document.createElement("span");
+          if (s[1]) sp.className = s[1];
+          el.appendChild(sp);
+          parts.push({ el: sp, txt: s[0] });
+          total += s[0].length;
+        });
+        var p = { n: 0 };
+        tl.fromTo(p, { n: 0 }, { n: total, duration: t1 - t0, ease: "none", onUpdate: function () {
+          var k = Math.floor(p.n + 1e-6);
+          parts.forEach(function (o) {
+            var m = Math.max(0, Math.min(o.txt.length, k));
+            o.el.textContent = o.txt.slice(0, m);
+            k -= o.txt.length;
+          });
+        } }, t0);
+      }
+      // caret blink as discrete sets (no repeat)
+      function blink(c, t0, t1) {
+        for (var i = 0; t0 + i * 0.6 < t1 - 0.001; i++) {
+          var t = t0 + i * 0.6;
+          tl.set(c, { opacity: 1 }, t);
+          if (t + 0.3 < t1 - 0.001) tl.set(c, { opacity: 0 }, t + 0.3);
+        }
+      }
+
+      var cmd1 = document.getElementById("f43-cmd1");
+      var cmd3 = document.getElementById("f43-cmd3");
+
+      // ---- Scene 1 (0–4.19): terminal; `hermes gateway setup` types on the words ----
+      tl.fromTo("#f43-termwrap", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0);
+      tl.fromTo("#f43-kick1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.43);
+      // slow push-in under the typing (camera move 1)
+      tl.fromTo("#f43-termwrap", { scale: 1 }, { scale: 1.04, duration: 6.3, ease: "power2.inOut" }, 0.4);
+      blink("#f43-c1", 0.3, 1.64);
+      tl.set("#f43-c1", { opacity: 1 }, 1.64);
+      // hermes@1.64 · gateway@2.08 · setup@2.52
+      typer(cmd1, [["hermes", ""]], 1.64, 1.98);
+      typer(cmd1, [[" gateway", ""]], 2.08, 2.44);
+      typer(cmd1, [[" setup", ""]], 2.52, 2.8);
+      blink("#f43-c1", 2.9, 4.57);
+      // "làm theo hướng dẫn" @3.19 — the guide chip pops
+      tl.fromTo("#f43-chip", { opacity: 0, scale: 0.6, x: -20 }, { opacity: 1, scale: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.19);
+
+      // ---- Scene 2 (4.19–6.4): next prompt; `hermes gateway start` on cue ----
+      tl.set("#f43-c1", { opacity: 0 }, 4.57);
+      tl.fromTo("#f43-l3", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 4.57);
+      blink("#f43-c3", 4.6, 5.58);
+      tl.set("#f43-c3", { opacity: 1 }, 5.58);
+      // hermes@5.58 · gateway@6.02 · start@6.4
+      typer(cmd3, [["hermes", ""]], 5.58, 5.92);
+      typer(cmd3, [[" gateway", ""]], 6.02, 6.34);
+      typer(cmd3, [[" start", ""]], 6.4, 6.62);
+      tl.set("#f43-c3", { opacity: 0 }, 6.7);
+      // "là xong" @6.70 — cyan running dot lights
+      tl.fromTo("#f43-l4", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 6.7);
+      tl.fromTo("#f43-run-core", { scale: 0 }, { scale: 1, duration: 0.35, ease: "power3.out" }, 6.7);
+      tl.fromTo("#f43-run-ring", { opacity: 0.9, scale: 1 }, { opacity: 0, scale: 2.6, duration: 0.9, ease: "power2.out" }, 6.8);
+
+      // ---- Scene 3 (6.4–11.81): split — terminal docks top, gateway pillar, stranger vs owner ----
+      // dock (camera move 2): scale to 0.65, lift to canvas y 70
+      tl.fromTo("#f43-termwrap", { scale: 1.04, y: 0 }, { scale: 0.65, y: -150, duration: 0.7, ease: "power2.inOut" }, 7.05);
+      tl.fromTo("#f43-kick1", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 7.05);
+      // "an toàn" @7.87 — gateway pillar draws down from the terminal, shield lands on it
+      tl.fromTo(pillar, { attr: { "stroke-dashoffset": PL } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.6, ease: "none" }, 7.87);
+      tl.fromTo("#f43-shield", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 7.99);
+      // "mặc định" @8.69
+      tl.fromTo("#f43-kick2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 8.69);
+      // "từ" @9.40 — stranger's card slides in, gold gate drops
+      tl.fromTo("#f43-gateL", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.22, ease: "power3.out" }, 9.4);
+      tl.fromTo("#f43-cardL", { opacity: 0, x: -80 }, { opacity: 1, x: 70, duration: 0.36, ease: "power2.in" }, 9.4);
+      // "chối" @9.58 — "✗ từ chối" bar slams; every lane is shut by default
+      tl.fromTo("#f43-deny", { opacity: 0, y: -30, scale: 1.3 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power3.out" }, 9.58);
+      tl.fromTo("#f43-gateR", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.22, ease: "power3.out" }, 9.58);
+      // "người" @9.76 — the card hits the gate and recoils, its label reads; "lạ" @9.96 — it dims
+      tl.fromTo("#f43-nameL", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 9.76);
+      tl.fromTo("#f43-cardL", { x: 70 }, { x: 0, duration: 0.4, ease: "power3.out" }, 9.76);
+      tl.fromTo("#f43-gateL", { x: 0 }, { x: 8, duration: 0.08, ease: "power2.out" }, 9.76);
+      tl.fromTo("#f43-gateL", { x: 8 }, { x: 0, duration: 0.25, ease: "power3.out" }, 9.84);
+      tl.fromTo("#f43-cardL", { opacity: 1 }, { opacity: 0.5, duration: 0.4, ease: "power2.inOut" }, 9.96);
+      // "bạn" @10.60 — owner's card arrives on the right
+      tl.fromTo("#f43-cardR", { opacity: 0, x: 120 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 10.6);
+      // "phép" @10.91 — the right gate turns cyan and lifts, "✓ cho phép", a cyan trail passes through
+      tl.set("#f43-gateR", { background: "#3EE6D0", boxShadow: "0 0 22px rgba(62,230,208,0.55)" }, 10.9);
+      tl.fromTo("#f43-gateR", { y: 0, opacity: 1 }, { y: -110, opacity: 0.3, duration: 0.4, ease: "power2.inOut" }, 10.95);
+      tl.fromTo("#f43-allow", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 10.9);
+      tl.fromTo(pass, { attr: { "stroke-dashoffset": SL } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.4, ease: "none" }, 11.05);
+      // hold
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["43-thiet-lap-gateway"] = tl;
+    })();
+  </script>
+</template>

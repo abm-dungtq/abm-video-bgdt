@@ -1,0 +1,310 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f29-ground {
+      position: absolute;
+      inset: 0;
+      background: var(--canvas);
+    }
+    /* hue shift +12°: ch3's glow (H 266) hands over to ch4 (H 278) */
+    #f29-ground .f29-glow {
+      position: absolute;
+      inset: 0;
+    }
+    #f29-glow-prev {
+      background: radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%);
+    }
+    #f29-glow-ch {
+      background: radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f29-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f29- */
+    #f29-cam {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+    }
+    /* numeral group: 360×560 box, 1:1 with the SVG viewBox */
+    #f29-numeral {
+      position: absolute;
+      left: 250px;
+      top: 130px;
+      width: 360px;
+      height: 560px;
+      transform-origin: 180px 280px;
+    }
+    #f29-bloom {
+      position: absolute;
+      left: -180px;
+      top: -70px;
+      width: 720px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 210, 63, 0.22), rgba(255, 210, 63, 0.06) 55%, transparent 100%);
+    }
+    #f29-ring-spin {
+      position: absolute;
+      left: -150px;
+      top: -50px;
+      width: 660px;
+      height: 660px;
+    }
+    #f29-decor,
+    #f29-loop {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 660px;
+      height: 660px;
+      overflow: visible;
+    }
+    #f29-loop-wrap {
+      position: absolute;
+      left: -150px;
+      top: -50px;
+      width: 660px;
+      height: 660px;
+    }
+    #f29-loop-path {
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    #f29-glyph {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 560px;
+      overflow: visible;
+    }
+    #f29-trace {
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    /* title block beside the numeral */
+    #f29-title-group {
+      position: absolute;
+      left: 800px;
+      top: 230px;
+    }
+    #f29-kicker {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    .f29-diamond {
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+    .f29-line-mask {
+      overflow: hidden;
+      padding: 8px 8px 12px 0;
+    }
+    #f29-mask-1 { margin-top: 14px; }
+    .f29-line {
+      font-size: 112px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+  </style>
+
+  <div id="root" data-composition-id="29-vong-hoc-khep-kin" data-width="1920" data-height="1080" data-duration="3.67">
+    <div id="f29-ground" class="clip" data-start="0" data-duration="3.67" data-track-index="0">
+      <div id="f29-glow-prev" class="f29-glow"></div>
+      <div id="f29-glow-ch" class="f29-glow"></div>
+    </div>
+    <div id="f29-stage" class="clip" data-start="0" data-duration="3.67" data-track-index="1">
+      <div id="f29-cam">
+        <div id="f29-numeral">
+          <div id="f29-bloom"></div>
+          <div id="f29-ring-spin">
+            <svg id="f29-decor" viewBox="0 0 660 660" width="660" height="660">
+              <circle cx="330" cy="330" r="318" fill="none" stroke="rgba(244,241,232,0.10)" stroke-width="2" stroke-dasharray="2 12"></circle>
+              <circle cx="330" cy="330" r="262" fill="none" stroke="rgba(142,147,181,0.10)" stroke-width="1.5"></circle>
+            </svg>
+          </div>
+          <div id="f29-loop-wrap">
+            <svg id="f29-loop" viewBox="0 0 660 660" width="660" height="660">
+              <circle id="f29-loop-path" cx="330" cy="330" r="292" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" transform="rotate(-90 330 330)"></circle>
+              <g id="f29-loop-spark">
+                <circle cx="0" cy="0" r="14" fill="rgba(255,210,63,0.22)"></circle>
+                <path d="M -3 -3 C -10 -15, -20 -16, -27 -9" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+                <path d="M -3 3 C -10 15, -20 16, -27 9" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+                <circle cx="0" cy="0" r="6" fill="#FFD23F"></circle>
+              </g>
+            </svg>
+          </div>
+          <svg id="f29-glyph" viewBox="0 0 360 560" width="360" height="560">
+            <defs>
+              <linearGradient id="f29-fillgrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#FFD23F" stop-opacity="0.30"></stop>
+                <stop offset="1" stop-color="#FFD23F" stop-opacity="0.05"></stop>
+              </linearGradient>
+            </defs>
+            <path id="f29-fill" fill="url(#f29-fillgrad)" fill-rule="evenodd" stroke="none"></path>
+            <path id="f29-trace" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
+            <g id="f29-spark">
+              <circle cx="0" cy="0" r="16" fill="rgba(255,210,63,0.22)"></circle>
+              <path d="M -3 -3 C -10 -16, -22 -17, -30 -10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <path d="M -3 3 C -10 16, -22 17, -30 10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <circle cx="0" cy="0" r="7" fill="#FFD23F"></circle>
+            </g>
+          </svg>
+        </div>
+
+        <div id="f29-title-group">
+          <div id="f29-kicker"><span class="f29-diamond"></span><span>Chương 4</span></div>
+          <div id="f29-mask-1" class="f29-line-mask">
+            <div id="f29-line-1" class="f29-line">Vòng học</div>
+          </div>
+          <div id="f29-mask-2" class="f29-line-mask">
+            <div id="f29-line-2" class="f29-line">khép kín</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var DUR = 3.17;
+
+      // numeral "4" outline (viewBox units = px): outer contour, then the inner counter.
+      // Each entry: [x, y, jump] — jump = true starts a new subpath (zero length for the spark).
+      var PTS = [
+        [290, 30], [290, 380], [340, 380], [340, 450], [290, 450], [290, 540],
+        [210, 540], [210, 450], [20, 450], [20, 385], [200, 30], [290, 30],
+        [210, 157, true], [210, 380], [97, 380], [210, 157]
+      ];
+
+      var cum = [0];
+      var d = "M " + PTS[0][0] + " " + PTS[0][1];
+      for (var i = 1; i < PTS.length; i++) {
+        if (PTS[i][2]) {
+          cum.push(cum[i - 1]);
+          d += " M " + PTS[i][0] + " " + PTS[i][1];
+        } else {
+          var dx = PTS[i][0] - PTS[i - 1][0];
+          var dy = PTS[i][1] - PTS[i - 1][1];
+          cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy));
+          d += " L " + PTS[i][0] + " " + PTS[i][1];
+        }
+      }
+      var LEN = cum[cum.length - 1];
+
+      var trace = document.getElementById("f29-trace");
+      var fill = document.getElementById("f29-fill");
+      var spark = document.getElementById("f29-spark");
+      trace.setAttribute("d", d);
+      fill.setAttribute("d", d);
+      trace.setAttribute("stroke-dasharray", LEN + " " + LEN);
+      trace.setAttribute("stroke-dashoffset", LEN);
+
+      // courier spark rides the head of the numeral trail (pure function of progress → seek-safe)
+      var travel = { p: 0 };
+      function renderSpark() {
+        var dist = Math.max(0, Math.min(1, travel.p)) * LEN;
+        var k = 1;
+        while (k < cum.length - 1 && (cum[k] < dist || PTS[k][2])) k++;
+        var p0 = PTS[k - 1], p1 = PTS[k];
+        var seg = cum[k] - cum[k - 1];
+        var t = seg > 0 ? (dist - cum[k - 1]) / seg : 0;
+        var x = p0[0] + (p1[0] - p0[0]) * t;
+        var y = p0[1] + (p1[1] - p0[1]) * t;
+        var ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180 / Math.PI;
+        spark.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ")");
+      }
+      renderSpark();
+
+      // the closing ring around the numeral (starts at 12 o'clock, clockwise)
+      var R = 292;
+      var RLEN = 2 * Math.PI * R;
+      var loop = document.getElementById("f29-loop-path");
+      var loopSpark = document.getElementById("f29-loop-spark");
+      loop.setAttribute("stroke-dasharray", RLEN + " " + RLEN);
+      loop.setAttribute("stroke-dashoffset", RLEN);
+      var ring = { p: 0 };
+      function renderLoopSpark() {
+        var a = (-90 + 360 * Math.max(0, Math.min(1, ring.p))) * Math.PI / 180;
+        var x = 330 + R * Math.cos(a);
+        var y = 330 + R * Math.sin(a);
+        var ang = a * 180 / Math.PI + 90;
+        loopSpark.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ")");
+      }
+      renderLoopSpark();
+
+      gsap.set([spark, loopSpark, "#f29-kicker", "#f29-bloom"], { opacity: 0 });
+      gsap.set(fill, { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–1.25 s) — "Chương bốn": hue shifts +12°, the trail writes a large "4"
+      tl.fromTo("#f29-glow-prev", { opacity: 1 }, { opacity: 0, duration: 1.2, ease: "power2.inOut" }, 0);
+      tl.fromTo("#f29-glow-ch", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 0);
+      tl.fromTo("#f29-decor", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f29-ring-spin", { rotation: 0 }, { rotation: -24, duration: DUR - 0.05, ease: "none" }, 0.05);
+      tl.fromTo(trace, { attr: { "stroke-dashoffset": LEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 1.1, ease: "none" }, 0.1);
+      tl.fromTo(travel, { p: 0 }, { p: 1, duration: 1.1, ease: "none", onUpdate: renderSpark }, 0.1);
+      tl.fromTo(spark, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.1);
+      // "bốn" @ 1.02 — the written 4 fills and blooms as the trail finishes
+      tl.fromTo(fill, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.02);
+      tl.fromTo("#f29-bloom", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 1.02);
+      tl.to(spark, { opacity: 0, duration: 0.2, ease: "power2.inOut" }, 1.22);
+
+      // Scene 2 (1.25–3.17 s) — numeral settles left, title slides up on "vòng học", ring closes
+      tl.fromTo("#f29-numeral", { x: 260, scale: 1.1 }, { x: 0, scale: 0.92, duration: 0.55, ease: "power2.inOut" }, 1.25);
+      // kicker names the chapter once the numeral has cleared the title column
+      tl.fromTo("#f29-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.42);
+      // "vòng" @ 1.61
+      tl.fromTo("#f29-line-1", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 1.6);
+      // "khép" @ 1.95
+      tl.fromTo("#f29-line-2", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 1.94);
+      // "khép kín" — the courier trail closes a ring around the numeral
+      tl.fromTo(loop, { attr: { "stroke-dashoffset": RLEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.6, ease: "none" }, 1.9);
+      tl.fromTo(ring, { p: 0 }, { p: 1, duration: 0.6, ease: "none", onUpdate: renderLoopSpark }, 1.9);
+      tl.fromTo(loopSpark, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "power2.out" }, 1.9);
+      tl.to(loopSpark, { opacity: 0, duration: 0.25, ease: "power2.inOut" }, 2.5);
+
+      // hold: a quiet ~1% drift only
+      tl.fromTo("#f29-cam", { scale: 1 }, { scale: 1.01, duration: DUR - 2.4, ease: "none" }, 2.4);
+
+      tl.to({}, { duration: DUR }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["29-vong-hoc-khep-kin"] = tl;
+    })();
+  </script>
+</template>

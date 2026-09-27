@@ -1,0 +1,363 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f49-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f49-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+
+    /* analyze rail */
+    #f49-rail {
+      position: absolute; left: 290px; top: 0; width: 1180px; height: 64px;
+      border-radius: 32px; background: rgba(20,27,58,.85);
+      border: 1px solid rgba(244,241,232,.12);
+      opacity: 0;
+    }
+    .f49-slot {
+      position: absolute; top: 0; height: 64px; width: 393px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted);
+      letter-spacing: .04em;
+    }
+    .f49-slot-num {
+      width: 42px; height: 42px; border-radius: 50%; border: 2px solid currentColor;
+      display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1;
+    }
+    #f49-slot1 { left: 0; } #f49-slot2 { left: 393px; } #f49-slot3 { left: 786px; }
+    #f49-rail-ind {
+      position: absolute; left: 40px; top: 56px; width: 313px; height: 5px; border-radius: 3px;
+      background: var(--gold); transform-origin: 50% 50%;
+      filter: drop-shadow(0 0 10px rgba(255,210,63,.55)); opacity: 0;
+    }
+
+    /* flow group (stage y 110 → 810) */
+    #f49-flow { position: absolute; left: 0; top: 110px; width: 1760px; height: 700px; transform-origin: 0px 350px; }
+    #f49-trails { position: absolute; left: 0; top: 0; width: 1760px; height: 700px; overflow: visible; }
+    .f49-trail { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 8px rgba(255,210,63,.45)); }
+
+    #f49-parent {
+      position: absolute; left: 100px; top: 260px; width: 180px; height: 180px; border-radius: 50%;
+      background: var(--surface); border: 4px solid var(--ink);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 0 10px rgba(244,241,232,.05);
+      display: flex; align-items: center; justify-content: center; opacity: 0;
+    }
+    #f49-parent-label {
+      position: absolute; left: 40px; top: 462px; width: 300px; text-align: center;
+      font-size: 44px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1; opacity: 0;
+    }
+
+    .f49-child {
+      position: absolute; left: 505px; width: 110px; height: 110px; border-radius: 50%;
+      background: var(--surface); border: 3px solid var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-size: 32px; color: var(--ink);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35); opacity: 0;
+    }
+    #f49-child1 { top: 55px; } #f49-child2 { top: 295px; } #f49-child3 { top: 535px; }
+    .f49-spin { position: absolute; left: 485px; width: 150px; height: 150px; opacity: 0; }
+    #f49-spin1 { top: 35px; } #f49-spin2 { top: 275px; } #f49-spin3 { top: 515px; }
+    .f49-spin circle { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 120 352; }
+
+    .f49-kicker {
+      position: absolute; top: -8px; font-family: "JetBrains Mono", monospace; font-size: 28px;
+      letter-spacing: .16em; text-transform: uppercase; color: var(--gold); opacity: 0; white-space: nowrap;
+    }
+    #f49-k-agent { left: 450px; }
+    #f49-k-song { left: 800px; color: var(--cyan); }
+
+    .f49-task {
+      position: absolute; left: 650px; height: 48px; padding: 0 18px; border-radius: 24px;
+      border: 1px solid rgba(244,241,232,.2); background: rgba(20,27,58,.9);
+      display: flex; align-items: center; font-size: 28px; font-weight: 600; color: var(--ink);
+      white-space: nowrap; opacity: 0;
+    }
+    #f49-task1 { top: 86px; } #f49-task2 { top: 326px; } #f49-task3 { top: 566px; }
+
+    .f49-track {
+      position: absolute; left: 800px; width: 400px; height: 16px; border-radius: 8px;
+      background: rgba(142,147,181,.22); overflow: hidden; opacity: 0;
+    }
+    #f49-track1 { top: 102px; } #f49-track2 { top: 342px; } #f49-track3 { top: 582px; }
+    .f49-fill {
+      position: absolute; left: 0; top: 0; width: 400px; height: 16px; border-radius: 8px;
+      background: linear-gradient(90deg, rgba(62,230,208,.55), var(--cyan)); transform-origin: 0 50%;
+    }
+
+    .f49-dots { position: absolute; left: 1216px; width: 64px; height: 12px; opacity: 0; }
+    #f49-dots1 { top: 104px; } #f49-dots2 { top: 344px; } #f49-dots3 { top: 584px; }
+    .f49-dot { position: absolute; top: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); opacity: .3; }
+    .f49-dot.f49-d0 { left: 0; } .f49-dot.f49-d1 { left: 22px; } .f49-dot.f49-d2 { left: 44px; }
+
+    /* summary cards live in stage coords so they can travel on their own */
+    .f49-card {
+      position: absolute; left: 1300px; width: 320px; height: 96px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.14);
+      border-left: 5px solid var(--cyan);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0;
+    }
+    #f49-card1 { top: 172px; } #f49-card2 { top: 412px; } #f49-card3 { top: 652px; }
+    .f49-card-title {
+      position: absolute; left: 22px; top: 12px; font-size: 28px; font-weight: 600; line-height: 1.2; color: var(--ink);
+    }
+    .f49-card-check { position: absolute; right: 18px; top: 16px; width: 30px; height: 30px; }
+    .f49-card-line { position: absolute; left: 22px; top: 62px; height: 9px; border-radius: 5px; background: rgba(142,147,181,.45); }
+    .f49-card-line.f49-l1 { width: 200px; }
+    .f49-card-line.f49-l2 { left: 232px; width: 50px; }
+
+    /* main chat panel (scene 3) */
+    #f49-chat {
+      position: absolute; left: 1160px; top: 150px; width: 540px; height: 640px; border-radius: 18px;
+      background: rgba(20,27,58,.92); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0;
+    }
+    #f49-chat-title {
+      position: absolute; left: 26px; top: 20px; font-size: 28px; font-weight: 600; color: var(--muted); line-height: 1.2;
+    }
+    #f49-chat-rule { position: absolute; left: 0; top: 72px; width: 540px; height: 1px; background: rgba(244,241,232,.12); }
+    .f49-bubble { position: absolute; height: 40px; border-radius: 20px; }
+    #f49-bub1 { right: 26px; top: 96px; width: 250px; background: rgba(255,210,63,.18); }
+    #f49-bub2 { left: 26px; top: 152px; width: 320px; background: rgba(244,241,232,.10); }
+    #f49-neat {
+      position: absolute; right: 18px; top: 12px; height: 48px; padding: 0 16px 0 12px; border-radius: 24px;
+      border: 2px solid var(--cyan); color: var(--cyan); background: rgba(62,230,208,.08);
+      display: flex; align-items: center; gap: 8px; font-size: 28px; font-weight: 600; white-space: nowrap; opacity: 0;
+    }
+    #f49-neat svg { width: 26px; height: 26px; }
+
+    /* "nhanh hơn" tag */
+    #f49-fast {
+      position: absolute; left: 60px; top: 690px; height: 80px; padding: 0 30px 0 22px; border-radius: 40px;
+      background: var(--gold); color: var(--canvas);
+      display: flex; align-items: center; gap: 14px; font-size: 44px; font-weight: 800; letter-spacing: -.015em;
+      white-space: nowrap; box-shadow: 0 0 30px rgba(255,210,63,.35); opacity: 0;
+    }
+    #f49-fast svg { width: 38px; height: 46px; }
+  </style>
+
+  <div id="root" data-composition-id="49-agent-con-lam-viec-song-song" data-width="1920" data-height="1080" data-duration="13.505">
+    <div id="f49-ground" class="clip" data-start="0" data-duration="13.505" data-track-index="0"></div>
+    <div id="f49-stage" class="clip" data-start="0" data-duration="13.505" data-track-index="1">
+
+      <div id="f49-rail">
+        <div id="f49-slot1" class="f49-slot"><span class="f49-slot-num">1</span><span>Tính năng</span></div>
+        <div id="f49-slot2" class="f49-slot"><span class="f49-slot-num">2</span><span>Vì sao nổi bật</span></div>
+        <div id="f49-slot3" class="f49-slot"><span class="f49-slot-num">3</span><span>Bạn được gì</span></div>
+        <div id="f49-rail-ind"></div>
+      </div>
+
+      <div id="f49-flow">
+        <svg id="f49-trails" viewBox="0 0 1760 700">
+          <path id="f49-trail1" class="f49-trail" d="M280 350 C 400 350, 400 110, 505 110"></path>
+          <path id="f49-trail2" class="f49-trail" d="M280 350 L 505 350"></path>
+          <path id="f49-trail3" class="f49-trail" d="M280 350 C 400 350, 400 590, 505 590"></path>
+        </svg>
+
+        <div id="f49-k-agent" class="f49-kicker">◆ Agent con</div>
+        <div id="f49-k-song" class="f49-kicker">◆ Song song</div>
+
+        <div id="f49-parent">
+          <svg width="112" height="80" viewBox="0 0 112 80">
+            <path d="M50 42 C 34 20, 14 14, 2 18 C 14 26, 24 34, 44 48" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round"></path>
+            <path d="M48 52 C 34 44, 20 44, 8 50 C 20 56, 32 60, 46 58" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round"></path>
+            <circle cx="66" cy="46" r="16" fill="#ffd23f"></circle>
+            <circle cx="66" cy="46" r="26" fill="none" stroke="#ffd23f" stroke-opacity=".35" stroke-width="3"></circle>
+          </svg>
+        </div>
+        <div id="f49-parent-label">Hermes</div>
+
+        <svg id="f49-spin1" class="f49-spin" viewBox="0 0 150 150"><circle cx="75" cy="75" r="68"></circle></svg>
+        <svg id="f49-spin2" class="f49-spin" viewBox="0 0 150 150"><circle cx="75" cy="75" r="68"></circle></svg>
+        <svg id="f49-spin3" class="f49-spin" viewBox="0 0 150 150"><circle cx="75" cy="75" r="68"></circle></svg>
+        <div id="f49-child1" class="f49-child">01</div>
+        <div id="f49-child2" class="f49-child">02</div>
+        <div id="f49-child3" class="f49-child">03</div>
+
+        <div id="f49-task1" class="f49-task">Phần 1</div>
+        <div id="f49-task2" class="f49-task">Phần 2</div>
+        <div id="f49-task3" class="f49-task">Phần 3</div>
+
+        <div id="f49-track1" class="f49-track"><div id="f49-fill1" class="f49-fill"></div></div>
+        <div id="f49-track2" class="f49-track"><div id="f49-fill2" class="f49-fill"></div></div>
+        <div id="f49-track3" class="f49-track"><div id="f49-fill3" class="f49-fill"></div></div>
+
+        <div id="f49-dots1" class="f49-dots"><div class="f49-dot f49-d0"></div><div class="f49-dot f49-d1"></div><div class="f49-dot f49-d2"></div></div>
+        <div id="f49-dots2" class="f49-dots"><div class="f49-dot f49-d0"></div><div class="f49-dot f49-d1"></div><div class="f49-dot f49-d2"></div></div>
+        <div id="f49-dots3" class="f49-dots"><div class="f49-dot f49-d0"></div><div class="f49-dot f49-d1"></div><div class="f49-dot f49-d2"></div></div>
+      </div>
+
+      <div id="f49-fast">
+        <svg viewBox="0 0 38 46"><path d="M24 2 L4 26 H18 L14 44 L34 18 H20 Z" fill="#0b1026"></path></svg>
+        <span>Nhanh hơn</span>
+      </div>
+
+      <div id="f49-chat">
+        <div id="f49-chat-title">Trò chuyện chính</div>
+        <div id="f49-neat">
+          <svg viewBox="0 0 26 26"><path d="M4 13 L10 19 L22 6" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Gọn gàng</span>
+        </div>
+        <div id="f49-chat-rule"></div>
+        <div id="f49-bub1" class="f49-bubble"></div>
+        <div id="f49-bub2" class="f49-bubble"></div>
+      </div>
+
+      <div id="f49-card1" class="f49-card">
+        <div class="f49-card-title">Tóm tắt</div>
+        <svg class="f49-card-check" viewBox="0 0 30 30"><circle cx="15" cy="15" r="14" fill="#3ee6d0"></circle><path d="M8 15 L13 20 L22 10" fill="none" stroke="#0b1026" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div class="f49-card-line f49-l1"></div><div class="f49-card-line f49-l2"></div>
+      </div>
+      <div id="f49-card2" class="f49-card">
+        <div class="f49-card-title">Tóm tắt</div>
+        <svg class="f49-card-check" viewBox="0 0 30 30"><circle cx="15" cy="15" r="14" fill="#3ee6d0"></circle><path d="M8 15 L13 20 L22 10" fill="none" stroke="#0b1026" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div class="f49-card-line f49-l1"></div><div class="f49-card-line f49-l2"></div>
+      </div>
+      <div id="f49-card3" class="f49-card">
+        <div class="f49-card-title">Tóm tắt</div>
+        <svg class="f49-card-check" viewBox="0 0 30 30"><circle cx="15" cy="15" r="14" fill="#3ee6d0"></circle><path d="M8 15 L13 20 L22 10" fill="none" stroke="#0b1026" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div class="f49-card-line f49-l1"></div><div class="f49-card-line f49-l2"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (s) { return document.querySelector(s); };
+      var GOLD = "#ffd23f", MUTED = "#8e93b5", CYAN = "#3ee6d0";
+
+      // initial states (before the timeline is built)
+      var trailLens = [];
+      [1, 2, 3].forEach(function (i) {
+        var p = q("#f49-trail" + i);
+        var len = p.getTotalLength();
+        trailLens.push(len);
+        gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
+        gsap.set("#f49-fill" + i, { scaleX: 0 });
+      });
+      gsap.set("#f49-rail-ind", { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ── Scene 1 (0–3.5s): rail + parent; split into three children on "agent con"
+      tl.fromTo("#f49-rail", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.35);
+      tl.fromTo("#f49-parent", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0.35);
+      tl.fromTo("#f49-parent-label", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.59);
+
+      // rail slot 1 lights on "agent"
+      tl.set("#f49-slot1", { color: GOLD }, 2.75);
+      tl.fromTo("#f49-rail-ind", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 2.75);
+
+      // children spring out of the parent centre (190,350) to their lanes
+      var laneY = [110, 350, 590];
+      [1, 2, 3].forEach(function (i, k) {
+        var t = 2.75 + k * 0.07;
+        tl.fromTo("#f49-child" + i,
+          { opacity: 0, x: 190 - 560, y: 350 - laneY[k], scale: 0.3 },
+          { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, t);
+        tl.fromTo("#f49-trail" + i, { strokeDashoffset: trailLens[k] }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, t);
+      });
+      tl.fromTo("#f49-k-agent", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.08);
+
+      // ── Scene 2 (3.5–7.78s): each child takes a share, lanes run in parallel, cards emitted
+      var taskT = [4.60, 4.76, 4.90];
+      [1, 2, 3].forEach(function (i, k) {
+        tl.fromTo("#f49-task" + i, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, taskT[k]);
+        tl.fromTo("#f49-track" + i, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, taskT[k] + 0.08);
+      });
+
+      // rail slot 2 lights on "song song"
+      tl.set("#f49-slot1", { color: MUTED }, 5.85);
+      tl.set("#f49-slot2", { color: GOLD }, 5.85);
+      tl.to("#f49-rail-ind", { x: 393, duration: 0.5, ease: "power2.inOut" }, 5.85);
+      tl.fromTo("#f49-k-song", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.05);
+
+      var workStart = 5.85;
+      var laneEnd = [7.30, 7.47, 7.64];
+      var cardT = [7.42, 7.60, 7.78];
+      var fillEase = ["power1.inOut", "power2.inOut", "sine.inOut"];
+      [1, 2, 3].forEach(function (i, k) {
+        var dur = laneEnd[k] - workStart;
+        tl.fromTo("#f49-fill" + i, { scaleX: 0 }, { scaleX: 1, duration: dur, ease: fillEase[k] }, workStart);
+        // working spinner around the child (finite, timeline-driven, dies when the lane resolves)
+        tl.fromTo("#f49-spin" + i, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, workStart);
+        tl.fromTo("#f49-spin" + i, { rotation: 0 }, { rotation: 360 * dur * 0.9, duration: dur, ease: "none" }, workStart);
+        tl.set("#f49-spin" + i, { opacity: 0 }, laneEnd[k]);
+        // pulsing loading dots
+        tl.fromTo("#f49-dots" + i, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, workStart);
+        var dots = document.querySelectorAll("#f49-dots" + i + " .f49-dot");
+        for (var d = 0; d < 3; d++) {
+          for (var t = workStart + 0.1 + d * 0.12; t + 0.36 <= laneEnd[k]; t += 0.42) {
+            tl.to(dots[d], { opacity: 1, duration: 0.18, ease: "sine.inOut" }, t);
+            tl.to(dots[d], { opacity: 0.3, duration: 0.18, ease: "sine.inOut" }, t + 0.18);
+          }
+        }
+        tl.set("#f49-dots" + i, { opacity: 0 }, laneEnd[k]);
+        // child resolves to done
+        tl.set("#f49-child" + i, { borderColor: CYAN, color: CYAN }, laneEnd[k]);
+        // lane emits its summary card
+        tl.fromTo("#f49-card" + i,
+          { opacity: 0, x: -80, scale: 0.6 },
+          { opacity: 1, x: 0, scale: 1, duration: 0.45, ease: "power3.out" }, cardT[k]);
+      });
+
+      // ── Scene 3 (7.78–13.0s): lanes shrink left, chat panel appears, cards stack neatly into it
+      tl.to("#f49-flow", { scale: 0.62, opacity: 0.55, duration: 0.7, ease: "power2.inOut" }, 8.3);
+      var followDy = [91, 0, -91];
+      [1, 2, 3].forEach(function (i, k) {
+        tl.to("#f49-card" + i, { x: -494, y: followDy[k], scale: 0.85, duration: 0.7, ease: "power2.inOut" }, 8.3);
+      });
+
+      // rail slot 3 lights on "Nhờ vậy"
+      tl.set("#f49-slot2", { color: MUTED }, 8.54);
+      tl.set("#f49-slot3", { color: GOLD }, 8.54);
+      tl.to("#f49-rail-ind", { x: 786, duration: 0.5, ease: "power2.inOut" }, 8.54);
+
+      // "nhanh hơn" tag pops on cue
+      tl.fromTo("#f49-fast", { opacity: 0, scale: 0.7, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.88);
+
+      // main chat panel on "cuộc trò chuyện"
+      tl.fromTo("#f49-chat", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 10.82);
+      tl.fromTo("#f49-bub1", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 11.05);
+      tl.fromTo("#f49-bub2", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 11.2);
+
+      // cards stack into the panel on "gọn"
+      var stackDy = [217, 104, -9];
+      [1, 2, 3].forEach(function (i, k) {
+        tl.to("#f49-card" + i, { x: -30, y: stackDy[k], scale: 1.2, duration: 0.55, ease: "power2.inOut" }, 11.78 + k * 0.08);
+      });
+      tl.fromTo("#f49-neat", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 11.96);
+
+      tl.to({}, { duration: 13.005 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["49-agent-con-lam-viec-song-song"] = tl;
+    })();
+  </script>
+</template>

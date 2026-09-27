@@ -1,0 +1,315 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f07-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f07-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f07- */
+    #f07-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+
+    /* ---- Scene 1: the split (clipped to the safe area during the push) ---- */
+    #f07-splitclip { position: absolute; inset: 0; overflow: hidden; }
+    #f07-split { position: absolute; inset: 0; transform-origin: 1320px 410px; }
+    #f07-divider {
+      position: absolute; left: 879px; top: 60px; width: 2px; height: 700px;
+      background: rgba(244,241,232,.16); transform-origin: 50% 0;
+    }
+    #f07-chat {
+      position: absolute; left: 40px; top: 60px; width: 800px; height: 700px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px;
+    }
+    #f07-chat-head {
+      position: absolute; left: 0; top: 0; right: 0; height: 90px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; padding: 0 32px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    .f07-bub {
+      position: absolute; height: 86px; border-radius: 22px; display: flex; align-items: center;
+      padding: 0 30px; font-size: 34px; font-weight: 600;
+    }
+    #f07-b1 { right: 40px; top: 150px; background: rgba(244,241,232,.10); border: 1px solid rgba(244,241,232,.22); }
+    #f07-b2 { left: 40px; top: 270px; background: rgba(62,230,208,.12); border: 1px solid rgba(62,230,208,.45); }
+    #f07-void {
+      position: absolute; left: 920px; top: 60px; width: 800px; height: 700px;
+      border: 2px dashed rgba(142,147,181,.45); border-radius: 18px;
+    }
+    #f07-lit {
+      position: absolute; left: 920px; top: 60px; width: 800px; height: 700px;
+      background: var(--surface); border: 1px solid rgba(255,210,63,.35); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f07-lit-glow {
+      position: absolute; inset: 0; border-radius: 18px;
+      background: radial-gradient(ellipse at 50% 55%, rgba(255,210,63,.10), transparent 65%);
+    }
+    #f07-agent-label {
+      position: absolute; left: 44px; top: 36px; display: flex; align-items: center; gap: 20px;
+      font-size: 64px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1;
+    }
+    #f07-agent-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); }
+    #f07-card {
+      position: absolute; left: 200px; top: 290px; width: 400px; height: 120px;
+      background: rgba(11,16,38,.7); border: 2px solid rgba(244,241,232,.3); border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.4);
+      display: flex; align-items: center; gap: 22px; padding: 0 32px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; color: var(--ink);
+    }
+    #f07-cursor { position: absolute; left: 0; top: 0; width: 90px; height: 90px; transform-origin: 30% 20%; }
+
+    /* ---- Scene 2: the courier ---- */
+    #f07-kicker {
+      position: absolute; left: 100px; top: 90px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    #f07-kicker b, #f07-kicker2 b, #f07-name b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    #f07-agent { position: absolute; left: 660px; top: 120px; width: 440px; height: 600px; transform-origin: 220px 300px; }
+    #f07-agent svg { position: absolute; left: 0; top: 0; }
+    .f07-tile {
+      position: absolute; top: 368px; width: 60px; height: 60px; border-radius: 12px;
+      background: var(--surface); border: 2px solid var(--gold);
+      box-shadow: 0 8px 20px rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f07-t1 { left: 92px; } #f07-t2 { left: 158px; } #f07-t3 { left: 224px; } #f07-t4 { left: 290px; }
+
+    /* ---- Scene 3: the belt unrolls into a counter ---- */
+    #f07-name {
+      position: absolute; left: 290px; top: 680px; width: 340px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--ink);
+    }
+    #f07-ribbon {
+      position: absolute; left: 560px; top: 470px; width: 1140px; height: 27px; border-radius: 6px;
+      background: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); transform-origin: 0 50%;
+    }
+    #f07-kicker2 {
+      position: absolute; left: 766px; top: 104px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    #f07-num {
+      position: absolute; left: 760px; top: 150px; white-space: nowrap;
+      font-size: 260px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em;
+      color: var(--gold); filter: drop-shadow(0 0 18px rgba(255,210,63,.45));
+      transform-origin: 0 100%;
+    }
+    #f07-plus { display: inline-block; margin-left: 8px; transform-origin: 50% 60%; }
+    .f07-chip {
+      position: absolute; top: 548px; height: 88px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(62,230,208,.5);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 18px; padding: 0 30px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+      transform-origin: 50% 50%;
+    }
+    #f07-chip1 { left: 760px; }
+    #f07-chip2 { left: 1110px; }
+  </style>
+
+  <div id="root" data-composition-id="07-agent-thi-bat-tay-vao-lam" data-width="1920" data-height="1080" data-duration="11.216">
+    <div id="f07-ground" class="clip" data-start="0" data-duration="11.216" data-track-index="0"></div>
+    <div id="f07-stage" class="clip" data-start="0" data-duration="11.216" data-track-index="1">
+      <div id="f07-cam">
+
+        <!-- Scene 1: split -->
+        <div id="f07-splitclip">
+          <div id="f07-split">
+            <div id="f07-divider"></div>
+            <div id="f07-chat">
+              <div id="f07-chat-head">◆ CHATBOT</div>
+              <div id="f07-b1" class="f07-bub">Bạn hỏi</div>
+              <div id="f07-b2" class="f07-bub">Nó đáp</div>
+            </div>
+            <div id="f07-void"></div>
+            <div id="f07-lit">
+              <div id="f07-lit-glow"></div>
+              <div id="f07-agent-label"><div id="f07-agent-dot"></div><span>Agent</span></div>
+              <div id="f07-card">
+                <svg width="48" height="48" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="6" width="32" height="32" rx="7"/><path d="M14 22l6 6 10-12"/>
+                </svg>
+                <span>Làm việc</span>
+              </div>
+              <div id="f07-cursor">
+                <svg width="90" height="90" viewBox="0 0 44 44" fill="#141B3A" stroke="#F4F1E8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M26 19v-9a3 3 0 0 1 6 0v14c0 9-5 14-12 14s-10-4-13-10l-3-6a3 3 0 0 1 5-3l5 5V10a3 3 0 0 1 6 0v10"/>
+                  <path d="M20 19V7a3 3 0 0 1 6 0v12" fill="none"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 2: the winged courier with a tool belt -->
+        <div id="f07-kicker"><b>◆</b>TRỢ LÝ</div>
+        <div id="f07-agent">
+          <svg width="440" height="600" viewBox="0 0 440 600" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <g id="f07-wingL">
+              <path d="M150 220 C 80 170 20 200 12 290 C 50 270 80 272 104 290 C 70 300 50 330 44 370 C 80 350 110 346 132 350 Z" fill="rgba(244,241,232,.08)" stroke="#F4F1E8" stroke-width="4"/>
+              <path d="M140 240 C 100 230 60 250 40 280 M132 300 C 100 305 76 320 62 345" stroke="#8E93B5" stroke-width="3"/>
+            </g>
+            <g id="f07-wingR">
+              <path d="M290 220 C 360 170 420 200 428 290 C 390 270 360 272 336 290 C 370 300 390 330 396 370 C 360 350 330 346 308 350 Z" fill="rgba(244,241,232,.08)" stroke="#F4F1E8" stroke-width="4"/>
+              <path d="M300 240 C 340 230 380 250 400 280 M308 300 C 340 305 364 320 378 345" stroke="#8E93B5" stroke-width="3"/>
+            </g>
+            <!-- legs -->
+            <path d="M178 440 L170 560 M262 440 L270 560" stroke="#F4F1E8" stroke-width="10"/>
+            <path d="M150 562 H190 M250 562 H290" stroke="#F4F1E8" stroke-width="8"/>
+            <!-- body -->
+            <path d="M150 190 H290 L322 440 H118 Z" fill="#141B3A" stroke="#F4F1E8" stroke-width="4"/>
+            <path d="M220 200 L220 350" stroke="#8E93B5" stroke-width="3"/>
+            <!-- arms -->
+            <path d="M152 206 L112 330 M288 206 L328 330" stroke="#F4F1E8" stroke-width="9"/>
+            <!-- head with winged helmet -->
+            <circle cx="220" cy="118" r="54" fill="#141B3A" stroke="#F4F1E8" stroke-width="4"/>
+            <path d="M190 116 H250" stroke="#3EE6D0" stroke-width="6"/>
+            <path d="M168 96 C 148 76 140 60 146 44 C 158 58 170 70 180 80" stroke="#F4F1E8" stroke-width="3.5" fill="rgba(244,241,232,.08)"/>
+            <path d="M272 96 C 292 76 300 60 294 44 C 282 58 270 70 260 80" stroke="#F4F1E8" stroke-width="3.5" fill="rgba(244,241,232,.08)"/>
+            <!-- the gold tool belt -->
+            <rect x="90" y="362" width="260" height="34" rx="6" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55))"/>
+            <rect x="206" y="364" width="28" height="30" rx="4" fill="none" stroke="#0B1026" stroke-width="3"/>
+          </svg>
+          <!-- tools clip onto the belt -->
+          <div id="f07-t1" class="f07-tile">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#F4F1E8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3h12l7 7v21H8z"/><path d="M20 3v7h7"/><path d="M12 18h11M12 24h11"/>
+            </svg>
+          </div>
+          <div id="f07-t2" class="f07-tile">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round">
+              <circle cx="14" cy="14" r="9"/><line x1="21" y1="21" x2="30" y2="30"/>
+            </svg>
+          </div>
+          <div id="f07-t3" class="f07-tile">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#3EE6D0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="30" height="24" rx="4" stroke="#F4F1E8"/><path d="M8 13l5 4-5 4"/><path d="M16 22h9"/>
+            </svg>
+          </div>
+          <div id="f07-t4" class="f07-tile">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#F4F1E8" stroke-width="2.6" stroke-linecap="round">
+              <circle cx="17" cy="17" r="13"/><path d="M4 17h26"/><path d="M17 4c-5 4-7 8-7 13s2 9 7 13c5-4 7-8 7-13s-2-9-7-13z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Scene 3: counter -->
+        <div id="f07-name"><b>◆</b>HERMES</div>
+        <div id="f07-ribbon"></div>
+        <div id="f07-kicker2"><b>◆</b>CÔNG CỤ</div>
+        <div id="f07-num"><span id="f07-digits">60</span><span id="f07-plus">+</span></div>
+        <div id="f07-chip1" class="f07-chip">
+          <svg width="40" height="40" viewBox="0 0 34 34" fill="none" stroke="#3EE6D0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3h12l7 7v21H8z"/><path d="M20 3v7h7"/><path d="M12 18h11M12 24h11"/>
+          </svg>
+          <span>đọc file</span>
+        </div>
+        <div id="f07-chip2" class="f07-chip">
+          <svg width="40" height="40" viewBox="0 0 34 34" fill="none" stroke="#3EE6D0" stroke-width="2.6" stroke-linecap="round">
+            <circle cx="17" cy="17" r="13"/><path d="M4 17h26"/><path d="M17 4c-5 4-7 8-7 13s2 9 7 13c5-4 7-8 7-13s-2-9-7-13z"/>
+          </svg>
+          <span>tìm kiếm web</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0–2.28): split returns — right half lights, left dims ---- */
+      tl.fromTo("#f07-divider", { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f07-chat", { opacity: 0, x: -40 }, { opacity: 0.9, x: 0, duration: 0.4, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f07-void", { opacity: 0 }, { opacity: 0.5, duration: 0.4, ease: "power3.out" }, 0.1);
+      // "agent" @0.53 — right half lights, left half dims
+      tl.to("#f07-chat", { opacity: 0.28, duration: 0.5, ease: "power2.inOut" }, 0.53);
+      tl.fromTo("#f07-lit", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.53);
+      tl.fromTo("#f07-agent-label", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.53);
+      tl.fromTo("#f07-agent-dot", { scale: 0 }, { scale: 1, duration: 0.3, ease: "power3.out" }, 0.62);
+      // "khác" @0.99 — a task card waits
+      tl.fromTo("#f07-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.99);
+      // hand-cursor reaches the card, arriving on "bắt" @1.73
+      tl.fromTo("#f07-cursor", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 1.3);
+      tl.fromTo("#f07-cursor", { x: 640, y: 560 }, { x: 470, y: 360, duration: 0.43, ease: "power2.inOut" }, 1.3);
+      // "tay" @1.91 — grab
+      tl.fromTo("#f07-cursor", { scale: 1 }, { scale: 0.86, duration: 0.15, ease: "power3.out" }, 1.91);
+      // "vào" @2.11 — lift the card
+      tl.to("#f07-card", { y: -26, scale: 1.04, duration: 0.3, ease: "power3.out" }, 2.11);
+      tl.to("#f07-cursor", { y: 334, duration: 0.3, ease: "power3.out" }, 2.11);
+      // "làm" @2.28 — the task goes live (gold)
+      tl.set("#f07-card", { borderColor: "#FFD23F", color: "#FFD23F", boxShadow: "0 0 32px rgba(255,210,63,.45)" }, 2.28);
+
+      /* ---- Scene 2 (2.28–6.36): push into the right half; the courier and its tool belt ---- */
+      tl.to("#f07-split", { x: -440, scale: 1.3, opacity: 0, duration: 0.7, ease: "power2.inOut" }, 2.4);
+      tl.fromTo("#f07-agent", { opacity: 0, scale: 0.8, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: "power3.out" }, 2.6);
+      tl.fromTo("#f07-wingL", { rotation: 28 }, { rotation: 0, transformOrigin: "100% 20%", duration: 0.8, ease: "power3.out" }, 2.8);
+      tl.fromTo("#f07-wingR", { rotation: -28 }, { rotation: 0, transformOrigin: "0% 20%", duration: 0.8, ease: "power3.out" }, 2.8);
+      tl.fromTo("#f07-cam", { scale: 1 }, { scale: 1.03, duration: 4.0, ease: "none" }, 2.36);
+      // "trợ lý" @3.86
+      tl.fromTo("#f07-kicker", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.86);
+      // "công" @4.99 · "cụ" @5.19 · "trong" @5.43 · "tay" @5.61 — tools clip onto the belt one by one
+      [["#f07-t1", 4.99, -14], ["#f07-t2", 5.19, 10], ["#f07-t3", 5.43, -10], ["#f07-t4", 5.61, 14]].forEach(function (d) {
+        tl.fromTo(d[0], { opacity: 0, y: -140, rotation: d[2] }, { opacity: 1, y: 0, rotation: 0, duration: 0.3, ease: "power3.out" }, d[1]);
+        tl.fromTo(d[0], { scale: 1.18 }, { scale: 1, duration: 0.2, ease: "power3.out", immediateRender: false }, d[1] + 0.3);
+      });
+
+      /* ---- Scene 3 (6.36–10.72): the belt unrolls into the "60+" counter ---- */
+      tl.to("#f07-kicker", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 6.36);
+      tl.to("#f07-agent", { x: -420, scale: 0.8, duration: 0.7, ease: "power2.inOut" }, 6.36);
+      // "Hermes" @6.50
+      tl.fromTo("#f07-name", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.5);
+      tl.fromTo("#f07-ribbon", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.inOut" }, 6.62);
+      tl.fromTo("#f07-cam", { scale: 1.03 }, { scale: 1.045, duration: 4.3, ease: "none", immediateRender: false }, 6.4);
+      // "hơn" @7.22 → "sáu mươi" @7.44–7.62: numeral counts up, scaled by its value
+      var counter = { v: 0 };
+      var digits = document.querySelector("#f07-digits");
+      tl.fromTo("#f07-num", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, 7.22);
+      tl.fromTo(counter, { v: 0 }, {
+        v: 60, duration: 0.5, ease: "power2.out",
+        onUpdate: function () { if (digits) digits.textContent = String(Math.round(counter.v)); }
+      }, 7.22);
+      tl.fromTo("#f07-plus", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 7.62);
+      // "công cụ" @7.74
+      tl.fromTo("#f07-kicker2", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 7.74);
+      // "đọc file" @8.59 — chip pops, the file tile answers
+      tl.fromTo("#f07-chip1", { opacity: 0, scale: 0.7, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.59);
+      tl.fromTo("#f07-t1", { scale: 1.3 }, { scale: 1, duration: 0.35, ease: "power3.out", immediateRender: false }, 8.59);
+      // "tìm kiếm" @9.23
+      tl.fromTo("#f07-chip2", { opacity: 0, scale: 0.7, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.23);
+      tl.fromTo("#f07-t4", { scale: 1.3 }, { scale: 1, duration: 0.35, ease: "power3.out", immediateRender: false }, 9.23);
+
+      tl.to({}, { duration: 10.716 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["07-agent-thi-bat-tay-vao-lam"] = tl;
+    })();
+  </script>
+</template>

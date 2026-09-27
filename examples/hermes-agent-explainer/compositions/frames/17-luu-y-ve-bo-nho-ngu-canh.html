@@ -1,0 +1,314 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f17-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f17-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f17- */
+    .f17-kicker {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 24px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f17-dia {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 18px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      vertical-align: 3px;
+    }
+    #f17-camera {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 390px;
+    }
+    /* gauge: 600×600 box centred on stage (880, 390) */
+    #f17-gauge {
+      position: absolute;
+      left: 580px;
+      top: 90px;
+      width: 600px;
+      height: 600px;
+      transform-origin: 300px 300px;
+    }
+    #f17-ring {
+      position: absolute;
+      inset: 0;
+      transform-origin: 300px 300px;
+    }
+    #f17-ring svg { position: absolute; inset: 0; overflow: visible; }
+    #f17-fill { filter: drop-shadow(0 0 12px rgba(255, 210, 63, .55)); }
+    .f17-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #f17-min {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    #f17-num {
+      font-size: 124px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    #f17-unit {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-top: 8px;
+    }
+    /* small-context model chip */
+    #f17-chip {
+      position: absolute;
+      left: 140px;
+      top: 295px;
+      width: 320px;
+      height: 190px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, .12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transform-origin: 160px 95px;
+    }
+    #f17-chip-num {
+      position: relative;
+      font-size: 84px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    #f17-chip-num svg {
+      position: absolute;
+      left: -14px;
+      top: 50%;
+      width: calc(100% + 28px);
+      height: 10px;
+      margin-top: -5px;
+      overflow: visible;
+    }
+    #f17-chip-lbl {
+      font-size: 30px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    #f17-stamp {
+      position: absolute;
+      left: 150px;
+      top: 540px;
+      height: 84px;
+      padding: 0 30px 0 24px;
+      border: 3px solid var(--gold);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: var(--gold);
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, .45));
+      transform-origin: 50% 50%;
+    }
+    #f17-stamp svg { width: 36px; height: 36px; overflow: visible; }
+    /* scene 3 kinetic line */
+    #f17-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 322px;
+      text-align: center;
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .f17-w {
+      display: inline-block;
+      margin: 0 14px;
+    }
+    .f17-gold { color: var(--gold); }
+    #f17-big {
+      position: relative;
+      display: inline-block;
+    }
+    #f17-big svg {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: -26px;
+      width: calc(100% - 16px);
+      height: 26px;
+      overflow: visible;
+    }
+    #f17-pill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 520px;
+      text-align: center;
+    }
+    #f17-pill span {
+      display: inline-block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      color: var(--cyan);
+      padding: 12px 28px;
+      border: 1px solid rgba(62, 230, 208, .45);
+      border-radius: 999px;
+      background: rgba(20, 27, 58, .85);
+    }
+  </style>
+
+  <div id="root" data-composition-id="17-luu-y-ve-bo-nho-ngu-canh" data-width="1920" data-height="1080" data-duration="11.586">
+    <div id="f17-ground" class="clip" data-start="0" data-duration="11.586" data-track-index="0"></div>
+    <div id="f17-stage" class="clip" data-start="0" data-duration="11.586" data-track-index="1">
+      <div id="f17-camera">
+        <!-- hero: context gauge -->
+        <div id="f17-gauge">
+          <div id="f17-ring">
+            <svg viewBox="0 0 600 600" width="600" height="600">
+              <circle cx="300" cy="300" r="296" fill="none" stroke="rgba(142,147,181,.35)" stroke-width="2" stroke-dasharray="3 11"></circle>
+              <circle cx="300" cy="300" r="262" fill="none" stroke="rgba(244,241,232,.10)" stroke-width="24"></circle>
+              <circle id="f17-fill" cx="300" cy="300" r="262" fill="none" stroke="#FFD23F" stroke-width="24" stroke-linecap="round" stroke-dasharray="1646.19" stroke-dashoffset="1646.19" transform="rotate(-90 300 300)"></circle>
+            </svg>
+            <div class="f17-center">
+              <div id="f17-min">tối thiểu</div>
+              <div id="f17-num"><span id="f17-n">0</span>.000</div>
+              <div id="f17-unit">token</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- supporting: small-context model chip -->
+        <div id="f17-chip">
+          <div id="f17-chip-num">8K<svg viewBox="0 0 100 10" preserveAspectRatio="none"><line id="f17-strike" x1="0" y1="5" x2="100" y2="5" stroke="#FFD23F" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></line></svg></div>
+          <div id="f17-chip-lbl">ngữ cảnh nhỏ</div>
+        </div>
+        <div id="f17-stamp">
+          <svg viewBox="0 0 36 36"><path d="M6 6 L30 30 M30 6 L6 30" stroke="#FFD23F" stroke-width="6" stroke-linecap="round" fill="none"></path></svg>
+          <span>từ chối</span>
+        </div>
+
+        <!-- scene 3 kinetic line -->
+        <div id="f17-line"><span class="f17-w" id="f17-w1">chọn</span><span class="f17-w" id="f17-w2">ngữ</span><span class="f17-w" id="f17-w3">cảnh</span><span id="f17-big"><span class="f17-w f17-gold" id="f17-w4">đủ</span><span class="f17-w f17-gold" id="f17-w5">lớn</span><svg viewBox="0 0 400 26" preserveAspectRatio="none"><path id="f17-trail" d="M4 16 C 110 4, 250 26, 396 10" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></path></svg></span></div>
+        <div id="f17-pill"><span>≥ 64.000 token</span></div>
+      </div>
+
+      <div class="f17-kicker" id="f17-k1"><span class="f17-dia"></span>ngữ cảnh mô hình</div>
+      <div class="f17-kicker" id="f17-k2"><span class="f17-dia"></span>chọn từ đầu</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 11.086;
+      var tl = gsap.timeline({ paused: true });
+      var CIRC = 1646.19;
+
+      // slow continuous camera push under the whole shot
+      tl.fromTo("#f17-camera", { scale: 1 }, { scale: 1.03, duration: D, ease: "none" }, 0);
+
+      // ---- Scene 1 (0–4.2): gauge establishes, fills + counts on "sáu mươi tư nghìn"
+      tl.fromTo("#f17-gauge", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#f17-num", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 0.1);
+      tl.fromTo("#f17-k1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.84);
+      tl.fromTo("#f17-min", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.28);
+      // ring sweep and number scale grow on the same ease
+      tl.fromTo("#f17-fill", { strokeDashoffset: CIRC }, { strokeDashoffset: 0, duration: 0.72, ease: "power2.out" }, 2.6);
+      tl.fromTo("#f17-num", { scale: 0.62 }, { scale: 1, duration: 0.72, ease: "power2.out" }, 2.6);
+      // count 0 → 64 with a static ".000" suffix (a numeric string like "64.000" would be parsed as 64 by GSAP)
+      tl.fromTo("#f17-n", { textContent: 0 }, { textContent: 64, snap: { textContent: 1 }, duration: 0.72, ease: "power2.out" }, 2.6);
+      tl.fromTo("#f17-unit", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.27);
+
+      // ---- Scene 2 (4.2–7.39): gauge shifts right, small model chip is bounced away
+      tl.to("#f17-gauge", { x: 360, scale: 0.8, duration: 0.7, ease: "power2.inOut" }, 4.2);
+      tl.fromTo("#f17-chip", { opacity: 0, x: -60, rotation: 0 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 4.37);
+      tl.to("#f17-chip", { x: 545, duration: 0.5, ease: "power2.in" }, 4.86);
+      tl.to("#f17-chip", { x: 10, rotation: -7, duration: 0.6, ease: "power3.out" }, 5.36);
+      tl.to("#f17-chip", { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 5.56);
+      // gauge flinch on impact
+      tl.to("#f17-ring", { scale: 1.05, duration: 0.12, ease: "power2.out" }, 5.36);
+      tl.to("#f17-ring", { scale: 1, duration: 0.35, ease: "power2.inOut" }, 5.48);
+      // gold "từ chối" stamp + strike
+      tl.fromTo("#f17-stamp", { opacity: 0, scale: 1.35, rotation: -6 }, { opacity: 1, scale: 1, rotation: -6, duration: 0.35, ease: "power3.out" }, 5.36);
+      tl.fromTo("#f17-strike", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.56);
+
+      // ---- Scene 3 (7.39–11.09): gauge dims to a backdrop, kinetic line builds
+      tl.to("#f17-chip", { opacity: 0, y: 30, duration: 0.4, ease: "power2.inOut" }, 7.39);
+      tl.to("#f17-stamp", { opacity: 0, y: 30, duration: 0.4, ease: "power2.inOut" }, 7.39);
+      tl.to("#f17-gauge", { x: 0, scale: 1.12, opacity: 0.16, duration: 0.8, ease: "power2.inOut" }, 7.39);
+      tl.to("#f17-k1", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 7.48);
+      tl.fromTo("#f17-k2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.6);
+
+      var words = [["#f17-w1", 8.28], ["#f17-w2", 8.9], ["#f17-w3", 9.1], ["#f17-w4", 9.34], ["#f17-w5", 9.56]];
+      words.forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, y: 44, filter: "blur(8px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo("#f17-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 9.62);
+      tl.fromTo("#f17-pill", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.85);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["17-luu-y-ve-bo-nho-ngu-canh"] = tl;
+    })();
+  </script>
+</template>

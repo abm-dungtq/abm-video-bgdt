@@ -1,0 +1,367 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f34-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f34-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f34- */
+    .f34-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+    #f34-field { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0.4; }
+    .f34-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+
+    /* cards */
+    .f34-card {
+      position: absolute; border-radius: 18px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f34-task { left: 200px; top: 300px; width: 520px; height: 200px; transform-origin: 260px 100px; }
+    .f34-ttl {
+      position: absolute; left: 34px; top: 40px; height: 64px;
+      display: flex; align-items: center; gap: 16px;
+      font-size: 48px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    .f34-ttl span { display: block; }
+    .f34-bar { position: absolute; left: 34px; height: 12px; border-radius: 6px; background: rgba(142,147,181,.45); transform-origin: 0 50%; }
+    .f34-stat { position: absolute; right: 34px; top: 44px; width: 56px; height: 56px; }
+    .f34-spin, .f34-chk { position: absolute; left: 0; top: 0; width: 56px; height: 56px; transform-origin: 28px 28px; }
+
+    /* arrow + tool line */
+    #f34-arrowg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f34-spark { position: absolute; left: 702px; top: 378px; width: 60px; height: 44px; }
+    #f34-tool {
+      position: absolute; left: 740px; top: 440px; width: 380px; height: 44px;
+      display: flex; justify-content: center; align-items: center; gap: 12px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--cyan); white-space: nowrap;
+    }
+    #f34-dots { display: flex; gap: 8px; }
+    .f34-dot { display: block; width: 10px; height: 10px; border-radius: 5px; background: var(--cyan); }
+
+    /* skill card */
+    #f34-skill { left: 1140px; top: 250px; width: 540px; height: 300px; transform-origin: 270px 150px; background: transparent; border: 0; box-shadow: none; }
+    #f34-glow {
+      position: absolute; left: -4px; top: -4px; width: 548px; height: 308px; border-radius: 21px;
+      border: 3px solid var(--gold); box-shadow: 0 0 60px rgba(255,210,63,.45), 0 0 18px rgba(255,210,63,.55);
+      opacity: 0;
+    }
+    .f34-face { left: 0; top: 0; width: 540px; height: 300px; transform-origin: 270px 150px; }
+    .f34-kick {
+      position: absolute; left: 34px; top: 30px; height: 40px; display: flex; align-items: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .08em; color: var(--muted); white-space: nowrap;
+    }
+    .f34-kick b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    .f34-badge {
+      position: absolute; right: 30px; top: 26px; width: 84px; height: 48px; border-radius: 24px;
+      display: flex; justify-content: center; align-items: center;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; white-space: nowrap;
+      border: 2px solid rgba(244,241,232,.5); color: var(--ink);
+    }
+    .f34-badge-gold { background: var(--gold); border-color: var(--gold); color: var(--canvas); }
+    .f34-name {
+      position: absolute; left: 34px; top: 84px; height: 64px; display: flex; align-items: center;
+      font-size: 52px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: pre;
+    }
+    .f34-name span { display: block; }
+    .f34-goldbar { background: var(--gold); }
+
+    /* reuse chip + link */
+    #f34-link { position: absolute; left: 720px; top: 398px; width: 60px; height: 4px; background: var(--cyan); transform-origin: 0 50%; }
+    #f34-chip {
+      position: absolute; left: 600px; top: 588px; width: 300px; height: 54px;
+      display: flex; justify-content: center; align-items: center;
+    }
+    #f34-chipin {
+      height: 54px; padding: 0 26px; border-radius: 27px; border: 2px solid var(--cyan);
+      display: flex; align-items: center; font-size: 30px; font-weight: 600; color: var(--cyan); white-space: nowrap;
+    }
+
+    /* Scene 3 — staircase */
+    #f34-stairs { opacity: 0; }
+    #f34-climb { position: absolute; left: 0; top: 0; width: 1760px; height: 1240px; }
+    .f34-step {
+      width: 420px; height: 110px; display: flex; align-items: center; gap: 22px; padding-left: 26px; box-sizing: border-box;
+      transform-origin: 210px 55px;
+    }
+    .f34-step .f34-badge { position: relative; right: auto; top: auto; flex: none; }
+    .f34-stepname { font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    .f34-ring {
+      position: absolute; left: -4px; top: -4px; width: 428px; height: 118px; border-radius: 21px;
+      border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(255,210,63,.4);
+    }
+    #f34-s1 { left: 160px; top: 900px; }
+    #f34-s2 { left: 640px; top: 660px; }
+    #f34-s3 { left: 1120px; top: 420px; }
+    #f34-spark2 { position: absolute; left: -38px; top: -22px; width: 60px; height: 44px; }
+    #f34-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f34-head {
+      position: absolute; left: 0; top: 10px; height: 84px; display: flex; align-items: center; gap: 22px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f34-head span { display: block; }
+    #f34-time {
+      position: absolute; left: 1100px; top: 716px; width: 460px; height: 48px;
+      display: flex; justify-content: flex-end; align-items: center; gap: 14px;
+      font-size: 34px; font-weight: 500; color: var(--muted); white-space: nowrap;
+    }
+    #f34-time span { display: block; }
+  </style>
+
+  <div id="root" data-composition-id="34-tu-tao-va-tu-cai-thien" data-width="1920" data-height="1080" data-duration="11.715">
+    <div id="f34-ground" class="clip" data-start="0" data-duration="11.715" data-track-index="0"></div>
+    <div id="f34-stage" class="clip" data-start="0" data-duration="11.715" data-track-index="1">
+      <!-- background field (dimmed dot grid) -->
+      <svg id="f34-field" viewBox="0 0 1760 820" fill="none">
+        <defs>
+          <pattern id="f34-dotpat" x="0" y="0" width="44" height="44" patternUnits="userSpaceOnUse">
+            <circle cx="22" cy="22" r="2" fill="#8E93B5"/>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1760" height="820" fill="url(#f34-dotpat)" opacity="0.35"/>
+      </svg>
+
+      <!-- Scenes 1–2: task → skill → reuse → v2 -->
+      <div id="f34-flow" class="f34-layer">
+        <div id="f34-arrowg">
+          <svg class="f34-svg" width="1760" height="820" viewBox="0 0 1760 820" fill="none">
+            <path id="f34-arrow" d="M740 400 H1108" pathLength="100" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"
+                  stroke-dasharray="100 100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+            <path id="f34-ahead" d="M1100 386 L1124 400 L1100 414 Z" fill="#FFD23F" opacity="0"/>
+          </svg>
+          <svg id="f34-spark" viewBox="0 0 60 44" fill="none">
+            <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="38" cy="22" r="10" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+          </svg>
+          <div id="f34-tool"><span>skill_manage</span><div id="f34-dots"><i id="f34-d1" class="f34-dot"></i><i id="f34-d2" class="f34-dot"></i><i id="f34-d3" class="f34-dot"></i></div></div>
+        </div>
+
+        <div id="f34-link"></div>
+
+        <!-- task 1 -->
+        <div id="f34-task1" class="f34-card f34-task">
+          <div class="f34-ttl"><span>Nhiệm vụ</span><span id="f34-kho">khó</span></div>
+          <div class="f34-bar" style="top:132px;width:300px;"></div>
+          <div class="f34-bar" style="top:160px;width:220px;"></div>
+          <div class="f34-stat">
+            <svg id="f34-spin1" class="f34-spin" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="22" stroke="rgba(142,147,181,.45)" stroke-width="4"/>
+              <path d="M28 6 A22 22 0 0 1 50 28" stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <svg id="f34-chk1" class="f34-chk" viewBox="0 0 56 56" fill="none" opacity="0">
+              <circle cx="28" cy="28" r="26" fill="#3EE6D0"/>
+              <path id="f34-chk1p" d="M16 29 L25 38 L41 19" stroke="#0B1026" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+                    pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- task 2 -->
+        <div id="f34-task2" class="f34-card f34-task" style="opacity:0;">
+          <div class="f34-ttl"><span>Việc</span><span id="f34-tt">tương tự</span></div>
+          <div class="f34-bar" style="top:132px;width:300px;"></div>
+          <div class="f34-bar" style="top:160px;width:220px;"></div>
+          <div class="f34-stat">
+            <svg id="f34-spin2" class="f34-spin" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="22" stroke="rgba(142,147,181,.45)" stroke-width="4"/>
+              <path d="M28 6 A22 22 0 0 1 50 28" stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <svg id="f34-chk2" class="f34-chk" viewBox="0 0 56 56" fill="none" opacity="0">
+              <circle cx="28" cy="28" r="26" fill="#3EE6D0"/>
+              <path id="f34-chk2p" d="M16 29 L25 38 L41 19" stroke="#0B1026" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+                    pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- the skill card (hero) -->
+        <div id="f34-skill" class="f34-card" style="opacity:0;">
+          <div id="f34-glow"></div>
+          <div id="f34-face1" class="f34-card f34-face">
+            <div class="f34-kick"><b>◆</b>SKILL.md</div>
+            <div id="f34-b1" class="f34-badge">v1</div>
+            <div class="f34-name"><span class="f34-ch">K</span><span class="f34-ch">ỹ</span><span class="f34-ch"> </span><span class="f34-ch">n</span><span class="f34-ch">ă</span><span class="f34-ch">n</span><span class="f34-ch">g</span></div>
+            <div id="f34-w1" class="f34-bar" style="top:176px;width:420px;"></div>
+            <div id="f34-w2" class="f34-bar" style="top:210px;width:350px;"></div>
+            <div id="f34-w3" class="f34-bar" style="top:244px;width:250px;"></div>
+          </div>
+          <div id="f34-face2" class="f34-card f34-face">
+            <div class="f34-kick"><b>◆</b>SKILL.md</div>
+            <div class="f34-badge f34-badge-gold">v2</div>
+            <div class="f34-name"><span>Kỹ năng</span></div>
+            <div class="f34-bar" style="top:168px;width:420px;"></div>
+            <div class="f34-bar" style="top:196px;width:350px;"></div>
+            <div class="f34-bar" style="top:224px;width:390px;"></div>
+            <div id="f34-gbar" class="f34-bar f34-goldbar" style="top:252px;width:280px;"></div>
+          </div>
+        </div>
+
+        <div id="f34-chip"><div id="f34-chipin">dùng lại</div></div>
+      </div>
+
+      <!-- Scene 3: staircase of versions -->
+      <div id="f34-stairs" class="f34-layer">
+        <div id="f34-climb">
+          <svg class="f34-svg" width="1760" height="1240" viewBox="0 0 1760 1240" fill="none">
+            <path d="M160 1030 H600 V790 H1080 V550 H1560" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 14" opacity="0.6"/>
+            <path id="f34-trail" d="M160 1030 H600 V790 H1080 V550 H1560" pathLength="100" stroke="#FFD23F" stroke-width="5"
+                  stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          </svg>
+          <div id="f34-s1" class="f34-card f34-step"><div class="f34-badge">v1</div><div class="f34-stepname">Kỹ năng</div></div>
+          <div id="f34-s2" class="f34-card f34-step"><div id="f34-r2" class="f34-ring"></div><div class="f34-badge f34-badge-gold">v2</div><div class="f34-stepname">Kỹ năng</div></div>
+          <div id="f34-s3" class="f34-card f34-step" style="opacity:0;"><div class="f34-ring"></div><div class="f34-badge f34-badge-gold">v3</div><div class="f34-stepname">Kỹ năng</div></div>
+          <svg id="f34-spark2" viewBox="0 0 60 44" fill="none">
+            <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="38" cy="22" r="10" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+          </svg>
+        </div>
+        <div id="f34-head"><span>Tích</span><span>lũy</span><span>kinh</span><span>nghiệm</span></div>
+        <svg class="f34-svg" width="1760" height="820" viewBox="0 0 1760 820" fill="none">
+          <path id="f34-axis" d="M40 786 H1560" pathLength="100" stroke="#8E93B5" stroke-width="3" stroke-linecap="round"
+                stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          <path id="f34-axhead" d="M1556 774 L1578 786 L1556 798 Z" fill="#8E93B5" opacity="0"/>
+        </svg>
+        <div id="f34-time"><span>theo</span><span>thời</span><span>gian</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 11.215;
+      var q = function (s) { return document.querySelector(s); };
+      var qa = function (s) { return document.querySelectorAll(s); };
+
+      // initial hidden states (before the timeline is built)
+      gsap.set(["#f34-task1", "#f34-kho", "#f34-tt", "#f34-spark", "#f34-tool", "#f34-b1", "#f34-chip", "#f34-link"], { opacity: 0 });
+      gsap.set(qa("#f34-face1 .f34-ch"), { opacity: 0 });
+      gsap.set(["#f34-w1", "#f34-w2", "#f34-w3", "#f34-gbar", "#f34-face2"], { scaleX: 0 });
+      gsap.set(qa(".f34-dot"), { opacity: 0.25 });
+      gsap.set("#f34-spark2", { x: 160, y: 1030, opacity: 0 });
+      gsap.set(qa("#f34-head span, #f34-time span"), { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ── Scene 1 (0–3.93): hard task checks off, skill v1 writes itself ──
+      tl.fromTo("#f34-task1", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.59);
+      tl.fromTo("#f34-kho", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.95);
+      tl.fromTo("#f34-spin1", { rotation: 0 }, { rotation: 540, duration: 0.93, ease: "none" }, 0.7);
+      tl.set("#f34-spin1", { opacity: 0 }, 1.63);
+      tl.fromTo("#f34-chk1", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out" }, 1.63);
+      tl.fromTo("#f34-chk1p", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 1.68);
+
+      // courier trail flows right, spark riding its head
+      tl.fromTo("#f34-arrow", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.44, ease: "none" }, 2.0);
+      tl.set("#f34-spark", { opacity: 1 }, 2.0);
+      tl.fromTo("#f34-spark", { x: 0 }, { x: 368, duration: 0.44, ease: "none" }, 2.0);
+      tl.fromTo("#f34-ahead", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 2.4);
+
+      // "tự viết": the skill card opens and writes itself
+      tl.fromTo("#f34-skill", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 2.44);
+      tl.fromTo("#f34-tool", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 2.44);
+      ["#f34-d1", "#f34-d2", "#f34-d3"].forEach(function (d, i) {
+        for (var k = 0; k < 2; k++) {
+          var t0 = 2.55 + i * 0.1 + k * 0.34;
+          tl.to(d, { opacity: 1, duration: 0.15, ease: "power1.inOut" }, t0);
+          tl.to(d, { opacity: 0.25, duration: 0.15, ease: "power1.inOut" }, t0 + 0.15);
+        }
+      });
+      tl.set("#f34-dots", { opacity: 0 }, 3.3);
+      tl.fromTo("#f34-w1", { scaleX: 0 }, { scaleX: 1, duration: 0.33, ease: "none" }, 2.62);
+      tl.fromTo("#f34-w2", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "none" }, 2.9);
+      tl.fromTo("#f34-w3", { scaleX: 0 }, { scaleX: 1, duration: 0.25, ease: "none" }, 3.15);
+      tl.fromTo(qa("#f34-face1 .f34-ch"), { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "none", stagger: 0.035 }, 3.04);
+      tl.fromTo("#f34-b1", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out" }, 3.3);
+
+      // ── Scene 2 (3.93–8.15): similar task, reuse, flip to v2 ──
+      tl.to("#f34-task1", { y: -240, scale: 0.72, opacity: 0.35, duration: 0.6, ease: "power2.inOut" }, 4.22);
+      tl.fromTo("#f34-task2", { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 4.7);
+      tl.fromTo("#f34-tt", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 4.86);
+      tl.fromTo("#f34-spin2", { rotation: 0 }, { rotation: 1080, duration: 2.23, ease: "none" }, 4.9);
+      tl.to("#f34-arrowg", { opacity: 0, duration: 0.25, ease: "power1.out" }, 5.5);
+      tl.to("#f34-skill", { x: -360, duration: 0.55, ease: "power2.inOut" }, 5.78);
+      tl.fromTo("#f34-chip", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 5.78);
+      tl.set("#f34-link", { opacity: 1 }, 5.98);
+      tl.fromTo("#f34-link", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.out" }, 5.98);
+
+      // "cải thiện": flip to v2 with a gold glow
+      tl.to("#f34-face1", { scaleX: 0, duration: 0.14, ease: "power2.in" }, 6.37);
+      tl.fromTo("#f34-face2", { scaleX: 0 }, { scaleX: 1, duration: 0.2, ease: "power2.out" }, 6.51);
+      tl.fromTo("#f34-glow", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 6.57);
+      tl.to("#f34-skill", { scale: 1.08, duration: 0.6, ease: "power3.out" }, 6.57);
+      tl.fromTo("#f34-gbar", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "none" }, 6.75);
+      tl.set("#f34-spin2", { opacity: 0 }, 7.13);
+      tl.fromTo("#f34-chk2", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out" }, 7.13);
+      tl.fromTo("#f34-chk2p", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 7.18);
+
+      // zoom-through cut into the staircase
+      tl.fromTo("#f34-flow", { scale: 1, opacity: 1, filter: "blur(0px)" },
+        { scale: 1.12, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power2.in" }, 8.01);
+
+      // ── Scene 3 (8.15–11.22): camera pans up the staircase of versions ──
+      tl.fromTo("#f34-stairs", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 8.15);
+      tl.fromTo("#f34-climb", { y: -460 }, { y: -300, duration: 2.25, ease: "power2.inOut" }, 8.15);
+
+      // v1 → v2 history
+      tl.fromTo("#f34-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 38.3, duration: 0.6, ease: "none" }, 8.45);
+      tl.fromTo("#f34-spark2", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 8.45);
+      tl.fromTo("#f34-spark2", { x: 160 }, { x: 600, duration: 0.228, ease: "none" }, 8.45);
+      tl.fromTo("#f34-spark2", { y: 1030 }, { y: 790, duration: 0.124, ease: "none" }, 8.678);
+      tl.to("#f34-spark2", { x: 1080, duration: 0.248, ease: "none" }, 8.802);
+
+      // "tích lũy kinh nghiệm": spark climbs to v3
+      tl.to("#f34-trail", { strokeDashoffset: 0, duration: 0.52, ease: "none" }, 9.11);
+      tl.to("#f34-spark2", { y: 550, duration: 0.173, ease: "none" }, 9.11);
+      tl.to("#f34-spark2", { x: 1560, duration: 0.347, ease: "none" }, 9.283);
+      var heads = qa("#f34-head span");
+      [9.11, 9.29, 9.49, 9.63].forEach(function (t, i) {
+        tl.fromTo(heads[i], { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, t);
+      });
+      tl.fromTo("#f34-s3", { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 9.49);
+      tl.to("#f34-r2", { opacity: 0, duration: 0.3, ease: "power1.out" }, 9.49);
+
+      // "theo thời gian": the time axis draws and holds
+      tl.fromTo("#f34-axis", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 9.87);
+      tl.fromTo("#f34-axhead", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 10.3);
+      var times = qa("#f34-time span");
+      [9.87, 10.05, 10.21].forEach(function (t, i) {
+        tl.fromTo(times[i], { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, t);
+      });
+      // quiet hold drift
+      tl.to("#f34-stairs", { scale: 1.015, duration: 0.8, ease: "none" }, 10.4);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["34-tu-tao-va-tu-cai-thien"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,246 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f35-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f35-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f35- */
+    #f35-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+    .f35-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* top-left kicker */
+    #f35-kick {
+      position: absolute; left: 0; top: 14px; height: 44px;
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    #f35-kick b { color: var(--gold); font-weight: 400; }
+
+    /* Scene 1 — the hub constellation (shrinks left in Scene 2) */
+    #f35-hub { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 390px; }
+    #f35-field { opacity: 0.4; }
+    .f35-node {
+      position: absolute; width: 110px; height: 110px; border-radius: 50%;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.22);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .f35-node svg { width: 54px; height: 54px; overflow: visible; }
+    #f35-card {
+      position: absolute; left: 670px; top: 290px; width: 420px; height: 200px;
+      border-radius: 18px; background: var(--surface);
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 34px rgba(255,210,63,.35), 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f35-cardicon { position: absolute; left: 180px; top: 26px; width: 60px; height: 60px; overflow: visible; }
+    #f35-name {
+      position: absolute; left: 0; top: 98px; width: 420px; height: 76px;
+      display: flex; justify-content: center; align-items: center; gap: 18px;
+      font-size: 60px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f35-name span { display: block; }
+
+    /* Scene 2 — pipeline through the scan gate */
+    #f35-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f35-gate { z-index: 3; position: absolute; left: 880px; top: 230px; width: 240px; height: 320px; }
+    .f35-post { position: absolute; top: 0; width: 16px; height: 320px; border-radius: 8px; background: #2a3263; }
+    .f35-post.f35-l { left: 0; } .f35-post.f35-r { right: 0; }
+    .f35-bar { position: absolute; left: 0; top: 0; width: 240px; height: 16px; border-radius: 8px; background: #2a3263; }
+    .f35-ok { background: var(--cyan); box-shadow: 0 0 22px rgba(62,230,208,.6); }
+    #f35-okset { position: absolute; left: 0; top: 0; width: 240px; height: 320px; }
+    #f35-beam { position: absolute; left: 16px; top: 0; width: 208px; height: 60px; }
+    #f35-beamwash { position: absolute; left: 0; top: 0; width: 208px; height: 56px;
+      background: linear-gradient(to bottom, rgba(62,230,208,0), rgba(62,230,208,.28)); }
+    #f35-beamline { position: absolute; left: 0; top: 54px; width: 208px; height: 5px; border-radius: 3px;
+      background: var(--cyan); box-shadow: 0 0 18px rgba(62,230,208,.9); }
+    #f35-gkick {
+      position: absolute; left: 750px; top: 150px; width: 500px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--ink); white-space: nowrap;
+    }
+    #f35-gkick b { color: var(--cyan); font-weight: 400; }
+
+    #f35-dock { z-index: 1;
+      position: absolute; left: 1430px; top: 312px; width: 280px; height: 156px; border-radius: 18px;
+      border: 2px dashed rgba(142,147,181,.55); background: rgba(20,27,58,.6);
+    }
+    #f35-dockglow {
+      position: absolute; left: -2px; top: -2px; width: 280px; height: 156px; border-radius: 18px;
+      border: 3px solid var(--cyan); box-shadow: 0 0 30px rgba(62,230,208,.45);
+    }
+    #f35-dkick {
+      position: absolute; left: 1430px; top: 240px; width: 280px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--cyan); white-space: nowrap;
+    }
+
+    #f35-trav { z-index: 2;
+      position: absolute; left: 220px; top: 342px; width: 220px; height: 96px; border-radius: 18px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font-size: 34px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    #f35-trav svg { width: 40px; height: 40px; overflow: visible; }
+    #f35-badge {
+      position: absolute; right: -18px; top: -18px; width: 46px; height: 46px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 20px rgba(62,230,208,.7);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f35-badge svg { width: 26px; height: 26px; }
+  </style>
+
+  <div id="root" data-composition-id="35-kho-ky-nang-cong-dong" data-width="1920" data-height="1080" data-duration="8.092">
+    <div id="f35-ground" class="clip" data-start="0" data-duration="8.092" data-track-index="0"></div>
+    <div id="f35-stage" class="clip" data-start="0" data-duration="8.092" data-track-index="1">
+      <div id="f35-cam">
+        <div id="f35-kick"><b>◆</b><span>Kỹ năng cộng đồng</span></div>
+
+        <!-- hub constellation -->
+        <div id="f35-hub">
+          <svg class="f35-svg" viewBox="0 0 1760 820" fill="none">
+            <g id="f35-field" stroke="#8E93B5" stroke-width="2">
+              <ellipse cx="880" cy="390" rx="560" ry="290" stroke-dasharray="4 12"/>
+              <ellipse cx="880" cy="390" rx="720" ry="380" opacity="0.5"/>
+            </g>
+            <g stroke="#3EE6D0" stroke-width="2" stroke-linecap="round" opacity="0.7">
+              <line class="f35-link" x1="880" y1="390" x2="1094" y2="122" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="1397" y2="279" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="1397" y2="501" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="1094" y2="658" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="666" y2="658" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="363" y2="501" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="363" y2="279" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+              <line class="f35-link" x1="880" y1="390" x2="666" y2="122" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+            </g>
+          </svg>
+
+          <!-- community skill nodes on the ring (centres listed in the links above) -->
+          <div class="f35-node" style="left:1039px;top:67px;"><svg viewBox="0 0 54 54" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6h18l10 10v32H14z"/><path d="M32 6v10h10"/><path d="M20 28h16M20 36h12"/></svg></div>
+          <div class="f35-node" style="left:1342px;top:224px;"><svg viewBox="0 0 54 54" fill="none" stroke="#3EE6D0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17L8 27l11 10M35 17l11 10-11 10M30 12l-6 30"/></svg></div>
+          <div class="f35-node" style="left:1342px;top:446px;"><svg viewBox="0 0 54 54" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M30 6L12 30h14l-3 18 19-25H28z"/></svg></div>
+          <div class="f35-node" style="left:1039px;top:603px;"><svg viewBox="0 0 54 54" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M38 8a10 10 0 0 0-12 13L9 38l7 7 17-17a10 10 0 0 0 13-12l-6 6-6-2-2-6z"/></svg></div>
+          <div class="f35-node" style="left:611px;top:603px;"><svg viewBox="0 0 54 54" fill="none" stroke="#3EE6D0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="38" height="30" rx="4"/><path d="M15 21l6 5-6 5M25 32h10"/></svg></div>
+          <div class="f35-node" style="left:308px;top:446px;"><svg viewBox="0 0 54 54" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 7l6 13 14 2-10 10 3 14-13-7-13 7 3-14L7 22l14-2z"/></svg></div>
+          <div class="f35-node" style="left:308px;top:224px;"><svg viewBox="0 0 54 54" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14h34M10 27h34M10 40h22"/></svg></div>
+          <div class="f35-node" style="left:611px;top:67px;"><svg viewBox="0 0 54 54" fill="none" stroke="#3EE6D0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="27" r="7"/><path d="M27 7v6M27 41v6M7 27h6M41 27h6M13 13l4 4M37 37l4 4M13 41l4-4M37 17l4-4"/></svg></div>
+
+          <!-- the hub (hero) -->
+          <div id="f35-card">
+            <svg id="f35-cardicon" viewBox="0 0 60 60" fill="none" stroke="#FFD23F" stroke-width="3.5" stroke-linejoin="round">
+              <rect x="6" y="6" width="20" height="20" rx="4"/><rect x="34" y="6" width="20" height="20" rx="4"/>
+              <rect x="6" y="34" width="20" height="20" rx="4"/><rect x="34" y="34" width="20" height="20" rx="4"/>
+            </svg>
+            <div id="f35-name"><span id="f35-w1">Skills</span><span id="f35-w2">Hub</span></div>
+          </div>
+        </div>
+
+        <!-- Scene 2: trail, scan gate, dock -->
+        <svg class="f35-svg" viewBox="0 0 1760 820" fill="none">
+          <path d="M440 390 H1440" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 14" opacity="0" id="f35-ghost"/>
+          <path id="f35-trail" d="M440 390 H1440" pathLength="100" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+        </svg>
+
+        <div id="f35-gkick"><b>◆</b><span>Quét bảo mật</span></div>
+        <div id="f35-gate">
+          <div class="f35-post f35-l"></div><div class="f35-post f35-r"></div><div class="f35-bar"></div>
+          <div id="f35-okset">
+            <div class="f35-post f35-l f35-ok"></div><div class="f35-post f35-r f35-ok"></div><div class="f35-bar f35-ok"></div>
+          </div>
+          <div id="f35-beam"><div id="f35-beamwash"></div><div id="f35-beamline"></div></div>
+        </div>
+
+        <div id="f35-dkick"><span>Đã cài</span></div>
+        <div id="f35-dock"><div id="f35-dockglow"></div></div>
+
+        <div id="f35-trav">
+          <svg viewBox="0 0 40 40" fill="none" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4h13l8 8v24H10z"/><path d="M23 4v8h8"/><path d="M15 21h11M15 28h8"/></svg>
+          <span>kỹ năng</span>
+          <div id="f35-badge"><svg viewBox="0 0 26 26" fill="none" stroke="#0B1026" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l5 5 11-11"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // initial hidden states (set before the timeline, never tl.set at 0)
+      gsap.set(["#f35-kick", ".f35-node", "#f35-w1", "#f35-w2", "#f35-gkick", "#f35-gate", "#f35-okset",
+                "#f35-beam", "#f35-dkick", "#f35-dock", "#f35-dockglow", "#f35-trav", "#f35-badge"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // subtle camera drift under the whole shot
+      tl.fromTo("#f35-cam", { scale: 1 }, { scale: 1.012, duration: 7.592, ease: "none" }, 0);
+
+      // ---- Scene 1 (0–3.56): hub, then community nodes spring onto the ring
+      tl.fromTo("#f35-card", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "power3.out" }, 0.25);
+      tl.fromTo("#f35-kick", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 1.76);
+      tl.fromTo(".f35-node", { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.4)", stagger: 0.08 }, 1.76);
+      tl.fromTo(".f35-link", { strokeDashoffset: 1 },
+        { strokeDashoffset: 0, duration: 0.6, ease: "power2.out", stagger: 0.06 }, 2.1);
+      tl.fromTo("#f35-w1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.12);
+      tl.fromTo("#f35-w2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.56);
+
+      // ---- Scene 2 (3.56–7.59): hub shrinks left, a skill flows through the scan gate
+      tl.fromTo("#f35-hub", { x: 0, scale: 1 }, { x: -550, scale: 0.5, duration: 0.7, ease: "power2.inOut" }, 3.8);
+      tl.fromTo("#f35-ghost", { opacity: 0 }, { opacity: 0.6, duration: 0.4, ease: "power2.out" }, 4.1);
+      tl.fromTo("#f35-gate", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.2);
+      tl.fromTo("#f35-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 56, duration: 1.2, ease: "none" }, 4.3);
+      tl.fromTo("#f35-trav", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 4.32);
+      tl.fromTo("#f35-trav", { x: 0 }, { x: 670, duration: 1.1, ease: "power2.inOut" }, 4.4);
+      tl.fromTo("#f35-dock", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 4.72);
+
+      // scan on "quét bảo mật"
+      tl.fromTo("#f35-gkick", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.55);
+      tl.fromTo("#f35-beam", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 5.55);
+      tl.fromTo("#f35-beam", { y: -10 }, { y: 250, duration: 0.6, ease: "none" }, 5.55);
+      tl.fromTo("#f35-okset", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 6.15);
+      tl.fromTo("#f35-badge", { opacity: 0, scale: 0, rotation: -90 },
+        { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "back.out(1.6)" }, 6.15);
+
+      // dock on "trước khi cài"
+      tl.fromTo("#f35-trail", { strokeDashoffset: 56 }, { strokeDashoffset: 0, duration: 0.45, ease: "none", immediateRender: false }, 6.3);
+      tl.fromTo("#f35-trav", { x: 670 }, { x: 1240, duration: 0.45, ease: "power2.inOut", immediateRender: false }, 6.35);
+      tl.fromTo("#f35-dkick", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.63);
+      tl.fromTo("#f35-dockglow", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 6.8);
+
+      tl.to({}, { duration: 7.592 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["35-kho-ky-nang-cong-dong"] = tl;
+    })();
+  </script>
+</template>

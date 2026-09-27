@@ -1,0 +1,324 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f04-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(22, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 (clipped so the zoom-through never leaves it) */
+    #f04-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f04-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f04-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f04-spk { display: inline-block; }
+    .f04-spk svg { display: block; width: 100%; height: 100%; }
+    .f04-kicker {
+      position: absolute;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .f04-kicker .f04-spk { width: 24px; height: 24px; }
+
+    /* Scene 1 — pinned anchor + checklist */
+    #f04-anchor-spark { position: absolute; left: 44px; top: 250px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f04-anchor {
+      position: absolute;
+      left: 40px; top: 322px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 104px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-top: 8px;
+    }
+    #f04-anchor span { display: inline-block; opacity: 0; }
+    #f04-divider {
+      position: absolute;
+      left: 770px; top: 150px;
+      width: 2px; height: 504px;
+      border-radius: 1px;
+      background: rgba(240,238,230,.14);
+      opacity: 0;
+    }
+    .f04-row {
+      position: absolute;
+      left: 820px;
+      width: 880px; height: 124px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f04-row1 { top: 150px; }
+    #f04-row2 { top: 340px; }
+    #f04-row3 { top: 530px; }
+    .f04-box { position: absolute; left: 36px; top: 25px; width: 72px; height: 72px; overflow: visible; }
+    .f04-row-label {
+      position: absolute;
+      left: 144px; top: 30px;
+      font-size: 48px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f04-row-sub {
+      position: absolute;
+      right: 40px; top: 42px;
+      font-size: 30px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    /* Scene 2 — zoom through row 3 into "Tính năng mới nhất" */
+    #f04-s2 { opacity: 0; }
+    #f04-bigbox { position: absolute; left: 810px; top: 110px; width: 140px; height: 140px; overflow: visible; }
+    #f04-headline {
+      position: absolute;
+      left: 0; top: 318px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 120px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-top: 8px;
+    }
+    #f04-headline .f04-w { display: inline-block; opacity: 0; }
+    #f04-hl-under { position: relative; display: inline-block; }
+    #f04-underline { position: absolute; left: -6px; bottom: -30px; width: 100%; height: 30px; overflow: visible; }
+    #f04-s2-spark { display: inline-block; width: 56px; height: 56px; margin-left: 18px; vertical-align: 28px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f04-s2-kick { left: 0; top: 574px; width: 1760px; opacity: 0; }
+
+    /* Scene 3 — the path from Cơ bản to Chuyên sâu */
+    .f04-station-label {
+      position: absolute;
+      top: 486px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 64px;
+      line-height: 1.12;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f04-lbl-basic { left: 110px; }
+    #f04-lbl-deep { right: 120px; text-align: right; }
+    #f04-mover { position: absolute; left: 162px; top: 348px; width: 48px; height: 48px; }
+    #f04-s3-spark { position: absolute; left: 0; top: 0; width: 48px; height: 48px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f04-glow-disc { filter: drop-shadow(0 0 18px rgba(217,119,87,.75)); }
+    #f04-s3-kick { left: 0; top: 680px; width: 1760px; }
+    #f04-s3-kick .f04-spk, #f04-s3-kick-txt { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="04-sau-bai-hoc-nay" data-width="1920" data-height="1080" data-duration="15.411">
+    <div id="f04-ground" class="clip" data-start="0" data-duration="15.411" data-track-index="0"></div>
+    <div id="f04-stage" class="clip" data-start="0" data-duration="15.411" data-track-index="1">
+
+      <!-- Scene 1: pinned anchor (left 40%) + three checklist rows (right 60%) -->
+      <div id="f04-s1" class="f04-layer">
+        <div id="f04-anchor-spark" class="f04-spk"></div>
+        <div id="f04-anchor"><span id="f04-a1">Sau</span> <span id="f04-a2">bài</span> <span id="f04-a3">học</span></div>
+        <div id="f04-divider"></div>
+
+        <div id="f04-row1" class="f04-row">
+          <svg class="f04-box" viewBox="0 0 72 72">
+            <rect id="f04-box1" x="2" y="2" width="68" height="68" rx="14" fill="none" stroke="#9A968C" stroke-width="3.5"/>
+            <path id="f04-tick1" d="M17 37 L30 50 L56 21" fill="none" stroke="#D97757" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div id="f04-lbl1" class="f04-row-label">Trò chuyện</div>
+          <div id="f04-sub1" class="f04-row-sub">hằng ngày</div>
+        </div>
+        <div id="f04-row2" class="f04-row">
+          <svg class="f04-box" viewBox="0 0 72 72">
+            <rect id="f04-box2" x="2" y="2" width="68" height="68" rx="14" fill="none" stroke="#9A968C" stroke-width="3.5"/>
+            <path id="f04-tick2" d="M17 37 L30 50 L56 21" fill="none" stroke="#D97757" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div id="f04-lbl2" class="f04-row-label">Kết nối</div>
+          <div id="f04-sub2" class="f04-row-sub">công cụ</div>
+        </div>
+        <div id="f04-row3" class="f04-row">
+          <svg class="f04-box" viewBox="0 0 72 72">
+            <rect id="f04-box3" x="2" y="2" width="68" height="68" rx="14" fill="none" stroke="#9A968C" stroke-width="3.5"/>
+          </svg>
+        </div>
+
+        <!-- hand-drawn link joining row 1's box to row 2's box -->
+        <svg class="f04-svgfull" viewBox="0 0 1760 820">
+          <path id="f04-link" d="M892 252 C 868 284, 916 326, 892 362" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <circle id="f04-link-dot" cx="892" cy="362" r="6" fill="#8FB8A8" opacity="0"/>
+        </svg>
+      </div>
+
+      <!-- Scene 2: centered "Tính năng mới nhất" -->
+      <div id="f04-s2" class="f04-layer">
+        <svg id="f04-bigbox" viewBox="0 0 140 140">
+          <rect x="3" y="3" width="134" height="134" rx="26" fill="none" stroke="#F0EEE6" stroke-width="5"/>
+          <path id="f04-bigtick" d="M33 72 L58 97 L108 40" fill="none" stroke="#D97757" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f04-headline"><span id="f04-h1" class="f04-w">Tính</span> <span id="f04-h2" class="f04-w">năng</span> <span id="f04-hl-under"><span id="f04-h3" class="f04-w">mới</span> <span id="f04-h4" class="f04-w">nhất</span><svg id="f04-underline" viewBox="0 0 400 30" preserveAspectRatio="none"><path id="f04-uline" d="M4 14 C 90 22, 190 8, 290 16 S 380 20, 396 12" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></span><span id="f04-s2-spark" class="f04-spk"></span></div>
+        <div id="f04-s2-kick" class="f04-kicker"><span class="f04-spk"></span><span>Năm nay</span></div>
+      </div>
+
+      <!-- Scene 3: journey strip -->
+      <div id="f04-s3" class="f04-layer">
+        <svg class="f04-svgfull" viewBox="0 0 1760 820">
+          <path id="f04-path" d="M212 430 C 420 420, 640 442, 880 430 S 1340 419, 1548 430" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <line id="f04-tk1" x1="533" y1="416" x2="533" y2="446" stroke="#9A968C" stroke-width="3" stroke-linecap="round" opacity="0"/>
+          <line id="f04-tk2" x1="880" y1="416" x2="880" y2="446" stroke="#9A968C" stroke-width="3" stroke-linecap="round" opacity="0"/>
+          <line id="f04-tk3" x1="1227" y1="416" x2="1227" y2="446" stroke="#9A968C" stroke-width="3" stroke-linecap="round" opacity="0"/>
+          <circle id="f04-st1" cx="186" cy="430" r="24" fill="none" stroke="#9A968C" stroke-width="3.5" opacity="0"/>
+          <circle id="f04-st2" cx="1574" cy="430" r="24" fill="none" stroke="#9A968C" stroke-width="3.5" opacity="0"/>
+          <circle id="f04-st1-fill" cx="186" cy="430" r="15" fill="#F0EEE6" opacity="0"/>
+          <circle id="f04-glow-disc" cx="1574" cy="430" r="15" fill="#D97757" opacity="0"/>
+        </svg>
+        <div id="f04-lbl-basic" class="f04-station-label">Cơ bản</div>
+        <div id="f04-lbl-deep" class="f04-station-label">Chuyên sâu</div>
+        <div id="f04-mover"><div id="f04-s3-spark" class="f04-spk"></div></div>
+        <div id="f04-s3-kick" class="f04-kicker"><span class="f04-spk"></span><span id="f04-s3-kick-txt">Từng bước một</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="04-sau-bai-hoc-nay"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f04-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+      var draw = function (sel, at, dur) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: dur, ease: 'none' }, at);
+      };
+      var rise = function (sel, at, dy) {
+        tl.fromTo(sel, { y: dy || 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, at);
+      };
+
+      // ---- Scene 1 (0–7.8): anchor pins on the left, checklist fills on the right
+      rise('#f04-a1', 0.35, 40);
+      rise('#f04-a2', 0.49, 40);
+      rise('#f04-a3', 0.65, 40);
+      tl.fromTo('#f04-anchor-spark', popFrom, popTo, 0.8);
+      tl.fromTo('#f04-divider', { scaleY: 0, opacity: 0 }, { scaleY: 1, opacity: 1, transformOrigin: '50% 0%', duration: 0.6, ease: 'power2.inOut' }, 0.95);
+      tl.fromTo('#f04-row1', { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, 1.0);
+      tl.fromTo('#f04-row2', { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, 1.12);
+      tl.fromTo('#f04-row3', { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, 1.24);
+
+      // row 1 — "trò chuyện" (label on "trò", tick on "chuyện"), "hằng ngày"
+      tl.fromTo('#f04-lbl1', { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 1.92);
+      tl.set('#f04-box1', { attr: { stroke: '#D97757' } }, 2.12);
+      draw('#f04-tick1', 2.12, 0.3);
+      tl.fromTo('#f04-sub1', { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 2.94);
+
+      // row 2 — "kết nối" (label on "kết", tick + link on "nối"), "công cụ"
+      tl.fromTo('#f04-lbl2', { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 5.13);
+      tl.set('#f04-box2', { attr: { stroke: '#D97757' } }, 5.31);
+      draw('#f04-tick2', 5.31, 0.3);
+      draw('#f04-link', 5.31, 0.45);
+      tl.fromTo('#f04-link-dot', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 5.72);
+      tl.fromTo('#f04-sub2', { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 6.58);
+
+      // row 3 stays empty; its box brightens just before the camera dives into it
+      tl.fromTo('#f04-box3', { attr: { stroke: '#9A968C' } }, { attr: { stroke: '#F0EEE6' }, duration: 0.3, ease: 'power2.out' }, 7.35);
+
+      // ---- Scene 2 (7.8–11.11): zoom through the empty row 3
+      tl.to('#f04-s1', { scale: 9, opacity: 0, transformOrigin: '892px 592px', duration: 0.55, ease: 'power2.in' }, 7.8);
+      tl.fromTo('#f04-s2', { scale: 0.35, opacity: 0 }, { scale: 1, opacity: 1, transformOrigin: '880px 180px', duration: 0.6, ease: IN }, 8.15);
+      rise('#f04-h1', 9.05, 44);
+      rise('#f04-h2', 9.24, 44);
+      rise('#f04-h3', 9.44, 44);
+      rise('#f04-h4', 9.6, 44);
+      draw('#f04-bigtick', 9.6, 0.35);
+      tl.fromTo('#f04-s2-spark', popFrom, popTo, 9.74);
+      draw('#f04-uline', 9.78, 0.45);
+      tl.fromTo('#f04-s2-kick', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 9.9);
+      tl.fromTo('#f04-headline', { scale: 1 }, { scale: 1.015, transformOrigin: '880px 70px', duration: 0.8, ease: 'power1.inOut' }, 10.3);
+
+      // ---- Scene 3 (11.11–14.81): journey strip
+      tl.to('#f04-s2', { y: -140, opacity: 0, duration: 0.4, ease: 'power2.in' }, 11.11);
+      tl.fromTo('#f04-st1', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, transformOrigin: '50% 50%', duration: 0.4, ease: IN }, 11.3);
+      draw('#f04-path', 11.35, 0.75);
+      tl.fromTo('#f04-tk1', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 11.55);
+      tl.fromTo('#f04-tk2', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 11.72);
+      tl.fromTo('#f04-tk3', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'none' }, 11.9);
+      tl.fromTo('#f04-st2', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, transformOrigin: '50% 50%', duration: 0.4, ease: IN }, 11.98);
+
+      // "cơ bản" — left station lights, spark pops
+      tl.set('#f04-st1', { attr: { stroke: '#F0EEE6' } }, 12.25);
+      tl.fromTo('#f04-st1-fill', { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, transformOrigin: '50% 50%', duration: 0.35, ease: IN }, 12.25);
+      rise('#f04-lbl-basic', 12.25, 24);
+      tl.fromTo('#f04-s3-spark', popFrom, { scale: 1, rotation: 0, opacity: 1, duration: 0.3, ease: IN }, 12.25);
+
+      // the spark travels the path; each tick mark brightens as it passes
+      tl.fromTo('#f04-mover', { x: 0 }, { x: 1388, duration: 0.36, ease: 'power2.inOut' }, 12.38);
+      tl.set('#f04-tk1', { attr: { stroke: '#F0EEE6' } }, 12.51);
+      tl.set('#f04-tk2', { attr: { stroke: '#F0EEE6' } }, 12.56);
+      tl.set('#f04-tk3', { attr: { stroke: '#F0EEE6' } }, 12.61);
+
+      // "chuyên sâu" — right station lights with a soft terracotta glow
+      tl.set('#f04-st2', { attr: { stroke: '#D97757' } }, 12.74);
+      tl.fromTo('#f04-glow-disc', { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, transformOrigin: '50% 50%', duration: 0.4, ease: IN }, 12.74);
+      rise('#f04-lbl-deep', 12.74, 24);
+
+      // "từng bước một"
+      tl.fromTo('#f04-s3-kick .f04-spk', popFrom, popTo, 13.46);
+      tl.fromTo('#f04-s3-kick-txt', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 13.46);
+
+      tl.to({}, { duration: 14.811 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["04-sau-bai-hoc-nay"] = tl;
+    })();
+  </script>
+</template>

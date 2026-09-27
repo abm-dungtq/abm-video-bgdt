@@ -1,0 +1,624 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f45-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f45-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f45- */
+    #f45-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: radial-gradient(rgba(142, 147, 181, 0.35) 1.5px, transparent 1.6px);
+      background-size: 44px 44px;
+    }
+    /* camera viewport: clips the magnified world to the safe area */
+    #f45-view {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    #f45-world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 0 0;
+    }
+    .f45-kicker {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f45-diamond {
+      display: block;
+      width: 11px;
+      height: 11px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      flex: none;
+    }
+
+    /* ---------- phone chat ---------- */
+    #f45-phonegroup {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 700px;
+      height: 820px;
+    }
+    #f45-tg-label {
+      position: absolute;
+      left: 124px;
+      top: 14px;
+      opacity: 0;
+    }
+    #f45-phone {
+      position: absolute;
+      left: 120px;
+      top: 70px;
+      width: 440px;
+      height: 740px;
+      border-radius: 48px;
+      background: #10163a;
+      border: 2px solid rgba(244, 241, 232, 0.16);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+    #f45-notch {
+      position: absolute;
+      left: 170px;
+      top: 14px;
+      width: 100px;
+      height: 22px;
+      border-radius: 11px;
+      background: #0b1026;
+    }
+    #f45-header {
+      position: absolute;
+      left: 0;
+      top: 50px;
+      width: 440px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-left: 26px;
+      box-sizing: border-box;
+      border-bottom: 1px solid rgba(244, 241, 232, 0.10);
+      background: var(--surface);
+    }
+    #f45-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #0b1026;
+      border: 2px solid rgba(255, 210, 63, 0.6);
+      flex: none;
+    }
+    #f45-name {
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    #f45-online {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px rgba(62, 230, 208, 0.6);
+    }
+    /* bubbles sit in world coords relative to the phone */
+    #f45-typing {
+      position: absolute;
+      left: 24px;
+      top: 145px;
+      width: 116px;
+      height: 58px;
+      border-radius: 20px 20px 20px 6px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      opacity: 0;
+    }
+    .f45-dot {
+      position: absolute;
+      top: 23px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    #f45-bubble {
+      position: absolute;
+      left: 24px;
+      top: 145px;
+      width: 392px;
+      box-sizing: border-box;
+      padding: 22px 24px 18px;
+      border-radius: 24px 24px 24px 8px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.14);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      transform-origin: 0 100%;
+    }
+    #f45-bkicker {
+      color: var(--gold);
+      opacity: 0;
+    }
+    #f45-btitle {
+      margin-top: 10px;
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+    .f45-tw {
+      display: inline-block;
+      opacity: 0;
+    }
+    .f45-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .f45-row-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex: none;
+      opacity: 0;
+    }
+    .f45-row-bar {
+      height: 14px;
+      border-radius: 7px;
+      background: rgba(142, 147, 181, 0.45);
+      transform-origin: 0 50%;
+    }
+    #f45-tick {
+      margin-top: 14px;
+      text-align: right;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      line-height: 1.2;
+      color: var(--cyan);
+      opacity: 0;
+    }
+
+    /* ---------- reminder toast ---------- */
+    #f45-toast {
+      position: absolute;
+      left: 660px;
+      top: 250px;
+      width: 1080px;
+      height: 180px;
+      box-sizing: border-box;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f45-bell {
+      position: absolute;
+      left: 34px;
+      top: 42px;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: rgba(255, 210, 63, 0.12);
+      border: 2px solid rgba(255, 210, 63, 0.55);
+    }
+    #f45-tkicker {
+      position: absolute;
+      left: 164px;
+      top: 34px;
+      opacity: 0;
+    }
+    #f45-ttext {
+      position: absolute;
+      left: 164px;
+      top: 84px;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .f45-ch {
+      display: none;
+    }
+    .f45-ch-gold {
+      color: var(--gold);
+      font-weight: 800;
+    }
+    #f45-caret {
+      display: inline-block;
+      width: 4px;
+      height: 42px;
+      margin-left: 4px;
+      vertical-align: -8px;
+      background: var(--gold);
+      opacity: 0;
+    }
+    #f45-ring {
+      position: absolute;
+      left: 940px;
+      top: 35px;
+      width: 110px;
+      height: 110px;
+      overflow: visible;
+    }
+
+    /* ---------- job chain ---------- */
+    #f45-chain-kicker {
+      position: absolute;
+      left: 664px;
+      top: 330px;
+      opacity: 0;
+    }
+    #f45-trail-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f45-trail {
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    .f45-card {
+      position: absolute;
+      top: 410px;
+      width: 340px;
+      height: 270px;
+      box-sizing: border-box;
+      padding: 30px 30px 0;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f45-card1 { left: 660px; }
+    #f45-card2 { left: 1300px; }
+    .f45-halo {
+      position: absolute;
+      inset: -3px;
+      border-radius: 20px;
+      opacity: 0;
+    }
+    #f45-halo-cyan {
+      border: 3px solid rgba(62, 230, 208, 0.7);
+      box-shadow: 0 0 26px rgba(62, 230, 208, 0.35);
+    }
+    #f45-halo-gold {
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 34px rgba(255, 210, 63, 0.5);
+    }
+    .f45-card-icon {
+      width: 64px;
+      height: 64px;
+      display: block;
+    }
+    .f45-card-title {
+      margin-top: 22px;
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+    }
+    .f45-track {
+      position: absolute;
+      left: 30px;
+      bottom: 34px;
+      width: 280px;
+      height: 12px;
+      border-radius: 6px;
+      background: rgba(142, 147, 181, 0.22);
+      overflow: hidden;
+    }
+    .f45-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      transform-origin: 0 50%;
+    }
+    #f45-fill1 { background: var(--cyan); }
+    #f45-fill2 { background: var(--gold); }
+    #f45-check1 {
+      position: absolute;
+      right: 26px;
+      top: 26px;
+      width: 60px;
+      height: 60px;
+      opacity: 0;
+    }
+    /* output chip: outer positioned by the path renderer, inner animated by GSAP */
+    #f45-chip-pos {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+    }
+    #f45-chip {
+      position: absolute;
+      left: -86px;
+      top: -30px;
+      width: 172px;
+      height: 60px;
+      border-radius: 30px;
+      background: var(--gold);
+      color: #0b1026;
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 60px;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 0 24px rgba(255, 210, 63, 0.55);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="45-vi-du-lich-tu-dong" data-width="1920" data-height="1080" data-duration="13.387">
+    <div id="f45-ground" class="clip" data-start="0" data-duration="13.387" data-track-index="0">
+      <div id="f45-field"></div>
+    </div>
+    <div id="f45-stage" class="clip" data-start="0" data-duration="13.387" data-track-index="1">
+      <div id="f45-view">
+        <div id="f45-world">
+
+          <!-- phone chat (foreground subject) -->
+          <div id="f45-phonegroup">
+            <div id="f45-tg-label" class="f45-kicker"><span class="f45-diamond"></span><span>Telegram</span></div>
+            <div id="f45-phone">
+              <div id="f45-header">
+                <svg id="f45-avatar" viewBox="0 0 60 60" width="60" height="60">
+                  <path d="M 26 30 C 20 20, 12 18, 8 22" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+                  <path d="M 26 30 C 20 40, 12 42, 8 38" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+                  <circle cx="33" cy="30" r="9" fill="#FFD23F"></circle>
+                </svg>
+                <div id="f45-name">Hermes</div>
+                <div id="f45-online"></div>
+              </div>
+              <div id="f45-notch"></div>
+              <div id="f45-typing">
+                <div class="f45-dot" id="f45-dot1" style="left: 26px;"></div>
+                <div class="f45-dot" id="f45-dot2" style="left: 52px;"></div>
+                <div class="f45-dot" id="f45-dot3" style="left: 78px;"></div>
+              </div>
+              <div id="f45-bubble">
+                <div id="f45-bkicker" class="f45-kicker"><span class="f45-diamond"></span><span>Tóm tắt</span></div>
+                <div id="f45-btitle"><span id="f45-tw1" class="f45-tw">Tin tức</span> <span id="f45-tw2" class="f45-tw">sáng nay</span></div>
+                <div class="f45-row"><span class="f45-row-dot" id="f45-rd1"></span><span class="f45-row-bar" id="f45-rb1" style="width: 300px;"></span></div>
+                <div class="f45-row"><span class="f45-row-dot" id="f45-rd2"></span><span class="f45-row-bar" id="f45-rb2" style="width: 250px;"></span></div>
+                <div class="f45-row"><span class="f45-row-dot" id="f45-rd3"></span><span class="f45-row-bar" id="f45-rb3" style="width: 200px;"></span></div>
+                <div id="f45-tick">✓✓</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- reminder toast (supporting) -->
+          <div id="f45-toast">
+            <svg id="f45-bell" viewBox="0 0 96 96" width="96" height="96">
+              <path d="M 48 24 C 36 24, 31 33, 31 44 L 31 56 L 25 64 L 71 64 L 65 56 L 65 44 C 65 33, 60 24, 48 24 Z" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linejoin="round"></path>
+              <path d="M 41 70 C 42 76, 54 76, 55 70" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linecap="round"></path>
+            </svg>
+            <div id="f45-tkicker" class="f45-kicker"><span class="f45-diamond"></span><span>Nhắc bạn</span></div>
+            <div id="f45-ttext"></div>
+            <svg id="f45-ring" viewBox="0 0 110 110" width="110" height="110">
+              <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(142,147,181,0.25)" stroke-width="6"></circle>
+              <circle id="f45-ring-arc" cx="55" cy="55" r="48" fill="none" stroke="#FFD23F" stroke-width="6" stroke-linecap="round" transform="rotate(-90 55 55)" stroke-dasharray="301.6 301.6" stroke-dashoffset="301.6"></circle>
+              <line x1="55" y1="55" x2="55" y2="26" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round"></line>
+              <line id="f45-hand" x1="55" y1="55" x2="76" y2="55" stroke="#FFD23F" stroke-width="4" stroke-linecap="round"></line>
+              <circle cx="55" cy="55" r="5" fill="#F4F1E8"></circle>
+            </svg>
+          </div>
+
+          <!-- job chain (supporting) -->
+          <div id="f45-chain-kicker" class="f45-kicker"><span class="f45-diamond"></span><span>Theo lịch</span></div>
+          <svg id="f45-trail-svg" viewBox="0 0 1760 820" width="1760" height="820">
+            <path id="f45-trail" d="M 1000 545 C 1090 455, 1210 455, 1300 545" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"></path>
+            <g id="f45-spark" opacity="0"><g id="f45-spark-rot">
+              <circle cx="0" cy="0" r="16" fill="rgba(255,210,63,0.22)"></circle>
+              <path d="M -3 -3 C -10 -16, -22 -17, -30 -10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <path d="M -3 3 C -10 16, -22 17, -30 10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <circle cx="0" cy="0" r="7" fill="#FFD23F"></circle>
+            </g></g>
+          </svg>
+          <div id="f45-card1" class="f45-card">
+            <svg class="f45-card-icon" viewBox="0 0 64 64" width="64" height="64">
+              <circle cx="32" cy="32" r="26" fill="none" stroke="#8E93B5" stroke-width="4"></circle>
+              <path d="M 32 18 L 32 32 L 42 38" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="f45-card-title">Việc 1</div>
+            <svg id="f45-check1" viewBox="0 0 60 60" width="60" height="60">
+              <circle cx="30" cy="30" r="27" fill="rgba(62,230,208,0.15)" stroke="#3EE6D0" stroke-width="3"></circle>
+              <path d="M 18 31 L 26 39 L 42 22" fill="none" stroke="#3EE6D0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="f45-track"><div id="f45-fill1" class="f45-fill"></div></div>
+          </div>
+          <div id="f45-card2" class="f45-card">
+            <div id="f45-halo-cyan" class="f45-halo"></div>
+            <div id="f45-halo-gold" class="f45-halo"></div>
+            <svg class="f45-card-icon" viewBox="0 0 64 64" width="64" height="64">
+              <circle cx="32" cy="32" r="26" fill="none" stroke="#8E93B5" stroke-width="4"></circle>
+              <path d="M 32 18 L 32 32 L 42 38" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <div class="f45-card-title">Việc 2</div>
+            <div class="f45-track"><div id="f45-fill2" class="f45-fill"></div></div>
+          </div>
+          <div id="f45-chip-pos"><div id="f45-chip">kết quả</div></div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var DUR = 12.887;
+      var $ = function (id) { return document.getElementById(id); };
+
+      /* ---------- camera: one decelerating zoom-out on the world ---------- */
+      // Direct transform tweens (no onUpdate: seeks suppress callbacks). With transform-origin 0 0,
+      // x = C - s·P keeps the focus P centred; tweening x, y, scale with ONE ease drifts P linearly
+      // from stage centre back to its home slot while the wide takes over.
+      var P = { x: 340, y: 300 };   // digest bubble kicker + title, world coords
+      var C = { x: 880, y: 410 };   // stage centre
+      function camAt(s) { return { scale: s, x: C.x - s * P.x, y: C.y - s * P.y }; }
+      var CAM0 = camAt(4.2), CAM1 = camAt(3.9);
+      gsap.set("#f45-world", { transformOrigin: "0 0", scale: CAM0.scale, x: CAM0.x, y: CAM0.y });
+
+      /* ---------- typewriter characters (toast) ---------- */
+      var ttext = $("f45-ttext");
+      var segs = [
+        { text: "Kiểm tra công việc", t0: 5.49, t1: 6.16, gold: false },
+        { text: " · ", t0: 6.26, t1: 6.44, gold: false },
+        { text: "30 phút nữa", t0: 6.83, t1: 7.36, gold: true }
+      ];
+      var chars = [];
+      segs.forEach(function (sg) {
+        var arr = Array.from(sg.text);
+        arr.forEach(function (c, i) {
+          var sp = document.createElement("span");
+          sp.className = "f45-ch" + (sg.gold ? " f45-ch-gold" : "");
+          sp.textContent = c === " " ? " " : c;
+          ttext.appendChild(sp);
+          var t = arr.length > 1 ? sg.t0 + (sg.t1 - sg.t0) * (i / (arr.length - 1)) : sg.t0;
+          chars.push({ el: sp, t: t });
+        });
+      });
+      var caret = document.createElement("span");
+      caret.id = "f45-caret";
+      ttext.appendChild(caret);
+
+      /* ---------- trail + riders ---------- */
+      var trail = $("f45-trail");
+      var TLEN = 360;
+      try { TLEN = trail.getTotalLength() || 360; } catch (e) { TLEN = 360; }
+      trail.setAttribute("stroke-dasharray", TLEN + " " + TLEN);
+      trail.setAttribute("stroke-dashoffset", TLEN);
+      // trail = cubic M1000 545 C1090 455,1210 455,1300 545: x ≈ linear, y a symmetric arch
+      // (peak 477.5 at the midpoint), tangent -45° → +45°. Riders follow it with x / y / rotation tweens.
+      var X0 = 1000, X1 = 1300, YB = 545, YP = 477.5;
+      var spark = $("f45-spark");
+      gsap.set("#f45-spark", { x: X0, y: YB });
+      gsap.set("#f45-spark-rot", { rotation: -45, svgOrigin: "0 0" });
+      gsap.set("#f45-chip-pos", { x: X0, y: YB });
+
+      // initial hidden state for bar fills (set before the timeline is built)
+      gsap.set(["#f45-rb1", "#f45-rb2", "#f45-rb3", "#f45-fill1", "#f45-fill2"], { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Scene 1 (0–4.31): close-up digest arrives, one pull-back reveals the phone ===== */
+      tl.fromTo("#f45-typing", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 0.3);
+      // three finite bounce cycles of the typing dots
+      ["#f45-dot1", "#f45-dot2", "#f45-dot3"].forEach(function (d, i) {
+        for (var c = 0; c < 3; c++) {
+          var t = 0.6 + c * 0.44 + i * 0.1;
+          tl.fromTo(d, { y: 0 }, { y: -9, duration: 0.14, ease: "power2.out", immediateRender: false }, t);
+          tl.to(d, { y: 0, duration: 0.14, ease: "power2.in" }, t + 0.14);
+        }
+      });
+      tl.set("#f45-typing", { opacity: 0 }, 1.96);
+      // pre-reveal gentle drift (≤ 8 %), then the single decelerating burst to the wide
+      tl.fromTo("#f45-world", { scale: CAM0.scale, x: CAM0.x, y: CAM0.y }, { scale: CAM1.scale, x: CAM1.x, y: CAM1.y, duration: 2.55, ease: "sine.inOut" }, 0.2);
+      tl.fromTo("#f45-bubble", { opacity: 0, y: 18, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 1.98);
+      tl.fromTo("#f45-bkicker", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 2.18);
+      tl.fromTo("#f45-tw1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.38);
+      tl.fromTo("#f45-tw2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.56);
+      [1, 2, 3].forEach(function (n, i) {
+        var t = 2.64 + i * 0.1;
+        tl.fromTo("#f45-rd" + n, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, t);
+        tl.fromTo("#f45-rb" + n, { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power3.out" }, t);
+      });
+      tl.to("#f45-world", { scale: 1, x: 0, y: 0, duration: 1.15, ease: "expo.out" }, 2.85);
+      tl.fromTo("#f45-tick", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 3.16);
+      tl.fromTo("#f45-tg-label", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.56);
+
+      /* ===== Scene 2 (4.31–7.72): reminder toast types on ===== */
+      tl.fromTo("#f45-toast", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 5.01);
+      tl.fromTo("#f45-bell", { rotation: -14 }, { rotation: 0, duration: 0.6, ease: "power3.out", transformOrigin: "50% 20%" }, 5.11);
+      tl.fromTo("#f45-tkicker", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.31);
+      tl.fromTo(caret, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 5.42);
+      chars.forEach(function (c) { tl.set(c.el, { display: "inline" }, c.t); });
+      tl.to("#f45-ring-arc", { attr: { "stroke-dashoffset": 0 }, duration: 0.56, ease: "none" }, 6.83);
+      tl.fromTo("#f45-hand", { rotation: 0 }, { rotation: 360, svgOrigin: "55 55", duration: 0.56, ease: "none" }, 6.83);
+
+      /* ===== Scene 3 (7.72–12.89): chained jobs along the trail ===== */
+      // layout shift (camera stays locked): toast lifts to the top band, phone + toast step back
+      tl.to("#f45-toast", { y: -180, opacity: 0.4, duration: 0.6, ease: "power2.inOut" }, 7.8);
+      tl.to("#f45-phonegroup", { opacity: 0.4, duration: 0.6, ease: "power2.inOut" }, 7.8);
+      tl.to(caret, { opacity: 0, duration: 0.2, ease: "none" }, 7.8);
+      tl.fromTo("#f45-card1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 8.23);
+      tl.fromTo("#f45-fill1", { scaleX: 0 }, { scaleX: 1, duration: 1.0, ease: "power1.inOut" }, 8.45);
+      tl.fromTo("#f45-chain-kicker", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.77);
+      // courier trail draws on "nối tiếp" with the winged spark riding its head
+      tl.fromTo(trail, { attr: { "stroke-dashoffset": TLEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.42, ease: "none" }, 9.52);
+      tl.fromTo(spark, { attr: { opacity: 0 } }, { attr: { opacity: 1 }, duration: 0.12, ease: "none" }, 9.52);
+      tl.fromTo(spark, { x: X0 }, { x: X1, duration: 0.42, ease: "none" }, 9.52);
+      tl.fromTo("#f45-spark-rot", { rotation: -45 }, { rotation: 45, svgOrigin: "0 0", duration: 0.42, ease: "none" }, 9.52);
+      tl.fromTo(spark, { y: YB }, { y: YP, duration: 0.21, ease: "sine.out" }, 9.52);
+      tl.to(spark, { y: YB, duration: 0.21, ease: "sine.in" }, 9.73);
+      tl.fromTo("#f45-card2", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 9.68);
+      tl.fromTo("#f45-halo-cyan", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 10.70);
+      // job 1 finishes; its result flows into job 2
+      tl.fromTo("#f45-check1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 11.24);
+      tl.fromTo("#f45-chip", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 11.24);
+      // chip docks on the trail just short of job 2 (x 1230), clear of the card's title
+      tl.fromTo("#f45-chip-pos", { x: X0 }, { x: 1230, duration: 0.66, ease: "power2.inOut" }, 11.30);
+      tl.fromTo("#f45-chip-pos", { y: YB }, { y: YP, duration: 0.33, ease: "sine.out" }, 11.30);
+      tl.to("#f45-chip-pos", { y: 505, duration: 0.33, ease: "sine.in" }, 11.63);
+      tl.fromTo("#f45-halo-gold", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 11.97);
+      tl.fromTo("#f45-fill2", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power2.out" }, 11.97);
+      // hold still to the end
+
+      tl.to({}, { duration: DUR }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["45-vi-du-lich-tu-dong"] = tl;
+    })();
+  </script>
+</template>

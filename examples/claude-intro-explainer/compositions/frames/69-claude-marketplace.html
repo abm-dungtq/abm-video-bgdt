@@ -1,0 +1,375 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f69-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f69-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f69- */
+
+    /* ---------- analyze rail (resting position: canvas y 64–108, x from 560) ---------- */
+    #f69-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f69-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600; font-size: 26px; line-height: 42px;
+      text-align: center; white-space: nowrap;
+    }
+    .f69-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f69-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f69-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    /* ---------- shared spark ---------- */
+    .f69-spark line { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
+
+    /* ---------- scene 1: date + launch title ---------- */
+    #f69-s1 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f69-date {
+      position: absolute; left: 660px; top: 180px; width: 440px; height: 84px; box-sizing: border-box;
+      border-radius: 42px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f69-cal { position: absolute; left: 34px; top: 20px; width: 44px; height: 44px; }
+    #f69-cal rect, #f69-cal path { fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    #f69-date-text {
+      position: absolute; left: 104px; top: 0; height: 84px; line-height: 84px;
+      font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 44px;
+      letter-spacing: .04em; color: var(--ink); white-space: nowrap;
+    }
+    .f69-dpart { display: inline-block; opacity: 0; }
+    #f69-title {
+      position: absolute; left: 0; top: 330px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 124px; line-height: 1.1;
+      letter-spacing: -0.01em; color: var(--ink); white-space: nowrap;
+    }
+    .f69-tword { display: inline-block; opacity: 0; }
+    #f69-title-spark { position: absolute; left: 236px; top: 318px; width: 56px; height: 56px; }
+    #f69-title-spark svg { width: 56px; height: 56px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f69-under { position: absolute; left: 730px; top: 488px; width: 740px; height: 40px; overflow: visible; }
+    #f69-under path { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+
+    /* ---------- scene 2: converging strip into one shelf ---------- */
+    #f69-s2 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f69-strokes { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f69-stroke { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+    .f69-ghost { fill: none; stroke: rgba(154,150,140,.30); stroke-width: 3; stroke-dasharray: 2 14; stroke-linecap: round; }
+    #f69-shelf {
+      position: absolute; left: 1120px; top: 240px; width: 480px; height: 320px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f69-slot {
+      position: absolute; left: 40px; width: 400px; height: 64px; box-sizing: border-box;
+      border-radius: 32px; border: 2px dashed rgba(154,150,140,.28);
+    }
+    .f69-chip {
+      position: absolute; left: 0; top: 0; height: 64px; box-sizing: border-box;
+      padding: 0 30px; border-radius: 32px; background: #34322F;
+      border: 1px solid rgba(240,238,230,.16);
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 34px; line-height: 62px;
+      color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f69-place {
+      position: absolute; left: 1120px; top: 596px; width: 480px; height: 90px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 72px; line-height: 90px;
+      color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f69-place-spark { position: absolute; left: 1150px; top: 620px; width: 40px; height: 40px; }
+    #f69-place-spark svg { width: 40px; height: 40px; display: block; }
+
+    /* ---------- scene 3: hero count-up + partner chips ---------- */
+    #f69-s3 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f69-s3-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f69-kick {
+      position: absolute; left: 0; top: 92px; width: 1760px; height: 40px;
+      display: flex; justify-content: center; align-items: center; gap: 14px; opacity: 0;
+    }
+    #f69-kick svg { width: 26px; height: 26px; display: block; }
+    #f69-kick span {
+      font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 28px;
+      letter-spacing: .14em; color: var(--muted); line-height: 40px;
+    }
+    #f69-ring { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f69-ring-ghost { fill: none; stroke: rgba(154,150,140,.28); stroke-width: 3; stroke-dasharray: 2 14; stroke-linecap: round; }
+    #f69-ring-draw { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+    #f69-num {
+      position: absolute; left: 0; top: 214px; width: 1760px; height: 260px;
+      display: flex; justify-content: center; align-items: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 250px; line-height: 1;
+      letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f69-num-plus { display: inline-block; color: var(--gold); opacity: 0; margin-left: 8px; }
+    #f69-label {
+      position: absolute; left: 0; top: 614px; width: 1760px; text-align: center;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 500; font-size: 40px; line-height: 56px;
+      color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f69-row {
+      position: absolute; left: 0; top: 610px; width: 1760px; height: 68px;
+      display: flex; justify-content: center; align-items: center; gap: 20px;
+    }
+    .f69-pchip {
+      position: relative; box-sizing: border-box; height: 68px; padding: 0 30px 0 58px;
+      border-radius: 34px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.14);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06);
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 34px; line-height: 66px;
+      color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    .f69-pdot { position: absolute; left: 26px; top: 26px; width: 14px; height: 14px; border-radius: 7px; background: var(--cyan); }
+  </style>
+
+  <div id="root" data-composition-id="69-claude-marketplace" data-width="1920" data-height="1080" data-duration="15.956">
+    <div id="f69-ground" class="clip" data-start="0" data-duration="15.956" data-track-index="0"></div>
+    <div id="f69-stage" class="clip" data-start="0" data-duration="15.956" data-track-index="1">
+
+      <!-- analyze rail, resting position from frame 0 -->
+      <!-- RAIL SPEC copied from frame 44, resting geometry x 560–1628, y 64–108 -->
+      <div id="f69-rail">
+        <div id="f69-p1" class="f69-pill"><span id="f69-b1" class="f69-badge">1</span>Tính năng<svg id="f69-ps1" class="f69-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f69-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f69-p2" class="f69-pill"><span id="f69-b2" class="f69-badge">2</span>Vì sao nổi bật<svg id="f69-ps2" class="f69-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f69-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f69-p3" class="f69-pill"><span id="f69-b3" class="f69-badge">3</span>Bạn được gì<svg id="f69-ps3" class="f69-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: date chip + launch title -->
+      <div id="f69-s1">
+        <div id="f69-date">
+          <svg id="f69-cal" viewBox="0 0 44 44">
+            <rect x="4" y="8" width="36" height="32" rx="6" ry="6"/>
+            <path d="M4 18 L 40 18"/>
+            <path d="M14 3 L 14 12"/>
+            <path d="M30 3 L 30 12"/>
+          </svg>
+          <div id="f69-date-text"><span id="f69-d1" class="f69-dpart">23</span><span id="f69-d2" class="f69-dpart">/09/2026</span></div>
+        </div>
+        <div id="f69-title"><span id="f69-t1" class="f69-tword">Claude</span> <span id="f69-t2" class="f69-tword">Marketplace</span></div>
+        <div id="f69-title-spark">
+          <svg class="f69-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+        </div>
+        <svg id="f69-under" viewBox="0 0 740 40">
+          <path id="f69-under-path" d="M6 22 C 140 10, 270 30, 410 18 S 630 12, 734 24" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+      <!-- Scene 2: three chips slide along hand-drawn strokes into one shelf -->
+      <div id="f69-s2">
+        <svg id="f69-strokes" viewBox="0 0 1760 820">
+          <path class="f69-ghost" d="M300 200 C 640 140, 960 330, 1360 320"/>
+          <path class="f69-ghost" d="M300 420 C 640 480, 960 380, 1360 400"/>
+          <path class="f69-ghost" d="M300 640 C 640 700, 1000 470, 1360 480"/>
+          <path id="f69-st1" class="f69-stroke" d="M300 200 C 640 140, 960 330, 1360 320" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f69-st2" class="f69-stroke" d="M300 420 C 640 480, 960 380, 1360 400" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f69-st3" class="f69-stroke" d="M300 640 C 640 700, 1000 470, 1360 480" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f69-shelf">
+          <div class="f69-slot" style="top:48px;"></div>
+          <div class="f69-slot" style="top:128px;"></div>
+          <div class="f69-slot" style="top:208px;"></div>
+        </div>
+        <div id="f69-c1" class="f69-chip">plugin</div>
+        <div id="f69-c2" class="f69-chip">connector</div>
+        <div id="f69-c3" class="f69-chip">agent</div>
+        <div id="f69-place">một chỗ</div>
+        <div id="f69-place-spark">
+          <svg class="f69-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+        </div>
+      </div>
+
+      <!-- Scene 3: hero count-up, then partner text chips (no logos) -->
+      <div id="f69-s3">
+        <div id="f69-s3-cam">
+          <div id="f69-kick">
+            <svg class="f69-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+            <span>RA MẮT</span>
+          </div>
+          <svg id="f69-ring" viewBox="0 0 1760 820">
+            <ellipse id="f69-ring-ghost" cx="880" cy="344" rx="470" ry="186"/>
+            <path id="f69-ring-draw" d="M880 158 C 1150 154, 1356 236, 1350 346 C 1344 458, 1136 532, 872 530 C 610 528, 404 452, 412 340 C 420 232, 628 162, 900 164" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          </svg>
+          <div id="f69-num"><span id="f69-num-val">0</span><span id="f69-num-plus">+</span></div>
+          <div id="f69-label">connector và plugin</div>
+          <div id="f69-row">
+            <div id="f69-n1" class="f69-pchip"><span class="f69-pdot"></span>Atlassian</div>
+            <div id="f69-n2" class="f69-pchip"><span class="f69-pdot"></span>Google</div>
+            <div id="f69-n3" class="f69-pchip"><span class="f69-pdot"></span>Microsoft</div>
+            <div id="f69-n4" class="f69-pchip"><span class="f69-pdot"></span>Notion</div>
+            <div id="f69-n5" class="f69-pchip"><span class="f69-pdot"></span>Salesforce</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var R = '[data-composition-id="69-claude-marketplace"] ';
+      function q(s) { return R + s; }
+
+      // equal-arc-length samples of a cubic (stage coords), used to slide a chip along its stroke
+      function samples(P0, P1, P2, P3, K) {
+        function bez(t) {
+          var u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+          return [a * P0[0] + b * P1[0] + c * P2[0] + d * P3[0], a * P0[1] + b * P1[1] + c * P2[1] + d * P3[1]];
+        }
+        var N = 400, pts = [], cum = [0], i;
+        for (i = 0; i <= N; i++) pts.push(bez(i / N));
+        for (i = 1; i <= N; i++) {
+          var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+          cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy));
+        }
+        var total = cum[N], out = [], j = 0;
+        for (var k = 1; k <= K; k++) {
+          var target = total * k / K;
+          while (j < N && cum[j] < target) j++;
+          out.push({ x: pts[j][0], y: pts[j][1] });
+        }
+        return out;
+      }
+      var paths = [
+        [[300, 200], [640, 140], [960, 330], [1360, 320]],
+        [[300, 420], [640, 480], [960, 380], [1360, 400]],
+        [[300, 640], [640, 700], [1000, 470], [1360, 480]]
+      ];
+
+      // initial states (before the timeline, never tl.set at 0)
+      gsap.set(q('.f69-pill-spark'), { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set([q('#f69-title-spark svg'), q('#f69-place-spark svg'), q('#f69-kick svg')], { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set(q('#f69-c1'), { xPercent: -50, yPercent: -50, x: paths[0][0][0], y: paths[0][0][1] });
+      gsap.set(q('#f69-c2'), { xPercent: -50, yPercent: -50, x: paths[1][0][0], y: paths[1][0][1] });
+      gsap.set(q('#f69-c3'), { xPercent: -50, yPercent: -50, x: paths[2][0][0], y: paths[2][0][1] });
+      gsap.set(q('#f69-s1'), { transformOrigin: '880px 380px' });
+      gsap.set(q('#f69-s2'), { transformOrigin: '1360px 400px' });
+      gsap.set([q('#f69-s3'), q('#f69-s3-cam')], { transformOrigin: '880px 400px' });
+      gsap.set(q('#f69-num'), { transformOrigin: '50% 50%' });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- rail: slot 1 at 1.3, slot 2 at 6.8 (slot 3 stays unlit)
+      function light(n, t) {
+        tl.fromTo(q('#f69-p' + n),
+          { borderColor: 'rgba(240,238,230,0.12)', color: '#9A968C' },
+          { borderColor: '#D97757', color: '#F0EEE6', duration: 0.3, ease: 'power2.out' }, t);
+        tl.fromTo(q('#f69-b' + n),
+          { borderColor: '#9A968C', color: '#9A968C' },
+          { borderColor: '#D97757', color: '#D97757', duration: 0.3, ease: 'power2.out' }, t);
+        tl.fromTo(q('#f69-ps' + n),
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: 'power3.out' }, t);
+      }
+      light(1, 1.3);
+      light(2, 6.8);
+
+      // ---- Scene 1 (0–3.93): kinetic — date chip, then the launch title
+      tl.fromTo(q('#f69-date'), { opacity: 0, y: 24, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power3.out' }, 0.25);   // "Ngày"
+      tl.fromTo(q('#f69-d1'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.67);                          // "ba"
+      tl.fromTo(q('#f69-d2'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 1.0);                           // "chín"
+      tl.fromTo(q('#f69-t1'), { opacity: 0, y: 50, scale: 1.1 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power3.out' }, 1.6);    // "Claude"
+      tl.fromTo(q('#f69-title-spark svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: 'power3.out' }, 1.6);
+      tl.fromTo(q('#f69-t2'), { opacity: 0, y: 50, scale: 1.1 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power3.out' }, 1.88);   // "Marketplace"
+      tl.fromTo(q('#f69-under-path'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.5, ease: 'none' }, 2.44); // "ra mắt"
+      tl.to(q('#f69-s1'), { scale: 1.015, duration: 1.0, ease: 'none' }, 2.9);
+
+      // ---- shot change (3.93): title recedes upward, converging strip takes over
+      tl.to(q('#f69-s1'), { opacity: 0, y: -60, duration: 0.4, ease: 'power2.in' }, 3.7);
+      tl.fromTo(q('#f69-s2'), { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out' }, 3.85);
+      tl.fromTo(q('#f69-shelf'), { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power3.out' }, 3.93);
+
+      // ---- Scene 2 (3.93–7.29): chips appear on their word, then ride their stroke into the shelf
+      function feed(n, appear, go) {
+        var c = q('#f69-c' + n);
+        var P = paths[n - 1];
+        var kf = samples(P[0], P[1], P[2], P[3], 28);
+        tl.fromTo(c, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power3.out' }, appear);
+        tl.fromTo(q('#f69-st' + n), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.55, ease: 'power1.inOut' }, go);
+        tl.to(c, { keyframes: kf, easeEach: 'none', ease: 'power1.inOut', duration: 0.55 }, go);
+      }
+      feed(1, 3.93, 4.25);   // "plugin"
+      feed(2, 4.67, 4.95);   // "connector"
+      feed(3, 5.35, 5.6);    // "agent"
+
+      // "một chỗ" (6.18): the shelf takes its label
+      tl.fromTo(q('#f69-place'), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 6.18);
+      tl.fromTo(q('#f69-place-spark svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.35, ease: 'power3.out' }, 6.18);
+      tl.to(q('#f69-shelf'), { borderColor: 'rgba(217,119,87,0.85)', duration: 0.3, ease: 'power2.out' }, 6.18);
+
+      // (6.36) camera pushes THROUGH the shelf
+      tl.to(q('#f69-s2'), { scale: 5, filter: 'blur(10px)', duration: 0.9, ease: 'power2.in' }, 6.36);
+      tl.to(q('#f69-s2'), { opacity: 0, duration: 0.35, ease: 'power2.in' }, 6.9);
+
+      // ---- Scene 3 (7.29–15.46): arrive in the hero instrument
+      tl.fromTo(q('#f69-s3'), { opacity: 0, scale: 0.72, filter: 'blur(8px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.6, ease: 'power3.out' }, 7.0);
+      tl.fromTo(q('#f69-kick'), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 7.52);     // "ra mắt"
+      tl.fromTo(q('#f69-kick svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.35, ease: 'power3.out' }, 7.52);
+
+      // "hơn hai nghìn" (8.51–8.99): count-up with growing scale + hand-drawn ring sweep on the same ease
+      tl.fromTo(q('#f69-num'), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 8.51);
+      tl.fromTo(q('#f69-num'), { scale: 0.55 }, { scale: 1, duration: 0.75, ease: 'power3.out' }, 8.51);
+      tl.fromTo(q('#f69-num-val'), { textContent: 0 }, { textContent: 2000, snap: { textContent: 1 }, duration: 0.75, ease: 'power3.out' }, 8.51);
+      tl.fromTo(q('#f69-ring-draw'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.75, ease: 'power3.out' }, 8.51);
+      tl.to(q('#f69-ring-ghost'), { opacity: 0, duration: 0.4, ease: 'power2.out' }, 8.9);
+      tl.fromTo(q('#f69-num-plus'), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power3.out' }, 9.05);
+
+      // "connector ... plugin" (9.05): muted label, fades as the partners arrive (11.3)
+      tl.fromTo(q('#f69-label'), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 9.05);
+      tl.to(q('#f69-label'), { opacity: 0, y: -16, duration: 0.3, ease: 'power2.in' }, 11.0);
+      tl.to(q('#f69-kick'), { opacity: 0, duration: 0.3, ease: 'power2.in' }, 11.0);   // keep the text count low for the partner row
+
+      // partner text chips pop in on each spoken name
+      var names = [[1, 11.3], [2, 12.2], [3, 12.64], [4, 13.51], [5, 14.11]];
+      for (var i = 0; i < names.length; i++) {
+        tl.fromTo(q('#f69-n' + names[i][0]), { opacity: 0, y: 24, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' }, names[i][1]);
+      }
+
+      // slow continuous lean-in underneath, then hold
+      tl.fromTo(q('#f69-s3-cam'), { scale: 1 }, { scale: 1.025, duration: 7.8, ease: 'none', immediateRender: false }, 7.6);
+
+      tl.to({}, { duration: 15.456 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["69-claude-marketplace"] = tl;
+    })();
+  </script>
+</template>

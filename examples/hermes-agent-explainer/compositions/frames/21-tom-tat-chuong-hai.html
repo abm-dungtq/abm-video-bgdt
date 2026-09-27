@@ -1,0 +1,198 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f21-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f21-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f21- */
+    #f21-field {
+      position: absolute; inset: 0; opacity: .4;
+      background-image: radial-gradient(circle, rgba(142,147,181,.35) 1.5px, transparent 2px);
+      background-size: 44px 44px;
+    }
+    #f21-kicker {
+      position: absolute; left: 0; right: 0; top: 40px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); opacity: 0;
+    }
+    #f21-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+    #f21-anchor {
+      position: absolute; left: 0; right: 0; top: 100px; text-align: center;
+      font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+      color: var(--ink); opacity: 0;
+    }
+    /* rail: three chips, 460 wide, 170 gap, starting at x 20 */
+    #f21-trail { position: absolute; left: 0; top: 390px; width: 1760px; height: 120px; overflow: visible; }
+    .f21-chip {
+      position: absolute; top: 330px; width: 460px; height: 300px; opacity: 0;
+    }
+    #f21-chip1 { left: 20px; }
+    #f21-chip2 { left: 650px; }
+    #f21-chip3 { left: 1280px; }
+    .f21-box {
+      position: absolute; inset: 0; border-radius: 18px;
+      background: var(--surface);
+      border: 2px dashed rgba(142,147,181,.45);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f21-chip[data-state="active"] .f21-box {
+      border: 2px solid var(--gold);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 36px rgba(255,210,63,.35);
+    }
+    .f21-chip[data-state="done"] .f21-box {
+      border: 2px solid rgba(62,230,208,.7);
+    }
+    .f21-num {
+      position: absolute; left: 30px; top: 26px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    .f21-chip[data-state="active"] .f21-num { color: var(--gold); }
+    .f21-chip[data-state="done"] .f21-num { color: var(--cyan); }
+    .f21-icon {
+      position: absolute; left: 0; right: 0; top: 56px; height: 96px;
+      display: flex; justify-content: center; color: var(--ink); opacity: 0;
+    }
+    .f21-chip[data-state="active"] .f21-icon { color: var(--gold); }
+    .f21-chip[data-state="done"] .f21-icon { color: var(--ink); }
+    .f21-label {
+      position: absolute; left: 0; right: 0; top: 184px; text-align: center; white-space: nowrap;
+      font-size: 48px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; opacity: 0;
+    }
+    .f21-tick {
+      position: absolute; right: 22px; top: 18px; width: 52px; height: 52px; border-radius: 50%;
+      background: var(--cyan); display: flex; align-items: center; justify-content: center; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="21-tom-tat-chuong-hai" data-width="1920" data-height="1080" data-duration="4.092">
+    <div id="f21-ground" class="clip" data-start="0" data-duration="4.092" data-track-index="0"></div>
+    <div id="f21-stage" class="clip" data-start="0" data-duration="4.092" data-track-index="1">
+      <div id="f21-field"></div>
+
+      <!-- pinned anchor -->
+      <div id="f21-kicker"><b>◆</b>Tóm lại · chương 2</div>
+      <div id="f21-anchor">Nhớ nhé</div>
+
+      <!-- courier trail joining the chips (behind them) -->
+      <svg id="f21-trail" viewBox="0 0 1760 120">
+        <path id="f21-seg1" d="M480 90 C 540 30, 590 30, 650 90" fill="none" stroke="#FFD23F" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="240" stroke-dashoffset="240"
+          style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+        <path id="f21-seg2" d="M1110 90 C 1170 30, 1220 30, 1280 90" fill="none" stroke="#FFD23F" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="240" stroke-dashoffset="240"
+          style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+      </svg>
+
+      <!-- chip rail -->
+      <div id="f21-chip1" class="f21-chip" data-state="pending">
+        <div id="f21-box1" class="f21-box"></div>
+        <div class="f21-num">01</div>
+        <div id="f21-tick1" class="f21-tick">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#0B1026" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15.5 L13 21 L23 9"/></svg>
+        </div>
+        <div id="f21-icon1" class="f21-icon">
+          <svg width="96" height="96" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M24 6 V28"/><path d="M15 20 L24 29 L33 20"/><path d="M8 30 V38 H40 V30"/>
+          </svg>
+        </div>
+        <div id="f21-label1" class="f21-label">cài đặt</div>
+      </div>
+
+      <div id="f21-chip2" class="f21-chip" data-state="pending">
+        <div id="f21-box2" class="f21-box"></div>
+        <div class="f21-num">02</div>
+        <div id="f21-tick2" class="f21-tick">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#0B1026" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15.5 L13 21 L23 9"/></svg>
+        </div>
+        <div id="f21-icon2" class="f21-icon">
+          <svg width="96" height="96" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="13" y="13" width="22" height="22" rx="4"/><rect x="19" y="19" width="10" height="10" rx="1.5"/>
+            <path d="M19 6 V13 M29 6 V13 M19 35 V42 M29 35 V42 M6 19 H13 M6 29 H13 M35 19 H42 M35 29 H42"/>
+          </svg>
+        </div>
+        <div id="f21-label2" class="f21-label">chọn mô hình</div>
+      </div>
+
+      <div id="f21-chip3" class="f21-chip" data-state="pending">
+        <div id="f21-box3" class="f21-box"></div>
+        <div class="f21-num">03</div>
+        <div id="f21-tick3" class="f21-tick">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#0B1026" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15.5 L13 21 L23 9"/></svg>
+        </div>
+        <div id="f21-icon3" class="f21-icon">
+          <svg width="96" height="96" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10 H40 V32 H22 L13 40 V32 H8 Z"/>
+            <circle cx="17" cy="21" r="1.2" fill="currentColor"/><circle cx="24" cy="21" r="1.2" fill="currentColor"/><circle cx="31" cy="21" r="1.2" fill="currentColor"/>
+          </svg>
+        </div>
+        <div id="f21-label3" class="f21-label">trò chuyện</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // anchor lands once (Nhớ@0.25) and never moves again
+      tl.fromTo("#f21-kicker", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.1);
+      tl.fromTo("#f21-anchor", { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.22);
+
+      // hollow rail slots cascade in (numbers only — labels wait for their words)
+      tl.fromTo(".f21-chip", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.1 }, 0.45);
+
+      // one step per cue: light the chip, reveal its icon + label
+      function light(n, t) {
+        tl.set("#f21-chip" + n, { attr: { "data-state": "active" } }, t);
+        tl.fromTo("#f21-box" + n, { scale: 0.95 }, { scale: 1, duration: 0.35, ease: "power3.out" }, t);
+        tl.fromTo("#f21-icon" + n, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, t);
+        tl.fromTo("#f21-label" + n, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, t + 0.04);
+      }
+      function tick(n, t) {
+        tl.set("#f21-chip" + n, { attr: { "data-state": "done" } }, t);
+        tl.fromTo("#f21-tick" + n, { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t);
+      }
+
+      light(1, 1.0);                 // cài@1.0 / đặt@1.14
+      tick(1, 1.58);                 // chọn@1.58
+      tl.fromTo("#f21-seg1", { strokeDashoffset: 240 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 1.58);
+      light(2, 1.58);                // chọn mô hình
+      tick(2, 2.35);                 // trò@2.35
+      tl.fromTo("#f21-seg2", { strokeDashoffset: 240 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 2.35);
+      light(3, 2.35);                // trò chuyện
+      tick(3, 2.85);                 // after chuyện@2.51 ends 2.71 — rail complete, hold
+
+      tl.to({}, { duration: 3.492 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["21-tom-tat-chuong-hai"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,264 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    #f75-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(43, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    #f75-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- scene 1: pipeline ---------- */
+    #f75-s1 { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f75-kicker { position: absolute; left: 60px; top: 70px; display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em; color: var(--muted); opacity: 0; }
+    #f75-kicker svg { width: 34px; height: 34px; }
+    .f75-slot { position: absolute; top: 250px; width: 380px; height: 320px; border-radius: 16px;
+      border: 2px dashed rgba(240,238,230,.10); }
+    .f75-node { position: absolute; top: 250px; width: 380px; height: 320px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.10); overflow: hidden;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0; }
+    #f75-n1, #f75-slot1 { left: 60px; }
+    #f75-n2, #f75-slot2 { left: 690px; }
+    #f75-n3, #f75-slot3 { left: 1320px; }
+    .f75-icon { position: absolute; left: 50%; top: 44px; width: 132px; height: 132px; margin-left: -66px; }
+    .f75-label { position: absolute; left: 0; right: 0; top: 206px; text-align: center;
+      font-size: 36px; font-weight: 600; line-height: 1.25; color: var(--ink); }
+    .f75-label span { display: inline-block; opacity: 0; }
+    .f75-warnrim { position: absolute; inset: 0; border-radius: 16px; border: 3px solid var(--warn); opacity: 0; }
+    #f75-beam { position: absolute; left: 0; top: 0; width: 6px; height: 100%; background: var(--gold);
+      opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f75-flag { position: absolute; left: 392px; top: 196px; width: 84px; height: 96px; opacity: 0; transform-origin: 10% 95%; }
+    #f75-harm { position: absolute; left: 150px; top: 604px; width: 200px; height: 56px; border-radius: 28px;
+      border: 2px solid var(--warn); color: var(--warn); font-size: 30px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; opacity: 0; }
+    #f75-bar { position: absolute; left: 0; top: 0; width: 14px; height: 100%; background: var(--ink);
+      transform-origin: 50% 0%; }
+    #f75-lines { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f75-draw { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+    #f75-ans { position: absolute; left: 1086px; top: 356px; width: 124px; height: 92px; border-radius: 16px;
+      background: var(--surface); border: 2px solid rgba(240,238,230,.35); opacity: 0; }
+    #f75-ans .f75-ln { position: absolute; left: 22px; height: 8px; border-radius: 4px; background: rgba(240,238,230,.55); }
+    #f75-ansred { position: absolute; inset: -2px; border-radius: 16px; background: rgba(229,72,77,.22);
+      border: 3px solid var(--warn); opacity: 0; }
+    #f75-slash { position: absolute; left: -26px; top: -26px; width: 176px; height: 144px; overflow: visible; }
+    /* ---------- scene 2: kinetic ---------- */
+    #f75-s2 { position: absolute; inset: 0; transform-origin: 50% 45%; }
+    #f75-head { position: absolute; left: 0; right: 0; top: 190px; text-align: center; }
+    #f75-headin { position: relative; display: inline-block; font-family: "Lora", serif; font-weight: 700;
+      font-size: 150px; line-height: 1.12; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+    #f75-headin .f75-w { display: inline-block; opacity: 0; margin: 0 0.12em; }
+    #f75-uline { position: absolute; left: 2%; bottom: -26px; width: 96%; height: 40px; overflow: visible; }
+    #f75-spark2 { position: absolute; right: -64px; top: -6px; width: 44px; height: 44px; opacity: 0; }
+    #f75-chip { position: absolute; left: 50%; top: 520px; width: 520px; margin-left: -260px; height: 104px;
+      border-radius: 52px; background: var(--surface); border: 1px solid rgba(143,184,168,.45);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center; gap: 22px; opacity: 0; }
+    #f75-chip svg { width: 52px; height: 52px; overflow: visible; }
+    #f75-chiptxt { font-size: 44px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+    #f75-chiptxt span { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="75-lop-bao-ve-cua-anthropic" data-width="1920" data-height="1080" data-duration="12.174">
+    <div id="f75-ground" class="clip" data-start="0" data-duration="12.174" data-track-index="0"></div>
+    <div id="f75-stage" class="clip" data-start="0" data-duration="12.174" data-track-index="1">
+
+      <div id="f75-s1">
+        <div id="f75-kicker">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          <span>ANTHROPIC</span>
+        </div>
+
+        <div id="f75-slot1" class="f75-slot"></div>
+        <div id="f75-slot2" class="f75-slot"></div>
+        <div id="f75-slot3" class="f75-slot"></div>
+
+        <svg id="f75-lines" viewBox="0 0 1760 820">
+          <path id="f75-p0" d="M 440 410 L 690 410 M 1070 410 L 1320 410" stroke="rgba(240,238,230,.12)" stroke-width="3" stroke-dasharray="8 12" fill="none"/>
+          <path id="f75-p1" class="f75-draw" pathLength="1" d="M 454 412 C 520 400, 590 422, 668 408" stroke="#D97757" stroke-width="4"/>
+          <path id="f75-a1" class="f75-draw" pathLength="1" d="M 650 392 L 670 408 L 650 426" stroke="#D97757" stroke-width="4"/>
+          <path id="f75-p2" class="f75-draw" pathLength="1" d="M 1084 412 C 1150 400, 1220 422, 1298 408" stroke="#D97757" stroke-width="4"/>
+          <path id="f75-a2" class="f75-draw" pathLength="1" d="M 1280 392 L 1300 408 L 1280 426" stroke="#D97757" stroke-width="4"/>
+        </svg>
+
+        <!-- node 1: content -->
+        <div id="f75-n1" class="f75-node">
+          <svg class="f75-icon" viewBox="0 0 132 132">
+            <path d="M 34 14 L 82 14 L 104 36 L 104 118 L 34 118 Z" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M 82 14 L 82 36 L 104 36" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+            <g stroke="#9A968C" stroke-width="5" stroke-linecap="round">
+              <line x1="48" y1="56" x2="90" y2="56"/><line x1="48" y1="74" x2="90" y2="74"/><line x1="48" y1="92" x2="76" y2="92"/></g>
+          </svg>
+          <div class="f75-label"><span id="f75-l1">Nội dung</span></div>
+          <div id="f75-beam"></div>
+          <div id="f75-rim1" class="f75-warnrim"></div>
+        </div>
+
+        <!-- node 2: detection model -->
+        <div id="f75-n2" class="f75-node">
+          <svg class="f75-icon" viewBox="0 0 132 132">
+            <circle cx="58" cy="58" r="36" fill="none" stroke="#F0EEE6" stroke-width="5"/>
+            <line x1="84" y1="84" x2="114" y2="114" stroke="#F0EEE6" stroke-width="8" stroke-linecap="round"/>
+            <circle id="f75-pupil" cx="58" cy="58" r="12" fill="#D97757"/>
+          </svg>
+          <div class="f75-label"><span id="f75-l2a">Model</span> <span id="f75-l2b">phát hiện</span></div>
+        </div>
+
+        <!-- node 3: safety filter gate -->
+        <div id="f75-n3" class="f75-node">
+          <svg class="f75-icon" viewBox="0 0 132 132">
+            <path id="f75-shield" class="f75-draw" pathLength="1" d="M 66 12 L 108 28 L 108 62 C 108 92, 90 110, 66 122 C 42 110, 24 92, 24 62 L 24 28 Z" stroke="#F0EEE6" stroke-width="5"/>
+            <path id="f75-shtick" class="f75-draw" pathLength="1" d="M 46 66 L 60 80 L 88 50" stroke="#8FB8A8" stroke-width="6"/>
+          </svg>
+          <div class="f75-label"><span id="f75-l3a">Bộ lọc</span> <span id="f75-l3b">an toàn</span></div>
+          <div id="f75-bar"></div>
+        </div>
+
+        <!-- warn flag on content -->
+        <svg id="f75-flag" viewBox="0 0 84 96">
+          <line x1="10" y1="6" x2="10" y2="92" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+          <path d="M 12 8 C 30 0, 44 16, 62 10 L 76 8 L 66 26 L 76 44 C 58 50, 40 36, 12 44 Z" fill="#E5484D"/>
+        </svg>
+        <div id="f75-harm">có hại</div>
+
+        <!-- answer block travelling to the gate -->
+        <div id="f75-ans">
+          <div class="f75-ln" style="top:24px;width:80px;"></div>
+          <div class="f75-ln" style="top:42px;width:64px;"></div>
+          <div class="f75-ln" style="top:60px;width:72px;"></div>
+          <div id="f75-ansred"></div>
+          <svg id="f75-slash" viewBox="0 0 176 144">
+            <path id="f75-sl" class="f75-draw" pathLength="1" d="M 16 130 C 60 96, 110 52, 160 12" stroke="#E5484D" stroke-width="9"/>
+          </svg>
+        </div>
+      </div>
+
+      <div id="f75-s2">
+        <div id="f75-head">
+          <div id="f75-headin">
+            <span id="f75-w1" class="f75-w">Không</span><span id="f75-w2" class="f75-w">hoàn</span><span id="f75-w3" class="f75-w">hảo</span>
+            <svg id="f75-uline" viewBox="0 0 1000 40" preserveAspectRatio="none">
+              <path id="f75-ul" class="f75-draw" pathLength="1" d="M 8 22 C 200 12, 420 30, 620 18 S 900 14, 992 24" stroke="#D97757" stroke-width="5"/>
+            </svg>
+            <svg id="f75-spark2" viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+              <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+              <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          </div>
+        </div>
+        <div id="f75-chip">
+          <svg viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="23" fill="none" stroke="#8FB8A8" stroke-width="3" opacity=".5"/>
+            <path id="f75-tick" class="f75-draw" pathLength="1" d="M 14 27 L 23 36 L 39 17" stroke="#8FB8A8" stroke-width="5"/>
+          </svg>
+          <div id="f75-chiptxt"><span id="f75-c1">Tự</span> <span id="f75-c2">kiểm tra</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 11.674;
+      gsap.set("#f75-bar", { scaleY: 0 });
+      var tl = gsap.timeline({ paused: true });
+      function inUp(sel, t, dy, dur) {
+        tl.fromTo(sel, { opacity: 0, y: dy || 18 }, { opacity: 1, y: 0, duration: dur || 0.45, ease: "power3.out" }, t);
+      }
+      function draw(sel, t, dur) {
+        tl.fromTo(sel, { strokeDashoffset: 1, opacity: 0 }, { strokeDashoffset: 0, opacity: 1, duration: dur, ease: "none" }, t);
+      }
+
+      /* ---------- Scene 1 (0 – 8.3): pipeline ---------- */
+      // slow camera push under the whole shot
+      tl.fromTo("#f75-s1", { scale: 1 }, { scale: 1.02, duration: 8.15, ease: "none" }, 0);
+      // "Anthropic" 0.35
+      tl.fromTo("#f75-kicker", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.35);
+      tl.fromTo("#f75-kicker svg", { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 0.35);
+      // "model" 1.23: content node + stroke to the model node
+      tl.fromTo("#f75-n1", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.23);
+      draw("#f75-p1", 1.3, 0.3);
+      draw("#f75-a1", 1.58, 0.1);
+      tl.fromTo("#f75-n2", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.4);
+      inUp("#f75-l2a", 1.4);
+      inUp("#f75-l2b", 1.61);
+      // "hiện" 1.79: the model scans the content (beam sweeps, lens pulses)
+      tl.fromTo("#f75-beam", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, 1.79);
+      tl.fromTo("#f75-beam", { x: 12 }, { x: 362, duration: 0.8, ease: "power2.inOut" }, 1.79);
+      tl.to("#f75-beam", { opacity: 0, duration: 0.18, ease: "none" }, 2.45);
+      tl.fromTo("#f75-pupil", { scale: 1, transformOrigin: "50% 50%" }, { scale: 1.6, duration: 0.3, ease: "power2.inOut" }, 1.79);
+      tl.to("#f75-pupil", { scale: 1, duration: 0.3, ease: "power2.inOut" }, 2.15);
+      // "cờ" 2.71: warn flag pops on the content node
+      tl.fromTo("#f75-flag", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 2.71);
+      tl.fromTo("#f75-rim1", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 2.71);
+      // "nội dung" 2.88, "có hại" 3.22
+      inUp("#f75-l1", 2.88);
+      inUp("#f75-harm", 3.22, 14);
+      // "Khi phát hiện" 4.18–4.66: lens pulses again, stroke heads toward the gate
+      tl.fromTo("#f75-pupil", { scale: 1 }, { scale: 1.6, duration: 0.3, ease: "power2.inOut", immediateRender: false }, 4.32);
+      tl.to("#f75-pupil", { scale: 1, duration: 0.3, ease: "power2.inOut" }, 4.7);
+      draw("#f75-p2", 4.48, 0.8);
+      draw("#f75-a2", 5.28, 0.12);
+      // "bộ lọc an toàn" 5.41–6.03: gate node draws
+      tl.fromTo("#f75-n3", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 5.41);
+      inUp("#f75-l3a", 5.41);
+      draw("#f75-shield", 5.57, 0.3);
+      inUp("#f75-l3b", 5.75);
+      // "toàn" 5.87: the gate barrier drops, shield tick
+      tl.fromTo("#f75-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out" }, 5.87);
+      draw("#f75-shtick", 5.87, 0.25);
+      // answer block rides the line to the gate
+      tl.fromTo("#f75-ans", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 6.09);
+      tl.to("#f75-ans", { x: 84, duration: 0.3, ease: "power2.in" }, 6.09);
+      // "chặn" 6.39: answer turns warn red and is slashed
+      tl.fromTo("#f75-ansred", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 6.39);
+      draw("#f75-sl", 6.39, 0.22);
+      tl.fromTo("#f75-ans", { rotation: 0 }, { rotation: -4, duration: 0.3, ease: "power3.out" }, 6.42);
+
+      /* ---------- Scene 2 (8.3 – end): kinetic ---------- */
+      // cut: pipeline recedes (zoom-through), headline lands
+      tl.to("#f75-s1", { scale: 0.9, opacity: 0, filter: "blur(10px)", duration: 0.32, ease: "power2.in" }, 8.18);
+      tl.fromTo("#f75-s2", { scale: 1 }, { scale: 1.015, duration: D - 8.3, ease: "none" }, 8.3);
+      [["#f75-w1", 8.30], ["#f75-w2", 8.47], ["#f75-w3", 8.63]].forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, y: 46, filter: "blur(8px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, w[1]);
+      });
+      draw("#f75-ul", 8.72, 0.45);
+      tl.fromTo("#f75-spark2", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 8.9);
+      // "tự kiểm tra" 10.25–10.77
+      tl.fromTo("#f75-chip", { opacity: 0, y: 24, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 10.25);
+      inUp("#f75-c1", 10.25, 10, 0.35);
+      inUp("#f75-c2", 10.45, 10, 0.35);
+      draw("#f75-tick", 10.45, 0.32);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["75-lop-bao-ve-cua-anthropic"] = tl;
+    })();
+  </script>
+</template>

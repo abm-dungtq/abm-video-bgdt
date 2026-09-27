@@ -1,0 +1,384 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f62-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(314, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f62-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f62- */
+    #f62-field {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      opacity: 0.4;
+    }
+    /* pinned anchor (top-left) */
+    #f62-anchor {
+      position: absolute;
+      left: 0;
+      top: 20px;
+      width: 1100px;
+    }
+    #f62-kicker {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 24px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0;
+    }
+    #f62-title {
+      margin-top: 10px;
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f62-w {
+      display: inline-block;
+      opacity: 0;
+      margin-right: 0.22em;
+    }
+    #f62-underline {
+      position: absolute;
+      left: 0;
+      top: 132px;
+      width: 640px;
+      height: 16px;
+      overflow: visible;
+    }
+    /* checklist */
+    #f62-list {
+      position: absolute;
+      left: 0;
+      top: 190px;
+      width: 1080px;
+      height: 420px;
+    }
+    .f62-row {
+      position: absolute;
+      left: 0;
+      width: 1080px;
+      height: 96px;
+    }
+    #f62-row1 { top: 0; }
+    #f62-row2 { top: 108px; }
+    #f62-row3 { top: 216px; }
+    #f62-row4 { top: 324px; }
+    .f62-num {
+      position: absolute;
+      left: 0;
+      top: 30px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      opacity: 0;
+    }
+    .f62-box {
+      position: absolute;
+      left: 72px;
+      top: 14px;
+      width: 68px;
+      height: 68px;
+      box-sizing: border-box;
+      border: 3px solid #8e93b5;
+      border-radius: 16px;
+      background-color: rgba(255, 210, 63, 0);
+      filter: drop-shadow(0 0 0px rgba(255, 210, 63, 0));
+      opacity: 0;
+    }
+    .f62-tick {
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      width: 50px;
+      height: 50px;
+      overflow: visible;
+    }
+    .f62-label {
+      position: absolute;
+      left: 176px;
+      top: 12px;
+      font-weight: 800;
+      font-size: 56px;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    /* divider trail + pills (scene 2) */
+    #f62-divider {
+      position: absolute;
+      left: 0;
+      top: 574px;
+      width: 1080px;
+      height: 16px;
+      overflow: visible;
+    }
+    #f62-pills {
+      position: absolute;
+      left: 0;
+      top: 614px;
+      width: 1100px;
+      height: 100px;
+      display: flex;
+      gap: 28px;
+    }
+    .f62-pill {
+      height: 96px;
+      box-sizing: border-box;
+      padding: 0 38px 0 30px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: var(--surface);
+      border: 2px solid rgba(244, 241, 232, 0.12);
+      border-radius: 48px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f62-picon {
+      width: 46px;
+      height: 46px;
+      flex: none;
+      overflow: visible;
+    }
+    /* chapter-progress ring (right) */
+    #f62-ring {
+      position: absolute;
+      left: 1060px;
+      top: 150px;
+      width: 480px;
+      height: 480px;
+      overflow: visible;
+      filter: drop-shadow(0 0 0px rgba(255, 210, 63, 0));
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="62-tong-ket-bai-hoc" data-width="1920" data-height="1080" data-duration="9.289">
+    <div id="f62-ground" class="clip" data-start="0" data-duration="9.289" data-track-index="0"></div>
+    <div id="f62-stage" class="clip" data-start="0" data-duration="9.289" data-track-index="1">
+      <!-- background field (dimmed ~40%): dot grid + faint orbit behind the ring -->
+      <svg id="f62-field" viewBox="0 0 1760 820" width="1760" height="820">
+        <defs>
+          <pattern id="f62-dots" x="0" y="0" width="44" height="44" patternUnits="userSpaceOnUse">
+            <circle cx="22" cy="22" r="2" fill="#8e93b5" fill-opacity="0.45" />
+          </pattern>
+        </defs>
+        <rect x="1060" y="60" width="700" height="700" fill="url(#f62-dots)" />
+        <circle cx="1300" cy="390" r="320" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.35" stroke-dasharray="2 14" />
+      </svg>
+
+      <!-- pinned anchor: enters once, never moves -->
+      <div id="f62-anchor">
+        <div id="f62-kicker">◆ Tổng kết</div>
+        <div id="f62-title"><span id="f62-w1" class="f62-w">Hôm</span><span id="f62-w2" class="f62-w">nay</span><span id="f62-w3" class="f62-w">bạn</span><span id="f62-w4" class="f62-w">đã</span><span id="f62-w5" class="f62-w">học</span></div>
+      </div>
+      <svg id="f62-underline" viewBox="0 0 640 16" width="640" height="16">
+        <path id="f62-uline" d="M0 8 L640 8" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+          stroke-dasharray="640" stroke-dashoffset="640" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+      </svg>
+
+      <!-- whole-lesson checklist -->
+      <div id="f62-list">
+        <div id="f62-row1" class="f62-row">
+          <div class="f62-num">01</div>
+          <div id="f62-box1" class="f62-box">
+            <svg class="f62-tick" viewBox="0 0 50 50" width="50" height="50">
+              <path id="f62-tick1" d="M9 26 L21 37 L41 13" fill="none" stroke="#0b1026" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="52" stroke-dashoffset="52" />
+            </svg>
+          </div>
+          <div id="f62-lab1" class="f62-label">agent là gì</div>
+        </div>
+        <div id="f62-row2" class="f62-row">
+          <div class="f62-num">02</div>
+          <div id="f62-box2" class="f62-box">
+            <svg class="f62-tick" viewBox="0 0 50 50" width="50" height="50">
+              <path id="f62-tick2" d="M9 26 L21 37 L41 13" fill="none" stroke="#0b1026" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="52" stroke-dashoffset="52" />
+            </svg>
+          </div>
+          <div id="f62-lab2" class="f62-label">cài đặt</div>
+        </div>
+        <div id="f62-row3" class="f62-row">
+          <div class="f62-num">03</div>
+          <div id="f62-box3" class="f62-box">
+            <svg class="f62-tick" viewBox="0 0 50 50" width="50" height="50">
+              <path id="f62-tick3" d="M9 26 L21 37 L41 13" fill="none" stroke="#0b1026" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="52" stroke-dashoffset="52" />
+            </svg>
+          </div>
+          <div id="f62-lab3" class="f62-label">công cụ</div>
+        </div>
+        <div id="f62-row4" class="f62-row">
+          <div class="f62-num">04</div>
+          <div id="f62-box4" class="f62-box">
+            <svg class="f62-tick" viewBox="0 0 50 50" width="50" height="50">
+              <path id="f62-tick4" d="M9 26 L21 37 L41 13" fill="none" stroke="#0b1026" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="52" stroke-dashoffset="52" />
+            </svg>
+          </div>
+          <div id="f62-lab4" class="f62-label">vòng học</div>
+        </div>
+      </div>
+
+      <!-- scene 2: divider trail + three feature pills -->
+      <svg id="f62-divider" viewBox="0 0 1080 16" width="1080" height="16">
+        <path id="f62-dline" d="M0 8 L1080 8" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="1080" stroke-dashoffset="1080" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.5));" />
+      </svg>
+      <div id="f62-pills">
+        <div id="f62-pill1" class="f62-pill">
+          <svg class="f62-picon" viewBox="0 0 46 46" width="46" height="46">
+            <path d="M6 10 Q6 5 11 5 L35 5 Q40 5 40 10 L40 28 Q40 33 35 33 L19 33 L11 41 L12 33 L11 33 Q6 33 6 28 Z" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linejoin="round" />
+          </svg>
+          <span>gateway</span>
+        </div>
+        <div id="f62-pill2" class="f62-pill">
+          <svg class="f62-picon" viewBox="0 0 46 46" width="46" height="46">
+            <circle cx="23" cy="23" r="18" fill="none" stroke="#ffd23f" stroke-width="4" />
+            <path d="M23 12 L23 23 L31 28" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>lịch tự động</span>
+        </div>
+        <div id="f62-pill3" class="f62-pill">
+          <svg class="f62-picon" viewBox="0 0 46 46" width="46" height="46">
+            <path d="M8 30 L23 15 L38 30" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M8 40 L23 25 L38 40" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>nâng cao</span>
+        </div>
+      </div>
+
+      <!-- chapter-progress ring: 7 segments, one per lesson item -->
+      <svg id="f62-ring" viewBox="0 0 480 480" width="480" height="480">
+        <g fill="none" stroke-width="18" stroke-linecap="butt">
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(-87 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(-35.571 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(15.857 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(67.286 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(118.714 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(170.143 240 240)" />
+          <circle cx="240" cy="240" r="190" stroke="#8e93b5" stroke-opacity="0.28" stroke-dasharray="150.65 1043.16" transform="rotate(221.571 240 240)" />
+        </g>
+        <g fill="none" stroke-width="18" stroke-linecap="butt" stroke="#ffd23f">
+          <circle id="f62-seg1" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(-87 240 240)" />
+          <circle id="f62-seg2" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(-35.571 240 240)" />
+          <circle id="f62-seg3" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(15.857 240 240)" />
+          <circle id="f62-seg4" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(67.286 240 240)" />
+          <circle id="f62-seg5" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(118.714 240 240)" />
+          <circle id="f62-seg6" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(170.143 240 240)" />
+          <circle id="f62-seg7" cx="240" cy="240" r="190" stroke-dasharray="150.65 1193.81" stroke-dashoffset="150.65" transform="rotate(221.571 240 240)" />
+        </g>
+        <circle cx="240" cy="240" r="140" fill="none" stroke="#8e93b5" stroke-width="1.5" stroke-opacity="0.4" stroke-dasharray="2 12" />
+        <!-- winged spark (courier) at the centre -->
+        <g id="f62-spark">
+          <path d="M222 240 Q190 206 150 214 Q176 226 184 246 Q200 236 222 240 Z" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linejoin="round" />
+          <path d="M258 240 Q290 206 330 214 Q304 226 296 246 Q280 236 258 240 Z" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linejoin="round" />
+          <circle cx="240" cy="242" r="20" fill="#ffd23f" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        </g>
+        <path id="f62-bigcheck" d="M196 302 L228 332 L286 272" fill="none" stroke="#ffd23f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="130" stroke-dashoffset="130" />
+      </svg>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", INK = "#f4f1e8", MUTED = "#8e93b5";
+      gsap.set(".f62-label", { color: GOLD });
+      gsap.set(".f62-pill", { borderColor: GOLD });
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 — anchor pins top-left, word by word on the voice (Hôm 0.29 … học 0.79).
+      tl.fromTo("#f62-kicker", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.2);
+      var wordTimes = [0.29, 0.43, 0.57, 0.69, 0.79];
+      for (var i = 0; i < wordTimes.length; i++) {
+        tl.fromTo("#f62-w" + (i + 1), { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, wordTimes[i]);
+      }
+      tl.fromTo("#f62-uline", { strokeDashoffset: 640 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 0.8);
+
+      // progress ring base + empty checkboxes wait for the list
+      tl.fromTo("#f62-ring", { opacity: 0, scale: 0.92, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0.4);
+      for (var b = 1; b <= 4; b++) {
+        tl.fromTo("#f62-row" + b + " .f62-num", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 0.85 + (b - 1) * 0.07);
+        tl.fromTo("#f62-box" + b, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 0.85 + (b - 1) * 0.07);
+      }
+
+      // Each row ticks on its word: agent 1.32 · cài 2.22 · công 2.76 · vòng 3.67.
+      // Stepping highlight: the row being said is gold; the previous one settles back to ink.
+      var rowTimes = [1.32, 2.22, 2.76, 3.67];
+      for (var r = 0; r < rowTimes.length; r++) {
+        var t = rowTimes[r], n = r + 1;
+        tl.fromTo("#f62-lab" + n, { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, t);
+        tl.to("#f62-box" + n, { backgroundColor: GOLD, borderColor: GOLD, duration: 0.2, ease: "power2.out" }, t);
+        tl.fromTo("#f62-tick" + n, { strokeDashoffset: 52 }, { strokeDashoffset: 0, duration: 0.28, ease: "none" }, t + 0.08);
+        tl.fromTo("#f62-seg" + n, { strokeDashoffset: 150.65 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, t);
+        if (r > 0) {
+          tl.to("#f62-lab" + r, { color: INK, duration: 0.3, ease: "power2.inOut" }, t);
+        }
+      }
+
+      // Scene 2 (5.42) — the list steps back (smaller, muted) and three pills assemble below it.
+      tl.fromTo("#f62-list", { scale: 1, transformOrigin: "0% 0%" }, { scale: 0.86, duration: 0.5, ease: "power2.inOut" }, 5.3);
+      tl.to("#f62-lab4", { color: MUTED, duration: 0.4, ease: "power2.inOut" }, 5.3);
+      tl.to(["#f62-lab1", "#f62-lab2", "#f62-lab3"], { color: MUTED, duration: 0.4, ease: "power2.inOut" }, 5.3);
+      tl.fromTo("#f62-dline", { strokeDashoffset: 1080 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 5.25);
+
+      // pills on gateway 5.42 · lịch 6.18 · nâng 7.69 — each lights its ring segment
+      var pillTimes = [5.42, 6.18, 7.69];
+      for (var p = 0; p < pillTimes.length; p++) {
+        var pt = pillTimes[p], k = p + 1;
+        tl.fromTo("#f62-pill" + k, { opacity: 0, y: 34, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, pt);
+        tl.fromTo("#f62-seg" + (k + 4), { strokeDashoffset: 150.65 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, pt);
+        if (p > 0) {
+          tl.to("#f62-pill" + p, { borderColor: "rgba(244,241,232,0.12)", duration: 0.3, ease: "power2.inOut" }, pt);
+        }
+      }
+
+      // Resolve (after "cao" 8.01): every tick and the ring glow once, big check completes the lockup, then hold.
+      tl.to(".f62-box", { filter: "drop-shadow(0 0 14px rgba(255,210,63,0.85))", duration: 0.4, ease: "power2.out" }, 8.05);
+      tl.to("#f62-ring", { filter: "drop-shadow(0 0 16px rgba(255,210,63,0.6))", duration: 0.4, ease: "power2.out" }, 8.05);
+      tl.fromTo("#f62-bigcheck", { strokeDashoffset: 130 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 8.05);
+
+      tl.to({}, { duration: 8.789 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["62-tong-ket-bai-hoc"] = tl;
+    })();
+  </script>
+</template>

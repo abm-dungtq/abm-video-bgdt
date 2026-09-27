@@ -1,0 +1,311 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f63-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f63-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f63-spark { display: block; overflow: visible; }
+    .f63-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f63-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f63-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f63-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f63-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f63-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f63-scene { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 440px; }
+
+    /* screenshot viewports (surface, radius 16) */
+    .f63-vp {
+      position: absolute; width: 1216px; height: 684px; overflow: hidden; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10); background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    .f63-wrap {
+      position: absolute; left: 0; top: 0; width: 1216px; height: 684px;
+      transform-origin: 0 0; opacity: 0;
+    }
+    .f63-shot { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+    .f63-callout { position: absolute; left: 0; top: 0; width: 1216px; height: 684px; overflow: visible; }
+    .f63-draw {
+      fill: none; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+    }
+    .f63-gold { stroke: var(--gold); }
+    .f63-sage { stroke: var(--cyan); }
+
+    /* shared viewport holder: scene 1 centred (canvas x 352–1568, y 150–834); scene 3 shifted to canvas x 120–1336, y 170–854 */
+    #f63-vphold { position: absolute; left: 272px; top: 90px; width: 1216px; height: 684px; transform-origin: 608px 342px; }
+    #f63-vp1 { left: 0; top: 0; }
+    .f63-lab {
+      position: absolute; white-space: nowrap;
+      font: 700 60px/1.12 "Lora", serif; letter-spacing: -0.01em; color: var(--ink);
+    }
+    .f63-w { display: inline-block; opacity: 0; }
+    #f63-lab-slides { left: 1512px; top: 300px; }
+    #f63-lab-slides-spark { position: absolute; left: 1516px; top: 244px; width: 40px; height: 40px; opacity: 0; }
+    #f63-lab-slides-sub {
+      position: absolute; left: 1516px; top: 380px; white-space: nowrap; opacity: 0;
+      font: 600 30px/1.3 "Be Vietnam Pro", sans-serif; color: var(--muted);
+    }
+    #f63-lab-ben { left: 0; top: 384px; width: 250px; text-align: right; font-size: 52px; }
+    #f63-lab-ben .f63-w { margin-left: 12px; }
+    #f63-lab-ben-ul { position: absolute; left: 40px; top: 450px; width: 212px; height: 24px; overflow: visible; }
+
+    /* scene 2: hub ring */
+    #f63-hub-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f63-ring { fill: none; stroke: rgba(240,238,230,.16); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f63-core {
+      position: absolute; left: 740px; top: 300px; width: 280px; height: 280px; box-sizing: border-box;
+      border-radius: 50%; background: var(--surface); border: 1px solid rgba(240,238,230,.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f63-core-spark {
+      position: absolute; left: 852px; top: 412px; width: 56px; height: 56px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f63-core-text {
+      position: absolute; left: 740px; top: 448px; width: 280px; text-align: center; white-space: nowrap;
+      font: 700 52px/1.12 "Lora", serif; letter-spacing: -0.01em; color: var(--ink);
+    }
+    .f63-card {
+      position: absolute; box-sizing: border-box; width: 440px; height: 120px;
+      background: var(--surface); border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center; gap: 24px; opacity: 0;
+    }
+    .f63-ico { flex: none; overflow: visible; }
+    .f63-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .f63-card-t { font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap; }
+    #f63-cA { left: 210px; top: 240px; }
+    #f63-cB { left: 1110px; top: 240px; }
+    #f63-cC { left: 660px; top: 660px; }
+    .f63-conn { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* scene 3: viewport left (shared holder), label column right */
+    #f63-k3 {
+      position: absolute; left: 1300px; top: 250px; display: flex; align-items: center; gap: 14px;
+      white-space: nowrap; opacity: 0;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    }
+    #f63-k3 .f63-spark { width: 28px; height: 28px; }
+    #f63-l3a { position: absolute; left: 1296px; top: 316px; white-space: nowrap; font: 700 76px/1.12 "Lora", serif; letter-spacing: -0.01em; }
+    #f63-l3a .f63-w { margin-right: 20px; }
+    #f63-l3b { position: absolute; left: 1296px; top: 404px; white-space: nowrap; font: 700 76px/1.12 "Lora", serif; letter-spacing: -0.01em; }
+    #f63-l3-ul { position: absolute; left: 1290px; top: 500px; width: 270px; height: 30px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="63-slides-ngay-trong-cuoc-tro-chuyen" data-width="1920" data-height="1080" data-duration="12.568">
+    <div id="f63-ground" class="clip" data-start="0" data-duration="12.568" data-track-index="0"></div>
+    <div id="f63-stage" class="clip" data-start="0" data-duration="12.568" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f63-rail">
+        <div id="f63-pill1" class="f63-pill"><span id="f63-b1" class="f63-badge">1</span>Tính năng<svg id="f63-ps1" class="f63-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f63-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f63-pill2" class="f63-pill"><span id="f63-b2" class="f63-badge">2</span>Vì sao nổi bật<svg id="f63-ps2" class="f63-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f63-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f63-pill3" class="f63-pill"><span id="f63-b3" class="f63-badge">3</span>Bạn được gì<svg id="f63-ps3" class="f63-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- shared screenshot viewport (scene 1 centred, scene 3 shifted left) -->
+      <div id="f63-vphold">
+          <div class="f63-vp" id="f63-vp1">
+            <div class="f63-wrap" id="f63-wrap1">
+              <img class="f63-shot" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+              <svg class="f63-callout" id="f63-callouts" viewBox="0 0 1216 684">
+                <rect id="f63-r-slide" class="f63-draw f63-gold" x="388" y="95" width="818" height="466" rx="10" ry="10" pathLength="1" stroke-width="3"></rect>
+                <rect id="f63-r-thumbs" class="f63-draw f63-sage" x="388" y="603" width="528" height="72" rx="10" ry="10" pathLength="1" stroke-width="2.5"></rect>
+                <rect id="f63-r-chat" class="f63-draw f63-gold" x="14" y="40" width="348" height="560" rx="10" ry="10" pathLength="1" stroke-width="3"></rect>
+              </svg>
+            </div>
+          </div>
+      </div>
+
+      <!-- Scene 1: labels in the side gutters -->
+      <div class="f63-scene" id="f63-s1">
+        <svg class="f63-spark" id="f63-lab-slides-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <div class="f63-lab" id="f63-lab-slides"><span class="f63-w" id="f63-w-slides">Slides</span></div>
+        <div id="f63-lab-slides-sub">do Claude</div>
+        <div class="f63-lab" id="f63-lab-ben"><span class="f63-w" id="f63-w-ben">bên</span><span class="f63-w" id="f63-w-canh">cạnh</span></div>
+        <svg id="f63-lab-ben-ul" viewBox="0 0 212 24"><path id="f63-ben-ul" class="f63-draw f63-gold" pathLength="1" stroke-width="4" d="M4 14 C 50 8, 100 18, 150 11 S 196 9, 208 13"></path></svg>
+      </div>
+
+      <!-- Scene 2: hub ring "một nơi" -->
+      <div class="f63-scene" id="f63-s2">
+        <svg id="f63-hub-svg" viewBox="0 0 1760 820">
+          <ellipse id="f63-ring" pathLength="1" cx="880" cy="440" rx="500" ry="300"></ellipse>
+          <path id="f63-cnA" class="f63-conn" pathLength="1" d="M752 398 C 722 370, 692 344, 655 332"></path>
+          <path id="f63-cnB" class="f63-conn" pathLength="1" d="M1008 398 C 1038 370, 1068 344, 1105 332"></path>
+          <path id="f63-cnC" class="f63-conn" pathLength="1" d="M880 582 C 872 604, 888 632, 880 656"></path>
+        </svg>
+        <div id="f63-core"></div>
+        <svg class="f63-spark" id="f63-core-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <div id="f63-core-text"><span class="f63-w" id="f63-w-mot">một</span> <span class="f63-w" id="f63-w-noi">nơi</span></div>
+        <div class="f63-card" id="f63-cA">
+          <svg class="f63-ico" width="52" height="62" viewBox="0 0 72 84"><path d="M8 4 H46 L66 24 V80 H8 Z"/><path d="M46 4 V24 H66"/><path d="M20 42 H54 M20 54 H54 M20 66 H42"/></svg>
+          <span class="f63-card-t">Tài liệu</span>
+        </div>
+        <div class="f63-card" id="f63-cB">
+          <svg class="f63-ico" width="62" height="58" viewBox="0 0 84 78"><rect x="4" y="4" width="76" height="50" rx="6"/><path d="M42 54 V70 M28 74 L42 64 L56 74"/><path d="M18 40 L32 28 L44 36 L64 18"/></svg>
+          <span class="f63-card-t">Bài trình bày</span>
+        </div>
+        <div class="f63-card" id="f63-cC">
+          <svg class="f63-ico" width="62" height="54" viewBox="0 0 84 72"><rect x="4" y="4" width="76" height="64" rx="8"/><circle cx="58" cy="22" r="7"/><path d="M8 60 L32 34 L50 52 L60 44 L78 60"/></svg>
+          <span class="f63-card-t">Hình ảnh</span>
+        </div>
+      </div>
+
+      <!-- Scene 3: label column right (viewport is the shared holder) -->
+      <div class="f63-scene" id="f63-s3">
+        <div id="f63-k3"><svg class="f63-spark" id="f63-k3-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>một cuộc trò chuyện</span></div>
+        <div id="f63-l3a"><span class="f63-w" id="f63-w-khong">không</span><span class="f63-w" id="f63-w-can">cần</span></div>
+        <div id="f63-l3b"><span class="f63-w" id="f63-w-chuyen">chuyển</span></div>
+        <svg id="f63-l3-ul" viewBox="0 0 270 30"><path id="f63-l3-ulp" class="f63-draw f63-gold" pathLength="1" stroke-width="4" d="M6 18 C 60 10, 120 24, 180 14 S 250 10, 264 16"></path></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="63-slides-ngay-trong-cuoc-tro-chuyen"]');
+      var q = function (s) { return root.querySelector(s); };
+
+      // initial hidden states (before the timeline)
+      gsap.set([q("#f63-s2"), q("#f63-s3")], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: slot 1 at 1.2, slot 3 at 4.5 (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f63-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f63-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f63-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.2);
+      lightRail(3, 4.5);
+
+      /* ===== Scene 1 — screen (0–4.24 s) ===== */
+      var w1 = q("#f63-wrap1");
+      // reveal (centred scale 0.96 -> 1 with origin 0 0)
+      tl.fromTo(w1, { opacity: 0, scale: 0.96, x: 24.3, y: 13.7 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.6, ease: "power3.out" }, 0.1);
+      // "Slides" @0.951 — callout around the slide canvas + label outside right
+      tl.fromTo(q("#f63-r-slide"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 0.95);
+      tl.fromTo(q("#f63-w-slides"), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.95);
+      tl.fromTo(q("#f63-lab-slides-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 0.95);
+      // "Claude" @1.452 — sub label; "dựng" @1.732 — thumbnails strip (sage)
+      tl.fromTo(q("#f63-lab-slides-sub"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.45);
+      tl.fromTo(q("#f63-r-thumbs"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 1.73);
+      // "bên" @2.954, "cạnh" @3.114 — chat column callout + label outside left; slide callout steps back
+      tl.fromTo(q("#f63-r-chat"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.95);
+      tl.fromTo(q("#f63-r-slide"), { opacity: 1 }, { opacity: 0.35, duration: 0.3, ease: "power2.out", immediateRender: false }, 2.95);
+      tl.fromTo(q("#f63-r-thumbs"), { opacity: 1 }, { opacity: 0.35, duration: 0.3, ease: "power2.out", immediateRender: false }, 2.95);
+      tl.fromTo(q("#f63-w-ben"), { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.95);
+      tl.fromTo(q("#f63-w-canh"), { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.11);
+      tl.fromTo(q("#f63-ben-ul"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 3.2);
+      // ease to 1.15 anchored on the divider (wrapper x 379, y 342), then crop hold
+      // ease to 1.15 toward the chat / Slides divider, keeping the chat callout in frame, then crop hold
+      tl.fromTo(w1, { scale: 1, x: 0, y: 0 }, { scale: 1.15, x: -10, y: -10, duration: 0.9, ease: "power2.inOut", immediateRender: false }, 2.8);
+      tl.fromTo(w1, { scale: 1.15, x: -10, y: -10 }, { scale: 1.16, x: -12, y: -13, duration: 0.3, ease: "none", immediateRender: false }, 3.7);
+      // shot change: zoom-through out
+      var hold = q("#f63-vphold");
+      tl.fromTo(q("#f63-s1"), { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.94, duration: 0.24, ease: "power2.in", immediateRender: false }, 4.0);
+      tl.fromTo(hold, { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.94, duration: 0.24, ease: "power2.in", immediateRender: false }, 4.0);
+      tl.set(q("#f63-callouts"), { opacity: 0 }, 5.0);
+
+      /* ===== Scene 2 — hub (4.24–8.1 s) ===== */
+      var s2 = q("#f63-s2");
+      tl.fromTo(s2, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 4.2);
+      tl.fromTo(q("#f63-core"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 4.25);
+      tl.fromTo(q("#f63-ring"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.9, ease: "none" }, 4.3);
+      // "Bạn được gì" @4.436 — centre spark pops
+      tl.fromTo(q("#f63-core-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 4.44);
+      // satellites spring in on their words, connectors draw
+      function sat(card, conn, t, dx, dy) {
+        tl.fromTo(q(card), { opacity: 0, scale: 0.7, x: dx, y: dy }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.5, ease: "power3.out" }, t);
+        tl.fromTo(q(conn), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, t + 0.05);
+      }
+      sat("#f63-cA", "#f63-cnA", 5.36, 120, 60);   // "Tài liệu"
+      sat("#f63-cB", "#f63-cnB", 5.98, -120, 60);  // "bài trình bày"
+      sat("#f63-cC", "#f63-cnC", 6.55, 0, -70);    // "hình ảnh"
+      // "một nơi" @7.432 — spark lifts, words land in the core
+      tl.fromTo(q("#f63-core-spark"), { y: 0 }, { y: -58, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 7.35);
+      tl.fromTo(q("#f63-w-mot"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.43);
+      tl.fromTo(q("#f63-w-noi"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.59);
+      // shot change out
+      tl.fromTo(s2, { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.94, duration: 0.22, ease: "power2.in", immediateRender: false }, 7.88);
+
+      /* ===== Scene 3 — screen crop-zoom (8.1–12.068 s) ===== */
+      var s3 = q("#f63-s3");
+      var w3 = w1;
+      tl.fromTo(s3, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 8.1);
+      tl.set(w3, { scale: 1, x: 0, y: 0 }, 8.1);
+      tl.fromTo(hold, { opacity: 0, scale: 0.96, x: -232, y: 20 }, { opacity: 1, scale: 1, x: -232, y: 20, duration: 0.5, ease: "power3.out", immediateRender: false }, 8.1);
+      // "Mọi thứ nằm gọn" — crop-zoom to 1.3 on the chat + Slides seam
+      tl.fromTo(w3, { scale: 1, x: 0, y: 0 }, { scale: 1.3, x: 0, y: -119.5, duration: 1.1, ease: "power2.inOut", immediateRender: false }, 8.6);
+      // "một cuộc trò chuyện" @9.278 — kicker
+      tl.fromTo(q("#f63-k3"), { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 9.28);
+      tl.fromTo(q("#f63-k3-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 9.28);
+      // "không" @10.384, "cần" @10.565, "chuyển" @10.725
+      tl.fromTo(q("#f63-w-khong"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.38);
+      tl.fromTo(q("#f63-w-can"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.57);
+      tl.fromTo(q("#f63-w-chuyen"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.73);
+      tl.fromTo(q("#f63-l3-ulp"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 10.9);
+      // quiet crop hold drift to the end
+      tl.fromTo(w3, { scale: 1.3, x: 0, y: -119.5 }, { scale: 1.33, x: 0, y: -130, duration: 2.3, ease: "none", immediateRender: false }, 9.75);
+
+      tl.to({}, { duration: 12.068 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["63-slides-ngay-trong-cuoc-tro-chuyen"] = tl;
+    })();
+  </script>
+</template>

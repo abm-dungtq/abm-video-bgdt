@@ -1,0 +1,235 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f28-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f28-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f28- */
+    #f28-kicker {
+      position: absolute;
+      left: 0;
+      top: 70px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f28-kicker .f28-diamond { color: var(--gold); margin-right: 14px; }
+    .f28-row {
+      position: absolute;
+      left: 0;
+      width: 1760px;
+      height: 170px;
+    }
+    #f28-row1 { top: 210px; }
+    #f28-row2 { top: 460px; }
+    .f28-anchor {
+      position: absolute;
+      left: 0;
+      top: 20px;
+      width: 560px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+    .f28-eq { color: var(--muted); font-weight: 600; }
+    .f28-placeholder {
+      position: absolute;
+      left: 610px;
+      top: 10px;
+      width: 800px;
+      height: 150px;
+      border: 3px dashed rgba(142,147,181,.45);
+      border-radius: 18px;
+      opacity: 0;
+    }
+    .f28-glyph {
+      position: absolute;
+      left: 610px;
+      top: 10px;
+      width: 150px;
+      height: 150px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+    }
+    .f28-glyph svg { width: 104px; height: 104px; overflow: visible; }
+    .f28-glyph path, .f28-glyph rect, .f28-glyph line {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .f28-word {
+      position: absolute;
+      left: 800px;
+      top: 20px;
+      display: flex;
+      gap: 26px;
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .f28-w { display: inline-block; opacity: 0; }
+    .f28-underline {
+      position: absolute;
+      left: 800px;
+      top: 150px;
+      width: 640px;
+      height: 20px;
+      overflow: visible;
+    }
+    .f28-underline path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+    .f28-spark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 16px rgba(255,210,63,.8);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="28-tom-tat-chuong-ba" data-width="1920" data-height="1080" data-duration="4.64">
+    <div id="f28-ground" class="clip" data-start="0" data-duration="4.64" data-track-index="0"></div>
+    <div id="f28-stage" class="clip" data-start="0" data-duration="4.64" data-track-index="1">
+      <div id="f28-kicker"><span class="f28-diamond">◆</span>Tóm lại · chương 3</div>
+
+      <!-- row 1: công cụ = đôi tay -->
+      <div id="f28-row1" class="f28-row">
+        <div id="f28-anchor1" class="f28-anchor"><span>công cụ</span><span class="f28-eq">=</span></div>
+        <div id="f28-ph1" class="f28-placeholder"></div>
+        <div id="f28-glyph1" class="f28-glyph">
+          <svg viewBox="0 0 70 112">
+            <path id="f28-hand" pathLength="1" d="M20 106 L16 84 L4 62 C1 56 8 51 13 56 L20 66 L20 22 C20 16 29 16 29 22 L29 52 L29 12 C29 6 38 6 38 12 L38 52 L38 16 C38 10 47 10 47 16 L47 54 L47 26 C47 20 56 20 56 26 L56 74 C56 90 50 100 48 106"/>
+          </svg>
+        </div>
+        <div id="f28-word1" class="f28-word"><span id="f28-w1a" class="f28-w">đôi</span><span id="f28-w1b" class="f28-w">tay</span></div>
+        <svg id="f28-ul1" class="f28-underline" viewBox="0 0 640 20"><path id="f28-ul1p" pathLength="1" d="M4 12 C160 4 320 18 420 10"/></svg>
+      </div>
+
+      <!-- row 2: toolset = hộp đồ nghề -->
+      <div id="f28-row2" class="f28-row">
+        <div id="f28-anchor2" class="f28-anchor"><span>toolset</span><span class="f28-eq">=</span></div>
+        <div id="f28-ph2" class="f28-placeholder"></div>
+        <div id="f28-glyph2" class="f28-glyph">
+          <svg viewBox="0 0 120 100">
+            <rect id="f28-box-body" pathLength="1" x="8" y="34" width="104" height="60" rx="8"/>
+            <path id="f28-box-handle" pathLength="1" d="M42 34 L42 20 Q42 12 50 12 L70 12 Q78 12 78 20 L78 34"/>
+            <path id="f28-box-lid" pathLength="1" d="M8 56 L112 56"/>
+            <rect id="f28-box-latch" pathLength="1" x="52" y="49" width="16" height="14" rx="3"/>
+          </svg>
+        </div>
+        <div id="f28-word2" class="f28-word"><span id="f28-w2a" class="f28-w">hộp</span><span id="f28-w2b" class="f28-w">đồ</span><span id="f28-w2c" class="f28-w">nghề</span></div>
+        <svg id="f28-ul2" class="f28-underline" viewBox="0 0 640 20"><path id="f28-ul2p" pathLength="1" d="M4 12 C200 4 420 18 600 10"/></svg>
+        <div id="f28-spark2" class="f28-spark"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var strokes = ["#f28-hand", "#f28-box-body", "#f28-box-handle", "#f28-box-lid", "#f28-box-latch", "#f28-ul1p", "#f28-ul2p"];
+      gsap.set(strokes, { strokeDasharray: 1, strokeDashoffset: 1 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // "Tóm lại" 0.31 — kicker
+      tl.fromTo("#f28-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.31);
+
+      // "công cụ" 1.13 — anchor 1 pins with its empty slot
+      tl.fromTo("#f28-anchor1", { opacity: 0, scale: 0.94, transformOrigin: "0% 50%" }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.13);
+      tl.fromTo("#f28-ph1", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 1.2);
+
+      // "đôi" 1.57 — hard-cut: placeholder out, hand glyph + word land
+      tl.set("#f28-ph1", { opacity: 0 }, 1.57);
+      tl.fromTo("#f28-glyph1", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 1.57);
+      tl.to("#f28-hand", { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 1.6);
+      tl.fromTo("#f28-w1a", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.57);
+      // "tay" 1.74
+      tl.fromTo("#f28-w1b", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.74);
+      tl.to("#f28-ul1p", { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 1.74);
+
+      // "toolset" 2.18 — anchor 2 pins below with its empty slot
+      tl.fromTo("#f28-anchor2", { opacity: 0, scale: 0.94, transformOrigin: "0% 50%" }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 2.18);
+      tl.fromTo("#f28-ph2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 2.25);
+
+      // "hộp" 2.8 — gold focus hands over to row 2
+      tl.set("#f28-ph2", { opacity: 0 }, 2.8);
+      tl.to("#f28-word1", { color: "#f4f1e8", duration: 0.3, ease: "power2.inOut" }, 2.8);
+      tl.to("#f28-ul1", { opacity: 0.3, duration: 0.3, ease: "power2.inOut" }, 2.8);
+      tl.fromTo("#f28-glyph2", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 2.8);
+      tl.to("#f28-box-body", { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 2.82);
+      tl.to("#f28-box-handle", { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 3.0);
+      tl.to("#f28-box-lid", { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 3.1);
+      tl.to("#f28-box-latch", { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 3.25);
+      tl.fromTo("#f28-w2a", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.8);
+      // "đồ" 2.94
+      tl.fromTo("#f28-w2b", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.94);
+      // "nghề" 3.04 — word lands, courier trail draws under the lockup with the spark riding its head
+      tl.fromTo("#f28-w2c", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.04);
+      tl.to("#f28-ul2p", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.04);
+      tl.fromTo("#f28-spark2", { opacity: 0, x: 804, y: 162 }, { opacity: 1, x: 1400, y: 160, duration: 0.5, ease: "none" }, 3.04);
+
+      // hold to the end (anchors never move again)
+      tl.to({}, { duration: 4.04 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["28-tom-tat-chuong-ba"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,352 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f45-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f45-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f45-spark { display: block; overflow: visible; }
+    .f45-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f45-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f45-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f45-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f45-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f45-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f45-scene { position: absolute; inset: 0; transform-origin: 880px 410px; }
+
+    /* terminal window */
+    .f45-term {
+      position: absolute; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    .f45-bar {
+      height: 60px; display: flex; align-items: center; padding: 0 24px; gap: 12px;
+      border-bottom: 1px solid rgba(240,238,230,.08);
+    }
+    .f45-dot { width: 14px; height: 14px; border-radius: 50%; background: #9A968C; opacity: .55; }
+    .f45-title {
+      flex: 1; text-align: center; margin-right: 76px;
+      font: 400 28px/1 "JetBrains Mono", monospace; color: #9A968C; letter-spacing: .04em;
+    }
+    .f45-body { padding: 30px 40px; font-family: "JetBrains Mono", monospace; color: #F0EEE6; }
+    .f45-line { white-space: pre; height: 1.55em; line-height: 1.55; }
+    .f45-ps { color: #8FB8A8; }
+    .f45-ch { display: none; }
+    .f45-cur {
+      display: inline-block; width: 0.58em; height: 1.1em; margin-left: 2px;
+      vertical-align: -0.18em; background: #F0EEE6; opacity: .85;
+    }
+    .f45-out { opacity: 0; }
+
+    /* scene 1 */
+    #f45-t1 { left: 20px; top: 150px; width: 1020px; height: 440px; }
+    #f45-t1 .f45-body { font-size: 32px; }
+    #f45-v-out { color: #F0EEE6; }
+    #f45-s1-name {
+      position: absolute; left: 1120px; top: 140px; opacity: 0;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #f45-s1-term {
+      position: absolute; left: 1124px; top: 290px; opacity: 0;
+      display: flex; align-items: center; gap: 16px;
+      font: 600 48px/1.2 "Be Vietnam Pro", sans-serif; color: #D97757; white-space: nowrap;
+    }
+    #f45-s1-term .f45-spark { width: 40px; height: 40px; }
+    #f45-s1-alias {
+      position: absolute; left: 1124px; top: 378px; opacity: 0;
+      font: 500 34px/1.4 "Be Vietnam Pro", sans-serif; color: #9A968C; white-space: nowrap;
+    }
+    #f45-s1-rule {
+      position: absolute; left: 1124px; top: 262px; width: 300px; height: 2px;
+      background: rgba(240,238,230,.14); transform-origin: 0 50%; opacity: 0;
+    }
+
+    /* scene 2: tool cards 2x2 */
+    .f45-card {
+      position: absolute; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; gap: 32px; padding: 0 44px; opacity: 0;
+    }
+    .f45-card svg.f45-ico { flex: none; overflow: visible; }
+    .f45-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .f45-card-t { font: 600 44px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap; }
+    #f45-c1 { left: 260px; top: 170px; width: 600px; height: 220px; }
+    #f45-c2 { left: 900px; top: 170px; width: 600px; height: 220px; }
+    #f45-c3 { left: 260px; top: 430px; width: 600px; height: 220px; }
+    #f45-c4 { left: 950px; top: 450px; width: 500px; height: 180px; gap: 26px; }
+    #f45-c4 .f45-card-t { font-size: 38px; }
+    #f45-s2-spark { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+
+    /* scene 3 */
+    #f45-t3 { left: 700px; top: 120px; width: 1040px; height: 500px; }
+    #f45-t3 .f45-body { font-size: 28px; }
+    .f45-help { display: grid; grid-template-columns: 290px auto; column-gap: 36px; }
+    .f45-help .f45-desc { color: #9A968C; }
+    #f45-s3-key {
+      position: absolute; left: 60px; top: 250px; white-space: nowrap;
+      font: 700 120px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    .f45-w { display: inline-block; opacity: 0; }
+    #f45-s3-ul { position: absolute; left: 50px; top: 392px; width: 400px; height: 40px; overflow: visible; }
+    #f45-s3-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* scene 4 */
+    #f45-s4-chip {
+      position: absolute; left: 150px; top: 555px; height: 66px; box-sizing: border-box; padding: 0 30px;
+      display: flex; align-items: center; border-radius: 33px; opacity: 0;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      font: 600 32px/1 "Be Vietnam Pro", sans-serif; color: #9A968C; white-space: nowrap;
+    }
+    #f45-s4-path { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f45-s4-path path { fill: none; stroke: #D97757; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .8; }
+    #f45-s4-spark { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+    #f45-s4-phrase {
+      position: absolute; left: 640px; top: 358px; white-space: nowrap; transform-origin: 0 50%;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f45-s4-phrase .f45-w { margin-right: 26px; }
+  </style>
+
+  <div id="root" data-composition-id="45-claude-code-trong-terminal" data-width="1920" data-height="1080" data-duration="16.25">
+    <div id="f45-ground" class="clip" data-start="0" data-duration="16.25" data-track-index="0"></div>
+    <div id="f45-stage" class="clip" data-start="0" data-duration="16.25" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f45-rail">
+        <div id="f45-pill1" class="f45-pill"><span id="f45-b1" class="f45-badge">1</span>Tính năng<svg id="f45-ps1" class="f45-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f45-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f45-pill2" class="f45-pill"><span id="f45-b2" class="f45-badge">2</span>Vì sao nổi bật<svg id="f45-ps2" class="f45-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f45-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f45-pill3" class="f45-pill"><span id="f45-b3" class="f45-badge">3</span>Bạn được gì<svg id="f45-ps3" class="f45-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: terminal left, labels right -->
+      <div class="f45-scene" id="f45-s1">
+        <div class="f45-term" id="f45-t1">
+          <div class="f45-bar"><span class="f45-dot"></span><span class="f45-dot"></span><span class="f45-dot"></span><span class="f45-title">terminal</span></div>
+          <div class="f45-body">
+            <div class="f45-line"><span class="f45-ps">$ </span><span id="f45-cmd1"></span><span class="f45-cur" id="f45-cur1"></span></div>
+            <div class="f45-line f45-out" id="f45-v-out">2.1.282 (Claude Code)</div>
+            <div class="f45-line f45-out" id="f45-p2"><span class="f45-ps">$ </span><span class="f45-cur"></span></div>
+          </div>
+        </div>
+        <div id="f45-s1-name">Claude Code</div>
+        <div id="f45-s1-rule"></div>
+        <div id="f45-s1-term"><svg class="f45-spark" id="f45-s1-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>terminal</span></div>
+        <div id="f45-s1-alias">= cửa sổ dòng lệnh</div>
+      </div>
+
+      <!-- Scene 2: tool cards -->
+      <div class="f45-scene" id="f45-s2">
+        <div class="f45-card" id="f45-c1">
+          <svg class="f45-ico" width="72" height="84" viewBox="0 0 72 84"><path d="M8 4 H46 L66 24 V80 H8 Z"/><path d="M46 4 V24 H66"/><path d="M20 42 H54 M20 54 H54 M20 66 H42"/></svg>
+          <span class="f45-card-t">đọc file</span>
+        </div>
+        <div class="f45-card" id="f45-c2">
+          <svg class="f45-ico" width="80" height="80" viewBox="0 0 80 80"><circle cx="33" cy="33" r="24"/><path d="M51 51 L74 74"/></svg>
+          <span class="f45-card-t">tìm kiếm</span>
+        </div>
+        <div class="f45-card" id="f45-c3">
+          <svg class="f45-ico" width="84" height="72" viewBox="0 0 84 72"><rect x="3" y="3" width="78" height="66" rx="10"/><path d="M18 24 L32 36 L18 48"/><path d="M40 50 H62"/></svg>
+          <span class="f45-card-t">chạy lệnh</span>
+        </div>
+        <div class="f45-card" id="f45-c4">
+          <svg class="f45-ico" width="64" height="64" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34"/><ellipse cx="40" cy="40" rx="15" ry="34"/><path d="M8 30 H72 M8 50 H72"/></svg>
+          <span class="f45-card-t">truy cập web</span>
+        </div>
+        <svg class="f45-spark" id="f45-s2-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+      </div>
+
+      <!-- Scene 3: terminal right, key text left -->
+      <div class="f45-scene" id="f45-s3">
+        <div class="f45-term" id="f45-t3">
+          <div class="f45-bar"><span class="f45-dot"></span><span class="f45-dot"></span><span class="f45-dot"></span><span class="f45-title">terminal</span></div>
+          <div class="f45-body">
+            <div class="f45-line"><span class="f45-ps">$ </span><span id="f45-cmd3"></span><span class="f45-cur" id="f45-cur3"></span></div>
+            <div class="f45-line f45-out f45-h">Usage: claude [options] [command] [prompt]</div>
+            <div class="f45-line f45-out f45-h"> </div>
+            <div class="f45-line f45-out f45-h">Commands:</div>
+            <div class="f45-help">
+              <div class="f45-line f45-out f45-h2">  agents [options]</div><div class="f45-line f45-out f45-h2 f45-desc">Manage background agents</div>
+              <div class="f45-line f45-out f45-h3">  mcp</div><div class="f45-line f45-out f45-h3 f45-desc">Configure and manage MCP servers</div>
+              <div class="f45-line f45-out f45-h4">  plugin|plugins</div><div class="f45-line f45-out f45-h4 f45-desc">Manage Claude Code plugins</div>
+            </div>
+          </div>
+        </div>
+        <div id="f45-s3-key"><span class="f45-w" id="f45-s3-w1">tự</span> <span class="f45-w" id="f45-s3-w2">làm</span></div>
+        <svg id="f45-s3-ul" viewBox="0 0 400 40"><path pathLength="1" d="M6 24 C 70 14, 140 30, 210 20 S 330 12, 392 22"/></svg>
+      </div>
+
+      <!-- Scene 4: kinetic -->
+      <div class="f45-scene" id="f45-s4">
+        <div id="f45-s4-chip">giao việc</div>
+        <svg id="f45-s4-path" viewBox="0 0 1760 820"><path pathLength="1" d="M 392 588 C 470 700, 470 420, 562 418"/></svg>
+        <div id="f45-s4-phrase"><span class="f45-w" id="f45-s4-w1">làm</span><span class="f45-w" id="f45-s4-w2">đến</span><span class="f45-w" id="f45-s4-w3">cùng</span></div>
+        <svg class="f45-spark" id="f45-s4-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="45-claude-code-trong-terminal"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // build typed-command characters (hidden until typed)
+      function chars(el, text) {
+        var out = [];
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement("span");
+          s.className = "f45-ch";
+          s.textContent = text[i];
+          el.appendChild(s);
+          out.push(s);
+        }
+        return out;
+      }
+      var cmd1 = chars(q("#f45-cmd1"), "claude --version");
+      var cmd3 = chars(q("#f45-cmd3"), "claude --help");
+
+      // spark path (scene 4): sample the cubic for seek-safe keyframes
+      var P = [[392, 588], [470, 700], [470, 420], [562, 418]];
+      function bez(t, i) {
+        var u = 1 - t;
+        return u * u * u * P[0][i] + 3 * u * u * t * P[1][i] + 3 * u * t * t * P[2][i] + t * t * t * P[3][i];
+      }
+      var S = 22; // half spark size
+      var kf = [];
+      for (var k = 1; k <= 12; k++) { kf.push({ x: bez(k / 12, 0) - S, y: bez(k / 12, 1) - S, duration: 0.1 }); }
+
+      // initial states (before the timeline)
+      gsap.set(q("#f45-s2-spark"), { x: 860 - S - 8, y: 170 - S + 8, scale: 0 });
+      gsap.set(q("#f45-s4-spark"), { x: P[0][0] - S, y: P[0][1] - S, scale: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light each slot on its cue (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f45-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f45-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f45-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 0.1);
+      lightRail(2, 7.5);
+      lightRail(3, 14.4);
+
+      // ---- Scene 1 (0–4.9): terminal left, labels right ----
+      var s1 = q("#f45-s1");
+      tl.fromTo(q("#f45-t1"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0);
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.02, duration: 4.2, ease: "none" }, 0.4); // slow push-in under the typing
+      tl.fromTo(q("#f45-s1-name"), { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.25);
+      cmd1.forEach(function (c, i) { tl.set(c, { display: "inline" }, 0.3 + i * (1.0 / cmd1.length)); });
+      tl.set(q("#f45-cur1"), { display: "none" }, 2.32);
+      tl.fromTo(q("#f45-v-out"), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.15, ease: "power2.out" }, 2.32);
+      tl.fromTo(q("#f45-p2"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 2.5);
+      tl.fromTo(q("#f45-s1-rule"), { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.4, ease: "power3.out" }, 2.32);
+      tl.fromTo(q("#f45-s1-term"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.32);
+      tl.fromTo(q("#f45-s1-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 2.32);
+      tl.fromTo(q("#f45-s1-alias"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.12);
+      tl.to(s1, { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in" }, 4.6);
+
+      // ---- Scene 2 (4.9–7.67): tool cards cascade ----
+      var cards = [["#f45-c1", 4.9], ["#f45-c2", 5.63], ["#f45-c3", 6.53], ["#f45-c4", 7.07]];
+      cards.forEach(function (c) {
+        tl.fromTo(q(c[0]), { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, c[1]);
+      });
+      var sp2 = q("#f45-s2-spark");
+      tl.fromTo(sp2, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 4.9);
+      tl.to(sp2, { x: 1500 - S - 8, y: 170 - S + 8, duration: 0.3, ease: "power2.inOut" }, 5.63);
+      tl.to(sp2, { x: 860 - S - 8, y: 430 - S + 8, duration: 0.3, ease: "power2.inOut" }, 6.53);
+      tl.to(sp2, { x: 1450 - S - 8, y: 450 - S + 8, duration: 0.3, ease: "power2.inOut" }, 7.07);
+      tl.to(q("#f45-s2"), { opacity: 0, scale: 0.94, duration: 0.27, ease: "power2.in" }, 7.4);
+
+      // ---- Scene 3 (7.67–12.43): terminal right, `claude --help` ----
+      var s3 = q("#f45-s3");
+      tl.fromTo(q("#f45-t3"), { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 7.67);
+      cmd3.forEach(function (c, i) { tl.set(c, { display: "inline" }, 7.72 + i * (0.58 / cmd3.length)); });
+      tl.set(q("#f45-cur3"), { display: "none" }, 8.45);
+      var groups = [".f45-h", ".f45-h2", ".f45-h3", ".f45-h4"];
+      var t0 = 8.45;
+      qa("#f45-t3 .f45-h").forEach(function (el, i) {
+        tl.fromTo(el, { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, t0 + i * 0.14);
+      });
+      groups.slice(1).forEach(function (g, i) {
+        tl.fromTo(qa("#f45-t3 " + g), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, t0 + 0.42 + i * 0.14);
+      });
+      tl.fromTo(q("#f45-s3-w1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.5);
+      tl.fromTo(q("#f45-s3-w2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.68);
+      tl.fromTo(q("#f45-s3-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 9.55);
+      // held beat: nothing moves from ~10.03 to 12.15
+      tl.to(s3, { opacity: 0, scale: 0.94, duration: 0.28, ease: "power2.in" }, 12.15);
+
+      // ---- Scene 4 (12.43–15.75): spark travels to "làm đến cùng" ----
+      var sp4 = q("#f45-s4-spark");
+      tl.fromTo(q("#f45-s4-chip"), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 12.45);
+      tl.fromTo(sp4, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 12.8);
+      tl.fromTo(q("#f45-s4-path path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.2, ease: "none" }, 13.2);
+      tl.to(sp4, { keyframes: kf, ease: "none" }, 13.2);
+      tl.to(sp4, { rotation: 20, scale: 1.15, duration: 0.3, ease: "power3.out" }, 14.4);
+      tl.fromTo(q("#f45-s4-w1"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 14.45);
+      tl.fromTo(q("#f45-s4-w2"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 14.61);
+      tl.fromTo(q("#f45-s4-w3"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 14.79);
+      tl.fromTo(q("#f45-s4-phrase"), { scale: 1 }, { scale: 1.015, duration: 0.55, ease: "none" }, 15.2); // quiet hold drift
+
+      tl.to({}, { duration: 15.75 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["45-claude-code-trong-terminal"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,281 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f42-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f42-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f42- */
+    #f42-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+    .f42-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* background field (dimmed ~40%) */
+    #f42-field { opacity: 0.4; }
+
+    /* Scene 1 — platform dots */
+    .f42-dot {
+      position: absolute; width: 28px; height: 28px; border-radius: 50%;
+      background: var(--ink); opacity: 0;
+      box-shadow: 0 0 0 6px rgba(244,241,232,.08), 0 0 18px rgba(244,241,232,.35);
+    }
+    .f42-dot.f42-c { background: var(--cyan); box-shadow: 0 0 0 6px rgba(62,230,208,.10), 0 0 18px rgba(62,230,208,.45); }
+    .f42-dot.f42-s { width: 18px; height: 18px; background: var(--muted); box-shadow: none; }
+
+    /* Scene 1 — the hero count */
+    #f42-glow {
+      position: absolute; left: 430px; top: 70px; width: 900px; height: 420px; border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255,210,63,.30), rgba(255,210,63,0) 65%);
+      opacity: 0;
+    }
+    #f42-numgroup {
+      position: absolute; left: 0; top: 110px; width: 1760px; height: 440px;
+      transform-origin: 880px 220px;
+    }
+    #f42-numrow {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 290px;
+      display: flex; justify-content: center; align-items: center;
+      color: var(--gold); font-size: 280px; font-weight: 800; line-height: 1.0; letter-spacing: -.03em;
+      filter: drop-shadow(0 0 18px rgba(255,210,63,.55));
+    }
+    #f42-num {
+      display: inline-block; width: 360px; text-align: right;
+      font-variant-numeric: tabular-nums; transform-origin: 70% 50%; opacity: 0;
+    }
+    #f42-plus { display: inline-block; width: 190px; text-align: left; opacity: 0; }
+    #f42-label {
+      position: absolute; left: 0; top: 310px; width: 1760px; height: 90px;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 60px; font-weight: 600; line-height: 1.2; white-space: nowrap; opacity: 0;
+    }
+
+    /* Scene 2 — the one background process chip */
+    #f42-chipbox { position: absolute; left: 570px; top: 385px; width: 620px; height: 170px; }
+    #f42-ring {
+      position: absolute; left: 0; top: 0; width: 620px; height: 170px; box-sizing: border-box;
+      border: 3px solid var(--cyan); border-radius: 22px; opacity: 0;
+    }
+    #f42-chip {
+      position: absolute; left: 0; top: 0; width: 620px; height: 170px; box-sizing: border-box;
+      background: var(--surface); border: 2px solid rgba(244,241,232,.16); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 30px; padding: 0 40px; opacity: 0;
+    }
+    #f42-cpu { width: 96px; height: 96px; flex: 0 0 96px; }
+    .f42-col { display: flex; flex-direction: column; gap: 10px; }
+    #f42-line1 { font-size: 54px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap; }
+    #f42-one { color: var(--gold); }
+    #f42-tt { display: inline-block; opacity: 0; }
+    #f42-status {
+      display: flex; align-items: center; gap: 14px; opacity: 0;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--cyan); white-space: nowrap;
+    }
+    #f42-pdot { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px rgba(62,230,208,.8); }
+
+    /* Scene 3 — two lanes */
+    .f42-ghost { opacity: 0; }
+    .f42-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    .f42-pulse { opacity: 0; }
+    .f42-lane {
+      position: absolute; left: 1060px; width: 620px; height: 130px; box-sizing: border-box;
+      background: var(--surface); border: 2px solid rgba(62,230,208,.55); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 24px rgba(62,230,208,.12);
+      display: flex; align-items: center; gap: 26px; padding: 0 36px; opacity: 0;
+    }
+    #f42-lane1 { top: 170px; }
+    #f42-lane2 { top: 560px; }
+    .f42-licon { width: 68px; height: 68px; flex: 0 0 68px; }
+    .f42-ltext { font-size: 44px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    #f42-l2text { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="42-hon-hai-muoi-nen-tang" data-width="1920" data-height="1080" data-duration="11.04">
+    <div id="f42-ground" class="clip" data-start="0" data-duration="11.04" data-track-index="0"></div>
+    <div id="f42-stage" class="clip" data-start="0" data-duration="11.04" data-track-index="1">
+      <div id="f42-cam">
+        <!-- background field: faint concentric orbit lines (dimmed) -->
+        <svg id="f42-field" class="f42-svg" viewBox="0 0 1760 820" fill="none">
+          <ellipse cx="880" cy="330" rx="650" ry="290" stroke="#8E93B5" stroke-width="2" stroke-dasharray="4 14" opacity="0.5"/>
+          <ellipse cx="880" cy="330" rx="780" ry="380" stroke="#8E93B5" stroke-width="2" opacity="0.25"/>
+        </svg>
+
+        <div id="f42-glow"></div>
+        <div id="f42-dots"></div>
+
+        <!-- Scene 3 lanes (behind the chip) -->
+        <svg class="f42-svg" viewBox="0 0 1760 820" fill="none">
+          <path id="f42-g1" class="f42-ghost" d="M710 470 C 880 470, 900 235, 1060 235" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 12"/>
+          <path id="f42-g2" class="f42-ghost" d="M710 470 C 880 470, 900 625, 1060 625" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 12"/>
+          <path id="f42-t1" class="f42-trail" d="M710 470 C 880 470, 900 235, 1060 235" pathLength="100"
+                stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          <path id="f42-t2" class="f42-trail" d="M710 470 C 880 470, 900 625, 1060 625" pathLength="100"
+                stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          <path id="f42-p1" class="f42-pulse" d="M710 470 C 880 470, 900 235, 1060 235" pathLength="100"
+                stroke="#FFF3C4" stroke-width="11" stroke-linecap="round" stroke-dasharray="4 46" stroke-dashoffset="0"/>
+          <path id="f42-p2" class="f42-pulse" d="M710 470 C 880 470, 900 625, 1060 625" pathLength="100"
+                stroke="#FFF3C4" stroke-width="11" stroke-linecap="round" stroke-dasharray="4 46" stroke-dashoffset="0"/>
+        </svg>
+
+        <div id="f42-lane1" class="f42-lane">
+          <svg class="f42-licon" viewBox="0 0 68 68" fill="none">
+            <path d="M10 14 H58 A6 6 0 0 1 64 20 V44 A6 6 0 0 1 58 50 H28 L16 60 V50 H10 A6 6 0 0 1 4 44 V20 A6 6 0 0 1 10 14 Z"
+                  stroke="#3EE6D0" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M16 28 H52 M16 38 H40" stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <div class="f42-ltext">nhận tin nhắn</div>
+        </div>
+        <div id="f42-lane2" class="f42-lane">
+          <svg class="f42-licon" viewBox="0 0 68 68" fill="none">
+            <circle cx="34" cy="34" r="27" stroke="#3EE6D0" stroke-width="4"/>
+            <path d="M34 34 V20" stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+            <g id="f42-hand"><path d="M34 34 H46" stroke="#FFD23F" stroke-width="4" stroke-linecap="round"/></g>
+            <circle cx="34" cy="34" r="4" fill="#3EE6D0"/>
+          </svg>
+          <div id="f42-l2text" class="f42-ltext">việc theo lịch</div>
+        </div>
+
+        <!-- hero count -->
+        <div id="f42-numgroup">
+          <div id="f42-numrow"><span id="f42-num">0</span><span id="f42-plus">+</span></div>
+          <div id="f42-label">nền tảng nhắn tin</div>
+        </div>
+
+        <!-- one background process -->
+        <div id="f42-chipbox">
+          <div id="f42-ring"></div>
+          <div id="f42-chip">
+            <svg id="f42-cpu" viewBox="0 0 96 96" fill="none">
+              <rect x="22" y="22" width="52" height="52" rx="8" stroke="#3EE6D0" stroke-width="4"/>
+              <rect x="36" y="36" width="24" height="24" rx="4" fill="#3EE6D0" opacity="0.35"/>
+              <path d="M36 10 V22 M48 10 V22 M60 10 V22 M36 74 V86 M48 74 V86 M60 74 V86 M10 36 H22 M10 48 H22 M10 60 H22 M74 36 H86 M74 48 H86 M74 60 H86"
+                    stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <div class="f42-col">
+              <div id="f42-line1"><span id="f42-one">1</span> <span id="f42-tt">tiến trình</span></div>
+              <div id="f42-status"><span id="f42-pdot"></span><span>chạy nền</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 10.54;
+      var CX = 880, CY = 330;       // dot ellipse centre (stage coords)
+      var TX = 880, TY = 470;       // chip centre in Scene 2 (collapse target)
+      var N = 24;                   // 20 platform dots + 4 small "+" dots
+
+      // build the platform dots deterministically
+      var host = document.getElementById("f42-dots");
+      var dots = [];
+      for (var i = 0; i < N; i++) {
+        var a = (-90 + i * (360 / N)) * Math.PI / 180;
+        var rx = 600 + (i % 3) * 32, ry = 262 + (i % 2) * 26;
+        var x = CX + Math.cos(a) * rx, y = CY + Math.sin(a) * ry;
+        var d = document.createElement("div");
+        var small = i % 6 === 5;
+        d.className = "f42-dot" + (small ? " f42-s" : (i % 4 === 0 ? " f42-c" : ""));
+        var r = small ? 9 : 14;
+        d.style.left = (x - r).toFixed(1) + "px";
+        d.style.top = (y - r).toFixed(1) + "px";
+        host.appendChild(d);
+        dots.push({ el: d, dx: TX - x, dy: TY - y, order: (i * 7) % N });
+      }
+
+      gsap.set("#f42-num", { scale: 0.45 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // camera: slow push-in across the stat shots, then pull back wider for the flow shot
+      tl.fromTo("#f42-cam", { scale: 1 }, { scale: 1.04, duration: 6.76, ease: "none" }, 0);
+      tl.to("#f42-cam", { scale: 1, duration: 0.64, ease: "power2.inOut" }, 6.76);
+
+      // Scene 1 — hero number present on "Gateway", counts up on "hơn hai mươi"
+      tl.fromTo("#f42-num", { opacity: 0 }, { opacity: 1, duration: 0.45, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f42-num", { textContent: 0 }, { textContent: 20, snap: { textContent: 1 }, duration: 0.6, ease: "power2.out" }, 1.06);
+      tl.fromTo("#f42-num", { scale: 0.45 }, { scale: 1, duration: 0.6, ease: "power2.out" }, 1.06);
+      tl.fromTo("#f42-plus", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.7);
+      tl.fromTo("#f42-label", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.62);
+      tl.fromTo("#f42-glow", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }, 1.66);
+
+      // platform dots multiply around the number
+      dots.forEach(function (o) {
+        tl.fromTo(o.el, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 1.06 + o.order * 0.05);
+      });
+
+      // Scene 2 — "Tất cả": dots collapse into one process; number steps aside
+      dots.forEach(function (o) {
+        tl.to(o.el, { x: o.dx, y: o.dy, scale: 0.3, opacity: 0, duration: 0.6, ease: "power2.in" }, 3.79 + o.order * 0.015);
+      });
+      tl.to("#f42-glow", { opacity: 0, duration: 0.5, ease: "power2.inOut" }, 3.79);
+      tl.to("#f42-numgroup", { x: -550, y: -200, scale: 0.5, duration: 0.7, ease: "power2.inOut" }, 3.79);
+      tl.fromTo("#f42-numrow", { color: "#FFD23F", filter: "drop-shadow(0px 0px 18px rgba(255,210,63,0.55))" }, { color: "#F4F1E8", filter: "drop-shadow(0px 0px 0px rgba(255,210,63,0))", duration: 0.5, ease: "power2.inOut", immediateRender: false }, 3.79);
+
+      // chip lands on "một tiến trình"
+      tl.fromTo("#f42-chip", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 4.54);
+      tl.fromTo("#f42-tt", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.7);
+      tl.fromTo("#f42-ring", { opacity: 0.9, scale: 1 }, { opacity: 0, scale: 1.25, duration: 0.8, ease: "power2.out" }, 4.54);
+      // "chạy nền" status on "nền"
+      tl.fromTo("#f42-status", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 6.27);
+      tl.to("#f42-chip", { borderColor: "rgba(62,230,208,.7)", duration: 0.4, ease: "power2.out" }, 6.27);
+      tl.fromTo("#f42-pdot", { opacity: 1 }, { opacity: 0.25, duration: 0.5, ease: "power2.inOut" }, 7.0);
+      tl.to("#f42-pdot", { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 7.5);
+      tl.to("#f42-pdot", { opacity: 0.25, duration: 0.5, ease: "power2.inOut" }, 8.5);
+      tl.to("#f42-pdot", { opacity: 1, duration: 0.5, ease: "power2.inOut" }, 9.0);
+      tl.to("#f42-pdot", { opacity: 0.25, duration: 0.5, ease: "power2.inOut" }, 9.8);
+
+      // Scene 3 — the chip slides left and feeds two lanes
+      tl.to("#f42-chipbox", { x: -480, duration: 0.54, ease: "power2.inOut" }, 6.76);
+      tl.to("#f42-one", { color: "#F4F1E8", duration: 0.4, ease: "power2.inOut" }, 6.76);
+      tl.fromTo(".f42-ghost", { opacity: 0 }, { opacity: 0.55, duration: 0.4, ease: "power2.out" }, 7.2);
+
+      // lane 1 — "nhận tin nhắn"
+      tl.fromTo("#f42-t1", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 7.3);
+      tl.fromTo("#f42-lane1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 7.75);
+      tl.fromTo("#f42-p1", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 8.1);
+      tl.fromTo("#f42-p1", { strokeDashoffset: 0 }, { strokeDashoffset: -150, duration: D - 8.1, ease: "none" }, 8.1);
+
+      // lane 2 — "việc theo lịch" on "chạy các việc"
+      tl.fromTo("#f42-t2", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.46, ease: "none" }, 8.4);
+      tl.fromTo("#f42-lane2", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 8.86);
+      tl.fromTo("#f42-l2text", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.2);
+      tl.fromTo("#f42-hand", { rotation: 0 }, { rotation: 300, svgOrigin: "34 34", duration: D - 8.86, ease: "none" }, 8.86);
+      tl.fromTo("#f42-p2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 9.4);
+      tl.fromTo("#f42-p2", { strokeDashoffset: 0 }, { strokeDashoffset: -75, duration: D - 9.4, ease: "none" }, 9.4);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["42-hon-hai-muoi-nen-tang"] = tl;
+    })();
+  </script>
+</template>

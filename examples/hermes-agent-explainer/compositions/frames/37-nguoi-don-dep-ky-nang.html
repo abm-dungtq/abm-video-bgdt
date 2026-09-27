@@ -1,0 +1,320 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f37-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f37-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f37- */
+    #f37-cam { position: absolute; inset: 0; transform-origin: 880px 410px; }
+    .f37-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f37-field { opacity: 0.6; }
+
+    /* Scene 1 — shelf + broom */
+    #f37-kick {
+      position: absolute; left: 0; top: 110px; width: 1760px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f37-kick b { color: var(--gold); font-weight: 400; }
+    #f37-cur {
+      position: absolute; left: 0; top: 190px; width: 1760px; height: 130px;
+      text-align: center; font-size: 120px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+      color: var(--gold); white-space: nowrap; transform-origin: 50% 0;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); opacity: 0; z-index: 8;
+    }
+    #f37-shelfwrap { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    .f37-card {
+      position: absolute; top: 390px; width: 200px; height: 130px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.16);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0; z-index: 3;
+    }
+    .f37-cin { position: absolute; inset: 0; }
+    .f37-doc { position: absolute; left: 22px; top: 18px; width: 40px; height: 50px; }
+    .f37-lab {
+      position: absolute; left: 0; top: 80px; width: 200px; height: 36px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; line-height: 36px; color: var(--ink); white-space: nowrap;
+    }
+    #f37-chip { z-index: 4; }
+    #f37-cyan {
+      position: absolute; left: -3px; top: -3px; right: -3px; bottom: -3px; border-radius: 18px;
+      border: 3px solid var(--cyan); box-shadow: 0 0 26px rgba(62,230,208,.4); opacity: 0;
+    }
+    #f37-dot { position: absolute; left: 160px; top: 24px; width: 16px; height: 16px; border-radius: 8px; background: var(--cyan); }
+    #f37-badge {
+      position: absolute; right: -26px; top: -26px; height: 52px; padding: 0 18px; border-radius: 26px;
+      background: #1c2448; border: 2px solid var(--muted);
+      display: flex; align-items: center; font-size: 30px; font-weight: 600; line-height: 1.2;
+      color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f37-broom { position: absolute; left: 0; top: 300px; width: 180px; height: 220px; transform-origin: 0 0; opacity: 0; z-index: 6; }
+    #f37-broomg { position: absolute; left: 0; top: 0; width: 180px; height: 220px; transform-origin: 90px 215px; overflow: visible; }
+
+    /* Scene 2 — day timeline */
+    #f37-gtrail, #f37-mk { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    .f37-tl {
+      position: absolute; top: 628px; width: 120px; height: 40px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 32px; line-height: 40px; color: var(--muted); opacity: 0;
+    }
+    #f37-mk { position: absolute; left: 102px; top: 578px; width: 60px; height: 44px; opacity: 0; z-index: 5; }
+    #f37-ctr { position: absolute; left: 1000px; top: 30px; width: 740px; height: 280px; }
+    #f37-ck {
+      position: absolute; left: 0; top: 0; width: 740px; height: 40px;
+      display: flex; justify-content: flex-end; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f37-ck b { color: var(--gold); font-weight: 400; }
+    #f37-nrow {
+      position: absolute; left: 0; top: 50px; width: 740px; height: 210px;
+      display: flex; justify-content: flex-end; align-items: baseline; gap: 22px; white-space: nowrap;
+    }
+    #f37-num {
+      display: block; font-size: 200px; font-weight: 800; line-height: 1.0; letter-spacing: -.03em;
+      color: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); opacity: 0;
+    }
+    #f37-suf { display: block; font-size: 56px; font-weight: 600; line-height: 1.1; color: var(--ink); opacity: 0; }
+
+    /* archive box */
+    #f37-bback {
+      position: absolute; left: 1500px; top: 500px; width: 240px; height: 150px; border-radius: 12px;
+      background: #0d1330; border: 1px solid rgba(244,241,232,.12); opacity: 0; z-index: 2;
+    }
+    #f37-bfront {
+      position: absolute; left: 1490px; top: 540px; width: 260px; height: 110px; border-radius: 14px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.22);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0; z-index: 6;
+    }
+    #f37-slot { position: absolute; left: 90px; top: 40px; width: 80px; height: 10px; border-radius: 5px; background: var(--muted); opacity: .6; }
+    #f37-lid {
+      position: absolute; left: 1486px; top: 516px; width: 268px; height: 24px; border-radius: 8px;
+      background: #1c2448; border: 1px solid rgba(244,241,232,.22); transform-origin: 0 50%; opacity: 0; z-index: 7;
+    }
+    #f37-cat {
+      position: absolute; left: 1440px; top: 410px; width: 320px; height: 56px; text-align: center;
+      font-size: 44px; font-weight: 600; line-height: 1.2; color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="37-nguoi-don-dep-ky-nang" data-width="1920" data-height="1080" data-duration="9.246">
+    <div id="f37-ground" class="clip" data-start="0" data-duration="9.246" data-track-index="0"></div>
+    <div id="f37-stage" class="clip" data-start="0" data-duration="9.246" data-track-index="1">
+      <div id="f37-cam">
+        <!-- background field (dimmed) -->
+        <svg id="f37-field" class="f37-svg" viewBox="0 0 1760 820" fill="none">
+          <g stroke="#8E93B5" stroke-width="2">
+            <line x1="0" y1="720" x2="1760" y2="720" opacity="0.12"/>
+            <line x1="0" y1="760" x2="1760" y2="760" opacity="0.07"/>
+            <circle cx="1380" cy="170" r="300" opacity="0.08"/>
+          </g>
+        </svg>
+
+        <!-- Scene 1: kicker + curator label -->
+        <div id="f37-kick"><b>◆</b><span>chạy ngầm</span></div>
+        <div id="f37-cur">curator</div>
+
+        <!-- Scene 1: shelf + sweep trail -->
+        <div id="f37-shelfwrap">
+          <svg class="f37-svg" viewBox="0 0 1760 820" fill="none">
+            <line x1="260" y1="522" x2="1500" y2="522" stroke="#8E93B5" stroke-width="4" stroke-linecap="round"/>
+            <line id="f37-strail" x1="270" y1="548" x2="1430" y2="548" pathLength="100"
+                  stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+          </svg>
+        </div>
+
+        <!-- Scene 2: timeline track -->
+        <svg class="f37-svg" viewBox="0 0 1760 820" fill="none">
+          <line id="f37-track" x1="140" y1="600" x2="1400" y2="600" pathLength="100"
+                stroke="#8E93B5" stroke-width="4" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          <line id="f37-t0" x1="140" y1="584" x2="140" y2="616" stroke="#8E93B5" stroke-width="4" stroke-linecap="round" opacity="0"/>
+          <line id="f37-t14" x1="728" y1="584" x2="728" y2="616" stroke="#8E93B5" stroke-width="4" stroke-linecap="round" opacity="0"/>
+          <line id="f37-t30" x1="1400" y1="584" x2="1400" y2="616" stroke="#8E93B5" stroke-width="4" stroke-linecap="round" opacity="0"/>
+          <line id="f37-gtrail" x1="140" y1="600" x2="1400" y2="600" pathLength="100"
+                stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+        </svg>
+        <div id="f37-l0" class="f37-tl" style="left:80px;">0</div>
+        <div id="f37-l14" class="f37-tl" style="left:668px;">14</div>
+        <div id="f37-l30" class="f37-tl" style="left:1340px;">30</div>
+
+        <!-- Scene 2: day counter -->
+        <div id="f37-ctr">
+          <div id="f37-ck"><b>◆</b><span>không dùng</span></div>
+          <div id="f37-nrow"><span id="f37-num">0</span><span id="f37-suf">ngày</span></div>
+        </div>
+
+        <!-- archive box (back) -->
+        <div id="f37-bback"></div>
+
+        <!-- skill cards on the shelf; the middle one is the hero chip -->
+        <div class="f37-card" id="f37-c0" style="left:300px;">
+          <div class="f37-cin">
+            <svg class="f37-doc" viewBox="0 0 40 50" fill="none"><path d="M4 3h22l10 10v34H4z" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h18M11 32h18M11 40h12" stroke="#8E93B5" stroke-width="3" stroke-linecap="round"/></svg>
+            <div class="f37-lab">SKILL.md</div>
+          </div>
+        </div>
+        <div class="f37-card" id="f37-c1" style="left:540px;">
+          <div class="f37-cin">
+            <svg class="f37-doc" viewBox="0 0 40 50" fill="none"><path d="M4 3h22l10 10v34H4z" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h18M11 32h18M11 40h12" stroke="#8E93B5" stroke-width="3" stroke-linecap="round"/></svg>
+            <div class="f37-lab">SKILL.md</div>
+          </div>
+        </div>
+        <div class="f37-card" id="f37-chip" style="left:780px;">
+          <div id="f37-cyan"></div>
+          <div class="f37-cin" id="f37-chipin">
+            <svg class="f37-doc" viewBox="0 0 40 50" fill="none"><path d="M4 3h22l10 10v34H4z" stroke="#F4F1E8" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h18M11 32h18M11 40h12" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/></svg>
+            <div id="f37-dot"></div>
+            <div class="f37-lab">SKILL.md</div>
+          </div>
+          <div id="f37-badge">cũ</div>
+        </div>
+        <div class="f37-card" id="f37-c3" style="left:1020px;">
+          <div class="f37-cin">
+            <svg class="f37-doc" viewBox="0 0 40 50" fill="none"><path d="M4 3h22l10 10v34H4z" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h18M11 32h18M11 40h12" stroke="#8E93B5" stroke-width="3" stroke-linecap="round"/></svg>
+            <div class="f37-lab">SKILL.md</div>
+          </div>
+        </div>
+        <div class="f37-card" id="f37-c4" style="left:1260px;">
+          <div class="f37-cin">
+            <svg class="f37-doc" viewBox="0 0 40 50" fill="none"><path d="M4 3h22l10 10v34H4z" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h18M11 32h18M11 40h12" stroke="#8E93B5" stroke-width="3" stroke-linecap="round"/></svg>
+            <div class="f37-lab">SKILL.md</div>
+          </div>
+        </div>
+
+        <!-- archive box (front + lid + label) -->
+        <div id="f37-bfront"><div id="f37-slot"></div></div>
+        <div id="f37-lid"></div>
+        <div id="f37-cat">cất đi</div>
+
+        <!-- timeline marker: gold spark riding the trail head -->
+        <svg id="f37-mk" viewBox="0 0 60 44" fill="none">
+          <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="38" cy="22" r="12" fill="#FFD23F"/>
+        </svg>
+
+        <!-- the broom (supporting glyph) -->
+        <div id="f37-broom">
+          <svg id="f37-broomg" viewBox="0 0 180 220" fill="none">
+            <line x1="150" y1="8" x2="92" y2="140" stroke="#F4F1E8" stroke-width="9" stroke-linecap="round"/>
+            <path d="M70 136 L112 146 L108 160 L66 150 Z" fill="#FFD23F"/>
+            <path d="M62 152 L112 162 L150 214 L14 214 Z" fill="#8E93B5" stroke="#F4F1E8" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M58 170 L40 212 M80 172 L72 212 M100 174 L104 212 M118 176 L134 212" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      gsap.set("#f37-lid", { rotation: -38 });
+      var tl = gsap.timeline({ paused: true });
+
+      // slow camera drift underneath the whole frame
+      tl.fromTo("#f37-cam", { scale: 1 }, { scale: 1.02, duration: 8.746, ease: "none" }, 0);
+
+      // ---- Scene 1 (0–2.3): skill shelf, broom sweep on "dọn dẹp", "curator" lands ----
+      tl.fromTo("#f37-shelfwrap", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+      ["#f37-c0", "#f37-c1", "#f37-chip", "#f37-c3", "#f37-c4"].forEach(function (id, i) {
+        tl.fromTo(id, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05 + i * 0.08);
+      });
+      tl.fromTo("#f37-broom", { opacity: 0, x: 180, y: -20 }, { opacity: 1, x: 180, y: 0, duration: 0.35, ease: "power3.out" }, 0.3);
+      tl.fromTo("#f37-broomg", { rotation: -12 }, { rotation: 10, duration: 1.2, ease: "none" }, 0.75);
+      tl.to("#f37-broom", { x: 1340, duration: 1.2, ease: "none" }, 0.75);
+      tl.fromTo("#f37-strail", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 1.2, ease: "none" }, 0.75);
+      // each card hops as the broom passes under it
+      [["#f37-c0", 0.88], ["#f37-c1", 1.13], ["#f37-chip", 1.37], ["#f37-c3", 1.62], ["#f37-c4", 1.87]].forEach(function (p) {
+        tl.to(p[0], { y: -16, duration: 0.12, ease: "power2.out" }, p[1]);
+        tl.to(p[0], { y: 0, duration: 0.18, ease: "power2.in" }, p[1] + 0.12);
+      });
+      tl.fromTo("#f37-kick", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.30);
+      tl.fromTo("#f37-cur", { opacity: 0, scale: 0.86, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.30);
+
+      // ---- Transition into Scene 2 (2.85–3.45): shelf clears, curator becomes the header ----
+      tl.to("#f37-kick", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 2.85);
+      tl.to("#f37-shelfwrap", { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 2.85);
+      ["#f37-c0", "#f37-c1", "#f37-c3", "#f37-c4"].forEach(function (id, i) {
+        tl.to(id, { opacity: 0, y: 40, scale: 0.9, duration: 0.4, ease: "power2.inOut" }, 2.85 + i * 0.04);
+      });
+      tl.to("#f37-cur", {
+        x: -645, y: -180, scale: 0.55, color: "#F4F1E8",
+        filter: "drop-shadow(0 0 0px rgba(255,210,63,0))", duration: 0.6, ease: "power2.inOut"
+      }, 2.85);
+      tl.to("#f37-broom", { x: 10, y: -290, scale: 0.36, duration: 0.6, ease: "power2.inOut" }, 2.85);
+      tl.to("#f37-broomg", { rotation: 0, duration: 0.6, ease: "power2.inOut" }, 2.85);
+      tl.to("#f37-chip", { x: -740, y: 50, duration: 0.6, ease: "power2.inOut" }, 2.85);
+
+      // ---- Scene 2 (2.3–8.75): the 0 → 14 → 30 day timeline ----
+      tl.fromTo("#f37-track", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.45, ease: "power2.inOut" }, 3.15);
+      tl.fromTo("#f37-t0", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 3.40);
+      tl.fromTo("#f37-l0", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.40);
+      // "Kỹ năng" — the skill is active
+      tl.fromTo("#f37-mk", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 3.51);
+      tl.fromTo("#f37-cyan", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 3.51);
+      // "không dùng" — the counter appears
+      tl.fromTo("#f37-ck", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.81);
+      tl.fromTo("#f37-num", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.81);
+      // count 0 → 14, the skill rides the trail
+      tl.fromTo("#f37-num", { textContent: 0 }, { textContent: 14, snap: { textContent: 1 }, duration: 0.72, ease: "power1.inOut" }, 3.97);
+      tl.to("#f37-chip", { x: -152, duration: 0.72, ease: "power1.inOut" }, 3.97);
+      tl.to("#f37-mk", { x: 588, duration: 0.72, ease: "power1.inOut" }, 3.97);
+      tl.fromTo("#f37-gtrail", { strokeDashoffset: 100 }, { strokeDashoffset: 53.333, duration: 0.72, ease: "power1.inOut" }, 3.97);
+      tl.fromTo("#f37-t14", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 4.39);
+      tl.fromTo("#f37-l14", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.39);
+      tl.fromTo("#f37-suf", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.69);
+      // day 14 — the skill greys out, marked "cũ"
+      tl.to("#f37-cyan", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 4.72);
+      tl.to("#f37-chipin", { opacity: 0.45, duration: 0.4, ease: "power2.inOut" }, 4.72);
+      tl.fromTo("#f37-badge", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 5.64);
+      // count 14 → 30 on "sau ba mươi ngày"
+      tl.to("#f37-num", { textContent: 30, snap: { textContent: 1 }, duration: 0.44, ease: "power1.inOut" }, 6.26);
+      tl.to("#f37-chip", { x: 520, duration: 0.44, ease: "power1.inOut" }, 6.26);
+      tl.to("#f37-mk", { x: 1260, duration: 0.44, ease: "power1.inOut" }, 6.26);
+      tl.to("#f37-gtrail", { strokeDashoffset: 0, duration: 0.44, ease: "power1.inOut" }, 6.26);
+      tl.fromTo("#f37-t30", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 6.48);
+      tl.fromTo("#f37-l30", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.48);
+      // the archive box opens
+      tl.fromTo("#f37-bback", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.48);
+      tl.fromTo("#f37-bfront", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.48);
+      tl.fromTo("#f37-lid", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.52);
+      // the chip slides into the box and the lid closes
+      tl.to("#f37-chip", { x: 740, y: 100, scale: 0.7, duration: 0.62, ease: "power2.inOut" }, 6.82);
+      tl.to("#f37-lid", { rotation: 0, duration: 0.3, ease: "power2.inOut" }, 7.45);
+      tl.fromTo("#f37-cat", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.73);
+
+      tl.to({}, { duration: 8.746 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["37-nguoi-don-dep-ky-nang"] = tl;
+    })();
+  </script>
+</template>

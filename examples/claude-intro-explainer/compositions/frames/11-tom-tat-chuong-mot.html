@@ -1,0 +1,207 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f11-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(25, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f11-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f11-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f11-spk { display: inline-block; }
+    .f11-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* pinned anchor (left column, never moves after landing) */
+    #f11-anchor { position: absolute; left: 30px; top: 290px; width: 400px; height: 240px; }
+    #f11-anchor-spark {
+      position: absolute; left: 0; top: 2px; width: 52px; height: 52px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f11-anchor-kick {
+      position: absolute; left: 74px; top: 6px;
+      font-family: "JetBrains Mono", monospace; font-size: 40px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--ink); white-space: nowrap; line-height: 1.2; opacity: 0;
+    }
+    #f11-anchor-name {
+      position: absolute; left: 0; top: 92px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+
+    /* recap strip */
+    #f11-strip { position: absolute; left: 540px; top: 190px; width: 1180px; height: 270px; }
+    .f11-chip {
+      position: absolute; top: 0; width: 560px; height: 270px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f11-chip1 { left: 0; }
+    #f11-chip2 { left: 620px; }
+    .f11-chip-label {
+      position: absolute; left: 44px; top: 38px;
+      font-size: 48px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f11-tick { position: absolute; right: 36px; top: 40px; width: 52px; height: 52px; overflow: visible; }
+    .f11-icons { position: absolute; left: 44px; bottom: 36px; width: 470px; height: 90px; overflow: visible; }
+    .f11-mini { position: absolute; bottom: 44px; opacity: 0; }
+    #f11-m1 { left: 46px; width: 30px; height: 30px; }
+    #f11-m2 { left: 100px; width: 40px; height: 40px; }
+    #f11-m3 { left: 166px; width: 52px; height: 52px; }
+    #f11-m4 { left: 244px; width: 66px; height: 66px; }
+
+    /* scene 2: the forward handoff */
+    #f11-next-kick {
+      position: absolute; left: 540px; top: 480px;
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f11-next-kick .f11-spk { width: 26px; height: 26px; }
+    #f11-dest {
+      position: absolute; left: 1010px; top: 500px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 128px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap; padding-top: 6px; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="11-tom-tat-chuong-mot" data-width="1920" data-height="1080" data-duration="7.569">
+    <div id="f11-ground" class="clip" data-start="0" data-duration="7.569" data-track-index="0"></div>
+    <div id="f11-stage" class="clip" data-start="0" data-duration="7.569" data-track-index="1">
+
+      <!-- hand-drawn divider between the pinned anchor and the changing region -->
+      <svg class="f11-svgfull" viewBox="0 0 1760 820">
+        <path id="f11-divider" d="M472 90 C 466 250, 478 420, 468 560 S 474 700, 470 740" fill="none" stroke="#F0EEE6" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <!-- pinned anchor -->
+      <div id="f11-anchor">
+        <div id="f11-anchor-spark" class="f11-spk f11-spk-gold"></div>
+        <div id="f11-anchor-kick">Tóm lại</div>
+        <div id="f11-anchor-name">Claude</div>
+      </div>
+
+      <!-- recap strip: two chips -->
+      <div id="f11-strip">
+        <div id="f11-chip1" class="f11-chip">
+          <div class="f11-chip-label">Họ mô hình</div>
+          <svg class="f11-tick" viewBox="0 0 52 52"><path id="f11-tick1" d="M8 28 C 14 33, 18 38, 21 42 C 27 30, 36 18, 46 9" fill="none" stroke="#D97757" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+          <div id="f11-m1" class="f11-mini f11-spk f11-spk-ink"></div>
+          <div id="f11-m2" class="f11-mini f11-spk f11-spk-ink"></div>
+          <div id="f11-m3" class="f11-mini f11-spk f11-spk-ink"></div>
+          <div id="f11-m4" class="f11-mini f11-spk f11-spk-ink"></div>
+        </div>
+        <div id="f11-chip2" class="f11-chip">
+          <div class="f11-chip-label">Mọi thiết bị</div>
+          <svg class="f11-tick" viewBox="0 0 52 52"><path id="f11-tick2" d="M8 28 C 14 33, 18 38, 21 42 C 27 30, 36 18, 46 9" fill="none" stroke="#D97757" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+          <svg class="f11-icons" viewBox="0 0 470 90" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <!-- desktop monitor -->
+            <path id="f11-dev1" d="M4 8 H96 V62 H4 Z M38 62 L34 82 M62 62 L66 82 M26 84 H74" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <!-- laptop -->
+            <path id="f11-dev2" d="M140 14 H216 V64 H140 Z M126 72 H230 L222 84 H134 Z" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <!-- phone -->
+            <path id="f11-dev3" d="M280 4 H322 Q330 4 330 12 V78 Q330 86 322 86 H280 Q272 86 272 78 V12 Q272 4 280 4 Z M294 74 H308" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- scene 2: next step -->
+      <div id="f11-next-kick"><span class="f11-spk f11-spk-gold"></span><span>Tiếp theo</span></div>
+      <svg class="f11-svgfull" viewBox="0 0 1760 820">
+        <path id="f11-arrow" d="M548 606 C 640 628, 760 592, 850 604 S 940 598, 972 592" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path id="f11-arrowhead" d="M944 568 L974 592 L942 614" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path id="f11-under" d="M1016 680 C 1160 694, 1330 672, 1470 684 S 1590 690, 1616 678" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+      <div id="f11-dest">claude.ai</div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="11-tom-tat-chuong-mot"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var spark = function (color) {
+        return '<svg viewBox="-50 -50 100 100"><g stroke="' + color + '" stroke-width="11" stroke-linecap="round">' +
+          '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+          '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      };
+      qa('.f11-spk-gold').forEach(function (el) { el.innerHTML = spark('#D97757'); });
+      qa('.f11-spk-ink').forEach(function (el) { el.innerHTML = spark('#F0EEE6'); });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var pop = function (d) { return { scale: 1, rotation: 0, opacity: 1, duration: d || 0.45, ease: IN }; };
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+
+      // ---- Scene 1 (0–4.02): anchor pins on "Tóm lại", recap chips fill on cue
+      tl.fromTo('#f11-anchor-spark', popFrom, pop(0.45), 0.31);          // "Tóm"
+      tl.fromTo('#f11-anchor-kick', { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 0.31);
+      draw('#f11-divider', 0.4, 0.8);
+      tl.fromTo('#f11-anchor-name', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.69); // "Claude"
+
+      // chip 1: "Họ mô hình" + four sparks of growing size (a family)
+      tl.fromTo('#f11-chip1', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 1.29);  // "họ"
+      tl.fromTo('#f11-m1', popFrom, pop(0.35), 1.45);                    // "mô"
+      tl.fromTo('#f11-m2', popFrom, pop(0.35), 1.53);
+      tl.fromTo('#f11-m3', popFrom, pop(0.35), 1.61);                    // "hình"
+      tl.fromTo('#f11-m4', popFrom, pop(0.35), 1.69);
+      draw('#f11-tick1', 1.95, 0.3);
+
+      // chip 2: "Mọi thiết bị" + three device line icons
+      tl.fromTo('#f11-chip2', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 2.68); // "mọi"
+      draw('#f11-dev1', 2.82, 0.3);                                      // "thiết"
+      draw('#f11-dev2', 2.94, 0.3);                                      // "bị"
+      draw('#f11-dev3', 3.06, 0.3);
+      draw('#f11-tick2', 3.3, 0.3);
+
+      // ---- Scene 2 (from "Tiếp theo" 3.74 / shot 4.02): strip slides up and dims; handoff to claude.ai
+      tl.to('#f11-strip', { y: -140, scale: 0.78, opacity: 0.38, transformOrigin: '0px 0px', duration: 0.6, ease: 'power2.inOut' }, 3.74);
+      tl.fromTo('#f11-next-kick .f11-spk', popFrom, pop(0.4), 3.74);     // "Tiếp"
+      tl.fromTo('#f11-next-kick', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 3.74);
+      draw('#f11-arrow', 4.4, 1.0);                                      // "ta bắt đầu dùng Claude"
+      draw('#f11-arrowhead', 5.38, 0.16);
+      tl.fromTo('#f11-dest', { y: 40, scale: 0.92, opacity: 0 }, { y: 0, scale: 1, opacity: 1, transformOrigin: '0px 70px', duration: 0.55, ease: IN }, 5.57); // "claude.ai"
+      draw('#f11-under', 5.95, 0.4);
+
+      tl.to({}, { duration: 6.969 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["11-tom-tat-chuong-mot"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,310 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 x chapter */
+    #f78-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(43, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80-1840, y 60-880 */
+    #f78-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- shot 1 + 2: one oversized world crossed by the camera ---- */
+    #f78-view {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: hidden;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 1670px, transparent 1760px);
+      mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 1670px, transparent 1760px);
+    }
+    #f78-world { position: absolute; left: 0; top: 0; width: 4800px; height: 820px; }
+    #f78-pathsvg { position: absolute; left: 0; top: 0; width: 4800px; height: 820px; overflow: visible; }
+    .f78-station { position: absolute; top: 0; width: 640px; height: 820px; }
+    .f78-kicker {
+      position: absolute; left: 0; top: 136px; width: 640px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em; color: var(--muted);
+    }
+    .f78-label {
+      position: absolute; left: 0; top: 182px; width: 640px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 72px; line-height: 1.12; white-space: nowrap;
+    }
+    .f78-w { display: inline-block; opacity: 0; }
+    .f78-stem {
+      position: absolute; left: 319px; width: 2px; background: rgba(240,238,230,.18); opacity: 0;
+    }
+    .f78-node {
+      position: absolute; left: 298px; width: 44px; height: 44px; border-radius: 50%;
+      border: 3px solid rgba(240,238,230,.35); background: var(--canvas); box-sizing: border-box;
+    }
+    .f78-fill {
+      position: absolute; left: 7px; top: 7px; width: 24px; height: 24px; border-radius: 50%;
+      background: var(--cyan); opacity: 0;
+    }
+    .f78-chips { position: absolute; left: 0; width: 640px; display: flex; justify-content: center; gap: 18px; }
+    .f78-chip {
+      opacity: 0; padding: 12px 26px; border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10); box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      font-weight: 600; font-size: 34px; line-height: 1.2; color: var(--ink); white-space: nowrap;
+    }
+    .f78-spark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    #f78-traveller { position: absolute; left: 0; top: 0; width: 48px; height: 48px; }
+    #f78-travspark { width: 48px; height: 48px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    /* shot 2: the grid station */
+    #f78-grid-title {
+      position: absolute; left: 3500px; top: 150px; width: 1200px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 76px; line-height: 1.12; white-space: nowrap;
+    }
+    #f78-grid-title .f78-accent { color: var(--gold); }
+    #f78-grid { position: absolute; left: 3594px; top: 316px; width: 1012px; height: 288px; }
+    .f78-slot, .f78-card { position: absolute; width: 180px; height: 130px; border-radius: 16px; box-sizing: border-box; }
+    .f78-slot { border: 2px dashed rgba(240,238,230,.22); opacity: 0; }
+    .f78-card {
+      opacity: 0; background: var(--surface); border: 1px solid rgba(240,238,230,.10);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+    }
+    .f78-bar { position: absolute; left: 22px; height: 10px; border-radius: 5px; background: rgba(154,150,140,.35); }
+    /* ---- shot 3: the staircase ---- */
+    #f78-stairs { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f78-block {
+      position: absolute; width: 228px; opacity: 0; border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, #2F2D2A, var(--surface));
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f78-slabel {
+      position: absolute; width: 228px; text-align: center; opacity: 0;
+      font-weight: 600; font-size: 32px; line-height: 1.2; color: var(--ink); white-space: nowrap;
+    }
+    #f78-stairsvg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f78-climber { position: absolute; left: 0; top: 0; width: 52px; height: 52px; opacity: 0; }
+    #f78-climbspark { width: 52px; height: 52px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+  </style>
+
+  <div id="root" data-composition-id="78-hanh-trinh-cua-ban-hom-nay" data-width="1920" data-height="1080" data-duration="15.218">
+    <div id="f78-ground" class="clip" data-start="0" data-duration="15.218" data-track-index="0"></div>
+    <div id="f78-stage" class="clip" data-start="0" data-duration="15.218" data-track-index="1">
+      <div id="f78-view">
+        <div id="f78-world">
+          <svg id="f78-pathsvg" viewBox="0 0 4800 820">
+            <path id="f78-guide" d="" fill="none" stroke="rgba(240,238,230,.16)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 14"/>
+            <path id="f78-trail" d="" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <circle id="f78-origin" cx="0" cy="0" r="9" fill="#D97757"/>
+            <path id="f78-under" d="M4180 256 C 4250 250, 4330 262, 4410 252 S 4480 250, 4500 256" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div id="f78-stations"></div>
+          <div id="f78-grid-title"><span id="f78-g1" class="f78-w">10</span> <span id="f78-g2" class="f78-w">tính năng</span> <span id="f78-g3" class="f78-w f78-accent">mới nhất</span></div>
+          <div id="f78-grid"></div>
+          <div id="f78-traveller"><div id="f78-travspark" class="f78-spark"></div></div>
+        </div>
+      </div>
+
+      <div id="f78-stairs">
+        <div id="f78-blocks"></div>
+        <svg id="f78-stairsvg" viewBox="0 0 1760 820">
+          <path id="f78-floor" d="M220 760 C 600 757, 1100 763, 1540 759" fill="none" stroke="rgba(240,238,230,.22)" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f78-stairline" d="M280 641 C 360 638, 450 643, 520 640 C 522 604, 518 570, 521 535 C 600 532, 690 538, 760 534 C 762 500, 758 465, 761 430 C 840 427, 930 433, 1000 429 C 1002 395, 998 360, 1001 325 C 1080 322, 1170 328, 1240 324 C 1242 290, 1238 255, 1241 220 C 1320 217, 1410 223, 1480 219" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f78-slabels"></div>
+        <div id="f78-climber"><div id="f78-climbspark" class="f78-spark"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="78-hanh-trinh-cua-ban-hom-nay"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk) drawn as SVG
+      var sparkSvg = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f78-spark').forEach(function (el) { el.innerHTML = sparkSvg; });
+
+      // ---- the hand-drawn journey path (deterministic), sampled for arc-length travel ----
+      var X0 = 60, X1 = 3530;
+      var py = function (x) { return 470 + 38 * Math.sin(x / 230) + 16 * Math.sin(x / 97 + 1); };
+      var pts = [], cum = [0];
+      for (var x = X0; x <= X1; x += 6) pts.push([x, py(x)]);
+      for (var i = 1; i < pts.length; i++) {
+        var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+        cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy));
+      }
+      var total = cum[cum.length - 1];
+      var d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L');
+      q('#f78-guide').setAttribute('d', d);
+      q('#f78-trail').setAttribute('d', d);
+      q('#f78-origin').setAttribute('cx', X0);
+      q('#f78-origin').setAttribute('cy', py(X0).toFixed(1));
+      var fracAtX = function (sx) { var k = Math.round((sx - X0) / 6); return cum[k] / total; };
+      var pointAt = function (f) {
+        var L = f * total, lo = 0, hi = cum.length - 1;
+        while (hi - lo > 1) { var m = (lo + hi) >> 1; if (cum[m] < L) lo = m; else hi = m; }
+        var seg = cum[hi] - cum[lo] || 1, t = (L - cum[lo]) / seg;
+        return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * t, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * t];
+      };
+      var trail = q('#f78-trail'), trav = q('#f78-traveller');
+      var travel = { f: 0 };
+      var renderTravel = function () {
+        trail.style.strokeDashoffset = String(1 - travel.f);
+        var p = pointAt(travel.f);
+        trav.style.transform = 'translate(' + (p[0] - 24).toFixed(1) + 'px,' + (p[1] - 24).toFixed(1) + 'px)';
+      };
+      renderTravel();
+
+      // ---- stations (text labels pre-placed in world space) ----
+      var ST = [
+        { x: 420,  k: '01', words: [['Cơ', 1.80], ['bản', 1.96]], chips: [['Trò chuyện', 1.46]] },
+        { x: 1280, k: '02', words: [['Tổ chức', 2.38]], chips: [['Projects', 2.38], ['Artifacts', 3.61]] },
+        { x: 2140, k: '03', words: [['Kết', 5.17], ['nối', 5.29]], chips: [['Công cụ', 5.47]] },
+        { x: 3000, k: '04', words: [['Claude', 7.26], ['Code', 7.58]], chips: [] }
+      ];
+      var host = q('#f78-stations');
+      ST.forEach(function (s, n) {
+        var ny = py(s.x);
+        var el = document.createElement('div');
+        el.className = 'f78-station';
+        el.id = 'f78-st' + n;
+        el.style.left = (s.x - 320) + 'px';
+        var html = '<div class="f78-kicker" id="f78-k' + n + '">' + s.k + '</div><div class="f78-label">';
+        html += s.words.map(function (w, j) { return '<span class="f78-w" id="f78-w' + n + '-' + j + '">' + w[0] + '</span>'; }).join(' ');
+        html += '</div>';
+        html += '<div class="f78-stem" id="f78-stem' + n + '" style="top:282px;height:' + (ny - 22 - 296).toFixed(0) + 'px"></div>';
+        html += '<div class="f78-node" style="top:' + (ny - 22).toFixed(1) + 'px"><div class="f78-fill" id="f78-fill' + n + '"></div></div>';
+        html += '<div class="f78-chips" style="top:' + (ny + 52).toFixed(1) + 'px">';
+        html += s.chips.map(function (c, j) { return '<div class="f78-chip" id="f78-c' + n + '-' + j + '">' + c[0] + '</div>'; }).join('');
+        html += '</div>';
+        el.innerHTML = html;
+        host.appendChild(el);
+      });
+
+      // ---- grid station: ten blank mini cards, 5 x 2 ----
+      var grid = q('#f78-grid'), gh = '';
+      for (var c = 0; c < 10; c++) {
+        var gx = (c % 5) * 208, gy = Math.floor(c / 5) * 158;
+        gh += '<div class="f78-slot" style="left:' + gx + 'px;top:' + gy + 'px"></div>';
+        gh += '<div class="f78-card" id="f78-card' + c + '" style="left:' + gx + 'px;top:' + gy + 'px">' +
+          '<div class="f78-bar" style="top:30px;width:92px"></div><div class="f78-bar" style="top:54px;width:132px;opacity:.6"></div></div>';
+      }
+      grid.innerHTML = gh;
+
+      // ---- staircase: five chapter steps ----
+      var BASE = 760, TREADS = [640, 535, 430, 325, 220], STEP_W = 240, SX = 280, TILE = 64;
+      var NAMES = ['Cơ bản', 'Tổ chức', 'Kết nối', 'Claude Code', 'Mới nhất'];
+      var bh = '', lh = '';
+      TREADS.forEach(function (ty, n) {
+        var left = SX + n * STEP_W + 6;
+        bh += '<div class="f78-block" id="f78-b' + n + '" style="left:' + left + 'px;top:' + ty + 'px;height:' + (BASE - ty) + 'px"></div>';
+        lh += '<div class="f78-slabel" id="f78-l' + n + '" style="left:' + left + 'px;top:' + (ty + 14) + 'px">' + NAMES[n] + '</div>';
+      });
+      q('#f78-blocks').innerHTML = bh;
+      q('#f78-slabels').innerHTML = lh;
+
+      // initial states (before the timeline is built)
+      gsap.set('#f78-world', { x: 460, transformOrigin: '4100px 410px' });
+      TREADS.forEach(function (ty, n) {
+        var H = BASE - ty;
+        gsap.set('#f78-b' + n, { scaleY: TILE / H, transformOrigin: '50% 100%' });
+        gsap.set('#f78-l' + n, { y: H - TILE });
+      });
+      var cx = function (n) { return SX + n * STEP_W + STEP_W / 2; };
+      gsap.set('#f78-climber', { x: cx(0) - 26, y: TREADS[0] - 62 });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out', MOVE = 'power2.inOut';
+      var rise = function (sel, t) { tl.fromTo(sel, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, t); };
+      var seg = function (a, b, t, dur) {
+        tl.fromTo(travel, { f: a }, { f: b, duration: dur, ease: MOVE, onUpdate: renderTravel, immediateRender: false }, t);
+      };
+
+      // ===== Shot 1 (0-7.58) journey: the spark travels, the camera centres each station =====
+      tl.fromTo('#f78-travspark', { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: IN }, 0.1);
+      var fS = ST.map(function (s) { return fracAtX(s.x); });
+      seg(0, fS[0], 0.3, 1.16);                                    // reaches station 1 as "trò" is said
+      tl.to('#f78-world', { x: 880 - ST[1].x, duration: 0.5, ease: MOVE }, 1.95);
+      seg(fS[0], fS[1], 2.0, 0.38);                                // "Projects" 2.38
+      tl.to('#f78-world', { x: 880 - ST[2].x, duration: 0.65, ease: MOVE }, 4.5);
+      seg(fS[1], fS[2], 4.55, 0.62);                               // "kết" 5.17
+      tl.to('#f78-world', { x: 880 - ST[3].x, duration: 0.65, ease: MOVE }, 6.55);
+      seg(fS[2], fS[3], 6.55, 0.71);                               // "Claude" 7.26
+
+      ST.forEach(function (s, n) {
+        var t0 = Math.min(s.words[0][1], s.chips.length ? s.chips[0][1] : 99);
+        tl.fromTo('#f78-fill' + n, { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, t0);
+        tl.fromTo('#f78-stem' + n, { opacity: 0, scaleY: 0, transformOrigin: '50% 100%' }, { opacity: 1, scaleY: 1, duration: 0.35, ease: IN }, t0);
+        rise('#f78-k' + n, s.words[0][1]);
+        s.words.forEach(function (w, j) { rise('#f78-w' + n + '-' + j, w[1]); });
+        s.chips.forEach(function (ch, j) {
+          tl.fromTo('#f78-c' + n + '-' + j, { y: -16, scale: 0.85, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.4, ease: IN }, ch[1]);
+        });
+      });
+
+      // ===== Shot 2 (7.58-11.18) cards: pan on to the last station, ten cards snap into a grid =====
+      tl.to('#f78-world', { x: 880 - 4100, duration: 0.8, ease: MOVE }, 7.85);
+      seg(fS[3], 1, 7.85, 0.8);
+      tl.fromTo('.f78-slot', { opacity: 0 }, { opacity: 1, duration: 0.4, ease: IN, stagger: 0.03 }, 8.6);
+      var OFF = [[-260, -140, -14], [-120, -220, 10], [0, -260, -6], [140, -210, 12], [280, -150, -10],
+                 [-280, 160, 12], [-130, 230, -8], [10, 260, 6], [150, 220, -12], [290, 150, 9]];
+      OFF.forEach(function (o, n) {
+        tl.fromTo('#f78-card' + n, { x: o[0], y: o[1], rotation: o[2], scale: 0.6, opacity: 0 },
+          { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1, duration: 0.45, ease: IN }, 9.57 + n * 0.035);
+      });
+      rise('#f78-g1', 9.57);                                        // "mười"
+      rise('#f78-g2', 9.77);                                        // "tính năng"
+      rise('#f78-g3', 10.07);                                       // "mới nhất"
+      tl.fromTo('#f78-under', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: 'none' }, 10.25);
+      tl.fromTo('#f78-travspark', { rotation: 0 }, { rotation: 90, duration: 0.5, ease: IN, immediateRender: false }, 10.07);
+
+      // ===== Shot 3 (11.18-14.72) metaphor: the chapters become a staircase, the spark climbs =====
+      tl.to('#f78-world', { opacity: 0, scale: 0.92, duration: 0.45, ease: 'power2.in' }, 11.18);
+      tl.fromTo('#f78-floor', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: 'none' }, 11.38);
+      TREADS.forEach(function (ty, n) {
+        var H = BASE - ty, t = 11.38 + n * 0.07;                   // "Mỗi chương" 11.38
+        tl.fromTo('#f78-b' + n, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: IN }, t);
+        tl.fromTo('#f78-l' + n, { opacity: 0, y: H - TILE + 20 }, { opacity: 1, y: H - TILE, duration: 0.35, ease: IN }, t);
+        // "bậc thang" 12.02: tiles rise into steps
+        tl.fromTo('#f78-b' + n, { scaleY: TILE / H }, { scaleY: 1, duration: 0.4, ease: IN, immediateRender: false }, 12.02 + n * 0.04);
+        tl.fromTo('#f78-l' + n, { y: H - TILE }, { y: 0, duration: 0.4, ease: IN, immediateRender: false }, 12.02 + n * 0.04);
+      });
+      tl.fromTo('#f78-stairline', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: 'none' }, 12.02);
+      tl.fromTo('#f78-climber', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: IN }, 12.1);
+      tl.fromTo('#f78-climbspark', { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.3, ease: IN }, 12.1);
+      // climb: one hop per step, the top is reached at ~12.9
+      for (var h = 1; h < 5; h++) {
+        var th = 12.28 + (h - 1) * 0.17, peak = TREADS[h] - 62 - 46;
+        tl.fromTo('#f78-climber', { x: cx(h - 1) - 26 }, { x: cx(h) - 26, duration: 0.16, ease: 'none', immediateRender: false }, th);
+        tl.fromTo('#f78-climber', { y: TREADS[h - 1] - 62 }, { y: peak, duration: 0.08, ease: 'power2.out', immediateRender: false }, th);
+        tl.fromTo('#f78-climber', { y: peak }, { y: TREADS[h] - 62, duration: 0.08, ease: 'power2.in', immediateRender: false }, th + 0.08);
+      }
+      tl.fromTo('#f78-climbspark', { scale: 1, rotation: 0 }, { scale: 1.35, rotation: 45, duration: 0.45, ease: IN, immediateRender: false }, 12.95);
+      // held beat: a quiet 1.5 % drift to the end
+      tl.fromTo('#f78-stairs', { scale: 1, transformOrigin: '50% 60%' }, { scale: 1.015, duration: 1.7, ease: 'power1.inOut', immediateRender: false }, 13.0);
+
+      tl.to({}, { duration: 14.718 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["78-hanh-trinh-cua-ban-hom-nay"] = tl;
+    })();
+  </script>
+</template>

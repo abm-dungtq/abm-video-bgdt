@@ -1,0 +1,252 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f56-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f56-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- shared ---------- */
+    .f56-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f56-kicker {
+      position: absolute; left: 0; width: 1760px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); opacity: 0;
+    }
+    .f56-kstar { display: inline-block; width: 26px; height: 26px; margin-right: 14px; vertical-align: -3px; }
+    /* ---------- Scene 1: kinetic ---------- */
+    #f56-k1 { top: 150px; }
+    #f56-year {
+      position: absolute; left: 0; top: 210px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 200px; line-height: 1.0;
+      letter-spacing: -0.02em; color: var(--ink); opacity: 0;
+    }
+    #f56-fast-wrap { position: absolute; left: 0; top: 440px; width: 1760px; height: 180px; }
+    #f56-fast {
+      position: absolute; left: 0; top: 0; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.08;
+      letter-spacing: -0.01em; color: var(--gold); opacity: 0;
+    }
+    #f56-speed { position: absolute; left: 600px; top: 116px; width: 560px; height: 50px; overflow: visible; }
+    #f56-fast-spark { position: absolute; left: 1140px; top: 14px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    /* ---------- Scene 2: journey strip ---------- */
+    #f56-chip-row { position: absolute; left: 0; top: 40px; width: 1760px; height: 72px; text-align: center; }
+    #f56-chip {
+      display: inline-block; height: 72px; padding: 0 30px; border-radius: 36px; box-sizing: border-box;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.14);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      line-height: 70px; white-space: nowrap; opacity: 0;
+    }
+    #f56-chip-num { font-family: "Lora", serif; font-weight: 700; font-size: 44px; color: var(--ink); margin-right: 12px; }
+    #f56-chip-txt { font-weight: 600; font-size: 32px; color: var(--muted); }
+    #f56-view { position: absolute; left: 0; top: 120px; width: 1760px; height: 290px; overflow: hidden; }
+    #f56-world { position: absolute; left: 0; top: 0; width: 3100px; height: 290px; }
+    #f56-baseline { position: absolute; left: 0; top: 129px; width: 3100px; height: 2px; background: rgba(240,238,230,.25); }
+    #f56-trail { position: absolute; left: 220px; top: 128px; width: 2640px; height: 4px; border-radius: 2px; background: var(--gold); }
+    #f56-rider { position: absolute; left: 198px; top: 108px; width: 44px; height: 44px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    .f56-st { position: absolute; top: 0; width: 400px; height: 290px; }
+    .f56-date {
+      position: absolute; left: 0; top: 50px; width: 400px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.08em; color: var(--muted); opacity: 0;
+    }
+    .f56-dot {
+      position: absolute; left: 190px; top: 120px; width: 20px; height: 20px; box-sizing: border-box;
+      border-radius: 50%; background: var(--ink); border: 3px solid var(--canvas); opacity: 0;
+    }
+    .f56-card-row { position: absolute; left: 0; top: 170px; width: 400px; text-align: center; }
+    .f56-card {
+      display: inline-block; padding: 16px 24px; border-radius: 16px; box-sizing: border-box;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.10);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      font-weight: 600; font-size: 32px; line-height: 1.2; color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    /* group bands */
+    #f56-bands { position: absolute; left: 0; top: 470px; width: 1760px; height: 220px; }
+    .f56-band {
+      position: absolute; top: 0; width: 540px; height: 200px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface); border: 2px solid rgba(240,238,230,.12);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35); opacity: 0;
+    }
+    .f56-band-num {
+      position: absolute; left: 36px; top: 32px; width: 52px; height: 52px; box-sizing: border-box;
+      border-radius: 50%; border: 2px solid var(--muted); color: var(--muted);
+      font-weight: 600; font-size: 28px; line-height: 48px; text-align: center;
+    }
+    .f56-band-label {
+      position: absolute; left: 36px; top: 102px; width: 470px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 56px; line-height: 1.12; color: var(--ink); white-space: nowrap;
+    }
+    .f56-band-spark { position: absolute; right: 32px; top: 32px; width: 40px; height: 40px; opacity: 0; }
+    /* ---------- Scene 3: three questions ---------- */
+    #f56-k3 { top: 250px; }
+    #f56-rail { position: absolute; left: 80px; top: 330px; width: 1600px; height: 104px; }
+    .f56-pill {
+      position: absolute; top: 0; width: 480px; height: 104px; box-sizing: border-box; border-radius: 52px;
+      background: var(--surface); border: 2px solid var(--gold);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      font-weight: 600; font-size: 38px; line-height: 100px; text-align: center; color: var(--ink);
+      white-space: nowrap; opacity: 0;
+    }
+    .f56-pbadge {
+      display: inline-block; width: 48px; height: 48px; margin-right: 16px; box-sizing: border-box;
+      border-radius: 50%; border: 2px solid var(--gold); color: var(--gold);
+      font-weight: 600; font-size: 28px; line-height: 44px; text-align: center; vertical-align: 4px;
+    }
+    .f56-link { position: absolute; top: 22px; width: 80px; height: 60px; overflow: visible; }
+    #f56-q-spark { position: absolute; left: 856px; top: 490px; width: 48px; height: 48px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+  </style>
+
+  <div id="root" data-composition-id="56-mot-nam-thay-doi-rat-nhanh" data-width="1920" data-height="1080" data-duration="14.285">
+    <div id="f56-ground" class="clip" data-start="0" data-duration="14.285" data-track-index="0"></div>
+    <div id="f56-stage" class="clip" data-start="0" data-duration="14.285" data-track-index="1">
+
+      <!-- Scene 1: kinetic -->
+      <div id="f56-s1" class="f56-layer">
+        <div id="f56-k1" class="f56-kicker"><svg class="f56-kstar" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>Năm nay</div>
+        <div id="f56-year">2026</div>
+        <div id="f56-fast-wrap">
+          <div id="f56-fast">Rất nhanh</div>
+          <svg id="f56-speed" viewBox="0 0 560 50"><path id="f56-speed-path" d="M6 30 C 90 18, 170 38, 260 26 S 420 16, 500 28 L 548 22" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="600" stroke-dashoffset="600"/><path id="f56-speed-path2" d="M120 44 C 210 36, 330 46, 440 38" fill="none" stroke="#D97757" stroke-width="3" stroke-linecap="round" stroke-dasharray="340" stroke-dashoffset="340" opacity="0.6"/></svg>
+          <svg id="f56-fast-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+        </div>
+      </div>
+
+      <!-- Scene 2: journey strip + group bands -->
+      <div id="f56-s2" class="f56-layer">
+        <div id="f56-strip" class="f56-layer">
+          <div id="f56-chip-row"><div id="f56-chip"><span id="f56-chip-num">10</span><span id="f56-chip-txt">tính năng</span></div></div>
+          <div id="f56-view">
+            <div id="f56-world">
+              <div id="f56-baseline"></div>
+              <div id="f56-trail"></div>
+              <div class="f56-st" style="left:20px"><div id="f56-d0" class="f56-date">09/06</div><div id="f56-o0" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c0" class="f56-card">Fable 5</div></div></div>
+              <div class="f56-st" style="left:460px"><div id="f56-d1" class="f56-date">23/06</div><div id="f56-o1" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c1" class="f56-card">Claude Tag</div></div></div>
+              <div class="f56-st" style="left:900px"><div id="f56-d2" class="f56-date">12/08</div><div id="f56-o2" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c2" class="f56-card">Chrome thành Cowork</div></div></div>
+              <div class="f56-st" style="left:1340px"><div id="f56-d3" class="f56-date">16/09</div><div id="f56-o3" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c3" class="f56-card">Cowork gộp chat</div></div></div>
+              <div class="f56-st" style="left:1780px"><div id="f56-d4" class="f56-date">17/09</div><div id="f56-o4" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c4" class="f56-card">Projects mới</div></div></div>
+              <div class="f56-st" style="left:2220px"><div id="f56-d5" class="f56-date">22/09</div><div id="f56-o5" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c5" class="f56-card">Opus 5.5</div></div></div>
+              <div class="f56-st" style="left:2660px"><div id="f56-d6" class="f56-date">23/09</div><div id="f56-o6" class="f56-dot"></div><div class="f56-card-row"><div id="f56-c6" class="f56-card">Marketplace</div></div></div>
+              <svg id="f56-rider" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+            </div>
+          </div>
+        </div>
+        <div id="f56-bands">
+          <div id="f56-b0" class="f56-band" style="left:0px"><span id="f56-bn0" class="f56-band-num">1</span><div class="f56-band-label">Ứng dụng</div><svg id="f56-bs0" class="f56-band-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+          <div id="f56-b1" class="f56-band" style="left:610px"><span id="f56-bn1" class="f56-band-num">2</span><div class="f56-band-label">Claude Code</div><svg id="f56-bs1" class="f56-band-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+          <div id="f56-b2" class="f56-band" style="left:1220px"><span id="f56-bn2" class="f56-band-num">3</span><div class="f56-band-label">Nền tảng</div><svg id="f56-bs2" class="f56-band-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        </div>
+      </div>
+
+      <!-- Scene 3: three questions -->
+      <div id="f56-s3" class="f56-layer">
+        <div id="f56-k3" class="f56-kicker"><svg class="f56-kstar" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>3 câu hỏi</div>
+        <div id="f56-rail">
+          <div id="f56-p0" class="f56-pill" style="left:0px"><span class="f56-pbadge">1</span>Là gì</div>
+          <svg class="f56-link" style="left:480px" viewBox="0 0 80 60"><path id="f56-l0" d="M4 30 C 22 24, 44 36, 76 28" fill="none" stroke="#D97757" stroke-width="3" stroke-linecap="round" stroke-dasharray="90" stroke-dashoffset="90"/></svg>
+          <div id="f56-p1" class="f56-pill" style="left:560px"><span class="f56-pbadge">2</span>Vì sao nổi bật</div>
+          <svg class="f56-link" style="left:1040px" viewBox="0 0 80 60"><path id="f56-l1" d="M4 30 C 22 36, 44 24, 76 32" fill="none" stroke="#D97757" stroke-width="3" stroke-linecap="round" stroke-dasharray="90" stroke-dashoffset="90"/></svg>
+          <div id="f56-p2" class="f56-pill" style="left:1120px"><span class="f56-pbadge">3</span>Bạn được gì</div>
+        </div>
+        <svg id="f56-q-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var ids = [0, 1, 2, 3, 4, 5, 6];
+      gsap.set("#f56-trail", { scaleX: 0, transformOrigin: "0% 50%" });
+      gsap.set("#f56-baseline", { scaleX: 0, transformOrigin: "0% 50%" });
+      gsap.set("#f56-rider", { scale: 0, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0–2.7): "Năm nay" 2026 -> "Rất nhanh" + speed stroke ----
+      tl.fromTo("#f56-k1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f56-year", { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f56-fast", { opacity: 0, x: -120 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.75);
+      tl.fromTo("#f56-speed-path", { attr: { "stroke-dashoffset": 600 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "none" }, 1.89);
+      tl.fromTo("#f56-speed-path2", { attr: { "stroke-dashoffset": 340 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, 2.0);
+      tl.fromTo("#f56-fast-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 1.89);
+      // internal shot change: the kinetic title clears for the strip
+      tl.to("#f56-s1", { opacity: 0, y: -40, scale: 0.92, duration: 0.4, ease: "power2.inOut" }, 2.35);
+
+      // ---- Scene 2 (2.3–10.4): timeline strip, camera pan, stations ----
+      tl.to("#f56-baseline", { scaleX: 1, duration: 0.7, ease: "power2.out" }, 2.3);
+      tl.to("#f56-rider", { scale: 1, duration: 0.35, ease: "power3.out" }, 2.35);
+      var P0 = 2.4, PD = 3.8;
+      tl.to("#f56-world", { x: -1320, duration: PD, ease: "power2.inOut" }, P0);
+      tl.to("#f56-rider", { x: 2640, rotation: 360, duration: PD, ease: "power2.inOut" }, P0);
+      tl.to("#f56-trail", { scaleX: 1, duration: PD, ease: "power2.inOut" }, P0);
+      // station i is reached when the power2.inOut progress equals i/6
+      ids.forEach(function (i) {
+        var f = i / 6;
+        var p = f < 0.5 ? Math.sqrt(f / 2) : 1 - Math.sqrt((1 - f) / 2);
+        var t = P0 + p * PD;
+        tl.fromTo("#f56-o" + i, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo("#f56-c" + i, { opacity: 0, y: 18, scale: 0.8, transformOrigin: "50% 0%" }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, t + 0.03);
+        tl.fromTo("#f56-d" + i, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, t + 0.1);
+      });
+      // "mười tính năng"
+      tl.fromTo("#f56-chip", { opacity: 0, y: 20, scale: 0.8 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 3.18);
+
+      // group words: strip dims, three bands rise
+      tl.to("#f56-strip", { opacity: 0.3, duration: 0.5, ease: "power2.inOut" }, 6.36);
+      var bandT = [6.36, 7.16, 8.21];
+      bandT.forEach(function (t, i) {
+        tl.fromTo("#f56-b" + i, { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, t);
+        tl.to("#f56-b" + i, { borderColor: "#D97757", duration: 0.3, ease: "power2.out" }, t + 0.1);
+        tl.to("#f56-bn" + i, { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t + 0.1);
+        tl.fromTo("#f56-bs" + i, { opacity: 0, scale: 0, rotation: -20, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, t + 0.1);
+        if (i > 0) {
+          // one terracotta focus: the previous band returns to neutral
+          tl.to("#f56-b" + (i - 1), { borderColor: "rgba(240,238,230,0.12)", duration: 0.3, ease: "power2.out" }, t + 0.1);
+          tl.to("#f56-bn" + (i - 1), { borderColor: "#9A968C", color: "#9A968C", duration: 0.3, ease: "power2.out" }, t + 0.1);
+          tl.to("#f56-bs" + (i - 1), { opacity: 0.35, duration: 0.3, ease: "power2.out" }, t + 0.1);
+        }
+      });
+
+      // ---- Scene 3 (10.4–13.785): three questions ----
+      tl.to("#f56-s2", { opacity: 0, y: -50, scale: 0.94, duration: 0.35, ease: "power2.inOut" }, 10.1);
+      tl.fromTo("#f56-k3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.4);
+      tl.fromTo("#f56-p0", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 10.76);
+      tl.fromTo("#f56-l0", { attr: { "stroke-dashoffset": 90 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, 11.36);
+      tl.fromTo("#f56-p1", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 11.66);
+      tl.fromTo("#f56-l1", { attr: { "stroke-dashoffset": 90 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, 12.26);
+      tl.fromTo("#f56-p2", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 12.56);
+      tl.fromTo("#f56-q-spark", { opacity: 0, scale: 0, rotation: -20, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 12.66);
+
+      tl.to({}, { duration: 13.785 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["56-mot-nam-thay-doi-rat-nhanh"] = tl;
+    })();
+  </script>
+</template>

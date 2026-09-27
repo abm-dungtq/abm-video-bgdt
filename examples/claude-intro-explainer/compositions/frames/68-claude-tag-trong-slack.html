@@ -1,0 +1,332 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f68-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f68-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f68-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f68-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f68-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f68-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f68-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f68-spark { display: block; overflow: visible; }
+    .f68-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    .f68-scene { position: absolute; inset: 0; transform-origin: 700px 470px; }
+
+    /* ---------- Scene 1: hub ring ---------- */
+    #f68-kicker {
+      position: absolute; left: 40px; top: 100px; display: flex; align-items: center; gap: 14px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C; white-space: nowrap;
+    }
+    #f68-kicker .f68-spark { width: 28px; height: 28px; }
+    .f68-k { opacity: 0; }
+
+    #f68-cam { position: absolute; inset: 0; transform-origin: 700px 470px; }
+    #f68-lines { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f68-ring { fill: none; stroke: rgba(240,238,230,.34); stroke-width: 2.5; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f68-conn { fill: none; stroke: #8FB8A8; stroke-width: 2; opacity: .5; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f68-tagline { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    .f68-node {
+      position: absolute; width: 76px; height: 76px; box-sizing: border-box; border-radius: 50%;
+      background: #2A2926; border: 2px solid rgba(240,238,230,.38);
+      box-shadow: 0 10px 26px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0;
+    }
+
+    #f68-chip {
+      position: absolute; left: 610px; top: 182px; width: 180px; height: 56px; box-sizing: border-box;
+      border-radius: 28px; background: #2A2926; border: 1px solid rgba(240,238,230,.16);
+      font: 600 32px/54px "Be Vietnam Pro", sans-serif; color: #F0EEE6; text-align: center; opacity: 0;
+    }
+
+    #f68-hub {
+      position: absolute; left: 480px; top: 410px; width: 440px; height: 120px; box-sizing: border-box;
+      border-radius: 16px; background: #2A2926; border: 2px solid #D97757;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0;
+    }
+    #f68-hub .f68-spark { width: 48px; height: 48px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f68-hub-t { font: 700 60px/1.08 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap; }
+    .f68-w { display: inline-block; opacity: 0; }
+
+    .f68-label {
+      position: absolute; left: 1210px; white-space: nowrap;
+      font: 700 72px/1.1 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f68-lab1 { top: 300px; }
+    #f68-lab2 { top: 430px; }
+    .f68-label .f68-w { margin-right: 22px; }
+
+    /* ---------- Scene 2: admin cards 60/40 ---------- */
+    #f68-s2 { opacity: 0; transform-origin: 880px 470px; }
+    #f68-admin { position: absolute; left: 40px; top: 96px; display: flex; align-items: center; gap: 20px; }
+    #f68-admin-ico { width: 60px; height: 60px; overflow: visible; opacity: 0; }
+    #f68-admin-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    #f68-admin-t { font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap; }
+
+    .f68-card {
+      position: absolute; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0;
+    }
+    #f68-c1 { left: 40px; top: 190px; width: 1000px; height: 580px; }
+    #f68-c2 { left: 1100px; top: 190px; width: 620px; height: 580px; }
+    .f68-card-t {
+      position: absolute; left: 48px; top: 40px; white-space: nowrap;
+      font: 600 44px/1.2 "Be Vietnam Pro", sans-serif;
+    }
+    .f68-card-t .f68-w { margin-right: 12px; }
+    #f68-meter { position: absolute; left: 0; top: 0; width: 1000px; height: 580px; overflow: visible; }
+    #f68-track { fill: none; stroke: rgba(240,238,230,.10); stroke-width: 30; opacity: 0; }
+    #f68-fill { fill: none; stroke: #D97757; stroke-width: 30; stroke-dasharray: 817 817; stroke-dashoffset: 817; }
+    .f68-tick { stroke: rgba(240,238,230,.30); stroke-width: 3; stroke-linecap: round; }
+    #f68-ticks { opacity: 0; }
+    #f68-limit { stroke: #F0EEE6; stroke-width: 5; stroke-linecap: round; opacity: 0; }
+    #f68-limit-spark { position: absolute; left: 0; top: 0; width: 40px; height: 40px; opacity: 0; }
+
+    .f68-row { position: absolute; left: 48px; width: 524px; height: 64px; opacity: 0; border-bottom: 1px solid rgba(240,238,230,.08); }
+    .f68-dot { position: absolute; left: 0; top: 25px; width: 14px; height: 14px; border-radius: 50%; background: #8FB8A8; }
+    .f68-bar { position: absolute; left: 34px; top: 25px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.18); }
+  </style>
+
+  <div id="root" data-composition-id="68-claude-tag-trong-slack" data-width="1920" data-height="1080" data-duration="13.297">
+    <div id="f68-ground" class="clip" data-start="0" data-duration="13.297" data-track-index="0"></div>
+    <div id="f68-stage" class="clip" data-start="0" data-duration="13.297" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f68-rail">
+        <div id="f68-p1" class="f68-pill"><span id="f68-b1" class="f68-badge">1</span>Tính năng<svg id="f68-ps1" class="f68-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f68-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f68-p2" class="f68-pill"><span id="f68-b2" class="f68-badge">2</span>Vì sao nổi bật<svg id="f68-ps2" class="f68-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f68-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f68-p3" class="f68-pill"><span id="f68-b3" class="f68-badge">3</span>Bạn được gì<svg id="f68-ps3" class="f68-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: channel ring around the Claude Tag hub -->
+      <div class="f68-scene" id="f68-s1">
+        <div id="f68-kicker">
+          <svg class="f68-spark" id="f68-k-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+          <span><span class="f68-k" id="f68-k1">23</span><span class="f68-k" id="f68-k2">/06</span><span class="f68-k" id="f68-k3">/2026</span></span>
+        </div>
+
+        <div id="f68-cam">
+          <svg id="f68-lines" viewBox="0 0 1760 820">
+            <path id="f68-ring" pathLength="1" d="M 700 210 A 400 260 0 0 1 700 730 A 400 260 0 0 1 700 210"/>
+            <path class="f68-conn" pathLength="1" d="M 700 470 L 354 340"/>
+            <path class="f68-conn" pathLength="1" d="M 700 470 L 1046 340"/>
+            <path class="f68-conn" pathLength="1" d="M 700 470 L 1062 580"/>
+            <path class="f68-conn" pathLength="1" d="M 700 470 L 700 730"/>
+            <path class="f68-conn" pathLength="1" d="M 700 470 L 324 580"/>
+            <path id="f68-tagline" pathLength="1" d="M 1016 372 C 1000 420, 972 392, 958 430 S 940 452, 926 452 M 942 438 L 926 452 L 946 460"/>
+          </svg>
+          <div class="f68-node" id="f68-n1" style="left:316px; top:302px;"></div>
+          <div class="f68-node" id="f68-n2" style="left:1008px; top:302px;"></div>
+          <div class="f68-node" id="f68-n3" style="left:1024px; top:542px;"></div>
+          <div class="f68-node" id="f68-n4" style="left:662px; top:692px;"></div>
+          <div class="f68-node" id="f68-n5" style="left:286px; top:542px;"></div>
+          <div id="f68-chip">Slack</div>
+          <div id="f68-hub">
+            <svg class="f68-spark" id="f68-hub-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+            <span id="f68-hub-t"><span class="f68-w" id="f68-h1">Claude</span> <span class="f68-w" id="f68-h2">Tag</span></span>
+          </div>
+        </div>
+
+        <div class="f68-label" id="f68-lab1"><span class="f68-w" id="f68-l1a">gắn</span><span class="f68-w" id="f68-l1b">thẻ</span></div>
+        <div class="f68-label" id="f68-lab2"><span class="f68-w" id="f68-l2a">giao</span><span class="f68-w" id="f68-l2b">việc</span></div>
+      </div>
+
+      <!-- Scene 2: admin cards 60/40 -->
+      <div class="f68-scene" id="f68-s2">
+        <div id="f68-admin">
+          <svg id="f68-admin-ico" viewBox="0 0 60 60"><circle cx="24" cy="18" r="11"/><path d="M4 54 C 4 40, 13 33, 24 33 C 30 33, 34 35, 37 38"/><path d="M46 34 L 56 38 V 46 C 56 52, 51 56, 46 58 C 41 56, 36 52, 36 46 V 38 Z"/></svg>
+          <span id="f68-admin-t"><span class="f68-w" id="f68-a1">Quản</span> <span class="f68-w" id="f68-a2">trị</span> <span class="f68-w" id="f68-a3">viên</span></span>
+        </div>
+
+        <div class="f68-card" id="f68-c1">
+          <div class="f68-card-t"><span class="f68-w" id="f68-t1">giới</span><span class="f68-w" id="f68-t2">hạn</span><span class="f68-w" id="f68-t3">chi</span><span class="f68-w" id="f68-t4">tiêu</span></div>
+          <svg id="f68-meter" viewBox="0 0 1000 580">
+            <g id="f68-ticks">
+              <line class="f68-tick" x1="206" y1="500" x2="226" y2="500"/>
+              <line class="f68-tick" x1="222" y1="409" x2="241" y2="415"/>
+              <line class="f68-tick" x1="262" y1="327" x2="279" y2="339"/>
+              <line class="f68-tick" x1="327" y1="262" x2="339" y2="279"/>
+              <line class="f68-tick" x1="409" y1="222" x2="415" y2="241"/>
+              <line class="f68-tick" x1="500" y1="206" x2="500" y2="226"/>
+              <line class="f68-tick" x1="591" y1="222" x2="585" y2="241"/>
+              <line class="f68-tick" x1="673" y1="262" x2="661" y2="279"/>
+              <line class="f68-tick" x1="738" y1="327" x2="721" y2="339"/>
+              <line class="f68-tick" x1="778" y1="409" x2="759" y2="415"/>
+              <line class="f68-tick" x1="794" y1="500" x2="774" y2="500"/>
+            </g>
+            <path id="f68-track" d="M 240 500 A 260 260 0 0 1 760 500"/>
+            <path id="f68-fill" d="M 240 500 A 260 260 0 0 1 760 500"/>
+            <line id="f68-limit" x1="696" y1="400" x2="767" y2="364"/>
+          </svg>
+          <svg class="f68-spark" id="f68-limit-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        </div>
+
+        <div class="f68-card" id="f68-c2">
+          <div class="f68-card-t"><span class="f68-w" id="f68-j1">nhật</span><span class="f68-w" id="f68-j2">ký</span></div>
+          <div class="f68-row" style="top:140px;"><span class="f68-dot"></span><span class="f68-bar" style="width:420px;"></span></div>
+          <div class="f68-row" style="top:204px;"><span class="f68-dot"></span><span class="f68-bar" style="width:330px;"></span></div>
+          <div class="f68-row" style="top:268px;"><span class="f68-dot"></span><span class="f68-bar" style="width:460px;"></span></div>
+          <div class="f68-row" style="top:332px;"><span class="f68-dot"></span><span class="f68-bar" style="width:290px;"></span></div>
+          <div class="f68-row" style="top:396px;"><span class="f68-dot"></span><span class="f68-bar" style="width:400px;"></span></div>
+          <div class="f68-row" style="top:460px;"><span class="f68-dot"></span><span class="f68-bar" style="width:350px;"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="68-claude-tag-trong-slack"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // initial states (before the timeline)
+      gsap.set(q("#f68-k-spark"), { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(q("#f68-hub-spark"), { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(q("#f68-limit-spark"), { x: 794 - 20, y: 350 - 20, scale: 0, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: slots listed in the rail bullet (0.3 s each) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f68-p" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f68-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f68-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.7);
+      lightRail(2, 5.7);
+      lightRail(3, 8.5);
+
+      // ---- Scene 1 (0–7.85): hub ring ----
+      // date kicker, typed as it is spoken
+      tl.fromTo(q("#f68-k-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 0.45);
+      tl.fromTo(q("#f68-k1"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 0.45);
+      tl.fromTo(q("#f68-k2"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 0.85);
+      tl.fromTo(q("#f68-k3"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 1.03);
+
+      // "Claude Tag" hub lands with the spark
+      tl.fromTo(q("#f68-hub"), { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 1.77);
+      tl.fromTo(q("#f68-hub-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 1.77);
+      tl.fromTo(q("#f68-h1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.77);
+      tl.fromTo(q("#f68-h2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.15);
+
+      // "Slack": the channel ring draws, the text chip lands, teammates spring onto the ring
+      tl.fromTo(q("#f68-ring"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.8, ease: "none" }, 3.64);
+      tl.fromTo(q("#f68-chip"), { opacity: 0, y: -16, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 3.64);
+      var nodes = qa(".f68-node");
+      nodes.forEach(function (n, i) {
+        tl.fromTo(n, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 3.8 + i * 0.12);
+      });
+      // "Ai trong kênh": everyone in the channel links to the hub
+      qa(".f68-conn").forEach(function (p, i) {
+        tl.fromTo(p, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.out" }, 4.52 + i * 0.1);
+      });
+
+      // "gắn thẻ": one teammate sends a stroke to the centre
+      tl.fromTo(q("#f68-n2"), { borderColor: "rgba(240,238,230,0.38)" }, { borderColor: "#D97757", duration: 0.25, ease: "power2.out" }, 5.42);
+      tl.fromTo(q("#f68-tagline"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 5.42);
+      tl.fromTo(q("#f68-l1a"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.42);
+      tl.fromTo(q("#f68-l1b"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.6);
+      tl.fromTo(q("#f68-hub"), { scale: 1.06 }, { scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, 5.82);
+
+      // "giao việc": label, then the camera pushes into the centre (outer nodes soften)
+      tl.fromTo(q("#f68-l2a"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.35);
+      tl.fromTo(q("#f68-l2b"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.51);
+      tl.fromTo(q("#f68-cam"), { scale: 1 }, { scale: 1.12, duration: 1.45, ease: "power2.inOut" }, 6.35);
+      ["#f68-n1", "#f68-n3", "#f68-n4", "#f68-n5"].forEach(function (s) {
+        tl.fromTo(q(s), { filter: "blur(0px)" }, { filter: "blur(3px)", duration: 1.2, ease: "power2.inOut" }, 6.5);
+      });
+      tl.fromTo(q("#f68-s1"), { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.in", immediateRender: false }, 7.55);
+
+      // ---- Scene 2 (7.85–12.8): admin cards ----
+      var s2 = q("#f68-s2");
+      tl.fromTo(s2, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 7.85);
+      tl.fromTo(q("#f68-admin-ico"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 7.85);
+      tl.fromTo(q("#f68-c1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.95);
+      tl.fromTo(q("#f68-a1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 8.41);
+      tl.fromTo(q("#f68-a2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 8.62);
+      tl.fromTo(q("#f68-a3"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 8.76);
+
+      // "giới hạn chi tiêu": meter arc draws, no numbers
+      tl.fromTo(q("#f68-track"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 8.94);
+      tl.fromTo(q("#f68-ticks"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 8.94);
+      tl.fromTo(q("#f68-t1"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.08);
+      tl.fromTo(q("#f68-t2"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.22);
+      tl.fromTo(q("#f68-t3"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.38);
+      tl.fromTo(q("#f68-t4"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.56);
+      tl.fromTo(q("#f68-fill"), { strokeDashoffset: 817 }, { strokeDashoffset: 229, duration: 0.9, ease: "none" }, 9.08);
+      tl.fromTo(q("#f68-limit"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 9.38);
+      tl.fromTo(q("#f68-limit-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 9.56);
+
+      // "nhật ký": log card, blank ruled lines cascade in
+      tl.fromTo(q("#f68-c2"), { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 10.61);
+      tl.fromTo(q("#f68-j1"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 10.61);
+      tl.fromTo(q("#f68-j2"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 10.83);
+      qa(".f68-row").forEach(function (r, i) {
+        tl.fromTo(r, { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 10.83 + i * 0.14);
+      });
+
+      // hold with a quiet 1 % drift
+      tl.fromTo(s2, { scale: 1 }, { scale: 1.01, duration: 0.85, ease: "none", immediateRender: false }, 11.9);
+
+      tl.to({}, { duration: 12.797 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["68-claude-tag-trong-slack"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,274 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f36-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f36-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f36- */
+    #f36-field {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 820px;
+      background-image: radial-gradient(circle, rgba(244,241,232,.16) 2px, transparent 2.5px);
+      background-size: 44px 44px;
+      opacity: .4;
+    }
+    .f36-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* Scene 1 — the command group (kicker + input pill) */
+    #f36-cmd {
+      position: absolute; left: 480px; top: 180px; width: 800px; height: 280px;
+      transform-origin: 400px 140px;
+    }
+    #f36-kick {
+      position: absolute; left: 0; top: 0; width: 800px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+      opacity: 0;
+    }
+    #f36-kick b { color: var(--gold); font-weight: 400; }
+    #f36-pill {
+      position: absolute; left: 0; top: 80px; width: 800px; height: 200px;
+      border-radius: 18px; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.16);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      transform-origin: 400px 100px;
+      opacity: 0;
+    }
+    #f36-line {
+      position: absolute; left: 70px; top: 30px; height: 140px;
+      display: flex; align-items: center; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 120px; line-height: 1;
+    }
+    #f36-prompt { color: var(--cyan); margin-right: 30px; }
+    #f36-text span { display: none; }
+    #f36-caret {
+      display: inline-block; width: 12px; height: 126px; margin-left: 8px;
+      background: var(--gold); border-radius: 3px;
+      box-shadow: 0 0 18px rgba(255,210,63,.6);
+      opacity: 0;
+    }
+    #f36-uline { position: absolute; left: 0; top: 0; width: 800px; height: 200px; overflow: visible; }
+    #f36-utrail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+
+    /* Scene 2 — source cards */
+    .f36-card {
+      position: absolute; top: 250px; width: 420px; height: 230px;
+      border-radius: 18px; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.16);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      opacity: 0;
+    }
+    #f36-card1 { left: 170px; }
+    #f36-card2 { left: 670px; }
+    #f36-card3 { left: 1170px; }
+    .f36-icon { position: absolute; left: 160px; top: 30px; width: 100px; height: 100px; overflow: visible; }
+    .f36-label {
+      position: absolute; left: 0; top: 150px; width: 420px; height: 56px;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f36-conn { opacity: 0; }
+
+    /* Scene 2 payoff — the skill card */
+    #f36-skill {
+      position: absolute; left: 560px; top: 220px; width: 640px; height: 300px;
+      border-radius: 18px; background: var(--surface);
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 40px rgba(255,210,63,.35), 0 20px 60px rgba(0,0,0,.4);
+      transform-origin: 320px 150px;
+      opacity: 0;
+    }
+    #f36-halo {
+      position: absolute; left: 557px; top: 217px; width: 646px; height: 306px;
+      border-radius: 20px; border: 3px solid var(--gold);
+      transform-origin: 323px 153px;
+      opacity: 0;
+    }
+    #f36-skind {
+      position: absolute; left: 0; top: 38px; width: 640px; height: 44px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      color: var(--muted); white-space: nowrap;
+    }
+    #f36-skind b { color: var(--gold); font-weight: 400; }
+    #f36-sname {
+      position: absolute; left: 0; top: 100px; width: 640px; height: 110px;
+      display: flex; justify-content: center; align-items: center; gap: 26px;
+      font-size: 96px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; white-space: nowrap;
+    }
+    #f36-sname span { display: block; opacity: 0; }
+    #f36-sline { position: absolute; left: 0; top: 0; width: 640px; height: 300px; overflow: visible; }
+    #f36-strail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+  </style>
+
+  <div id="root" data-composition-id="36-day-hermes-bang-lenh-learn" data-width="1920" data-height="1080" data-duration="9.13">
+    <div id="f36-ground" class="clip" data-start="0" data-duration="9.13" data-track-index="0"></div>
+    <div id="f36-stage" class="clip" data-start="0" data-duration="9.13" data-track-index="1">
+      <div id="f36-field"></div>
+
+      <!-- connectors from the command to each source card -->
+      <svg class="f36-svg" viewBox="0 0 1760 820">
+        <path id="f36-conn1" class="f36-conn" d="M880 160 C 880 210, 380 200, 380 250" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+        <path id="f36-conn2" class="f36-conn" d="M880 160 L 880 250" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+        <path id="f36-conn3" class="f36-conn" d="M880 160 C 880 210, 1380 200, 1380 250" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+
+      <!-- source cards -->
+      <div id="f36-card1" class="f36-card">
+        <svg class="f36-icon" viewBox="0 0 100 100">
+          <path d="M22 8 H62 L80 26 V92 H22 Z" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M62 8 V26 H80" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M34 44 H68 M34 58 H68 M34 72 H56" fill="none" stroke="#8e93b5" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <div class="f36-label">Tài liệu</div>
+      </div>
+      <div id="f36-card2" class="f36-card">
+        <svg class="f36-icon" viewBox="0 0 100 100">
+          <rect x="6" y="14" width="88" height="72" rx="8" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+          <path d="M6 32 H94" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+          <circle cx="17" cy="23" r="3" fill="#8e93b5"/>
+          <circle cx="27" cy="23" r="3" fill="#8e93b5"/>
+          <circle cx="37" cy="23" r="3" fill="#8e93b5"/>
+          <circle cx="50" cy="59" r="17" fill="none" stroke="#8e93b5" stroke-width="4"/>
+          <path d="M33 59 H67 M50 42 C 42 50, 42 68, 50 76 M50 42 C 58 50, 58 68, 50 76" fill="none" stroke="#8e93b5" stroke-width="3"/>
+        </svg>
+        <div class="f36-label">Trang web</div>
+      </div>
+      <div id="f36-card3" class="f36-card">
+        <svg class="f36-icon" viewBox="0 0 100 100">
+          <path d="M50 24 C 38 16, 20 14, 6 18 V84 C 20 80, 38 82, 50 90 C 62 82, 80 80, 94 84 V18 C 80 14, 62 16, 50 24 Z" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M50 24 V90" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+          <path d="M16 36 C 26 34, 34 35, 42 38 M16 52 C 26 50, 34 51, 42 54 M58 38 C 66 35, 74 34, 84 36 M58 54 C 66 51, 74 50, 84 52" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <div class="f36-label">Cuốn sách</div>
+      </div>
+
+      <!-- skill card (payoff) -->
+      <div id="f36-halo"></div>
+      <div id="f36-skill">
+        <div id="f36-skind"><b>◆</b><span>SKILL.md</span></div>
+        <div id="f36-sname"><span id="f36-w1">Kỹ</span><span id="f36-w2">năng</span></div>
+        <svg id="f36-sline" viewBox="0 0 640 300">
+          <path id="f36-strail" d="M150 238 C 260 252, 380 252, 490 236" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- command group: kicker + input pill -->
+      <div id="f36-cmd">
+        <div id="f36-kick"><b>◆</b><span>Dạy chủ động</span></div>
+        <div id="f36-pill">
+          <div id="f36-line">
+            <span id="f36-prompt">›</span>
+            <span id="f36-text"><span id="f36-c0">/</span><span id="f36-c1">l</span><span id="f36-c2">e</span><span id="f36-c3">a</span><span id="f36-c4">r</span><span id="f36-c5">n</span></span>
+            <span id="f36-caret"></span>
+          </div>
+          <svg id="f36-uline" viewBox="0 0 800 200">
+            <path id="f36-utrail" d="M172 176 C 300 186, 460 186, 610 174" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // initial hidden states for draw-ons (set before the timeline is built)
+      gsap.set("#f36-utrail", { attr: { "stroke-dasharray": 460, "stroke-dashoffset": 460 } });
+      gsap.set("#f36-strail", { attr: { "stroke-dasharray": 360, "stroke-dashoffset": 360 } });
+      gsap.set(["#f36-conn1", "#f36-conn3"], { attr: { "stroke-dasharray": 540, "stroke-dashoffset": 540 } });
+      gsap.set("#f36-conn2", { attr: { "stroke-dasharray": 90, "stroke-dashoffset": 90 } });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0–2.32 s): the input pill with a blinking caret, then "/learn" types on
+      tl.fromTo("#f36-pill", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 0.1);
+      tl.set("#f36-caret", { opacity: 1 }, 0.35);
+      // idle blink while the voice leads in ("Bạn cũng có thể chủ động dạy nó bằng")
+      [0.85, 1.35, 1.85].forEach(function (t) {
+        tl.set("#f36-caret", { opacity: 0 }, t);
+        tl.set("#f36-caret", { opacity: 1 }, t + 0.25);
+      });
+      // kicker on "chủ động"
+      tl.fromTo("#f36-kick", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.09);
+      // type "/learn" on "lệnh learn" (lệnh 2.155, learn 2.315–2.496)
+      var typeTimes = [2.16, 2.22, 2.28, 2.34, 2.40, 2.46];
+      typeTimes.forEach(function (t, i) {
+        tl.set("#f36-c" + i, { display: "inline" }, t);
+      });
+      // payoff: gold courier trail underlines the command, pill pulses
+      tl.to("#f36-utrail", { attr: { "stroke-dashoffset": 0 }, duration: 0.45, ease: "none" }, 2.34);
+      tl.to("#f36-pill", { scale: 1.05, duration: 0.18, ease: "power2.out" }, 2.5);
+      tl.to("#f36-pill", { scale: 1, duration: 0.3, ease: "power2.inOut" }, 2.68);
+      // steady caret blink after typing
+      for (var t = 3.1; t < 8.5; t += 0.5) {
+        tl.set("#f36-caret", { opacity: 0 }, t);
+        tl.set("#f36-caret", { opacity: 1 }, t + 0.25);
+      }
+
+      // ---- Scene 2 (2.32–8.63 s): command lifts to the top, sources drop in, fold into a skill
+      tl.to("#f36-kick", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 3.0);
+      tl.to("#f36-cmd", { y: -240, scale: 0.5, duration: 0.6, ease: "power2.inOut" }, 3.0);
+
+      // "tài liệu" (3.82)
+      tl.to("#f36-conn1", { opacity: 1, duration: 0.01 }, 3.82);
+      tl.to("#f36-conn1", { attr: { "stroke-dashoffset": 0 }, duration: 0.4, ease: "none" }, 3.82);
+      tl.fromTo("#f36-card1", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 3.86);
+      // "trang web" (4.64–4.94)
+      tl.to("#f36-conn2", { opacity: 1, duration: 0.01 }, 4.64);
+      tl.to("#f36-conn2", { attr: { "stroke-dashoffset": 0 }, duration: 0.25, ease: "none" }, 4.64);
+      tl.fromTo("#f36-card2", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.68);
+      // "cả một cuốn sách" (5.50–6.55)
+      tl.to("#f36-conn3", { opacity: 1, duration: 0.01 }, 5.6);
+      tl.to("#f36-conn3", { attr: { "stroke-dashoffset": 0 }, duration: 0.4, ease: "none" }, 5.6);
+      tl.fromTo("#f36-card3", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.64);
+
+      // "biến thành" (7.11): the three sources fold into the centre
+      tl.to("#f36-card1", { x: 500, y: 20, scale: 0.45, opacity: 0, duration: 0.4, ease: "power2.inOut" }, 7.11);
+      tl.to("#f36-card2", { y: 20, scale: 0.45, opacity: 0, duration: 0.4, ease: "power2.inOut" }, 7.11);
+      tl.to("#f36-card3", { x: -500, y: 20, scale: 0.45, opacity: 0, duration: 0.4, ease: "power2.inOut" }, 7.11);
+      tl.to([".f36-conn"], { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 7.11);
+
+      // "kỹ năng" (7.51 / 7.67): gold-edged skill card pops and holds
+      tl.fromTo("#f36-skill", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 7.45);
+      tl.fromTo("#f36-halo", { opacity: 0.7, scale: 1 }, { opacity: 0, scale: 1.14, duration: 0.8, ease: "power2.out" }, 7.51);
+      tl.fromTo("#f36-w1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.51);
+      tl.fromTo("#f36-w2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.67);
+      tl.to("#f36-strail", { attr: { "stroke-dashoffset": 0 }, duration: 0.45, ease: "none" }, 7.72);
+      // quiet hold drift
+      tl.to("#f36-skill", { scale: 1.02, duration: 0.63, ease: "none" }, 8.0);
+
+      tl.to({}, { duration: 8.63 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["36-day-hermes-bang-lenh-learn"] = tl;
+    })();
+  </script>
+</template>

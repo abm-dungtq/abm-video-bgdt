@@ -1,0 +1,331 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f70-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f70-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 (resting geometry from frame 0) */
+    #f70-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f70-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f70-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f70-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f70-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f70-layer { position: absolute; inset: 0; }
+    .f70-spark { display: block; overflow: visible; }
+    .f70-spark line { stroke: #D97757; stroke-width: 3.4; stroke-linecap: round; }
+    .f70-w { display: inline-block; opacity: 0; }
+
+    /* scene 1 world (zooms out in scene 2) */
+    #f70-world { transform-origin: 880px 740px; }
+    #f70-kicker {
+      position: absolute; left: 0; top: 104px; width: 1760px; height: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    #f70-kicker .f70-spark { width: 34px; height: 34px; opacity: 0; }
+    #f70-kicker .f70-w { margin: 0 6px; }
+
+    .f70-slot {
+      position: absolute; box-sizing: border-box; top: 210px; width: 780px; height: 440px;
+      border-radius: 16px; border: 2px dashed rgba(240,238,230,.16); opacity: 0;
+    }
+    #f70-slot1 { left: 60px; }
+    #f70-slot2 { left: 920px; }
+
+    .f70-card {
+      position: absolute; box-sizing: border-box; top: 210px; width: 780px; height: 440px;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f70-c1 { left: 60px; }
+    #f70-c2 { left: 920px; }
+    .f70-ico { position: absolute; left: 54px; top: 54px; overflow: visible; }
+    .f70-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .f70-ico .f70-sage { stroke: #8FB8A8; }
+    .f70-idx {
+      position: absolute; right: 50px; top: 56px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+    }
+    .f70-title {
+      position: absolute; left: 54px; bottom: 50px;
+      font: 700 72px/1.1 "Lora", serif; letter-spacing: -0.01em; color: #F0EEE6;
+    }
+    .f70-tl { white-space: nowrap; }
+    .f70-tl .f70-w { margin-right: 22px; }
+
+    /* scene 2: marketplace shelf + feeding strokes */
+    #f70-shelf {
+      position: absolute; box-sizing: border-box; left: 330px; top: 92px; width: 1100px; height: 262px;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f70-mk {
+      position: absolute; left: 44px; top: 30px; opacity: 0;
+      font: 700 56px/1.1 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #f70-search {
+      position: absolute; right: 40px; top: 30px; height: 64px; box-sizing: border-box; padding: 0 28px 0 22px;
+      display: flex; align-items: center; gap: 14px; border-radius: 32px;
+      border: 2px solid #D97757; background: rgba(217,119,87,.08); opacity: 0;
+      font: 600 34px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f70-search svg * { fill: none; stroke: #D97757; stroke-width: 3.5; stroke-linecap: round; }
+    #f70-search .f70-w { margin-right: 4px; }
+    #f70-shelf-line {
+      position: absolute; left: 44px; top: 236px; width: 1012px; height: 3px; border-radius: 2px;
+      background: rgba(240,238,230,.14);
+    }
+    .f70-tile {
+      position: absolute; top: 132px; width: 88px; height: 88px; box-sizing: border-box;
+      border-radius: 14px; border: 1.5px solid rgba(240,238,230,.18); background: #1F1E1D; opacity: 0;
+    }
+    .f70-tile svg { position: absolute; left: 20px; top: 20px; width: 48px; height: 48px; overflow: visible; }
+    .f70-tile svg * { fill: none; stroke: #9A968C; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .f70-tile .f70-fill { position: absolute; inset: -1.5px; border-radius: 14px; border: 2px solid #8FB8A8; background: rgba(143,184,168,.14); opacity: 0; }
+    #f70-feed { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f70-feed path { fill: none; stroke: #8FB8A8; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f70-feed circle { fill: #8FB8A8; opacity: 0; }
+
+    /* scene 3: kinetic */
+    #f70-s3 { transform-origin: 880px 430px; }
+    .f70-chip {
+      position: absolute; top: 150px; height: 60px; box-sizing: border-box; padding: 0 28px;
+      display: flex; align-items: center; gap: 14px; border-radius: 30px; opacity: 0;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      font: 600 30px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    .f70-chip i { display: block; width: 12px; height: 12px; border-radius: 50%; background: #8FB8A8; }
+    #f70-chip1 { right: 920px; }
+    #f70-chip2 { left: 920px; }
+    #f70-conv { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f70-conv path { fill: none; stroke: #8FB8A8; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .8; }
+    #f70-phrase {
+      position: absolute; left: 0; top: 360px; width: 1760px; text-align: center; white-space: nowrap;
+      font: 700 100px/1.1 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f70-phrase .f70-w { margin: 0 16px; }
+    #f70-p-tao { color: #D97757; position: relative; }
+    #f70-s3-spark { position: absolute; left: -66px; top: 4px; width: 52px; height: 52px; opacity: 0; }
+    #f70-ul { position: absolute; left: 0; top: 100%; width: 100%; height: 24px; overflow: visible; }
+    #f70-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f70-new {
+      position: absolute; left: 0; top: 540px; width: 1760px; text-align: center; opacity: 0;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C; text-transform: uppercase;
+    }
+  </style>
+
+  <div id="root" data-composition-id="70-hai-chuan-mo-phia-sau" data-width="1920" data-height="1080" data-duration="13.329">
+    <div id="f70-ground" class="clip" data-start="0" data-duration="13.329" data-track-index="0"></div>
+    <div id="f70-stage" class="clip" data-start="0" data-duration="13.329" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f70-rail">
+        <div id="f70-pill1" class="f70-pill"><span id="f70-b1" class="f70-badge">1</span>Tính năng<svg id="f70-ps1" class="f70-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f70-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f70-pill2" class="f70-pill"><span id="f70-b2" class="f70-badge">2</span>Vì sao nổi bật<svg id="f70-ps2" class="f70-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f70-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f70-pill3" class="f70-pill"><span id="f70-b3" class="f70-badge">3</span>Bạn được gì<svg id="f70-ps3" class="f70-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scenes 1 + 2 share one wrapper that clears for the kinetic beat -->
+      <div class="f70-layer" id="f70-s12">
+
+        <!-- Scene 1 world: two open-standard cards (zooms out in scene 2) -->
+        <div class="f70-layer" id="f70-world">
+          <div id="f70-kicker"><svg class="f70-spark" id="f70-k-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span><span class="f70-w" id="f70-k1">chuẩn</span><span class="f70-w" id="f70-k2">mở</span></span></div>
+
+          <div class="f70-slot" id="f70-slot1"></div>
+          <div class="f70-slot" id="f70-slot2"></div>
+
+          <div class="f70-card" id="f70-c1">
+            <svg class="f70-ico" width="220" height="96" viewBox="0 0 220 96">
+              <circle cx="22" cy="48" r="16"/><circle class="f70-sage" cx="110" cy="48" r="26"/><circle cx="198" cy="48" r="16"/>
+              <path d="M38 48 C 56 42, 70 54, 84 48"/><path d="M136 48 C 150 42, 164 54, 182 48"/>
+              <path class="f70-sage" d="M100 48 H120 M110 38 V58"/>
+            </svg>
+            <div class="f70-idx">01</div>
+            <div class="f70-title">
+              <div class="f70-tl"><span class="f70-w" id="f70-t1a">Model</span><span class="f70-w" id="f70-t1b">Context</span></div>
+              <div class="f70-tl"><span class="f70-w" id="f70-t1c">Protocol</span></div>
+            </div>
+          </div>
+
+          <div class="f70-card" id="f70-c2">
+            <svg class="f70-ico" width="120" height="110" viewBox="0 0 120 110">
+              <rect x="30" y="4" width="72" height="88" rx="10"/><rect x="16" y="12" width="72" height="88" rx="10" style="fill:#2A2926"/>
+              <rect x="2" y="20" width="72" height="88" rx="10" style="fill:#2A2926"/>
+              <path d="M16 50 H58 M16 66 H58 M16 82 H44"/>
+              <path class="f70-sage" d="M38 30 V40 M33 35 H43"/>
+            </svg>
+            <div class="f70-idx">02</div>
+            <div class="f70-title">
+              <div class="f70-tl"><span class="f70-w" id="f70-t2a">Agent</span><span class="f70-w" id="f70-t2b">Skills</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scene 2: strokes feed up into the Marketplace shelf -->
+        <svg id="f70-feed" viewBox="0 0 1760 820">
+          <path id="f70-f1" pathLength="1" d="M 656 468 C 650 430, 720 410, 704 356"/>
+          <path id="f70-f2" pathLength="1" d="M 1104 468 C 1110 428, 1040 412, 1056 356"/>
+          <circle id="f70-d1" cx="704" cy="356" r="7"/>
+          <circle id="f70-d2" cx="1056" cy="356" r="7"/>
+        </svg>
+        <div id="f70-shelf">
+          <div id="f70-mk">Marketplace</div>
+          <div id="f70-search">
+            <svg width="34" height="34" viewBox="0 0 34 34"><circle cx="14" cy="14" r="10"/><path d="M22 22 L31 31"/></svg>
+            <span class="f70-w" id="f70-q1">tìm</span><span class="f70-w" id="f70-q2">công</span><span class="f70-w" id="f70-q3">cụ</span>
+          </div>
+          <div id="f70-shelf-line"></div>
+          <div class="f70-tile" style="left:44px"><svg viewBox="0 0 48 48"><circle cx="8" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M14 24 H34"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:176px"><svg viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="6"/><path d="M16 18 H32 M16 28 H32"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:308px"><svg viewBox="0 0 48 48"><circle cx="8" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M14 24 H34"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:440px"><svg viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="6"/><path d="M16 18 H32 M16 28 H32"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:572px"><svg viewBox="0 0 48 48"><circle cx="8" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M14 24 H34"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:704px"><svg viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="6"/><path d="M16 18 H32 M16 28 H32"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:836px"><svg viewBox="0 0 48 48"><circle cx="8" cy="24" r="6"/><circle cx="40" cy="24" r="6"/><path d="M14 24 H34"/></svg><div class="f70-fill"></div></div>
+          <div class="f70-tile" style="left:968px"><svg viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="6"/><path d="M16 18 H32 M16 28 H32"/></svg><div class="f70-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- Scene 3: kinetic, centred -->
+      <div class="f70-layer" id="f70-s3">
+        <div class="f70-chip" id="f70-chip1"><i></i>Model Context Protocol</div>
+        <div class="f70-chip" id="f70-chip2"><i></i>Agent Skills</div>
+        <svg id="f70-conv" viewBox="0 0 1760 820">
+          <path id="f70-v1" pathLength="1" d="M 620 214 C 640 280, 760 270, 820 346"/>
+          <path id="f70-v2" pathLength="1" d="M 1140 214 C 1120 284, 1000 266, 940 346"/>
+        </svg>
+        <div id="f70-phrase"><span class="f70-w" id="f70-p-tao">tạo<svg class="f70-spark" id="f70-s3-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><svg id="f70-ul" viewBox="0 0 200 24" preserveAspectRatio="none"><path id="f70-ul-p" pathLength="1" d="M 4 14 C 50 6, 120 22, 196 10"/></svg></span><span class="f70-w" id="f70-p2">connector</span><span class="f70-w" id="f70-p3">hay</span><span class="f70-w" id="f70-p4">plugin</span></div>
+        <div id="f70-new">mới</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="70-hai-chuan-mo-phia-sau"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // initial states (before the timeline)
+      gsap.set([q("#f70-k-spark"), q("#f70-s3-spark")], { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(qa(".f70-tile .f70-fill"), { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: only the slots in the rail bullet light (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f70-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f70-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f70-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.2);
+      lightRail(3, 4.75); // "Bạn được gì" lands with the zoom-out (spoken 4.97)
+
+      // ---- Scene 1 (0–4.75): split — two empty slots, then two flat cards on their names ----
+      tl.fromTo(qa(".f70-slot"), { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out", stagger: 0.12 }, 0.31);
+      tl.fromTo(q("#f70-k1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.16);
+      tl.fromTo(q("#f70-k2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.32);
+      tl.fromTo(q("#f70-k-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 1.32);
+
+      tl.fromTo(q("#f70-c1"), { opacity: 0, x: -90 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 2.02);
+      tl.fromTo(q("#f70-t1a"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.02);
+      tl.fromTo(q("#f70-t1b"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.30);
+      tl.fromTo(q("#f70-t1c"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.74);
+
+      tl.fromTo(q("#f70-c2"), { opacity: 0, x: 90 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 3.53);
+      tl.fromTo(q("#f70-t2a"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 3.53);
+      tl.fromTo(q("#f70-t2b"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 3.87);
+
+      // ---- Scene 2 (4.75–9.16): one decelerating zoom-out; cards feed up into the Marketplace ----
+      tl.to([q("#f70-kicker")].concat(Array.prototype.slice.call(qa(".f70-idx"))), { opacity: 0, duration: 0.35, ease: "power2.out" }, 4.75);
+      tl.fromTo(q("#f70-world"), { scale: 1 }, { scale: 0.52, duration: 1.3, ease: "power3.out", immediateRender: false }, 4.75);
+      tl.fromTo(q("#f70-shelf"), { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 5.1);
+      tl.fromTo(q("#f70-f1"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.45);
+      tl.fromTo(q("#f70-f2"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.55);
+      tl.fromTo([q("#f70-d1"), q("#f70-d2")], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none", stagger: 0.1 }, 6.0);
+      tl.fromTo(q("#f70-mk"), { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 5.76);
+      tl.fromTo(qa(".f70-tile"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out", stagger: 0.05 }, 5.9);
+      tl.fromTo(q("#f70-search"), { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", transformOrigin: "100% 50%" }, 6.56);
+      tl.fromTo(q("#f70-q1"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 6.56);
+      tl.fromTo(q("#f70-q2"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 6.76);
+      tl.fromTo(q("#f70-q3"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 6.93);
+      // "mở rộng Claude": shelf tools light up sage, one after another
+      tl.fromTo(qa(".f70-tile .f70-fill"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out", stagger: 0.08 }, 7.17);
+      // frame locks until 9.16
+
+      // ---- Scene 3 (9.16–12.83): kinetic, centred ----
+      tl.to(q("#f70-s12"), { opacity: 0, y: -40, duration: 0.35, ease: "power2.in" }, 9.16);
+      tl.fromTo(q("#f70-chip1"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.36);
+      tl.fromTo(q("#f70-chip2"), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.56);
+      tl.fromTo(q("#f70-v1"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 9.7);
+      tl.fromTo(q("#f70-v2"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 9.76);
+      tl.fromTo(q("#f70-p-tao"), { opacity: 0, y: 50, scale: 1.25 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 10.36);
+      tl.fromTo(q("#f70-s3-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 10.36);
+      tl.fromTo(q("#f70-ul-p"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 10.5);
+      tl.fromTo(q("#f70-p2"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.58);
+      tl.fromTo(q("#f70-p3"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 11.23);
+      tl.fromTo(q("#f70-p4"), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 11.41);
+      tl.fromTo(q("#f70-new"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 11.79);
+      tl.fromTo(q("#f70-s3"), { scale: 1 }, { scale: 1.015, duration: 2.0, ease: "none", immediateRender: false }, 10.82); // quiet hold drift
+
+      tl.to({}, { duration: 12.829 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["70-hai-chuan-mo-phia-sau"] = tl;
+    })();
+  </script>
+</template>

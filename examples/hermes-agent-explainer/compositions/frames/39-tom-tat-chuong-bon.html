@@ -1,0 +1,226 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f39-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f39-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    #f39-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+    }
+    #f39-ring {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f39-anchor {
+      position: absolute;
+      left: 380px;
+      top: 0;
+      width: 1000px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 88px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+    .f39-chip {
+      position: absolute;
+      width: 300px;
+      height: 72px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    .f39-chip-num {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      color: var(--muted);
+    }
+    .f39-chip-label {
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+    #f39-chip1 { left: 730px; top: 154px; }
+    #f39-chip2 { left: 1170px; top: 654px; }
+    #f39-chip3 { left: 290px; top: 654px; }
+    #f39-center {
+      position: absolute;
+      left: 580px;
+      top: 432px;
+      width: 600px;
+      text-align: center;
+    }
+    #f39-kicker {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f39-kicker-dia { color: var(--gold); }
+    #f39-loop {
+      margin-top: 6px;
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="39-tom-tat-chuong-bon" data-width="1920" data-height="1080" data-duration="4.792">
+    <div id="f39-ground" class="clip" data-start="0" data-duration="4.792" data-track-index="0"></div>
+    <div id="f39-stage" class="clip" data-start="0" data-duration="4.792" data-track-index="1">
+      <!-- background field: faint concentric orbits, dimmed -->
+      <svg id="f39-field" viewBox="0 0 1760 820" width="1760" height="820">
+        <circle cx="880" cy="520" r="360" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.35" />
+        <circle cx="880" cy="520" r="430" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.22" stroke-dasharray="2 14" />
+        <circle cx="880" cy="520" r="520" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.14" />
+      </svg>
+
+      <!-- the loop: three puzzle pieces + gold courier trail -->
+      <svg id="f39-ring" viewBox="0 0 1760 820" width="1760" height="820">
+        <!-- empty slot the pieces lock into -->
+        <circle cx="880" cy="520" r="230" fill="none" stroke="#8e93b5" stroke-width="2" stroke-opacity="0.45" stroke-dasharray="6 12" />
+
+        <g id="f39-piece1" opacity="0">
+          <path d="M687.1 394.7 A230 230 0 0 1 1072.9 394.7" fill="none" stroke="rgba(244,241,232,0.22)" stroke-width="68" />
+          <circle cx="1079.2" cy="405" r="20" fill="rgba(244,241,232,0.22)" />
+          <path id="f39-band1" d="M687.1 394.7 A230 230 0 0 1 1072.9 394.7" fill="none" stroke="#141b3a" stroke-width="60" />
+          <circle id="f39-knob1" cx="1079.2" cy="405" r="16" fill="#141b3a" />
+        </g>
+        <g id="f39-piece2" opacity="0">
+          <path d="M1084.9 415.6 A230 230 0 0 1 892.0 749.7" fill="none" stroke="rgba(244,241,232,0.22)" stroke-width="68" />
+          <circle cx="880" cy="750" r="20" fill="rgba(244,241,232,0.22)" />
+          <path id="f39-band2" d="M1084.9 415.6 A230 230 0 0 1 892.0 749.7" fill="none" stroke="#141b3a" stroke-width="60" />
+          <circle id="f39-knob2" cx="880" cy="750" r="16" fill="#141b3a" />
+        </g>
+        <g id="f39-piece3" opacity="0">
+          <path d="M868.0 749.7 A230 230 0 0 1 675.1 415.6" fill="none" stroke="rgba(244,241,232,0.22)" stroke-width="68" />
+          <circle cx="680.8" cy="405" r="20" fill="rgba(244,241,232,0.22)" />
+          <path id="f39-band3" d="M868.0 749.7 A230 230 0 0 1 675.1 415.6" fill="none" stroke="#141b3a" stroke-width="60" />
+          <circle id="f39-knob3" cx="680.8" cy="405" r="16" fill="#141b3a" />
+        </g>
+
+        <!-- courier trail closing the loop -->
+        <circle id="f39-trail" cx="880" cy="520" r="290" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+          stroke-dasharray="1822.1" stroke-dashoffset="1822.1" transform="rotate(-90 880 520)"
+          style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        <!-- winged spark riding the trail head -->
+        <g id="f39-spark" opacity="0">
+          <path d="M868 230 C 856 216, 842 218, 836 226" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round" />
+          <path d="M868 230 C 856 244, 842 242, 836 234" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round" />
+          <circle cx="880" cy="230" r="9" fill="#ffd23f" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));" />
+        </g>
+      </svg>
+
+      <!-- pinned anchor -->
+      <div id="f39-anchor">Nhớ nhé</div>
+
+      <!-- labels for the three pieces -->
+      <div id="f39-chip1" class="f39-chip"><span class="f39-chip-num">01</span><span id="f39-lab1" class="f39-chip-label">ghi nhớ</span></div>
+      <div id="f39-chip2" class="f39-chip"><span class="f39-chip-num">02</span><span id="f39-lab2" class="f39-chip-label">tìm lại</span></div>
+      <div id="f39-chip3" class="f39-chip"><span class="f39-chip-num">03</span><span id="f39-lab3" class="f39-chip-label">kỹ năng</span></div>
+
+      <!-- loop centre -->
+      <div id="f39-center">
+        <div id="f39-kicker"><span id="f39-kicker-dia">◆</span> 3 mảnh ghép</div>
+        <div id="f39-loop">vòng học</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", CYAN = "#3ee6d0", INK = "#f4f1e8", SURF = "#141b3a";
+      var tl = gsap.timeline({ paused: true });
+
+      // Anchor lands once on "Nhớ nhé" (0.31) and never moves again.
+      tl.fromTo("#f39-anchor", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 0.31);
+
+      // Pieces lock into the ring on each keyword; the active piece is the gold focus.
+      var pieces = [
+        { n: 1, t: 0.65, dx: 0, dy: -70 },   // ghi nhớ
+        { n: 2, t: 1.16, dx: 60, dy: 35 },   // tìm lại
+        { n: 3, t: 1.92, dx: -60, dy: 35 }   // kỹ năng
+      ];
+      pieces.forEach(function (p, i) {
+        tl.fromTo("#f39-piece" + p.n, { opacity: 0, x: p.dx, y: p.dy }, { opacity: 1, x: 0, y: 0, duration: 0.38, ease: "power3.out" }, p.t);
+        tl.set(["#f39-band" + p.n], { attr: { stroke: GOLD } }, p.t);
+        tl.set(["#f39-knob" + p.n], { attr: { fill: GOLD } }, p.t);
+        tl.fromTo("#f39-chip" + p.n, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, p.t);
+        tl.set("#f39-lab" + p.n, { color: GOLD }, p.t);
+        // previous piece settles to "connected" cyan when the next one locks in
+        if (i > 0) {
+          var prev = pieces[i - 1].n;
+          tl.set(["#f39-band" + prev], { attr: { stroke: CYAN } }, p.t);
+          tl.set(["#f39-knob" + prev], { attr: { fill: CYAN } }, p.t);
+          tl.set("#f39-lab" + prev, { color: INK }, p.t);
+        }
+      });
+
+      // "ba mảnh ghép" (2.69) — the count appears in the centre.
+      tl.fromTo("#f39-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.69);
+
+      // "vòng học" (3.15) — last piece settles, the gold trail closes the loop.
+      tl.set(["#f39-band3"], { attr: { stroke: CYAN } }, 3.15);
+      tl.set(["#f39-knob3"], { attr: { fill: CYAN } }, 3.15);
+      tl.set("#f39-lab3", { color: INK }, 3.15);
+      tl.fromTo("#f39-loop", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 3.15);
+      tl.fromTo("#f39-trail", { strokeDashoffset: 1822.1 }, { strokeDashoffset: 0, duration: 0.8, ease: "none" }, 3.15);
+      tl.fromTo("#f39-spark", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 3.15);
+      tl.fromTo("#f39-spark", { rotation: 0 }, { rotation: 360, svgOrigin: "880 520", duration: 0.8, ease: "none" }, 3.15);
+
+      tl.to({}, { duration: 4.192 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["39-tom-tat-chuong-bon"] = tl;
+    })();
+  </script>
+</template>

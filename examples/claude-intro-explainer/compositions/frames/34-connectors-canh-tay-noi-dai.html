@@ -1,0 +1,292 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f34-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 45%, hsla(34, 55%, 42%, 0.16), transparent 55%),
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f34-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f34- */
+    .f34-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f34-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f34-spark line { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
+
+    /* ---------- scene 1: kinetic hero word ---------- */
+    #f34-s1-cam { transform-origin: 880px 380px; }
+    #f34-word-row {
+      position: absolute; left: 0; top: 250px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.1;
+      letter-spacing: -0.01em; color: var(--ink); white-space: nowrap;
+    }
+    #f34-word { display: inline-block; position: relative; opacity: 0; }
+    #f34-word-spark {
+      position: absolute; right: -54px; top: -14px; width: 44px; height: 44px; display: block; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f34-sub-row {
+      position: absolute; left: 0; top: 400px; width: 1760px; text-align: center;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 56px; line-height: 1.3;
+      color: var(--ink); white-space: nowrap;
+    }
+    #f34-sub { display: inline-block; opacity: 0; }
+    #f34-sub-line path { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+
+    /* ---------- scene 2: hub + satellites ---------- */
+    #f34-s2 { transform-origin: 880px 400px; }
+    #f34-cam { transform-origin: 880px 400px; }
+    #f34-orbit { fill: none; stroke: rgba(154,150,140,.35); stroke-width: 2; stroke-dasharray: 3 14; stroke-linecap: round; }
+    .f34-spoke { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f34-pulse { fill: none; stroke: var(--cyan); stroke-width: 3; opacity: 0; }
+    #f34-hub {
+      position: absolute; left: 760px; top: 280px; width: 240px; height: 240px; border-radius: 50%;
+      background: var(--ink); opacity: 0;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f34-hub-spark { position: absolute; left: 98px; top: 44px; width: 44px; height: 44px; display: block; }
+    #f34-hub-name {
+      position: absolute; left: 0; top: 104px; width: 240px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 52px; line-height: 1.1;
+      color: #1F1E1D;
+    }
+    .f34-card {
+      position: absolute; width: 400px; height: 150px; box-sizing: border-box;
+      padding: 22px 28px; border-radius: 16px; background: var(--surface);
+      border: 2px solid #D97757; opacity: 0;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f34-card-1 { left: 130px; top: 75px; }
+    #f34-card-2 { left: 1280px; top: 325px; }
+    #f34-card-3 { left: 130px; top: 575px; }
+    .f34-card-title {
+      display: flex; align-items: center; gap: 14px;
+      font-weight: 600; font-size: 40px; line-height: 1.2; color: var(--ink); white-space: nowrap;
+    }
+    .f34-dot { width: 14px; height: 14px; border-radius: 7px; background: var(--cyan); flex: 0 0 14px; }
+    .f34-chip {
+      display: inline-block; margin-top: 12px; padding: 2px 18px; border-radius: 20px;
+      border: 1.5px solid rgba(143,184,168,.6); color: var(--ink);
+      font-weight: 500; font-size: 28px; line-height: 1.3; white-space: nowrap; opacity: 0;
+    }
+
+    /* ---------- scene 3: split ---------- */
+    #f34-s3 { opacity: 0; }
+    #f34-divider { stroke: rgba(154,150,140,.45); stroke-width: 2; stroke-linecap: round; }
+    #f34-left { transform-origin: 440px 260px; }
+    .f34-doc {
+      position: absolute; top: 140px; width: 190px; height: 240px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface); border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0;
+    }
+    #f34-doc-1 { left: 150px; }
+    #f34-doc-2 { left: 540px; }
+    .f34-bar { position: absolute; left: 28px; height: 10px; border-radius: 5px; background: rgba(154,150,140,.40); }
+    .f34-loop { fill: none; stroke: var(--muted); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f34-strike { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f34-mini-hub {
+      position: absolute; left: 1030px; top: 190px; width: 140px; height: 140px; border-radius: 50%;
+      background: var(--ink); opacity: 0; box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f34-mini-spark { position: absolute; left: 44px; top: 44px; width: 52px; height: 52px; display: block; }
+    #f34-app {
+      position: absolute; left: 1400px; top: 175px; width: 280px; height: 170px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface); border: 1px solid rgba(143,184,168,.45);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0;
+    }
+    .f34-app-row { position: absolute; left: 30px; width: 220px; height: 14px; }
+    .f34-app-row .f34-dot { position: absolute; left: 0; top: 0; }
+    .f34-app-row .f34-bar { left: 32px; top: 2px; }
+    #f34-link { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f34-link-label {
+      position: absolute; left: 880px; top: 392px; width: 880px; text-align: center;
+      font-weight: 600; font-size: 40px; line-height: 1.3; color: var(--cyan); white-space: nowrap; opacity: 0;
+    }
+    #f34-key {
+      position: absolute; left: 0; top: 560px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 80px; line-height: 1.12;
+      letter-spacing: -0.01em; color: var(--ink); white-space: nowrap;
+    }
+    .f34-kw { display: inline-block; opacity: 0; margin: 0 12px; }
+  </style>
+
+  <div id="root" data-composition-id="34-connectors-canh-tay-noi-dai" data-width="1920" data-height="1080" data-duration="13.177">
+    <div id="f34-ground" class="clip" data-start="0" data-duration="13.177" data-track-index="0"></div>
+    <div id="f34-stage" class="clip" data-start="0" data-duration="13.177" data-track-index="1">
+
+      <!-- Scene 1: kinetic hero word -->
+      <div id="f34-s1" class="f34-layer">
+        <div id="f34-s1-cam" class="f34-layer">
+          <div id="f34-word-row"><span id="f34-word">Connectors<svg id="f34-word-spark" class="f34-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg></span></div>
+          <div id="f34-sub-row"><span id="f34-sub">ứng dụng</span></div>
+          <svg id="f34-sub-line" class="f34-svg" viewBox="0 0 1760 820"><path id="f34-sub-path" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1" d="M 762 486 C 820 478, 900 492, 952 482 S 1000 480, 1004 484"/></svg>
+        </div>
+      </div>
+
+      <!-- Scene 2: hub + satellites -->
+      <div id="f34-s2" class="f34-layer">
+        <div id="f34-cam" class="f34-layer">
+          <svg class="f34-svg" viewBox="0 0 1760 820">
+            <circle id="f34-orbit" cx="880" cy="400" r="290" pathLength="1"/>
+            <path id="f34-spoke-1" class="f34-spoke" pathLength="1" d="M 795 315 C 740 250, 660 200, 532 186"/>
+            <path id="f34-spoke-2" class="f34-spoke" pathLength="1" d="M 1002 404 C 1080 388, 1180 412, 1278 398"/>
+            <path id="f34-spoke-3" class="f34-spoke" pathLength="1" d="M 795 485 C 742 560, 650 612, 532 620"/>
+            <circle id="f34-pulse-1" class="f34-pulse" cx="880" cy="400" r="120"/>
+            <circle id="f34-pulse-2" class="f34-pulse" cx="880" cy="400" r="120"/>
+            <circle id="f34-pulse-3" class="f34-pulse" cx="880" cy="400" r="120"/>
+          </svg>
+          <div id="f34-hub">
+            <svg id="f34-hub-spark" class="f34-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+            <div id="f34-hub-name">Claude</div>
+          </div>
+          <div id="f34-card-1" class="f34-card">
+            <div class="f34-card-title"><span class="f34-dot"></span>Google Drive</div>
+            <span id="f34-chip-1" class="f34-chip">tìm file</span>
+          </div>
+          <div id="f34-card-2" class="f34-card">
+            <div class="f34-card-title"><span class="f34-dot"></span>Slack</div>
+            <span id="f34-chip-2" class="f34-chip">gửi tin</span>
+          </div>
+          <div id="f34-card-3" class="f34-card">
+            <div class="f34-card-title"><span class="f34-dot"></span>Linear</div>
+            <span id="f34-chip-3" class="f34-chip">tạo việc</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3: split -->
+      <div id="f34-s3" class="f34-layer">
+        <svg class="f34-svg" viewBox="0 0 1760 820">
+          <line id="f34-divider" x1="880" y1="90" x2="880" y2="470"/>
+        </svg>
+        <div id="f34-left" class="f34-layer">
+          <div id="f34-doc-1" class="f34-doc">
+            <div class="f34-bar" style="top:40px;width:120px;"></div>
+            <div class="f34-bar" style="top:74px;width:134px;"></div>
+            <div class="f34-bar" style="top:108px;width:96px;"></div>
+            <div class="f34-bar" style="top:142px;width:126px;"></div>
+          </div>
+          <div id="f34-doc-2" class="f34-doc">
+            <div class="f34-bar" style="top:40px;width:128px;"></div>
+            <div class="f34-bar" style="top:74px;width:100px;"></div>
+            <div class="f34-bar" style="top:108px;width:134px;"></div>
+            <div class="f34-bar" style="top:142px;width:110px;"></div>
+          </div>
+          <svg class="f34-svg" viewBox="0 0 1760 820">
+            <path id="f34-loop-1" class="f34-loop" pathLength="1" d="M 356 176 C 400 110, 480 110, 522 170 M 506 150 L 524 172 L 498 176"/>
+            <path id="f34-loop-2" class="f34-loop" pathLength="1" d="M 532 344 C 488 410, 408 410, 366 350 M 382 370 L 364 348 L 390 344"/>
+            <path id="f34-strike" pathLength="1" d="M 110 440 C 260 360, 420 300, 560 220 S 740 110, 790 96"/>
+          </svg>
+        </div>
+        <div id="f34-mini-hub">
+          <svg id="f34-mini-spark" class="f34-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+        </div>
+        <svg class="f34-svg" viewBox="0 0 1760 820">
+          <path id="f34-link" pathLength="1" d="M 1174 262 C 1230 250, 1330 270, 1396 258"/>
+        </svg>
+        <div id="f34-app">
+          <div class="f34-app-row" style="top:40px;"><span class="f34-dot"></span><div class="f34-bar" style="width:150px;"></div></div>
+          <div class="f34-app-row" style="top:78px;"><span class="f34-dot"></span><div class="f34-bar" style="width:120px;"></div></div>
+          <div class="f34-app-row" style="top:116px;"><span class="f34-dot"></span><div class="f34-bar" style="width:170px;"></div></div>
+        </div>
+        <div id="f34-link-label">Kết nối một lần</div>
+        <div id="f34-key"><span id="f34-kw-1" class="f34-kw">không</span><span id="f34-kw-2" class="f34-kw">phải</span><span id="f34-kw-3" class="f34-kw">sao</span><span id="f34-kw-4" class="f34-kw">chép</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var SAGE = "#8FB8A8", GOLD = "#D97757", DIM = "rgba(240,238,230,0.10)";
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0 – 3.27): kinetic hero word ---------- */
+      tl.fromTo("#f34-s1-cam", { scale: 1 }, { scale: 1.04, duration: 3.27, ease: "none" }, 0);
+      // "Connectors" @ 0.31
+      tl.fromTo("#f34-word", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f34-word-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 0.45);
+      // "ứng dụng" @ 2.30
+      tl.fromTo("#f34-sub", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 2.3);
+      tl.fromTo("#f34-sub-path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.45);
+
+      /* ---------- Scene 2 (3.27 – 9.38): hub + satellites ---------- */
+      // the word shrinks into the centre node (zoom-through)
+      tl.to("#f34-s1", { scale: 0.3, opacity: 0, filter: "blur(8px)", transformOrigin: "880px 360px", duration: 0.5, ease: "power2.inOut" }, 3.27);
+      tl.fromTo("#f34-hub", { opacity: 0, scale: 0.35 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 3.4);
+      tl.fromTo("#f34-hub-spark", { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 3.6);
+      tl.fromTo("#f34-orbit", { opacity: 0, scale: 0.8, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }, 3.6);
+      // slow push-in under the whole hub shot
+      tl.fromTo("#f34-cam", { scale: 1 }, { scale: 1.03, duration: 5.9, ease: "none" }, 3.4);
+
+      function satellite(n, t, prev) {
+        tl.fromTo("#f34-spoke-" + n, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, t - 0.2);
+        tl.fromTo("#f34-card-" + n, { opacity: 0, scale: 0.72 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, t);
+        tl.fromTo("#f34-chip-" + n, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t + 0.15);
+        tl.fromTo("#f34-pulse-" + n, { opacity: 0.8, scale: 1, transformOrigin: "50% 50%" }, { opacity: 0, scale: 1.45, duration: 0.7, ease: "power2.out", immediateRender: false }, t);
+        if (prev) {
+          tl.to("#f34-spoke-" + prev, { stroke: SAGE, duration: 0.4, ease: "power2.inOut" }, t);
+          tl.to("#f34-card-" + prev, { borderColor: DIM, duration: 0.4, ease: "power2.inOut" }, t);
+        }
+      }
+      satellite(1, 5.27, 0);   // Google Drive
+      satellite(2, 6.67, 1);   // Slack
+      satellite(3, 7.98, 2);   // Linear
+
+      /* ---------- Scene 3 (9.38 – 12.68): split ---------- */
+      tl.to("#f34-s2", { scale: 0.86, opacity: 0, filter: "blur(10px)", duration: 0.45, ease: "power2.inOut" }, 9.3);
+      tl.fromTo("#f34-s3", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 9.38);
+      tl.fromTo("#f34-divider", { scaleY: 0, transformOrigin: "50% 50%" }, { scaleY: 1, duration: 0.5, ease: "power3.out" }, 9.4);
+      // left: copy back and forth
+      tl.fromTo("#f34-doc-1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 9.45);
+      tl.fromTo("#f34-doc-2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 9.55);
+      tl.fromTo("#f34-loop-1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 9.75);
+      tl.fromTo("#f34-loop-2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.0);
+      // right: one sage connection
+      tl.fromTo("#f34-mini-hub", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 9.5);
+      tl.fromTo("#f34-app", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 9.6);
+      tl.fromTo("#f34-link", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 9.7);
+      tl.fromTo("#f34-link-label", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.75);
+      // key text word by word on the voice
+      tl.fromTo("#f34-kw-1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.23);
+      tl.fromTo("#f34-kw-2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.39);
+      tl.fromTo("#f34-kw-3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.61);
+      tl.fromTo("#f34-kw-4", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.79);
+      // strike through the copy loop on "sao chép"
+      tl.fromTo("#f34-strike", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.61);
+      tl.to("#f34-left", { opacity: 0.5, duration: 0.5, ease: "power2.inOut" }, 10.95);
+      // quiet hold drift
+      tl.fromTo("#f34-key", { scale: 1 }, { scale: 1.015, duration: 1.4, ease: "none", immediateRender: false }, 11.2);
+
+      tl.to({}, { duration: 12.677 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["34-connectors-canh-tay-noi-dai"] = tl;
+    })();
+  </script>
+</template>

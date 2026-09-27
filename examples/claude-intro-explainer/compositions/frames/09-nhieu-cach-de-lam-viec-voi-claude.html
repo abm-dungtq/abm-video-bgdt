@@ -1,0 +1,346 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f09-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(25, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f09-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f09-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f09-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f09-spk { display: block; }
+    .f09-spk svg { display: block; width: 100%; height: 100%; }
+    .f09-w { display: inline-block; opacity: 0; }
+
+    /* Scene 1 — stacked surface panes fan apart, "Nhiều bề mặt" */
+    #f09-s1-kick {
+      position: absolute; left: 66px; top: 178px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+      display: flex; align-items: center; gap: 14px; opacity: 0;
+    }
+    #f09-s1-kick .f09-spk { width: 24px; height: 24px; }
+    #f09-s1-head {
+      position: absolute; left: 60px; top: 236px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 140px;
+      line-height: 1.1; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #f09-s1-head div { padding-top: 6px; }
+    .f09-pane {
+      position: absolute; left: 1130px; top: 250px;
+      width: 420px; height: 280px; box-sizing: border-box;
+      background: rgba(42,41,38,.78);
+      border: 1px solid rgba(240,238,230,.14);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f09-pane svg { position: absolute; left: 0; top: 0; width: 420px; height: 280px; }
+
+    /* Scene 2 — hub + satellites */
+    #f09-glow {
+      position: absolute; left: 500px; top: 0px; width: 760px; height: 760px;
+      border-radius: 50%;
+      background: radial-gradient(circle, hsla(25, 60%, 45%, 0.40), transparent 62%);
+      opacity: 0;
+    }
+    #f09-disc {
+      position: absolute; left: 750px; top: 250px; width: 260px; height: 260px;
+      box-sizing: border-box; border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid rgba(240,238,230,.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f09-hubspark {
+      position: absolute; left: 825px; top: 290px; width: 110px; height: 110px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); opacity: 0;
+    }
+    #f09-hublabel {
+      position: absolute; left: 750px; top: 404px; width: 260px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 46px; line-height: 1.2;
+      opacity: 0;
+    }
+    .f09-node { position: absolute; width: 110px; height: 110px; opacity: 0; }
+    .f09-node-circ {
+      position: absolute; left: 0; top: 0; width: 110px; height: 110px; box-sizing: border-box;
+      border-radius: 50%; background: var(--surface);
+      border: 2px solid rgba(240,238,230,.22);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f09-node-circ svg { position: absolute; left: 25px; top: 25px; width: 60px; height: 60px; overflow: visible; }
+    .f09-node-label {
+      position: absolute; left: -295px; top: 128px; width: 700px; text-align: center;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    #f09-nA { left: 365px; top: 65px; }
+    #f09-nB { left: 1285px; top: 65px; }
+    #f09-nC { left: 1285px; top: 545px; }
+    #f09-nD { left: 365px; top: 545px; }
+
+    /* Scene 3 — one Claude */
+    #f09-s3-head {
+      position: absolute; left: 0; top: 420px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 110px;
+      line-height: 1.1; letter-spacing: -0.01em; white-space: nowrap; padding-top: 6px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="09-nhieu-cach-de-lam-viec-voi-claude" data-width="1920" data-height="1080" data-duration="15.749">
+    <div id="f09-ground" class="clip" data-start="0" data-duration="15.749" data-track-index="0"></div>
+    <div id="f09-stage" class="clip" data-start="0" data-duration="15.749" data-track-index="1">
+
+      <!-- Scene 1: kinetic 60/40 -->
+      <div id="f09-s1" class="f09-layer">
+        <div id="f09-s1-text" class="f09-layer">
+          <div id="f09-s1-kick"><span class="f09-spk"></span><span>Claude</span></div>
+          <div id="f09-s1-head">
+            <div><span id="f09-h1" class="f09-w">Nhiều</span></div>
+            <div><span id="f09-h2" class="f09-w">bề</span> <span id="f09-h3" class="f09-w">mặt</span></div>
+          </div>
+          <svg class="f09-svgfull" viewBox="0 0 1760 820">
+            <path id="f09-s1-under" d="M64 578 C 170 590, 290 570, 400 582 S 560 590, 640 572" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+
+        <!-- four translucent surface panes (abstract, no text) -->
+        <div id="f09-p1" class="f09-pane">
+          <svg viewBox="0 0 420 280" fill="none" stroke-linecap="round">
+            <circle cx="30" cy="28" r="6" fill="#9A968C"/><circle cx="50" cy="28" r="6" fill="#9A968C"/><circle cx="70" cy="28" r="6" fill="#9A968C"/>
+            <rect x="36" y="70" width="220" height="54" rx="22" fill="rgba(240,238,230,.14)"/>
+            <rect x="170" y="140" width="214" height="54" rx="22" fill="rgba(143,184,168,.30)"/>
+            <rect x="36" y="210" width="160" height="40" rx="18" fill="rgba(240,238,230,.10)"/>
+          </svg>
+        </div>
+        <div id="f09-p2" class="f09-pane">
+          <svg viewBox="0 0 420 280" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="30" cy="28" r="6" fill="#9A968C"/><circle cx="50" cy="28" r="6" fill="#9A968C"/><circle cx="70" cy="28" r="6" fill="#9A968C"/>
+            <path d="M38 82 L52 94 L38 106" stroke="#8FB8A8" stroke-width="5"/>
+            <path d="M70 94 H300" stroke="rgba(240,238,230,.35)" stroke-width="8"/>
+            <path d="M38 140 H250" stroke="rgba(240,238,230,.18)" stroke-width="8"/>
+            <path d="M38 176 H330" stroke="rgba(240,238,230,.18)" stroke-width="8"/>
+            <path d="M38 212 H200" stroke="rgba(240,238,230,.18)" stroke-width="8"/>
+          </svg>
+        </div>
+        <div id="f09-p3" class="f09-pane">
+          <svg viewBox="0 0 420 280" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="30" cy="28" r="6" fill="#9A968C"/><circle cx="50" cy="28" r="6" fill="#9A968C"/><circle cx="70" cy="28" r="6" fill="#9A968C"/>
+            <rect x="38" y="74" width="30" height="30" rx="6" stroke="rgba(240,238,230,.4)" stroke-width="3"/>
+            <path d="M44 89 L51 97 L63 80" stroke="#8FB8A8" stroke-width="4"/>
+            <path d="M90 89 H320" stroke="rgba(240,238,230,.3)" stroke-width="8"/>
+            <rect x="38" y="130" width="30" height="30" rx="6" stroke="rgba(240,238,230,.4)" stroke-width="3"/>
+            <path d="M44 145 L51 153 L63 136" stroke="#8FB8A8" stroke-width="4"/>
+            <path d="M90 145 H280" stroke="rgba(240,238,230,.3)" stroke-width="8"/>
+            <rect x="38" y="186" width="30" height="30" rx="6" stroke="rgba(240,238,230,.4)" stroke-width="3"/>
+            <path d="M90 201 H340" stroke="rgba(240,238,230,.18)" stroke-width="8"/>
+          </svg>
+        </div>
+        <div id="f09-p4" class="f09-pane">
+          <svg viewBox="0 0 420 280" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="30" cy="28" r="6" fill="#9A968C"/><circle cx="50" cy="28" r="6" fill="#9A968C"/><circle cx="70" cy="28" r="6" fill="#9A968C"/>
+            <path d="M110 150 L210 100 L310 150 L210 200 Z" stroke="rgba(240,238,230,.4)" stroke-width="4"/>
+            <circle cx="110" cy="150" r="14" fill="#2A2926" stroke="rgba(240,238,230,.5)" stroke-width="4"/>
+            <circle cx="210" cy="100" r="14" fill="#2A2926" stroke="#8FB8A8" stroke-width="4"/>
+            <circle cx="310" cy="150" r="14" fill="#2A2926" stroke="rgba(240,238,230,.5)" stroke-width="4"/>
+            <circle cx="210" cy="200" r="14" fill="#2A2926" stroke="rgba(240,238,230,.5)" stroke-width="4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Scene 2: hub + satellites -->
+      <div id="f09-s2" class="f09-layer">
+        <div id="f09-glow"></div>
+        <svg id="f09-conns" class="f09-svgfull" viewBox="0 0 1760 820">
+          <circle id="f09-halo" cx="880" cy="380" r="172" fill="none" stroke="#8FB8A8" stroke-opacity="0.35" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f09-cA" d="M767 316 C 680 262, 572 184, 468 147" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f09-cB" d="M993 316 C 1072 246, 1196 196, 1292 147" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f09-cC" d="M997 436 C 1094 462, 1196 548, 1290 576" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f09-cD" d="M763 436 C 676 478, 566 532, 470 576" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f09-disc"></div>
+        <div id="f09-hubspark" class="f09-spk"></div>
+        <div id="f09-hublabel">Claude</div>
+
+        <div id="f09-nA" class="f09-node">
+          <div class="f09-node-circ">
+            <svg viewBox="0 0 60 60" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 12 H52 Q56 12 56 16 V38 Q56 42 52 42 H24 L14 52 L16 42 H8 Q4 42 4 38 V16 Q4 12 8 12 Z"/>
+              <path d="M16 24 H44 M16 31 H34"/>
+            </svg>
+          </div>
+          <div class="f09-node-label"><span id="f09-lA" class="f09-w">Chat</span></div>
+        </div>
+        <div id="f09-nB" class="f09-node">
+          <div class="f09-node-circ">
+            <svg viewBox="0 0 60 60" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 16 L4 30 L18 44"/>
+              <path d="M42 16 L56 30 L42 44"/>
+              <path d="M35 10 L25 50"/>
+            </svg>
+          </div>
+          <div class="f09-node-label"><span id="f09-lB1" class="f09-w">Claude</span> <span id="f09-lB2" class="f09-w">Code</span></div>
+        </div>
+        <div id="f09-nC" class="f09-node">
+          <div class="f09-node-circ">
+            <svg viewBox="0 0 60 60" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="8" width="52" height="38" rx="5"/>
+              <path d="M26 20 L26 42 L32 36 L38 46 L42 44 L36 34 L44 33 Z" fill="#2A2926"/>
+            </svg>
+          </div>
+          <div class="f09-node-label"><span id="f09-lC" class="f09-w">Cowork</span></div>
+        </div>
+        <div id="f09-nD" class="f09-node">
+          <div class="f09-node-circ">
+            <svg viewBox="0 0 60 60" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M30 6 L54 18 L30 30 L6 18 Z"/>
+              <path d="M6 30 L30 42 L54 30"/>
+              <path d="M6 42 L30 54 L54 42"/>
+            </svg>
+          </div>
+          <div class="f09-node-label"><span id="f09-lD1" class="f09-w">Nền</span> <span id="f09-lD2" class="f09-w">tảng nhà phát triển</span></div>
+        </div>
+      </div>
+
+      <!-- Scene 3: one Claude -->
+      <div id="f09-s3" class="f09-layer">
+        <div id="f09-s3-head"><span id="f09-e1" class="f09-w">Cùng</span> <span id="f09-e2" class="f09-w">một</span> <span id="f09-e3" class="f09-w">Claude</span></div>
+        <svg class="f09-svgfull" viewBox="0 0 1760 820">
+          <path id="f09-s3-under" d="M560 574 C 700 588, 860 566, 1000 580 S 1140 586, 1200 570" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="09-nhieu-cach-de-lam-viec-voi-claude"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f09-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+      var wordIn = function (sel, t, dy) {
+        tl.fromTo(sel, { y: dy || 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, t);
+      };
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+
+      // ---- Scene 1 (0–3.39): stacked panes fan apart; "Nhiều bề mặt"
+      var panes = [
+        ['#f09-p1', -150, -130, -8],
+        ['#f09-p2', -50, -44, -3],
+        ['#f09-p3', 50, 44, 3],
+        ['#f09-p4', 150, 130, 8]
+      ];
+      panes.forEach(function (p, i) {
+        // enter stacked (slight offsets)
+        tl.fromTo(p[0], { x: i * 6, y: 40 + i * 6, rotation: 0, opacity: 0 },
+          { x: i * 6, y: i * 6, rotation: 0, opacity: 1, duration: 0.45, ease: IN }, 0.05 + i * 0.06);
+        // fan apart on "nhiều bề mặt"
+        tl.to(p[0], { x: p[1], y: p[2], rotation: p[3], duration: 0.8, ease: 'power2.inOut' }, 0.79 + i * 0.06);
+        // quiet drift while the headline settles
+        tl.to(p[0], { y: p[2] - 10, duration: 1.1, ease: 'power1.inOut' }, 1.85);
+        // collapse into the hub centre (880, 380)
+        tl.to(p[0], { x: -460, y: -10, rotation: 0, scale: 0.18, opacity: 0, duration: 0.4, ease: 'power2.in' }, 3.0 + i * 0.03);
+      });
+      tl.fromTo('#f09-s1-kick', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 0.31);
+      tl.fromTo('#f09-s1-kick .f09-spk', popFrom, popTo, 0.31);
+      wordIn('#f09-h1', 0.79, 60);
+      wordIn('#f09-h2', 1.02, 60);
+      wordIn('#f09-h3', 1.16, 60);
+      draw('#f09-s1-under', 1.3, 0.6);
+      // cut the headline out to the left
+      tl.to('#f09-s1-text', { x: -220, opacity: 0, filter: 'blur(10px)', duration: 0.34, ease: 'power2.in' }, 3.0);
+
+      // ---- Scene 2 (3.39–11.87): hub + satellites spring in on cue
+      tl.fromTo('#f09-glow', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 3.15);
+      tl.fromTo('#f09-disc', { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: IN }, 3.2);
+      tl.fromTo('#f09-hubspark', popFrom, { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: IN }, 3.25);
+      tl.fromTo('#f09-hublabel', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 3.3);
+      draw('#f09-halo', 3.3, 0.9);
+
+      var nodeIn = function (node, conn, t) {
+        draw(conn, t, 0.4);
+        tl.fromTo(node, { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: IN }, t + 0.08);
+        tl.fromTo(node + ' .f09-node-circ', { borderColor: 'rgba(240,238,230,0.22)' },
+          { borderColor: 'rgba(143,184,168,0.9)', duration: 0.3, ease: 'power2.out' }, t + 0.45);
+      };
+      // Chat @3.39
+      nodeIn('#f09-nA', '#f09-cA', 3.39);
+      wordIn('#f09-lA', 3.39, 20);
+      // Claude Code @4.13 / 4.43
+      nodeIn('#f09-nB', '#f09-cB', 4.13);
+      wordIn('#f09-lB1', 4.13, 20);
+      wordIn('#f09-lB2', 4.43, 20);
+      // Cowork @6.00
+      nodeIn('#f09-nC', '#f09-cC', 6.0);
+      wordIn('#f09-lC', 6.0, 20);
+      // held beat ~6.8–10.37: the ring stays still
+      // Nền tảng nhà phát triển @10.37 / 10.59
+      nodeIn('#f09-nD', '#f09-cD', 10.37);
+      wordIn('#f09-lD1', 10.37, 20);
+      wordIn('#f09-lD2', 10.59, 20);
+
+      // ---- Scene 3 (11.87–15.25): connectors converge, the spark absorbs them
+      var nodes = [['#f09-nA', 420, 120], ['#f09-nB', 1340, 120], ['#f09-nC', 1340, 600], ['#f09-nD', 420, 600]];
+      nodes.forEach(function (n, i) {
+        tl.to(n[0], { x: 880 - n[1], y: 380 - n[2], scale: 0.15, opacity: 0, duration: 0.7, ease: 'power2.in' }, 11.87 + i * 0.05);
+      });
+      ['#f09-cA', '#f09-cB', '#f09-cC', '#f09-cD'].forEach(function (c, i) {
+        tl.to(c, { strokeDashoffset: 1, duration: 0.6, ease: 'power2.in' }, 11.95 + i * 0.05);
+      });
+      tl.to('#f09-halo', { strokeDashoffset: 1, duration: 0.5, ease: 'power2.in' }, 11.95);
+      tl.to('#f09-hublabel', { opacity: 0, y: 10, duration: 0.3, ease: 'power2.in' }, 11.87);
+      tl.to('#f09-disc', { scale: 1.35, opacity: 0, duration: 0.6, ease: 'power2.out' }, 12.5);
+      tl.to('#f09-glow', { scale: 0.8, duration: 0.8, ease: 'power2.inOut' }, 12.5);
+      tl.to('#f09-hubspark', { scale: 2, y: -95, rotation: 45, duration: 0.8, ease: 'power2.inOut' }, 12.5);
+      wordIn('#f09-e1', 13.79, 50);
+      wordIn('#f09-e2', 13.95, 50);
+      wordIn('#f09-e3', 14.11, 50);
+      draw('#f09-s3-under', 14.3, 0.55);
+      // quiet settle
+      tl.to('#f09-hubspark', { scale: 2.04, rotation: 50, duration: 1.8, ease: 'power1.inOut' }, 13.4);
+
+      tl.to({}, { duration: 15.249 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["09-nhieu-cach-de-lam-viec-voi-claude"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,396 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f62-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f62-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f62-spark { display: block; overflow: visible; }
+    .f62-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f62-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f62-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f62-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f62-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f62-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f62-scene { position: absolute; inset: 0; transform-origin: 880px 440px; }
+
+    /* shared paper card */
+    .f62-card {
+      position: absolute; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 2px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f62-card > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .f62-ln { fill: none; stroke: #9A968C; stroke-width: 7; stroke-linecap: round; }
+    .f62-hd { fill: #F0EEE6; opacity: .85; }
+    .f62-ol { fill: none; stroke: #F0EEE6; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .f62-part { opacity: 0; }
+
+    /* ---- Scene 1: shaped sheets inside a chat bubble ---- */
+    #f62-kicker {
+      position: absolute; left: 170px; top: 100px; opacity: 0;
+      display: flex; align-items: center; gap: 14px; white-space: nowrap;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+    }
+    #f62-kicker .f62-spark { width: 28px; height: 28px; }
+    #f62-bubble { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f62-bubble path { fill: none; stroke: rgba(240,238,230,.30); stroke-width: 3; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f62-bubble-label {
+      position: absolute; left: 1330px; top: 116px; opacity: 0; white-space: nowrap;
+      font: 500 30px/1.2 "Be Vietnam Pro", sans-serif; color: #9A968C;
+    }
+    .f62-slot {
+      position: absolute; box-sizing: border-box; border-radius: 16px;
+      border: 2px dashed rgba(240,238,230,.16); opacity: 0;
+    }
+    #f62-sl1, #f62-c1 { left: 190px; top: 200px; width: 330px; height: 420px; }
+    #f62-sl2, #f62-c2 { left: 610px; top: 300px; width: 560px; height: 320px; }
+    #f62-sl3, #f62-c3 { left: 1260px; top: 240px; width: 380px; height: 380px; }
+    .f62-chip {
+      position: absolute; top: 648px; height: 62px; box-sizing: border-box; padding: 0 28px;
+      display: flex; align-items: center; justify-content: center; border-radius: 31px;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.12); opacity: 0;
+      font: 600 34px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f62-k1 { left: 190px; width: 330px; }
+    #f62-k2 { left: 690px; width: 400px; }
+    #f62-k3 { left: 1260px; width: 380px; }
+    #f62-s1-spark { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+
+    /* ---- Scene 2: rising draft -> edit -> present staircase ---- */
+    #f62-n1 { left: 100px; top: 400px; width: 420px; height: 240px; }
+    #f62-n2 { left: 670px; top: 270px; width: 420px; height: 240px; }
+    #f62-n3 { left: 1240px; top: 130px; width: 420px; height: 240px; }
+    #f62-n1 .f62-ln { stroke-dasharray: 14 12; stroke-width: 6; stroke-linecap: butt; }
+    #f62-n1 .f62-hd { opacity: .35; }
+    #f62-hl {
+      position: absolute; left: 34px; top: 118px; width: 300px; height: 40px; border-radius: 6px;
+      background: rgba(217,119,87,.28); transform-origin: 0 50%; opacity: 0;
+    }
+    #f62-caret { position: absolute; left: 338px; top: 112px; width: 4px; height: 52px; background: #D97757; opacity: 0; }
+    #f62-stand { position: absolute; left: 1240px; top: 370px; width: 420px; height: 50px; overflow: visible; opacity: 0; }
+    #f62-stand path { fill: none; stroke: #9A968C; stroke-width: 5; stroke-linecap: round; }
+    .f62-lab {
+      position: absolute; width: 420px; text-align: center; white-space: nowrap;
+      font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; color: #F0EEE6;
+    }
+    #f62-l1 { left: 100px; top: 660px; }
+    #f62-l2 { left: 670px; top: 530px; }
+    #f62-l3 { left: 1240px; top: 434px; }
+    .f62-w { display: inline-block; opacity: 0; }
+    #f62-arrows { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f62-arrows path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f62-s2-spark { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+
+    /* ---- Scene 3: deck -> download -> format chips (60/40) ---- */
+    .f62-sheet { position: absolute; left: 170px; top: 150px; width: 640px; height: 360px; }
+    #f62-sh3 { background: #262522; }
+    #f62-sh2 { background: #282724; }
+    #f62-dl { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f62-dl path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f62-dl-arrow path { stroke: #D97757; stroke-width: 5; }
+    #f62-tray { stroke: #9A968C; stroke-width: 5; }
+    #f62-k3-kicker {
+      position: absolute; left: 1060px; top: 120px; opacity: 0; white-space: nowrap;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+    }
+    .f62-file {
+      position: absolute; left: 1060px; width: 620px; height: 210px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; gap: 40px; padding: 0 48px; opacity: 0;
+    }
+    #f62-f1 { top: 180px; }
+    #f62-f2 { top: 440px; }
+    .f62-file svg { flex: none; overflow: visible; }
+    .f62-file svg path { fill: none; stroke: #F0EEE6; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .f62-fname { font: 700 64px/1.08 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap; color: #F0EEE6; }
+  </style>
+
+  <div id="root" data-composition-id="62-claude-docs-slides-va-design" data-width="1920" data-height="1080" data-duration="13.439">
+    <div id="f62-ground" class="clip" data-start="0" data-duration="13.439" data-track-index="0"></div>
+    <div id="f62-stage" class="clip" data-start="0" data-duration="13.439" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f62-rail">
+        <div id="f62-pill1" class="f62-pill"><span id="f62-b1" class="f62-badge">1</span>Tính năng<svg id="f62-ps1" class="f62-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f62-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f62-pill2" class="f62-pill"><span id="f62-b2" class="f62-badge">2</span>Vì sao nổi bật<svg id="f62-ps2" class="f62-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f62-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f62-pill3" class="f62-pill"><span id="f62-b3" class="f62-badge">3</span>Bạn được gì<svg id="f62-ps3" class="f62-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: three shaped sheets cascade into a row, inside a chat bubble -->
+      <div class="f62-scene" id="f62-s1">
+        <div id="f62-kicker"><svg class="f62-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>CÙNG ĐỢT</span></div>
+        <svg id="f62-bubble" viewBox="0 0 1760 820"><path pathLength="1" d="M150 172 H1650 Q1690 172 1690 212 V698 Q1690 738 1650 738 H340 L226 802 L262 738 H150 Q110 738 110 698 V212 Q110 172 150 172 Z"/></svg>
+        <div id="f62-bubble-label">cuộc trò chuyện</div>
+
+        <div class="f62-slot" id="f62-sl1"></div>
+        <div class="f62-slot" id="f62-sl2"></div>
+        <div class="f62-slot" id="f62-sl3"></div>
+
+        <!-- Docs: portrait page -->
+        <div class="f62-card" id="f62-c1">
+          <svg viewBox="0 0 330 420">
+            <g class="f62-part"><rect class="f62-hd" x="40" y="52" width="190" height="22" rx="5"/></g>
+            <g class="f62-part"><path class="f62-ln" d="M40 120 H290 M40 156 H270 M40 192 H290 M40 228 H200"/></g>
+            <g class="f62-part"><path class="f62-ln" d="M40 290 H290 M40 326 H250 M40 362 H160"/></g>
+          </svg>
+        </div>
+        <!-- Slides: landscape slide -->
+        <div class="f62-card" id="f62-c2">
+          <svg viewBox="0 0 560 320">
+            <g class="f62-part"><rect class="f62-hd" x="44" y="44" width="260" height="24" rx="5"/></g>
+            <g class="f62-part"><path class="f62-ln" d="M44 130 H220 M44 170 H200 M44 210 H230"/></g>
+            <g class="f62-part"><path class="f62-ol" d="M300 262 H516 M330 262 V190 M390 262 V140 M450 262 V210 M500 262 V110" style="stroke-width:22;stroke-linecap:butt;stroke:#9A968C"/><path class="f62-ol" d="M300 262 H516"/></g>
+          </svg>
+        </div>
+        <!-- Design: square canvas with shapes -->
+        <div class="f62-card" id="f62-c3">
+          <svg viewBox="0 0 380 380">
+            <g class="f62-part"><circle class="f62-ol" cx="130" cy="130" r="62"/></g>
+            <g class="f62-part"><rect class="f62-ol" x="170" y="170" width="150" height="130" rx="12" style="stroke:#9A968C"/></g>
+            <g class="f62-part"><path class="f62-ol" d="M70 320 L130 220 L190 320 Z"/><path class="f62-ol" d="M250 60 L320 60 M285 60 L285 120" style="stroke:#9A968C"/></g>
+          </svg>
+        </div>
+
+        <div class="f62-chip" id="f62-k1">Claude Docs</div>
+        <div class="f62-chip" id="f62-k2">Claude Slides</div>
+        <div class="f62-chip" id="f62-k3">Claude Design</div>
+        <svg class="f62-spark" id="f62-s1-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+      </div>
+
+      <!-- Scene 2: draft -> edit -> present, rising left to right -->
+      <div class="f62-scene" id="f62-s2">
+        <div class="f62-card" id="f62-n1">
+          <svg viewBox="0 0 420 240">
+            <rect class="f62-hd" x="34" y="34" width="200" height="22" rx="5"/>
+            <path class="f62-ln" d="M34 100 H300 M34 140 H260 M34 180 H320"/>
+          </svg>
+        </div>
+        <div class="f62-card" id="f62-n2">
+          <svg viewBox="0 0 420 240">
+            <rect class="f62-hd" x="34" y="34" width="200" height="22" rx="5"/>
+            <path class="f62-ln" d="M34 100 H300 M34 180 H320"/>
+            <path class="f62-ln" d="M44 138 H320" style="stroke:#F0EEE6"/>
+          </svg>
+          <div id="f62-hl"></div>
+          <div id="f62-caret"></div>
+        </div>
+        <div class="f62-card" id="f62-n3">
+          <svg viewBox="0 0 420 240">
+            <rect class="f62-hd" x="34" y="34" width="200" height="22" rx="5"/>
+            <g id="f62-play"><path class="f62-ol" d="M186 96 L250 130 L186 164 Z" style="stroke-width:5"/></g>
+          </svg>
+        </div>
+        <svg id="f62-stand" viewBox="0 0 420 50"><path d="M210 4 V38 M150 42 H270"/></svg>
+
+        <div class="f62-lab" id="f62-l1"><span class="f62-w" id="f62-w1a">bản</span> <span class="f62-w" id="f62-w1b">nháp</span></div>
+        <div class="f62-lab" id="f62-l2"><span class="f62-w" id="f62-w2a">sửa</span> <span class="f62-w" id="f62-w2b">trực</span> <span class="f62-w" id="f62-w2c">tiếp</span></div>
+        <div class="f62-lab" id="f62-l3"><span class="f62-w" id="f62-w3a">trình</span> <span class="f62-w" id="f62-w3b">chiếu</span></div>
+
+        <svg id="f62-arrows" viewBox="0 0 1760 820">
+          <path id="f62-a1" pathLength="1" d="M538 486 C 578 470, 606 430, 652 392"/>
+          <path id="f62-a1h" pathLength="1" d="M626 388 L653 391 L646 417"/>
+          <path id="f62-a2" pathLength="1" d="M1108 356 C 1148 340, 1176 300, 1222 262"/>
+          <path id="f62-a2h" pathLength="1" d="M1196 258 L1223 261 L1216 287"/>
+        </svg>
+        <svg class="f62-spark" id="f62-s2-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+      </div>
+
+      <!-- Scene 3: deck left (60), download arrow into tray, format chips right (40) -->
+      <div class="f62-scene" id="f62-s3">
+        <div class="f62-card f62-sheet" id="f62-sh3"></div>
+        <div class="f62-card f62-sheet" id="f62-sh2"></div>
+        <div class="f62-card f62-sheet" id="f62-sh1">
+          <svg viewBox="0 0 640 360">
+            <rect class="f62-hd" x="48" y="48" width="280" height="26" rx="5"/>
+            <path class="f62-ln" d="M48 140 H260 M48 186 H230 M48 232 H270"/>
+            <path class="f62-ol" d="M340 300 H592 M376 300 V222 M444 300 V168 M512 300 V238 M570 300 V130" style="stroke-width:26;stroke-linecap:butt;stroke:#9A968C"/>
+            <path class="f62-ol" d="M340 300 H592"/>
+          </svg>
+        </div>
+        <svg id="f62-dl" viewBox="0 0 1760 820">
+          <path id="f62-tray" pathLength="1" d="M372 648 C 371 670, 373 690, 374 712 C 450 714, 540 711, 616 713 C 617 690, 615 670, 616 648"/>
+          <g id="f62-dl-arrow">
+            <path id="f62-dl-body" pathLength="1" d="M494 528 C 491 570, 497 610, 494 670"/>
+            <path id="f62-dl-head" pathLength="1" d="M462 640 L494 674 L526 638"/>
+          </g>
+        </svg>
+        <div id="f62-k3-kicker">TẢI VỀ</div>
+        <div class="f62-file" id="f62-f1">
+          <svg width="92" height="116" viewBox="0 0 92 116"><path d="M6 4 H62 L88 30 V112 H6 Z"/><path d="M62 4 V30 H88"/></svg>
+          <span class="f62-fname">PowerPoint</span>
+        </div>
+        <div class="f62-file" id="f62-f2">
+          <svg width="92" height="116" viewBox="0 0 92 116"><path d="M6 4 H62 L88 30 V112 H6 Z"/><path d="M62 4 V30 H88"/></svg>
+          <span class="f62-fname">PDF</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="62-claude-docs-slides-va-design"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+      var OUT = "power3.out", MOVE = "power2.inOut";
+      var S = 22; // half spark size
+
+      // spark anchor points (stage coords): top-right corners of the active item
+      var C1 = [[520, 200], [1170, 300], [1640, 240]];   // scene 1 cards
+      var C2 = [[520, 400], [1090, 270], [1660, 130]];   // scene 2 nodes
+
+      // initial states (before the timeline)
+      gsap.set(q("#f62-s1-spark"), { x: C1[0][0] - S, y: C1[0][1] - S, scale: 0 });
+      gsap.set(q("#f62-s2-spark"), { x: C2[0][0] - S, y: C2[0][1] - S, scale: 0 });
+      gsap.set([q("#f62-s2"), q("#f62-s3")], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light each listed slot on its cue (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f62-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f62-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f62-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: OUT, transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.1);
+      lightRail(2, 6.2);
+      lightRail(3, 9.7);
+
+      // ---- Scene 1 (0–4.8): cards cascade into their shaped slots ----
+      var s1 = q("#f62-s1");
+      tl.fromTo(qa(".f62-slot"), { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.45, ease: OUT, stagger: 0.07 }, 0.2);
+      tl.fromTo(q("#f62-kicker"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 0.31);
+      tl.fromTo(q("#f62-kicker .f62-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: OUT, transformOrigin: "50% 50%" }, 0.31);
+
+      // [card, drop start ("Claude"), name cue]
+      var cards = [["1", 0.87, 1.17], ["2", 1.47, 2.12], ["3", 3.28, 3.52]];
+      cards.forEach(function (c) {
+        var card = q("#f62-c" + c[0]);
+        tl.fromTo(card, { opacity: 0, y: -70, rotation: -4 }, { opacity: 1, y: 0, rotation: 0, duration: 0.55, ease: OUT }, c[1]);
+        tl.fromTo(qa("#f62-c" + c[0] + " .f62-part"), { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.35, ease: OUT, stagger: 0.08 }, c[1] + 0.25);
+        tl.fromTo(q("#f62-sl" + c[0]), { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "none", immediateRender: false }, c[1] + 0.3);
+        tl.fromTo(q("#f62-k" + c[0]), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, c[2]);
+      });
+      // active card: terracotta border travels with the spark
+      tl.fromTo(q("#f62-c1"), { borderColor: "rgba(240,238,230,0.10)" }, { borderColor: "#D97757", duration: 0.3, ease: "power2.out" }, 1.17);
+      tl.fromTo(q("#f62-c1"), { borderColor: "#D97757" }, { borderColor: "rgba(240,238,230,0.10)", duration: 0.3, ease: "power2.out", immediateRender: false }, 2.12);
+      tl.fromTo(q("#f62-c2"), { borderColor: "rgba(240,238,230,0.10)" }, { borderColor: "#D97757", duration: 0.3, ease: "power2.out" }, 2.12);
+      tl.fromTo(q("#f62-c2"), { borderColor: "#D97757" }, { borderColor: "rgba(240,238,230,0.10)", duration: 0.3, ease: "power2.out", immediateRender: false }, 3.52);
+      tl.fromTo(q("#f62-c3"), { borderColor: "rgba(240,238,230,0.10)" }, { borderColor: "#D97757", duration: 0.3, ease: "power2.out" }, 3.52);
+      var sp1 = q("#f62-s1-spark");
+      tl.fromTo(sp1, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: OUT, transformOrigin: "50% 50%" }, 1.17);
+      tl.to(sp1, { x: C1[1][0] - S, y: C1[1][1] - S, rotation: 90, duration: 0.35, ease: MOVE }, 1.95);
+      tl.to(sp1, { x: C1[2][0] - S, y: C1[2][1] - S, rotation: 180, duration: 0.35, ease: MOVE }, 3.35);
+      // "vào thẳng cuộc trò chuyện": the chat bubble draws around the row
+      tl.fromTo(q("#f62-bubble path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 3.94);
+      tl.fromTo(q("#f62-bubble-label"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 4.12);
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.012, duration: 1.0, ease: "none" }, 3.75);
+      tl.fromTo(s1, { opacity: 1, scale: 1.012 }, { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in", immediateRender: false }, 4.75);
+
+      // ---- Scene 2 (4.8–8.8): draft -> edit -> present staircase ----
+      var s2 = q("#f62-s2");
+      tl.fromTo(s2, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 5.0);
+      tl.fromTo(s2, { x: 0 }, { x: -14, duration: 3.6, ease: "none" }, 5.0); // slow lateral drift
+      tl.fromTo(q("#f62-n1"), { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: OUT }, 5.2);
+      tl.fromTo(q("#f62-w1a"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 5.62);
+      tl.fromTo(q("#f62-w1b"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 5.8);
+      var sp2 = q("#f62-s2-spark");
+      tl.fromTo(sp2, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: OUT, transformOrigin: "50% 50%" }, 5.62);
+      // arrow 1 + "sửa trực tiếp"
+      tl.fromTo(q("#f62-a1"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 6.93);
+      tl.fromTo(q("#f62-a1h"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.1, ease: "none" }, 7.13);
+      tl.to(sp2, { x: C2[1][0] - S, y: C2[1][1] - S, rotation: 90, duration: 0.3, ease: MOVE }, 6.93);
+      tl.fromTo(q("#f62-n2"), { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: OUT }, 7.15);
+      tl.fromTo(q("#f62-w2a"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 7.15);
+      tl.fromTo(q("#f62-w2b"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 7.31);
+      tl.fromTo(q("#f62-w2c"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 7.45);
+      tl.fromTo(q("#f62-hl"), { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "power2.out" }, 7.31);
+      tl.fromTo(q("#f62-caret"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 7.6);
+      // arrow 2 + "trình chiếu"
+      tl.fromTo(q("#f62-a2"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 7.93);
+      tl.fromTo(q("#f62-a2h"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.1, ease: "none" }, 8.13);
+      tl.to(sp2, { x: C2[2][0] - S, y: C2[2][1] - S, rotation: 180, duration: 0.3, ease: MOVE }, 7.93);
+      tl.fromTo(q("#f62-n3"), { opacity: 0, y: 40, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: OUT }, 8.17);
+      tl.fromTo(q("#f62-stand"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 8.17);
+      tl.fromTo(q("#f62-w3a"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 8.17);
+      tl.fromTo(q("#f62-w3b"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 8.35);
+      tl.fromTo(q("#f62-play"), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: OUT, transformOrigin: "50% 50%" }, 8.35);
+      tl.fromTo(s2, { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "power2.in", immediateRender: false }, 8.78);
+
+      // ---- Scene 3 (9.03–12.94): deck, download stroke, PowerPoint / PDF ----
+      var s3 = q("#f62-s3");
+      tl.fromTo(s3, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 9.03);
+      tl.fromTo(q("#f62-sh3"), { opacity: 0, x: 0, y: 0 }, { opacity: 1, x: 36, y: -28, duration: 0.55, ease: OUT }, 9.1);
+      tl.fromTo(q("#f62-sh2"), { opacity: 0, x: 0, y: 0 }, { opacity: 1, x: 18, y: -14, duration: 0.55, ease: OUT }, 9.1);
+      tl.fromTo(q("#f62-sh1"), { opacity: 0, y: 30, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: OUT }, 9.05);
+      // "tải về": tray draws, arrow stroke drops into it
+      tl.fromTo(q("#f62-k3-kicker"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 10.03);
+      tl.fromTo(q("#f62-tray"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 10.03);
+      tl.fromTo(q("#f62-dl-body"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 10.1);
+      tl.fromTo(q("#f62-dl-head"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.15, ease: "none" }, 10.45);
+      tl.fromTo(q("#f62-dl-arrow"), { y: -24 }, { y: 0, duration: 0.5, ease: OUT }, 10.1);
+      // format chips land on their words
+      tl.fromTo(q("#f62-f1"), { opacity: 0, x: -90, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.5, ease: OUT }, 10.61);
+      tl.fromTo(q("#f62-f2"), { opacity: 0, x: -90, scale: 0.96 }, { opacity: 1, x: 0, scale: 1, duration: 0.5, ease: OUT }, 11.76);
+      tl.fromTo(s3, { scale: 1 }, { scale: 1.012, duration: 3.6, ease: "none" }, 9.3); // quiet push-in under the hold
+
+      tl.to({}, { duration: 12.939 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["62-claude-docs-slides-va-design"] = tl;
+    })();
+  </script>
+</template>

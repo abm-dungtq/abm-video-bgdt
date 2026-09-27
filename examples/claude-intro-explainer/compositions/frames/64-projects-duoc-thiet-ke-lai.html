@@ -1,0 +1,416 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f64-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f64-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: resting geometry x 560, y 64–108 (copied from frame 44) */
+    #f64-rail {
+      position: absolute;
+      left: 480px;
+      top: 4px;
+      width: 1068px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      transform-origin: 50% 50%;
+    }
+    .f64-pill {
+      position: relative;
+      box-sizing: border-box;
+      width: 340px;
+      height: 44px;
+      flex: 0 0 340px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted);
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 42px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .f64-badge {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 26px;
+      height: 26px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #9A968C;
+      color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 23px;
+      text-align: center;
+      vertical-align: 3px;
+    }
+    .f64-pill-spark {
+      position: absolute;
+      right: 12px;
+      top: 9px;
+      width: 26px;
+      height: 26px;
+      opacity: 0;
+    }
+    .f64-link {
+      flex: 0 0 24px;
+      width: 24px;
+      height: 44px;
+      overflow: visible;
+    }
+
+    .f64-spark { display: block; overflow: visible; }
+    .f64-spark line { stroke: #D97757; stroke-linecap: round; }
+
+    /* ---- Scene 1: typewriter title, 60/40 left ---- */
+    #f64-chip {
+      position: absolute; left: 40px; top: 110px; height: 60px; box-sizing: border-box;
+      padding: 0 28px 0 22px; display: flex; align-items: center; gap: 14px;
+      border-radius: 30px; background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      font: 400 32px/1 "JetBrains Mono", monospace; color: #F0EEE6; white-space: nowrap; opacity: 0;
+    }
+    #f64-chip svg { width: 32px; height: 32px; overflow: visible; }
+    #f64-chip svg * { fill: none; stroke: #9A968C; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    #f64-title { position: absolute; left: 40px; top: 240px; width: 1000px; height: 360px; }
+    #f64-t1 {
+      position: absolute; left: 0; top: 0; white-space: nowrap;
+      font: 700 180px/1.08 "Lora", serif; letter-spacing: -0.01em; color: #F0EEE6;
+    }
+    #f64-t2 {
+      position: absolute; left: 6px; top: 210px; white-space: nowrap;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em; color: #F0EEE6;
+    }
+    .f64-ch { display: none; }
+    .f64-cur {
+      display: none; width: 0.07em; height: 0.82em; margin-left: 0.04em;
+      vertical-align: -0.06em; background: #F0EEE6; opacity: .85;
+    }
+    #f64-ul { position: absolute; left: 0; top: 322px; width: 520px; height: 36px; overflow: visible; }
+    #f64-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f64-kick {
+      position: absolute; left: 44px; top: 625px; display: flex; align-items: center; gap: 14px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+      white-space: nowrap; opacity: 0;
+    }
+    #f64-kick svg { width: 26px; height: 26px; }
+    #f64-kick svg line { stroke-width: 4.5; }
+    #f64-bigspark { position: absolute; left: 1200px; top: 270px; width: 260px; height: 260px; opacity: 0; }
+    #f64-bigspark line { stroke-width: 3.4; }
+
+    /* ---- Scene 2: flow (view window clips the later zoom) ---- */
+    #f64-view { position: absolute; left: 0; top: 70px; width: 1760px; height: 750px; overflow: hidden; }
+    #f64-s2 { position: absolute; left: 0; top: 0; width: 1760px; height: 750px; }
+    #f64-wires { position: absolute; left: 0; top: 0; width: 1760px; height: 750px; overflow: visible; }
+    #f64-wires path { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f64-fan { stroke: #D97757; opacity: .85; }
+    .f64-merge { stroke: #8FB8A8; }
+    #f64-bubble {
+      position: absolute; left: 60px; top: 300px; width: 280px; height: 120px; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.10); border-radius: 30px 30px 30px 6px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      font: 700 60px/1.08 "Lora", serif; color: #F0EEE6; white-space: nowrap; opacity: 0;
+    }
+    #f64-node {
+      position: absolute; left: 470px; top: 270px; width: 180px; height: 180px; box-sizing: border-box;
+      border-radius: 50%; background: #2A2926; border: 2px solid rgba(240,238,230,.16);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35); opacity: 0;
+    }
+    #f64-nspark { position: absolute; left: 515px; top: 315px; width: 90px; height: 90px; opacity: 0; }
+    #f64-nspark line { stroke-width: 3.4; }
+    #f64-nlabel {
+      position: absolute; left: 400px; top: 470px; width: 320px; text-align: center;
+      font: 600 36px/1.2 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap; opacity: 0;
+    }
+    .f64-lane {
+      position: absolute; left: 760px; width: 500px; height: 64px; box-sizing: border-box;
+      border-radius: 32px; background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      overflow: hidden; opacity: 0;
+    }
+    #f64-lane1 { top: 118px; }
+    #f64-lane2 { top: 328px; }
+    #f64-lane3 { top: 538px; }
+    .f64-fill {
+      position: absolute; left: 6px; top: 6px; width: 486px; height: 50px; border-radius: 25px;
+      background: rgba(217,119,87,.45); transform-origin: 0 50%;
+    }
+    .f64-glow {
+      position: absolute; inset: 0; border-radius: 32px; background: rgba(217,119,87,.35); opacity: 0;
+    }
+    .f64-mover { position: absolute; left: 16px; top: 25px; width: 14px; height: 14px; }
+    .f64-dot { width: 14px; height: 14px; border-radius: 50%; background: #F0EEE6; opacity: 0; }
+    .f64-stat { position: absolute; right: 12px; top: 11px; width: 40px; height: 40px; overflow: visible; }
+    .f64-spin { opacity: 0; }
+    .f64-spin circle { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; }
+    .f64-chk { opacity: 0; }
+    .f64-chk circle { fill: #8FB8A8; }
+    .f64-chk path { fill: none; stroke: #1F1E1D; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    #f64-card {
+      position: absolute; left: 1380px; top: 270px; width: 330px; height: 180px; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center; gap: 18px;
+      background: #2A2926; border: 1px solid rgba(143,184,168,.45); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      font: 700 56px/1.08 "Lora", serif; color: #F0EEE6; white-space: nowrap; opacity: 0;
+    }
+    #f64-cchk { width: 48px; height: 48px; overflow: visible; opacity: 0; }
+    #f64-cchk circle { fill: #8FB8A8; }
+    #f64-cchk path { fill: none; stroke: #1F1E1D; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ---- Scene 3: cloud around the zoomed lane ---- */
+    #f64-cloud { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f64-cloud path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f64-sess {
+      position: absolute; left: 680px; top: 262px; white-space: nowrap;
+      font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; color: #F0EEE6; opacity: 0;
+    }
+    #f64-key {
+      position: absolute; left: 300px; top: 610px; white-space: nowrap;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em; color: #F0EEE6;
+    }
+    .f64-w { display: inline-block; opacity: 0; margin-right: 26px; }
+  </style>
+
+  <div id="root" data-composition-id="64-projects-duoc-thiet-ke-lai" data-width="1920" data-height="1080" data-duration="14.852">
+    <div id="f64-ground" class="clip" data-start="0" data-duration="14.852" data-track-index="0"></div>
+    <div id="f64-stage" class="clip" data-start="0" data-duration="14.852" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f64-rail">
+        <div id="f64-p1" class="f64-pill"><span id="f64-b1" class="f64-badge">1</span>Tính năng<svg id="f64-ps1" class="f64-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f64-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f64-p2" class="f64-pill"><span id="f64-b2" class="f64-badge">2</span>Vì sao nổi bật<svg id="f64-ps2" class="f64-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f64-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f64-p3" class="f64-pill"><span id="f64-b3" class="f64-badge">3</span>Bạn được gì<svg id="f64-ps3" class="f64-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 2 / 3: flow inside a clipping view (the zoom pushes into lane 2) -->
+      <div id="f64-view">
+        <div id="f64-s2">
+          <svg id="f64-wires" viewBox="0 0 1760 750">
+            <path id="f64-cn" class="f64-fan" pathLength="1" d="M 342 362 C 380 350, 420 372, 468 360"/>
+            <path id="f64-f1" class="f64-fan" pathLength="1" d="M 652 356 C 710 352, 700 152, 758 150"/>
+            <path id="f64-f2" class="f64-fan" pathLength="1" d="M 652 360 C 690 356, 716 364, 758 360"/>
+            <path id="f64-f3" class="f64-fan" pathLength="1" d="M 652 364 C 710 368, 700 568, 758 570"/>
+            <path id="f64-m1" class="f64-merge" pathLength="1" d="M 1262 150 C 1330 152, 1316 350, 1378 356"/>
+            <path id="f64-m2" class="f64-merge" pathLength="1" d="M 1262 360 C 1300 356, 1336 364, 1378 360"/>
+            <path id="f64-m3" class="f64-merge" pathLength="1" d="M 1262 570 C 1330 568, 1316 370, 1378 364"/>
+          </svg>
+          <div id="f64-bubble">mô tả</div>
+          <div id="f64-node"></div>
+          <svg class="f64-spark" id="f64-nspark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+          <div id="f64-nlabel">điều phối</div>
+
+          <div class="f64-lane" id="f64-lane1">
+            <div class="f64-fill"></div><div class="f64-glow"></div>
+            <div class="f64-mover"><div class="f64-dot"></div></div>
+            <svg class="f64-stat f64-spin" viewBox="-20 -20 40 40"><circle r="14" pathLength="100" stroke-dasharray="62 100"/></svg>
+            <svg class="f64-stat f64-chk" viewBox="-20 -20 40 40"><circle r="18"/><path d="M -8 0 L -2 7 L 9 -6"/></svg>
+          </div>
+          <div class="f64-lane" id="f64-lane2">
+            <div class="f64-fill"></div><div class="f64-glow"></div>
+            <div class="f64-mover"><div class="f64-dot"></div></div>
+            <svg class="f64-stat f64-spin" viewBox="-20 -20 40 40"><circle r="14" pathLength="100" stroke-dasharray="62 100"/></svg>
+            <svg class="f64-stat f64-chk" viewBox="-20 -20 40 40"><circle r="18"/><path d="M -8 0 L -2 7 L 9 -6"/></svg>
+          </div>
+          <div class="f64-lane" id="f64-lane3">
+            <div class="f64-fill"></div><div class="f64-glow"></div>
+            <div class="f64-mover"><div class="f64-dot"></div></div>
+            <svg class="f64-stat f64-spin" viewBox="-20 -20 40 40"><circle r="14" pathLength="100" stroke-dasharray="62 100"/></svg>
+            <svg class="f64-stat f64-chk" viewBox="-20 -20 40 40"><circle r="18"/><path d="M -8 0 L -2 7 L 9 -6"/></svg>
+          </div>
+
+          <div id="f64-card"><svg id="f64-cchk" viewBox="-24 -24 48 48"><circle r="22"/><path d="M -10 0 L -3 8 L 11 -8"/></svg><span>kết quả</span></div>
+        </div>
+      </div>
+
+      <!-- Scene 1: date chip, typed title, big spark (right 40%) -->
+      <div id="f64-chip"><svg viewBox="0 0 32 32"><rect x="3" y="6" width="26" height="23" rx="4"/><path d="M3 13 H29 M10 2 V9 M22 2 V9"/></svg><span>17/09/2026</span></div>
+      <div id="f64-title">
+        <div id="f64-t1"><span id="f64-t1c"></span><span class="f64-cur" id="f64-cur1"></span></div>
+        <div id="f64-t2"><span id="f64-t2c"></span><span class="f64-cur" id="f64-cur2"></span></div>
+        <svg id="f64-ul" viewBox="0 0 520 36"><path pathLength="1" d="M 8 20 C 90 10, 180 28, 270 18 S 430 10, 512 20"/></svg>
+      </div>
+      <div id="f64-kick"><svg class="f64-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>CLAUDE CODE</span></div>
+      <svg class="f64-spark" id="f64-bigspark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+
+      <!-- Scene 3 overlay (unscaled): cloud outline, session label, key text -->
+      <svg id="f64-cloud" viewBox="0 0 1760 820"><path pathLength="1" d="M 260 560 C 160 560, 140 440, 220 405 C 180 300, 310 230, 400 270 C 440 170, 600 160, 660 220 C 720 140, 900 140, 950 210 C 1010 150, 1180 160, 1210 235 C 1300 200, 1440 260, 1420 350 C 1520 380, 1530 540, 1420 560 C 1100 575, 600 575, 260 560 Z"/></svg>
+      <div id="f64-sess">phiên Claude Code</div>
+      <div id="f64-key"><span class="f64-w" id="f64-k1">trên</span><span class="f64-w" id="f64-k2">đám</span><span class="f64-w" id="f64-k3">mây</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="64-projects-duoc-thiet-ke-lai"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // typed characters (hidden until typed)
+      function chars(el, text) {
+        var out = [];
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement("span");
+          s.className = "f64-ch";
+          s.textContent = text[i];
+          el.appendChild(s);
+          out.push(s);
+        }
+        return out;
+      }
+      var t1 = chars(q("#f64-t1c"), "Projects");
+      var t2 = chars(q("#f64-t2c"), "thiết kế lại");
+
+      var lanes = [q("#f64-lane1"), q("#f64-lane2"), q("#f64-lane3")];
+      var s2 = q("#f64-s2");
+
+      // initial transform setup (before the timeline)
+      gsap.set(s2, { transformOrigin: "0 0", x: 0, y: 0, scale: 1 });
+      gsap.set(q("#f64-title"), { transformOrigin: "0 0" });
+      gsap.set([q("#f64-bigspark"), q("#f64-nspark")], { transformOrigin: "50% 50%" });
+      gsap.set(qa(".f64-spin"), { transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: slots 1 and 2 light on their cues (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f64-p" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f64-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f64-ps" + n),
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.4);
+      lightRail(2, 6.1);
+
+      // ---- Scene 1 (0–3.54): typewriter ----
+      tl.fromTo(q("#f64-chip"), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.41);
+      tl.set(q("#f64-cur1"), { display: "inline-block" }, 1.6);
+      t1.forEach(function (c, i) { tl.set(c, { display: "inline" }, 1.67 + i * 0.045); });
+      tl.fromTo(q("#f64-bigspark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.55, ease: "power3.out" }, 1.67);
+      tl.to(q("#f64-bigspark"), { rotation: 30, duration: 1.33, ease: "none" }, 2.22);
+      tl.fromTo(q("#f64-kick"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.33);
+      tl.set(q("#f64-cur1"), { display: "none" }, 3.2);
+      tl.set(q("#f64-cur2"), { display: "inline-block" }, 3.2);
+      // "thiết" @3.24 · "kế" @3.40 · "lại" @3.54
+      var words = [[0, 5, 3.24], [6, 8, 3.40], [9, 12, 3.54]];
+      words.forEach(function (w) {
+        for (var i = w[0]; i < w[1]; i++) {
+          tl.set(t2[i], { display: "inline" }, w[2] + (i - w[0]) * 0.025);
+        }
+        if (w[0] > 0) { tl.set(t2[w[0] - 1], { display: "inline" }, w[2]); } // the space
+      });
+      tl.fromTo(q("#f64-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 3.4);
+      tl.set(q("#f64-cur2"), { display: "none" }, 3.8);
+
+      // shot change at 3.54: title shrinks and docks top-left, spark flies into the Claude node
+      tl.to(q("#f64-title"), { x: -40, y: -156, scale: 0.32, duration: 0.6, ease: "power2.inOut" }, 3.75);
+      tl.to(q("#f64-chip"), { opacity: 0, x: -20, duration: 0.3, ease: "power2.in" }, 3.6);
+      tl.to(q("#f64-kick"), { opacity: 0, y: 10, duration: 0.3, ease: "power2.in" }, 3.6);
+      tl.to(q("#f64-bigspark"), { x: -770, y: 30, scale: 0.346, rotation: 0, duration: 0.7, ease: "power2.inOut" }, 3.65);
+      tl.set(q("#f64-bigspark"), { opacity: 0 }, 4.35);
+      tl.set(q("#f64-nspark"), { opacity: 1 }, 4.35);
+
+      // ---- Scene 2 (3.54–10.91): flow ----
+      tl.fromTo(q("#f64-bubble"), { opacity: 0, scale: 0.7, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power3.out", transformOrigin: "0% 100%" }, 4.64);
+      tl.fromTo(q("#f64-cn"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 5.0);
+      tl.fromTo(q("#f64-node"), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 5.81);
+      // "chia việc" @6.33: fan out into three lanes
+      ["#f64-f1", "#f64-f2", "#f64-f3"].forEach(function (id, i) {
+        tl.fromTo(q(id), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.33 + i * 0.08);
+      });
+      lanes.forEach(function (ln, i) {
+        var t = 6.5 + i * 0.1;
+        tl.fromTo(ln, { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.45, ease: "power3.out", transformOrigin: "0% 50%" }, t);
+        tl.fromTo(ln.querySelector(".f64-fill"), { scaleX: 0 }, { scaleX: 0.22, duration: 1.5, ease: "power1.out" }, t + 0.3);
+        tl.fromTo(ln.querySelector(".f64-spin"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, t + 0.2);
+        tl.fromTo(ln.querySelector(".f64-spin"), { rotation: 0 }, { rotation: 900, duration: 9.85 - (t + 0.2), ease: "none" }, t + 0.2);
+      });
+      // the Claude node works (spinning spark) until the merge
+      tl.to(q("#f64-nspark"), { rotation: 540, duration: 9.6 - 6.33, ease: "none" }, 6.33);
+      tl.fromTo(q("#f64-nlabel"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.78);
+
+      // "song song" @8.30 / 8.46: lanes pulse forward together
+      lanes.forEach(function (ln) {
+        var glow = ln.querySelector(".f64-glow");
+        tl.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: 0.08, ease: "none" }, 8.30);
+        tl.to(glow, { opacity: 0.2, duration: 0.08, ease: "none" }, 8.38);
+        tl.to(glow, { opacity: 1, duration: 0.08, ease: "none" }, 8.46);
+        tl.to(glow, { opacity: 0, duration: 0.4, ease: "power2.out" }, 8.56);
+        tl.to(ln.querySelector(".f64-fill"), { scaleX: 1, duration: 1.25, ease: "power1.inOut" }, 8.30);
+        tl.fromTo(ln.querySelector(".f64-dot"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 8.30);
+        tl.fromTo(ln.querySelector(".f64-mover"), { x: 0 }, { x: 400, duration: 1.25, ease: "power1.inOut" }, 8.30);
+        tl.set(ln.querySelector(".f64-dot"), { opacity: 0 }, 9.6);
+      });
+
+      // "ghép kết quả lại" @9.60 / 9.78 / 9.96 / 10.16: merge, result card, lane ends flip to sage checks
+      ["#f64-m1", "#f64-m2", "#f64-m3"].forEach(function (id) {
+        tl.fromTo(q(id), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 9.6);
+      });
+      tl.fromTo(q("#f64-card"), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out", transformOrigin: "0% 50%" }, 9.78);
+      lanes.forEach(function (ln, i) {
+        var t = 9.85 + i * 0.07;
+        tl.set(ln.querySelector(".f64-spin"), { opacity: 0 }, t);
+        tl.fromTo(ln.querySelector(".f64-chk"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+        tl.to(ln.querySelector(".f64-fill"), { backgroundColor: "rgba(143,184,168,0.5)", duration: 0.3, ease: "power2.out" }, t);
+      });
+      tl.fromTo(q("#f64-cchk"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", transformOrigin: "50% 50%" }, 10.16);
+
+      // ---- Scene 3 (10.91–14.35): push into lane 2, cloud wraps it ----
+      tl.to(q("#f64-title"), { opacity: 0, duration: 0.35, ease: "power2.in" }, 10.91);
+      var dimmed = [q("#f64-bubble"), q("#f64-node"), q("#f64-nspark"), q("#f64-nlabel"), lanes[0], lanes[2], q("#f64-card"), q("#f64-wires")];
+      tl.to(dimmed, { opacity: 0.1, duration: 0.6, ease: "power2.inOut" }, 10.91);
+      tl.to(s2, { x: -1402, y: -452, scale: 2.2, duration: 1.0, ease: "power2.inOut" }, 10.91);
+      tl.fromTo(q("#f64-sess"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 11.71);
+      tl.fromTo(q("#f64-cloud path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 12.87);
+      tl.fromTo(q("#f64-k1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 13.09);
+      tl.fromTo(q("#f64-k2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 13.25);
+      tl.fromTo(q("#f64-k3"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 13.37);
+      // quiet hold drift
+      tl.to(s2, { x: -1420, y: -458, scale: 2.22, duration: 2.35, ease: "none" }, 11.95);
+
+      tl.to({}, { duration: 14.352 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["64-projects-duoc-thiet-ke-lai"] = tl;
+    })();
+  </script>
+</template>

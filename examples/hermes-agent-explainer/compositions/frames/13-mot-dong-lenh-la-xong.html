@@ -1,0 +1,440 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f13-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f13-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f13- */
+    #f13-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: radial-gradient(rgba(244,241,232,0.5) 1.5px, transparent 1.7px);
+      background-size: 48px 48px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 75%);
+      mask-image: radial-gradient(ellipse at 50% 55%, #000 25%, transparent 75%);
+    }
+    #f13-view {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    /* kicker */
+    #f13-kicker {
+      position: absolute;
+      right: 70px;
+      top: 48px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    /* heading group: "1 dòng lệnh" */
+    #f13-hook {
+      position: absolute;
+      left: 130px;
+      top: 0;
+      width: 420px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      transform-origin: 0% 0%;
+      z-index: 5;
+    }
+    #f13-one {
+      display: inline-block;
+      font-size: 150px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+    #f13-words {
+      position: relative;
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+    .f13-w { display: inline-block; }
+    #f13-trail {
+      position: absolute;
+      left: 0;
+      top: 100%;
+      width: 300px;
+      height: 26px;
+      overflow: visible;
+    }
+    /* laptop world (zooms out in scene 4) */
+    #f13-world {
+      position: absolute;
+      left: 60px;
+      top: 145px;
+      width: 1640px;
+      height: 700px;
+      transform-origin: 50% 0%;
+    }
+    #f13-lid {
+      position: absolute;
+      left: 78px;
+      top: 0;
+      width: 1484px;
+      height: 664px;
+    }
+    #f13-bezel {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      background: #070a1a;
+      border: 1px solid rgba(244,241,232,.14);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f13-cam {
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      width: 8px;
+      height: 8px;
+      margin-left: -4px;
+      border-radius: 50%;
+      background: #2a3160;
+    }
+    #f13-base {
+      position: absolute;
+      left: 0;
+      top: 664px;
+      width: 1640px;
+      height: 36px;
+      border-radius: 4px 4px 26px 26px;
+      background: linear-gradient(180deg, #2a3366 0%, #141b3a 70%, #0d1330 100%);
+      border: 1px solid rgba(244,241,232,.12);
+    }
+    #f13-notch {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 240px;
+      height: 10px;
+      margin-left: -120px;
+      border-radius: 0 0 10px 10px;
+      background: #0b1026;
+    }
+    #f13-screen {
+      position: absolute;
+      left: 22px;
+      top: 22px;
+      width: 1440px;
+      height: 620px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      overflow: hidden;
+    }
+    #f13-chrome {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      height: 76px;
+      display: flex;
+      align-items: stretch;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      background: rgba(11,16,38,.55);
+    }
+    #f13-dots {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 28px;
+    }
+    .f13-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .55; }
+    .f13-tab {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      white-space: pre;
+      color: var(--ink);
+      background: rgba(244,241,232,0);
+    }
+    .f13-ind {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      background: var(--cyan);
+      opacity: 0;
+    }
+    .f13-body {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 76px;
+      bottom: 0;
+      padding: 34px 36px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      line-height: 50px;
+    }
+    .f13-ln {
+      position: relative;
+      height: 50px;
+      white-space: pre;
+      color: var(--ink);
+    }
+    .f13-pr { color: var(--cyan); }
+    .f13-mu { color: var(--muted); }
+    .f13-url { color: rgba(244,241,232,.82); }
+    .f13-ok { color: var(--cyan); }
+    .f13-caret {
+      display: inline-block;
+      width: 0.55em;
+      height: 1.05em;
+      vertical-align: -0.2em;
+      background: var(--ink);
+      opacity: 0;
+    }
+    #f13-curlul {
+      position: absolute;
+      left: 2ch;
+      width: 4ch;
+      top: 44px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--cyan);
+      transform-origin: 0% 50%;
+      filter: drop-shadow(0 0 8px rgba(62,230,208,.6));
+    }
+    #f13-bar {
+      position: relative;
+      width: 560px;
+      height: 10px;
+      margin: 12px 0 18px 2ch;
+      border-radius: 5px;
+      background: rgba(244,241,232,.10);
+      overflow: hidden;
+    }
+    #f13-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 5px;
+      background: var(--cyan);
+      transform-origin: 0% 50%;
+    }
+    /* ready badge */
+    #f13-badge {
+      position: absolute;
+      left: 1390px;
+      top: 440px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 30px 16px 24px;
+      border-radius: 999px;
+      background: #0f2a3a;
+      border: 2px solid var(--cyan);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 30px rgba(62,230,208,.25);
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--cyan);
+      white-space: nowrap;
+      z-index: 6;
+    }
+  </style>
+
+  <div id="root" data-composition-id="13-mot-dong-lenh-la-xong" data-width="1920" data-height="1080" data-duration="13.624">
+    <div id="f13-ground" class="clip" data-start="0" data-duration="13.624" data-track-index="0">
+      <div id="f13-field"></div>
+    </div>
+    <div id="f13-stage" class="clip" data-start="0" data-duration="13.624" data-track-index="1">
+      <div id="f13-view">
+        <div id="f13-world">
+          <div id="f13-base"><div id="f13-notch"></div></div>
+          <div id="f13-lid">
+            <div id="f13-bezel"><div id="f13-cam"></div></div>
+            <div id="f13-screen">
+              <div id="f13-chrome">
+                <div id="f13-dots"><div class="f13-dot"></div><div class="f13-dot"></div><div class="f13-dot"></div></div>
+                <div id="f13-tab1" class="f13-tab"><span id="f13-t1a">Windows</span><span id="f13-t1b" class="f13-mu"> · PowerShell</span><div id="f13-ind1" class="f13-ind"></div></div>
+                <div id="f13-tab2" class="f13-tab"><span id="f13-t2a">Linux</span><span id="f13-t2b"> · macOS</span><div id="f13-ind2" class="f13-ind"></div></div>
+              </div>
+              <div id="f13-body1" class="f13-body">
+                <div id="f13-lnps" class="f13-ln"><span class="f13-pr">PS C:\&gt; </span><span id="f13-cmdps"></span><span id="f13-c1" class="f13-caret"></span></div>
+              </div>
+              <div id="f13-body2" class="f13-body">
+                <div id="f13-lna" class="f13-ln"><span class="f13-pr">$ </span><span id="f13-cmda"></span><span id="f13-c2" class="f13-caret"></span><div id="f13-curlul"></div></div>
+                <div id="f13-bar"><div id="f13-fill"></div></div>
+                <div id="f13-lnb" class="f13-ln"><span class="f13-pr">$ </span><span id="f13-cmdb"></span><span id="f13-c3" class="f13-caret"></span></div>
+                <div id="f13-lnc" class="f13-ln">Hermes Agent <span class="f13-ok">v0.21.3</span> <span class="f13-mu">(2026.9.14)</span></div>
+                <div id="f13-lnd" class="f13-ln"><span class="f13-pr">$ </span><span id="f13-c4" class="f13-caret"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="f13-kicker">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0 L16 8 L8 16 L0 8 Z" fill="#ffd23f"/></svg>
+          <span>Cài Hermes</span>
+        </div>
+
+        <div id="f13-hook">
+          <span id="f13-one">1</span>
+          <div id="f13-words">
+            <span id="f13-w1" class="f13-w">dòng</span> <span id="f13-w2" class="f13-w">lệnh</span>
+            <svg id="f13-trail" viewBox="0 0 300 26"><path id="f13-trailp" d="M4 12 C 80 4, 190 22, 292 9" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="300" stroke-dashoffset="300" style="filter: drop-shadow(0 0 8px rgba(255,210,63,.55));"/></svg>
+          </div>
+        </div>
+
+        <div id="f13-badge">
+          <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="#3ee6d0" stroke-width="3" opacity="0.45"/><path id="f13-check" d="M13 25 L21 33 L36 16" fill="none" stroke="#3ee6d0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="40" stroke-dashoffset="40"/></svg>
+          <span>sẵn sàng</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 13.124;
+      var tl = gsap.timeline({ paused: true });
+
+      // typed text: spans are filled from a proxy count (seek-safe, deterministic)
+      function typer(el, segs, t0, t1) {
+        var parts = [], total = 0;
+        segs.forEach(function (s) {
+          var sp = document.createElement("span");
+          if (s[1]) sp.className = s[1];
+          el.appendChild(sp);
+          parts.push({ el: sp, txt: s[0] });
+          total += s[0].length;
+        });
+        var p = { n: 0 };
+        tl.fromTo(p, { n: 0 }, { n: total, duration: t1 - t0, ease: "none", onUpdate: function () {
+          var k = Math.floor(p.n + 1e-6);
+          parts.forEach(function (o) {
+            var m = Math.max(0, Math.min(o.txt.length, k));
+            o.el.textContent = o.txt.slice(0, m);
+            k -= o.txt.length;
+          });
+        } }, t0);
+      }
+      // caret blink as discrete sets (no repeat)
+      function blink(c, t0, t1) {
+        for (var i = 0; t0 + i * 0.6 < t1 - 0.001; i++) {
+          var t = t0 + i * 0.6;
+          tl.set(c, { opacity: 1 }, t);
+          if (t + 0.3 < t1 - 0.001) tl.set(c, { opacity: 0 }, t + 0.3);
+        }
+      }
+
+      // ---- Scene 1 (0–1.72): kicker on "Cài", then "1 dòng lệnh" slams center ----
+      tl.fromTo("#f13-kicker", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f13-hook", { x: 350, y: 260, scale: 2 }, { x: 0, y: 0, scale: 1, duration: 0.6, ease: "power2.inOut" }, 1.85);
+      tl.fromTo("#f13-one", { opacity: 0, scale: 1.9 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 1.39);
+      tl.fromTo("#f13-w1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.54);
+      tl.fromTo("#f13-w2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.72);
+      tl.fromTo("#f13-trailp", { strokeDashoffset: 300 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.45);
+
+      // ---- Scene 2 (1.72–5.95): terminal rises; Windows tab, PowerShell one-liner ----
+      tl.fromTo("#f13-world", { scale: 1.1 }, { scale: 0.9, duration: 2.2, ease: "power3.out" }, 8.48);
+      tl.fromTo("#f13-screen", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 1.95);
+      tl.fromTo("#f13-bezel", { opacity: 0 }, { opacity: 1, duration: 0.9, ease: "power2.inOut" }, 8.6);
+      tl.fromTo("#f13-base", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" }, 8.7);
+
+      tl.fromTo("#f13-t1a", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.76);
+      tl.fromTo("#f13-ind1", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 2.76);
+      tl.set("#f13-tab1", { backgroundColor: "rgba(244,241,232,0.07)" }, 2.76);
+      tl.fromTo("#f13-t1b", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 3.93);
+      tl.fromTo("#f13-lnps", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.93);
+      blink("#f13-c1", 3.93, 4.67);
+      tl.set("#f13-c1", { opacity: 1 }, 4.67);
+      typer(document.getElementById("f13-cmdps"), [
+        ["iex", ""], [" (", "f13-mu"], ["irm", ""], [" ", ""],
+        ["https://hermes-agent.nousresearch.com/install.ps1", "f13-url"], [")", "f13-mu"]
+      ], 4.67, 5.85);
+      blink("#f13-c1", 5.85, 6.28);
+
+      // ---- Scene 3 (5.95–8.48): "Linux · macOS" tab flips forward; curl one-liner ----
+      tl.fromTo("#f13-tab2", { opacity: 0, rotationX: -90, transformPerspective: 600, transformOrigin: "50% 100%" },
+        { opacity: 1, rotationX: 0, transformPerspective: 600, transformOrigin: "50% 100%", duration: 0.45, ease: "power3.out" }, 6.28);
+      tl.set("#f13-tab1", { backgroundColor: "rgba(244,241,232,0)", color: "#8e93b5" }, 6.28);
+      tl.set("#f13-ind1", { opacity: 0 }, 6.28);
+      tl.set("#f13-tab2", { backgroundColor: "rgba(244,241,232,0.07)" }, 6.28);
+      tl.set("#f13-ind2", { opacity: 1 }, 6.28);
+      tl.set("#f13-body1", { opacity: 0 }, 6.28);
+      tl.fromTo("#f13-body2", { opacity: 0, rotationX: 70, transformPerspective: 1400, transformOrigin: "50% 0%" },
+        { opacity: 1, rotationX: 0, transformPerspective: 1400, transformOrigin: "50% 0%", duration: 0.55, ease: "power3.out" }, 6.28);
+      tl.fromTo("#f13-t2b", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 6.94);
+      blink("#f13-c2", 6.28, 8.28);
+      tl.set("#f13-c2", { opacity: 1 }, 8.28);
+      var cmdA = document.getElementById("f13-cmda");
+      typer(cmdA, [["curl", ""]], 8.28, 8.48);
+      typer(cmdA, [
+        [" -fsSL", "f13-mu"], [" ", ""], ["https://hermes-agent.nousresearch.com/install.sh", "f13-url"],
+        [" | ", "f13-mu"], ["bash", ""]
+      ], 8.52, 9.45);
+      tl.fromTo("#f13-curlul", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power3.out" }, 8.48);
+      blink("#f13-c2", 9.45, 9.64);
+      tl.set("#f13-c2", { opacity: 0 }, 9.64);
+
+      // ---- Scene 4 (8.48–13.12): zoom out to a laptop; install runs; hermes is ready ----
+      tl.fromTo("#f13-bar", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 9.64);
+      tl.fromTo("#f13-fill", { scaleX: 0 }, { scaleX: 1, duration: 0.8, ease: "power1.inOut" }, 9.64);
+      tl.fromTo("#f13-lnb", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 10.53);
+      blink("#f13-c3", 10.53, 10.71);
+      tl.set("#f13-c3", { opacity: 1 }, 10.71);
+      typer(document.getElementById("f13-cmdb"), [["hermes", ""], [" --version", "f13-mu"]], 10.71, 11.05);
+      tl.set("#f13-c3", { opacity: 0 }, 11.12);
+      tl.fromTo("#f13-lnc", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 11.16);
+      tl.fromTo("#f13-badge", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 11.36);
+      tl.fromTo("#f13-check", { strokeDashoffset: 40 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 11.52);
+      tl.fromTo("#f13-lnd", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 11.45);
+      blink("#f13-c4", 11.45, D - 0.02);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["13-mot-dong-lenh-la-xong"] = tl;
+    })();
+  </script>
+</template>

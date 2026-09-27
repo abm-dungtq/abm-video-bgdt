@@ -1,0 +1,322 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f65-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f65-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f65-spark { display: block; overflow: visible; }
+    .f65-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f65-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f65-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f65-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f65-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f65-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f65-scene { position: absolute; inset: 0; }
+    #f65-s1 { transform-origin: 860px 430px; }
+    #f65-s2 { transform-origin: 880px 440px; }
+    .f65-w { display: inline-block; opacity: 0; }
+
+    /* ---- scene 1: lanes -> shared board -> key text ---- */
+    .f65-chip {
+      position: absolute; box-sizing: border-box; height: 52px; padding: 0 24px;
+      display: flex; align-items: center; border-radius: 26px; opacity: 0;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      font: 600 28px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f65-c1 { left: 30px; top: 304px; }
+    #f65-c2 { left: 30px; top: 444px; }
+    #f65-c3 { left: 30px; top: 584px; }
+    #f65-lanes { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f65-lanes path { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .55; }
+
+    #f65-board {
+      position: absolute; box-sizing: border-box; left: 560px; top: 150px; width: 600px; height: 560px;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f65-board-label {
+      position: absolute; left: 48px; top: 36px; white-space: nowrap;
+      font: 700 56px/1.12 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f65-board-label .f65-w { margin-right: 16px; }
+    #f65-board-rule { position: absolute; left: 48px; top: 122px; width: 504px; height: 2px; background: rgba(240,238,230,.14); transform-origin: 0 50%; opacity: 0; }
+    #f65-board-spark { position: absolute; left: 520px; top: 50px; width: 36px; height: 36px; opacity: 0; }
+    #f65-ruled { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f65-ruled path { fill: none; stroke: #F0EEE6; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .5; }
+    #f65-ruled circle { fill: #8FB8A8; opacity: 0; }
+    .f65-lsp { position: absolute; left: 0; top: 0; width: 36px; height: 36px; opacity: 0; }
+
+    #f65-key { position: absolute; left: 1210px; top: 310px; white-space: nowrap; font: 700 64px/1.14 "Lora", serif; letter-spacing: -0.01em; }
+    #f65-key .f65-line { display: block; }
+    #f65-key .f65-w { margin-right: 20px; }
+    #f65-key-ul { position: absolute; left: 1202px; top: 452px; width: 470px; height: 40px; overflow: visible; }
+    #f65-key-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* ---- scene 2: two lanes, two repo copies, a gap ---- */
+    #f65-s2-label {
+      position: absolute; left: 0; top: 92px; width: 1760px; text-align: center; white-space: nowrap;
+      font: 700 64px/1.12 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f65-s2-label .f65-w { margin: 0 10px; }
+    #f65-k1 { left: 355px; top: 204px; }
+    #f65-k2 { left: 1235px; top: 204px; }
+    #f65-s2-lanes { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f65-s2-lanes path { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .55; }
+    #f65-s2-lanes #f65-gap { stroke: #D97757; stroke-width: 4; opacity: 1; }
+    .f65-repo {
+      position: absolute; box-sizing: border-box; top: 400px; width: 560px; height: 300px; padding: 36px 44px;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f65-r1 { left: 160px; }
+    #f65-r2 { left: 1040px; }
+    .f65-repo-head { display: flex; align-items: center; gap: 24px; }
+    .f65-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .f65-repo-t { font: 600 44px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap; opacity: 0; }
+    .f65-files { margin-top: 30px; }
+    .f65-file { display: flex; align-items: center; gap: 18px; height: 40px; }
+    .f65-file i { display: block; width: 18px; height: 22px; border: 2px solid #9A968C; border-radius: 3px; box-sizing: border-box; }
+    .f65-file b { display: block; height: 10px; border-radius: 5px; background: rgba(240,238,230,.18); }
+    .f65-file .f65-ok { width: 12px; height: 12px; border-radius: 50%; background: #8FB8A8; margin-left: auto; }
+  </style>
+
+  <div id="root" data-composition-id="65-mot-bo-nho-chung-cho-ca-du-an" data-width="1920" data-height="1080" data-duration="10.971">
+    <div id="f65-ground" class="clip" data-start="0" data-duration="10.971" data-track-index="0"></div>
+    <div id="f65-stage" class="clip" data-start="0" data-duration="10.971" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f65-rail">
+        <div id="f65-pill1" class="f65-pill"><span id="f65-b1" class="f65-badge">1</span>Tính năng<svg id="f65-ps1" class="f65-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f65-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f65-pill2" class="f65-pill"><span id="f65-b2" class="f65-badge">2</span>Vì sao nổi bật<svg id="f65-ps2" class="f65-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f65-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f65-pill3" class="f65-pill"><span id="f65-b3" class="f65-badge">3</span>Bạn được gì<svg id="f65-ps3" class="f65-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: three lanes write to / read from one shared board -->
+      <div class="f65-scene" id="f65-s1">
+        <svg id="f65-lanes" viewBox="0 0 1760 820">
+          <path id="f65-lane1" pathLength="1" d="M 222 330 C 320 322, 440 338, 560 330"/>
+          <path id="f65-lane2" pathLength="1" d="M 222 470 C 320 478, 440 462, 560 470"/>
+          <path id="f65-lane3" pathLength="1" d="M 222 610 C 320 602, 440 618, 560 610"/>
+        </svg>
+        <div class="f65-chip" id="f65-c1">luồng 1</div>
+        <div class="f65-chip" id="f65-c2">luồng 2</div>
+        <div class="f65-chip" id="f65-c3">luồng 3</div>
+
+        <div id="f65-board">
+          <div id="f65-board-label"><span class="f65-w" id="f65-bw1">một</span><span class="f65-w" id="f65-bw2">bộ</span><span class="f65-w" id="f65-bw3">nhớ</span></div>
+          <svg class="f65-spark" id="f65-board-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+          <div id="f65-board-rule"></div>
+        </div>
+        <svg id="f65-ruled" viewBox="0 0 1760 820">
+          <circle id="f65-dot1" cx="620" cy="330" r="7"/>
+          <circle id="f65-dot2" cx="620" cy="470" r="7"/>
+          <circle id="f65-dot3" cx="620" cy="610" r="7"/>
+          <path id="f65-rl1" pathLength="1" d="M 646 330 C 780 327, 950 333, 1110 330"/>
+          <path id="f65-rl2" pathLength="1" d="M 646 470 C 800 473, 960 467, 1110 470"/>
+          <path id="f65-rl3" pathLength="1" d="M 646 610 C 790 607, 940 613, 1110 610"/>
+        </svg>
+        <svg class="f65-spark f65-lsp" id="f65-sp1" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <svg class="f65-spark f65-lsp" id="f65-sp2" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <svg class="f65-spark f65-lsp" id="f65-sp3" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+
+        <div id="f65-key">
+          <span class="f65-line"><span class="f65-w" id="f65-kw1">Không</span><span class="f65-w" id="f65-kw2">phải</span></span>
+          <span class="f65-line"><span class="f65-w" id="f65-kw3">giải</span><span class="f65-w" id="f65-kw4">thích</span><span class="f65-w" id="f65-kw5">lại</span></span>
+        </div>
+        <svg id="f65-key-ul" viewBox="0 0 470 40"><path pathLength="1" d="M6 22 C 80 14, 160 30, 240 20 S 390 12, 464 22"/></svg>
+      </div>
+
+      <!-- Scene 2: two lanes side by side, each with its own repo copy -->
+      <div class="f65-scene" id="f65-s2">
+        <div id="f65-s2-label"><span class="f65-w" id="f65-lw1">bản</span><span class="f65-w" id="f65-lw2">sao</span><span class="f65-w" id="f65-lw3">riêng</span></div>
+        <svg id="f65-s2-lanes" viewBox="0 0 1760 820">
+          <path id="f65-v1" pathLength="1" d="M 440 258 C 434 300, 446 350, 440 398"/>
+          <path id="f65-v2" pathLength="1" d="M 1320 258 C 1326 300, 1314 350, 1320 398"/>
+          <path id="f65-gap" pathLength="1" d="M 880 206 C 868 320, 893 430, 876 540 S 887 690, 880 760"/>
+        </svg>
+        <div class="f65-chip" id="f65-k1">luồng 1</div>
+        <div class="f65-chip" id="f65-k2">luồng 2</div>
+
+        <div class="f65-repo" id="f65-r1">
+          <div class="f65-repo-head">
+            <svg class="f65-ico" width="68" height="56" viewBox="0 0 68 56"><path d="M4 10 Q4 4 10 4 H26 L32 11 H58 Q64 11 64 17 V46 Q64 52 58 52 H10 Q4 52 4 46 Z"/><path d="M4 20 H64"/></svg>
+            <span class="f65-repo-t" id="f65-rt1">kho mã</span>
+          </div>
+          <div class="f65-files">
+            <div class="f65-file"><i></i><b style="width:260px"></b><span class="f65-ok"></span></div>
+            <div class="f65-file"><i></i><b style="width:200px"></b><span class="f65-ok"></span></div>
+            <div class="f65-file"><i></i><b style="width:300px"></b><span class="f65-ok"></span></div>
+          </div>
+        </div>
+        <div class="f65-repo" id="f65-r2">
+          <div class="f65-repo-head">
+            <svg class="f65-ico" width="68" height="56" viewBox="0 0 68 56"><path d="M4 10 Q4 4 10 4 H26 L32 11 H58 Q64 11 64 17 V46 Q64 52 58 52 H10 Q4 52 4 46 Z"/><path d="M4 20 H64"/></svg>
+            <span class="f65-repo-t" id="f65-rt2">kho mã</span>
+          </div>
+          <div class="f65-files">
+            <div class="f65-file"><i></i><b style="width:240px"></b><span class="f65-ok"></span></div>
+            <div class="f65-file"><i></i><b style="width:290px"></b><span class="f65-ok"></span></div>
+            <div class="f65-file"><i></i><b style="width:180px"></b><span class="f65-ok"></span></div>
+          </div>
+        </div>
+        <svg class="f65-spark f65-lsp" id="f65-vs1" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <svg class="f65-spark f65-lsp" id="f65-vs2" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="65-mot-bo-nho-chung-cho-ca-du-an"]');
+      var q = function (s) { return root.querySelector(s); };
+      var S = 18; // half spark size (36 px)
+      var LANE_Y = [330, 470, 610];
+      var X_OUT = 222, X_IN = 620;
+
+      // initial states (before the timeline)
+      [1, 2, 3].forEach(function (n) {
+        gsap.set(q("#f65-sp" + n), { x: X_OUT - S, y: LANE_Y[n - 1] - S, scale: 0.6, transformOrigin: "50% 50%" });
+      });
+      gsap.set(q("#f65-vs1"), { x: 440 - S, y: 258 - S, scale: 0.6, transformOrigin: "50% 50%" });
+      gsap.set(q("#f65-vs2"), { x: 1320 - S, y: 258 - S, scale: 0.6, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: only slots 1 and 3 light (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f65-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f65-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f65-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.7);
+      lightRail(3, 4.3);
+
+      // ---- Scene 1 (0–6.78): lanes -> one shared board ----
+      var s1 = q("#f65-s1");
+      tl.fromTo(q("#f65-board"), { opacity: 0, y: 30, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.02, duration: 5.9, ease: "none" }, 0.5); // slow push-in
+
+      // "Mọi luồng công việc": three lanes arrive and run into the board
+      [[1, 0.45], [2, 0.61], [3, 0.75]].forEach(function (p) {
+        tl.fromTo(q("#f65-c" + p[0]), { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, p[1]);
+        tl.fromTo(q("#f65-lane" + p[0]), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, p[1] + 0.1);
+      });
+      // "dùng chung": board edge turns sage (connected)
+      tl.fromTo(q("#f65-board"), { borderColor: "rgba(240,238,230,0.10)" }, { borderColor: "rgba(143,184,168,0.75)", duration: 0.35, ease: "power2.out" }, 1.2);
+
+      // "một bộ nhớ" label, word by word, spark pops on "nhớ"
+      tl.fromTo(q("#f65-bw1"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.58);
+      tl.fromTo(q("#f65-bw2"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.74);
+      tl.fromTo(q("#f65-bw3"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.92);
+      tl.fromTo(q("#f65-board-rule"), { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.45, ease: "power3.out" }, 1.92);
+      tl.fromTo(q("#f65-board-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 1.92);
+
+      // each lane writes a blank ruled line (spark in), then reads one back (spark out)
+      var writeT = [2.16, 2.46, 2.76];
+      var readT = [3.24, 3.44, 3.64];
+      [1, 2, 3].forEach(function (n, i) {
+        var sp = q("#f65-sp" + n), y = LANE_Y[i] - S;
+        tl.fromTo(sp, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, writeT[i]);
+        tl.to(sp, { x: X_IN - S, y: y, scale: 1, rotation: 90, duration: 0.35, ease: "power2.inOut" }, writeT[i]);
+        tl.fromTo(q("#f65-dot" + n), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out", transformOrigin: "50% 50%" }, writeT[i] + 0.3);
+        tl.fromTo(q("#f65-rl" + n), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, writeT[i] + 0.3);
+        tl.to(sp, { x: X_OUT - S, y: y, scale: 0.8, rotation: 0, duration: 0.4, ease: "power2.inOut" }, readT[i]);
+        tl.to(sp, { opacity: 0, duration: 0.2, ease: "none" }, readT[i] + 0.4);
+      });
+
+      // "Không phải giải thích lại" beside the board + terracotta underline
+      [["#f65-kw1", 4.15], ["#f65-kw2", 4.33], ["#f65-kw3", 4.51], ["#f65-kw4", 4.71], ["#f65-kw5", 4.87]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f65-key-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 4.87);
+
+      // within-frame cut to scene 2
+      tl.to(s1, { opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.in" }, 6.48);
+
+      // ---- Scene 2 (6.78–10.471): split 50/50, own repo copy per lane ----
+      var s2 = q("#f65-s2");
+      tl.fromTo(q("#f65-k1"), { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.78);
+      tl.fromTo(q("#f65-k2"), { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.84);
+      tl.fromTo(q("#f65-v1"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.9);
+      tl.fromTo(q("#f65-v2"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.96);
+      tl.fromTo(q("#f65-r1"), { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 6.9);
+      tl.fromTo(q("#f65-r2"), { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 6.98);
+
+      // "bản sao riêng" between them, then the gap line keeps the lanes apart
+      tl.fromTo(q("#f65-lw1"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 6.78);
+      tl.fromTo(q("#f65-lw2"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.06);
+      tl.fromTo(q("#f65-lw3"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.24);
+      tl.fromTo(q("#f65-gap"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 7.24);
+
+      // "kho mã" titles
+      tl.fromTo(q("#f65-rt1"), { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 7.58);
+      tl.fromTo(q("#f65-rt2"), { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 7.58);
+
+      // hold: each lane's spark runs down its own lane in parallel ("ít khi giẫm chân nhau")
+      tl.fromTo(s2, { scale: 1 }, { scale: 1.015, duration: 2.6, ease: "none" }, 7.85);
+      [["#f65-vs1", 440], ["#f65-vs2", 1320]].forEach(function (v) {
+        var sp = q(v[0]);
+        tl.fromTo(sp, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 8.73);
+        tl.to(sp, { y: 380 - S, scale: 1, rotation: 90, duration: 0.6, ease: "power2.inOut" }, 8.73);
+      });
+
+      tl.to({}, { duration: 10.471 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["65-mot-bo-nho-chung-cho-ca-du-an"] = tl;
+    })();
+  </script>
+</template>

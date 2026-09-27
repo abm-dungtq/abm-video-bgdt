@@ -1,0 +1,446 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f40-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f40-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f40- */
+
+    .f40-w { display: inline-block; opacity: 0; }
+    .f40-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f40-panel {
+      position: absolute;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden;
+    }
+    .f40-bar {
+      position: absolute;
+      height: 12px;
+      border-radius: 6px;
+      background: rgba(240,238,230,.14);
+    }
+    .f40-dots {
+      position: absolute;
+      left: 22px;
+      top: 22px;
+      display: flex;
+      gap: 10px;
+    }
+    .f40-dots span {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(154,150,140,.55);
+    }
+
+    /* ---------- divider ---------- */
+    #f40-divider {
+      position: absolute;
+      left: 879px;
+      top: 90px;
+      width: 2px;
+      height: 640px;
+      background: rgba(240,238,230,.28);
+      border-radius: 1px;
+      opacity: 0;
+    }
+
+    /* ---------- left: browser mock (carried from frame 39) ---------- */
+    #f40-left {
+      position: absolute;
+      left: 130px;
+      top: 170px;
+      width: 620px;
+      height: 480px;
+      transform-origin: 310px 240px;
+      opacity: 0;
+    }
+    #f40-browser { left: 0; top: 0; width: 620px; height: 400px; }
+    #f40-browser .f40-url {
+      position: absolute;
+      left: 110px;
+      top: 16px;
+      width: 330px;
+      height: 26px;
+      border-radius: 13px;
+      border: 1.5px solid rgba(240,238,230,.16);
+    }
+    #f40-browser .f40-topline {
+      position: absolute;
+      left: 0;
+      top: 58px;
+      width: 620px;
+      height: 1px;
+      background: rgba(240,238,230,.10);
+    }
+    #f40-ext {
+      position: absolute;
+      left: 440px;
+      top: 59px;
+      width: 180px;
+      height: 341px;
+      border-left: 1px solid rgba(240,238,230,.14);
+      background: rgba(240,238,230,.03);
+    }
+    #f40-ext-spark {
+      position: absolute;
+      left: 22px;
+      top: 22px;
+      width: 30px;
+      height: 30px;
+      display: block;
+    }
+    #f40-left-label {
+      position: absolute;
+      left: 0;
+      top: 428px;
+      width: 620px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 32px;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ---------- right: desktop app + local files ---------- */
+    #f40-right {
+      position: absolute;
+      left: 880px;
+      top: 0;
+      width: 880px;
+      height: 820px;
+      transform-origin: 440px 410px;
+    }
+    #f40-desk { left: 50px; top: 150px; width: 360px; height: 440px; opacity: 0; }
+    #f40-desk-title {
+      position: absolute;
+      left: 0;
+      top: 58px;
+      width: 360px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.25;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    #f40-desk-title .f40-w { margin: 0 5px; }
+    #f40-desk-rule {
+      position: absolute;
+      left: 0;
+      top: 118px;
+      width: 360px;
+      height: 1px;
+      background: rgba(240,238,230,.10);
+    }
+    #f40-desk-spark {
+      position: absolute;
+      left: 34px;
+      top: 150px;
+      width: 44px;
+      height: 44px;
+      display: block;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f40-desk-input {
+      position: absolute;
+      left: 30px;
+      top: 360px;
+      width: 300px;
+      height: 50px;
+      border-radius: 25px;
+      border: 1.5px solid rgba(240,238,230,.18);
+    }
+
+    #f40-files-key {
+      position: absolute;
+      left: 520px;
+      top: 150px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 48px;
+      line-height: 1.12;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    #f40-files-key .f40-w { margin-right: 12px; }
+    .f40-file {
+      position: absolute;
+      width: 280px;
+      height: 150px;
+      opacity: 0;
+    }
+    #f40-file1 { left: 530px; top: 250px; }
+    #f40-file2 { left: 550px; top: 330px; }
+    #f40-file3 { left: 570px; top: 410px; }
+    .f40-file-icon {
+      position: absolute;
+      left: 26px;
+      top: 34px;
+      width: 60px;
+      height: 78px;
+      display: block;
+    }
+
+    #f40-chip {
+      position: absolute;
+      left: 320px;
+      top: 655px;
+      width: 300px;
+      height: 70px;
+      border-radius: 35px;
+      background: var(--surface);
+      border: 2px solid var(--cyan);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+    }
+    #f40-chip svg { width: 30px; height: 30px; display: block; }
+    #f40-chip-text {
+      font-weight: 600;
+      font-size: 30px;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    #f40-chip-text .f40-w { margin-right: 7px; }
+    #f40-links {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 880px;
+      height: 820px;
+      overflow: visible;
+    }
+
+    /* ---------- scene 2: phone ---------- */
+    #f40-phone {
+      position: absolute;
+      left: 640px;
+      top: 150px;
+      width: 300px;
+      height: 540px;
+      overflow: visible;
+    }
+    #f40-phone-key {
+      position: absolute;
+      left: 1010px;
+      top: 290px;
+      width: 620px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 72px;
+      line-height: 1.12;
+      color: var(--ink);
+    }
+    #f40-phone-key .f40-w { margin-right: 18px; }
+    #f40-phone-key .f40-hot { color: var(--gold); }
+  </style>
+
+  <div id="root" data-composition-id="40-trinh-duyet-hay-ung-dung-may-tinh" data-width="1920" data-height="1080" data-duration="12.212">
+    <div id="f40-ground" class="clip" data-start="0" data-duration="12.212" data-track-index="0"></div>
+    <div id="f40-stage" class="clip" data-start="0" data-duration="12.212" data-track-index="1">
+
+      <div id="f40-divider"></div>
+
+      <!-- left half: small muted browser page with the extension side panel -->
+      <div id="f40-left">
+        <div id="f40-browser" class="f40-panel">
+          <div class="f40-dots"><span></span><span></span><span></span></div>
+          <div class="f40-url"></div>
+          <div class="f40-topline"></div>
+          <div class="f40-bar" style="left:36px;top:96px;width:300px;height:22px;border-radius:8px;background:rgba(240,238,230,.20);"></div>
+          <div class="f40-bar" style="left:36px;top:146px;width:370px;"></div>
+          <div class="f40-bar" style="left:36px;top:174px;width:340px;"></div>
+          <div class="f40-bar" style="left:36px;top:202px;width:360px;"></div>
+          <div class="f40-bar" style="left:36px;top:250px;width:170px;height:100px;border-radius:10px;background:rgba(240,238,230,.07);"></div>
+          <div class="f40-bar" style="left:222px;top:250px;width:184px;height:100px;border-radius:10px;background:rgba(240,238,230,.07);"></div>
+          <div id="f40-ext">
+            <svg id="f40-ext-spark" viewBox="-20 -20 40 40">
+              <g stroke="rgba(240,238,230,.75)" stroke-width="4" stroke-linecap="round">
+                <line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/>
+                <line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/>
+              </g>
+            </svg>
+            <div class="f40-bar" style="left:22px;top:78px;width:130px;"></div>
+            <div class="f40-bar" style="left:22px;top:104px;width:110px;"></div>
+            <div class="f40-bar" style="left:22px;top:130px;width:124px;"></div>
+            <div class="f40-bar" style="left:22px;top:282px;width:136px;height:36px;border-radius:18px;background:transparent;border:1.5px solid rgba(240,238,230,.16);"></div>
+          </div>
+        </div>
+        <div id="f40-left-label">Claude in Chrome</div>
+      </div>
+
+      <!-- right half: desktop app + local files -->
+      <div id="f40-right">
+        <svg id="f40-links" viewBox="0 0 880 820">
+          <path id="f40-link1" class="f40-draw" pathLength="1" stroke="#D97757" stroke-width="3.5"
+                d="M 270 594 C 268 632, 276 668, 302 682 C 309 686, 314 689, 320 690"/>
+          <path id="f40-link2" class="f40-draw" pathLength="1" stroke="#D97757" stroke-width="3.5"
+                d="M 620 690 C 668 689, 700 668, 706 626 C 709 604, 707 588, 709 568"/>
+        </svg>
+
+        <div id="f40-desk" class="f40-panel">
+          <div class="f40-dots"><span></span><span></span><span></span></div>
+          <div id="f40-desk-title"><span class="f40-w">Claude</span><span class="f40-w">Desktop</span></div>
+          <div id="f40-desk-rule"></div>
+          <svg id="f40-desk-spark" viewBox="-20 -20 40 40">
+            <g stroke="#D97757" stroke-width="4" stroke-linecap="round">
+              <line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/>
+              <line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/>
+            </g>
+          </svg>
+          <div class="f40-bar" style="left:96px;top:160px;width:220px;"></div>
+          <div class="f40-bar" style="left:96px;top:186px;width:180px;"></div>
+          <div class="f40-bar" style="left:34px;top:236px;width:282px;"></div>
+          <div class="f40-bar" style="left:34px;top:262px;width:250px;"></div>
+          <div class="f40-bar" style="left:34px;top:288px;width:200px;"></div>
+          <div id="f40-desk-input"></div>
+        </div>
+
+        <div id="f40-files-key"><span class="f40-w">file</span><span class="f40-w">trên</span><span class="f40-w">máy</span></div>
+
+        <div id="f40-file1" class="f40-file f40-panel">
+          <svg class="f40-file-icon" viewBox="0 0 60 78"><path d="M 4 4 L 40 4 L 56 20 L 56 74 L 4 74 Z M 40 4 L 40 20 L 56 20" fill="none" stroke="rgba(240,238,230,.7)" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f40-bar" style="left:112px;top:52px;width:140px;background:rgba(240,238,230,.24);"></div>
+          <div class="f40-bar" style="left:112px;top:82px;width:100px;"></div>
+        </div>
+        <div id="f40-file2" class="f40-file f40-panel">
+          <svg class="f40-file-icon" viewBox="0 0 60 78"><path d="M 4 4 L 40 4 L 56 20 L 56 74 L 4 74 Z M 40 4 L 40 20 L 56 20" fill="none" stroke="rgba(240,238,230,.7)" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f40-bar" style="left:112px;top:52px;width:120px;background:rgba(240,238,230,.24);"></div>
+          <div class="f40-bar" style="left:112px;top:82px;width:130px;"></div>
+        </div>
+        <div id="f40-file3" class="f40-file f40-panel">
+          <svg class="f40-file-icon" viewBox="0 0 60 78"><path d="M 4 4 L 40 4 L 56 20 L 56 74 L 4 74 Z M 40 4 L 40 20 L 56 20" fill="none" stroke="rgba(240,238,230,.7)" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f40-bar" style="left:112px;top:52px;width:150px;background:rgba(240,238,230,.24);"></div>
+          <div class="f40-bar" style="left:112px;top:82px;width:90px;"></div>
+        </div>
+
+        <div id="f40-chip">
+          <svg viewBox="0 0 30 30">
+            <g fill="none" stroke="#8FB8A8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="11" y1="3" x2="11" y2="9"/><line x1="19" y1="3" x2="19" y2="9"/>
+              <path d="M 7 9 L 23 9 L 23 15 C 23 19.5, 19.5 22, 15 22 C 10.5 22, 7 19.5, 7 15 Z"/>
+              <line x1="15" y1="22" x2="15" y2="28"/>
+            </g>
+          </svg>
+          <div id="f40-chip-text"><span class="f40-w">tiện</span><span class="f40-w">ích</span><span class="f40-w">riêng</span></div>
+        </div>
+      </div>
+
+      <!-- scene 2: phone outline + key text -->
+      <svg id="f40-phone" viewBox="0 0 300 540">
+        <rect id="f40-phone-body" class="f40-draw" pathLength="1" x="30" y="20" width="240" height="480" rx="40" ry="40" stroke="#F0EEE6" stroke-width="4"/>
+        <path id="f40-phone-slot" class="f40-draw" pathLength="1" d="M 125 48 L 175 48" stroke="rgba(240,238,230,.6)" stroke-width="4"/>
+        <path id="f40-phone-home" class="f40-draw" pathLength="1" d="M 115 474 L 185 474" stroke="rgba(240,238,230,.6)" stroke-width="4"/>
+        <path id="f40-strike" class="f40-draw" pathLength="1" d="M 6 462 C 80 372, 150 262, 212 170 C 238 132, 266 94, 294 62" stroke="#9A968C" stroke-width="6"/>
+      </svg>
+      <div id="f40-phone-key"><span class="f40-w">chưa</span><span class="f40-w">chạy</span><span class="f40-w">trên</span><span class="f40-w f40-hot">điện</span><span class="f40-w f40-hot">thoại</span></div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var qa = function (s) { return document.querySelectorAll(s); };
+      function word(el, t) {
+        tl.fromTo(el, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, t);
+      }
+
+      /* ---- Scene 1 (0–8.39): split ---- */
+      // carried-over left half: small, muted browser page + label
+      tl.fromTo("#f40-left", { opacity: 0.2, y: 12 }, { opacity: 0.55, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#f40-divider", { opacity: 0, scaleY: 0.4 }, { opacity: 1, scaleY: 1, duration: 0.6, ease: "power3.out" }, 0.1);
+
+      // "file trên máy": three file cards fan in + key text word by word
+      var fk = qa("#f40-files-key .f40-w");
+      word(fk[0], 0.98); word(fk[1], 1.16); word(fk[2], 1.32);
+      tl.fromTo("#f40-file1", { opacity: 0, x: 120, rotation: 0 }, { opacity: 1, x: 0, rotation: -5, duration: 0.55, ease: "power3.out" }, 0.98);
+      tl.fromTo("#f40-file2", { opacity: 0, x: 120, rotation: 0 }, { opacity: 1, x: 0, rotation: 1, duration: 0.55, ease: "power3.out" }, 1.16);
+      tl.fromTo("#f40-file3", { opacity: 0, x: 120, rotation: 0 }, { opacity: 1, x: 0, rotation: 5, duration: 0.55, ease: "power3.out" }, 1.32);
+
+      // "Claude Desktop": panel rises beside the files, spark pops on "Desktop"
+      tl.fromTo("#f40-desk", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 2.69);
+      var dk = qa("#f40-desk-title .f40-w");
+      word(dk[0], 2.69); word(dk[1], 3.03);
+      tl.fromTo("#f40-desk-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 3.03);
+
+      // "tiện ích riêng": plug chip snaps between panel and files, joined by the stroke
+      tl.fromTo("#f40-chip", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 4.93);
+      var ck = qa("#f40-chip-text .f40-w");
+      word(ck[0], 4.93); word(ck[1], 5.14); word(ck[2], 5.26);
+      tl.fromTo("#f40-link1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 4.98);
+      tl.fromTo("#f40-link2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.26);
+      // HELD BEAT: 5.56 -> 8.39 the whole split holds still
+
+      /* ---- Scene 2 (8.39–11.71): zoom ---- */
+      // push-in on the left half; right half recedes, divider fades
+      tl.to("#f40-right", { opacity: 0, scale: 0.94, duration: 0.5, ease: "power2.inOut" }, 8.39);
+      tl.to("#f40-divider", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 8.39);
+      tl.to("#f40-left", { x: 440, scale: 1.3, opacity: 1, duration: 0.9, ease: "power2.inOut" }, 8.39);
+      tl.to("#f40-left-label", { color: "#F0EEE6", duration: 0.3, ease: "power2.inOut" }, 8.9);
+
+      // browser mock slides aside, phone outline draws on
+      tl.to("#f40-left", { x: -110, scale: 0.8, opacity: 0.6, duration: 0.6, ease: "power2.inOut" }, 9.72);
+      tl.to("#f40-left-label", { color: "#9A968C", duration: 0.3, ease: "power2.inOut" }, 9.9);
+      tl.fromTo("#f40-phone-body", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 10.03);
+      tl.fromTo("#f40-phone-slot", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 10.45);
+      tl.fromTo("#f40-phone-home", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 10.5);
+
+      // key text lands word by word, "điện thoại" completes on its cue
+      var pk = qa("#f40-phone-key .f40-w");
+      word(pk[0], 10.03); word(pk[1], 10.27); word(pk[2], 10.47); word(pk[3], 10.59); word(pk[4], 10.73);
+
+      // muted cream strike across the phone, then hold
+      tl.fromTo("#f40-strike", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.9);
+
+      tl.to({}, { duration: 11.712 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["40-trinh-duyet-hay-ung-dung-may-tinh"] = tl;
+    })();
+  </script>
+</template>

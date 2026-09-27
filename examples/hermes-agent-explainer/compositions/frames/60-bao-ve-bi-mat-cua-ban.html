@@ -1,0 +1,561 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f60-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(314, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f60-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f60- */
+    .f60-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; }
+
+    /* background field: dim dot grid (~40%) */
+    #f60-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: radial-gradient(circle, rgba(142, 147, 181, 0.35) 1.6px, transparent 2px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 75%);
+    }
+
+    /* kickers */
+    .f60-kicker {
+      position: absolute;
+      left: 0;
+      top: 20px;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f60-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+    #f60-kick3 b { color: var(--warn); }
+
+    /* ---------- scene 1: locked file cards ---------- */
+    #f60-cam1 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 380px;
+    }
+    .f60-card {
+      position: absolute;
+      top: 200px;
+      width: 460px;
+      height: 340px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 2px solid rgba(244, 241, 232, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f60-card1 { left: 100px; }
+    #f60-card2 { left: 650px; }
+    #f60-card3 { left: 1200px; }
+    .f60-glyph {
+      position: absolute;
+      left: 36px;
+      top: 34px;
+      width: 58px;
+      height: 72px;
+    }
+    .f60-fname {
+      position: absolute;
+      left: 116px;
+      top: 42px;
+      font-size: 44px;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f60-skel {
+      position: absolute;
+      left: 40px;
+      height: 16px;
+      border-radius: 8px;
+      background: rgba(142, 147, 181, 0.32);
+    }
+    .f60-tint {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255, 107, 107, 0.05), rgba(255, 107, 107, 0.16));
+      opacity: 0;
+    }
+    .f60-nopen {
+      position: absolute;
+      left: 380px;
+      top: 30px;
+      width: 50px;
+      height: 50px;
+      opacity: 0;
+    }
+    .f60-lock {
+      position: absolute;
+      left: 170px;
+      top: 138px;
+      width: 120px;
+      height: 150px;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    .f60-flash {
+      position: absolute;
+      left: 150px;
+      top: 133px;
+      width: 160px;
+      height: 160px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 4px solid var(--gold);
+      opacity: 0;
+    }
+
+    /* ---------- scene 2: log line redaction ---------- */
+    #f60-cam2 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 620px 400px;
+    }
+    #f60-panel {
+      position: absolute;
+      left: 180px;
+      top: 150px;
+      width: 1400px;
+      height: 470px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f60-bar-top {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1398px;
+      height: 64px;
+      border-bottom: 1px solid rgba(244, 241, 232, 0.08);
+    }
+    .f60-dot {
+      position: absolute;
+      top: 24px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(142, 147, 181, 0.55);
+    }
+    #f60-ptitle {
+      position: absolute;
+      left: 0;
+      top: 14px;
+      width: 1398px;
+      text-align: center;
+      font-size: 28px;
+      color: var(--muted);
+    }
+    .f60-row {
+      position: absolute;
+      left: 24px;
+      width: 1350px;
+      height: 64px;
+      border-radius: 10px;
+      opacity: 0;
+    }
+    #f60-row-warn { top: 180px; background: rgba(255, 107, 107, 0.12); box-shadow: inset 5px 0 0 var(--warn); }
+    #f60-row-ok { top: 180px; background: rgba(62, 230, 208, 0.1); box-shadow: inset 5px 0 0 var(--cyan); }
+    .f60-line {
+      position: absolute;
+      left: 56px;
+      font-size: 32px;
+      line-height: 64px;
+      height: 64px;
+      white-space: nowrap;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f60-l1 { top: 100px; color: var(--muted); }
+    #f60-l2 { top: 180px; }
+    #f60-l3 { top: 260px; color: var(--muted); }
+    .f60-cy { color: var(--cyan); }
+    #f60-key {
+      position: relative;
+      display: inline-block;
+      color: var(--warn);
+    }
+    #f60-redact {
+      position: absolute;
+      left: -8px;
+      top: 10px;
+      width: 312px;
+      height: 44px;
+      border-radius: 6px;
+      background: var(--ink);
+      box-shadow: 0 0 18px rgba(255, 210, 63, 0.45);
+      transform-origin: 0 50%;
+      opacity: 0;
+    }
+    #f60-redact-edge {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 8px;
+      height: 44px;
+      border-radius: 4px;
+      background: var(--gold);
+    }
+    #f60-chip {
+      position: absolute;
+      left: 610px;
+      top: 188px;
+      height: 48px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      border: 2px solid var(--warn);
+      border-radius: 24px;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 44px;
+      color: var(--warn);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f60-saved {
+      position: absolute;
+      left: 1040px;
+      top: 372px;
+      height: 60px;
+      padding: 0 26px;
+      box-sizing: border-box;
+      border: 2px solid var(--cyan);
+      border-radius: 30px;
+      background: rgba(62, 230, 208, 0.08);
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 56px;
+      color: var(--cyan);
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    /* ---------- scene 3: local hub ---------- */
+    #f60-cam3 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 400px;
+    }
+    #f60-hubsvg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f60-halo {
+      position: absolute;
+      left: 320px;
+      top: 80px;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 210, 63, 0.14), transparent);
+      opacity: 0;
+    }
+    #f60-disk {
+      position: absolute;
+      left: 520px;
+      top: 262px;
+      width: 200px;
+      height: 160px;
+      opacity: 0;
+    }
+    #f60-disklabel {
+      position: absolute;
+      left: 380px;
+      top: 440px;
+      width: 480px;
+      text-align: center;
+      font-size: 40px;
+      line-height: 1.2;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f60-orbit {
+      position: absolute;
+      left: 380px;
+      top: 140px;
+      width: 480px;
+      height: 480px;
+    }
+    .f60-data {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 14px rgba(62, 230, 208, 0.7);
+      opacity: 0;
+    }
+    #f60-badgerow {
+      position: absolute;
+      left: 0;
+      top: 676px;
+      width: 1240px;
+      height: 80px;
+      text-align: center;
+    }
+    #f60-badge {
+      display: inline-block;
+      height: 76px;
+      padding: 0 34px 0 26px;
+      box-sizing: border-box;
+      border: 3px solid var(--cyan);
+      border-radius: 38px;
+      background: var(--surface);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 68px;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f60-badge svg { display: inline-block; width: 36px; height: 36px; margin-right: 14px; vertical-align: -5px; }
+    .f60-w { display: inline-block; opacity: 0; margin-right: 12px; }
+    #f60-w3 { margin-right: 0; }
+    #f60-cloud {
+      position: absolute;
+      left: 1300px;
+      top: 290px;
+      width: 280px;
+      height: 180px;
+      opacity: 0;
+    }
+    .f60-arr {
+      position: absolute;
+      top: 350px;
+      height: 60px;
+      overflow: visible;
+    }
+    #f60-arrA { left: 880px; width: 200px; }
+    #f60-arrB { left: 1110px; width: 190px; }
+    #f60-cut {
+      position: absolute;
+      left: 1055px;
+      top: 340px;
+      width: 80px;
+      height: 80px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.6));
+    }
+  </style>
+
+  <div id="root" data-composition-id="60-bao-ve-bi-mat-cua-ban" data-width="1920" data-height="1080" data-duration="12.308">
+    <div id="f60-ground" class="clip" data-start="0" data-duration="12.308" data-track-index="0"></div>
+    <div id="f60-stage" class="clip" data-start="0" data-duration="12.308" data-track-index="1">
+      <div id="f60-field"></div>
+
+      <div id="f60-kick1" class="f60-kicker f60-mono"><b>◆</b>Không cho sửa</div>
+      <div id="f60-kick2" class="f60-kicker f60-mono"><b>◆</b>Tự che</div>
+      <div id="f60-kick3" class="f60-kicker f60-mono"><b>◆</b>Không gửi đi</div>
+
+      <!-- scene 1: file cards + padlocks -->
+      <div id="f60-cam1">
+        <div id="f60-card1" class="f60-card">
+          <div class="f60-tint"></div>
+          <svg class="f60-glyph" viewBox="0 0 58 72"><path d="M4 4 H38 L54 20 V68 H4 Z" fill="none" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M38 4 V20 H54" fill="none" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f60-fname f60-mono">.env</div>
+          <div class="f60-skel" style="top:160px;width:300px"></div>
+          <div class="f60-skel" style="top:204px;width:230px"></div>
+          <div class="f60-skel" style="top:248px;width:330px"></div>
+          <div class="f60-skel" style="top:292px;width:190px"></div>
+          <svg class="f60-nopen" viewBox="0 0 50 50"><path d="M12 38 L34 16 L40 22 L18 44 H12 Z" fill="none" stroke="#FF6B6B" stroke-width="3" stroke-linejoin="round"/><path d="M6 6 L44 44" stroke="#FF6B6B" stroke-width="4" stroke-linecap="round"/></svg>
+          <div class="f60-flash"></div>
+          <svg class="f60-lock" viewBox="0 0 120 150"><g class="f60-shackle"><path d="M30 72 V44 A30 30 0 0 1 90 44 V72" fill="none" stroke="#FFD23F" stroke-width="12" stroke-linecap="round"/></g><rect x="10" y="66" width="100" height="80" rx="14" fill="#FFD23F"/><circle cx="60" cy="98" r="10" fill="#0B1026"/><rect x="55" y="100" width="10" height="24" rx="4" fill="#0B1026"/></svg>
+        </div>
+        <div id="f60-card2" class="f60-card">
+          <div class="f60-tint"></div>
+          <svg class="f60-glyph" viewBox="0 0 58 72"><path d="M4 4 H38 L54 20 V68 H4 Z" fill="none" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/><path d="M38 4 V20 H54" fill="none" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f60-fname f60-mono">auth.json</div>
+          <div class="f60-skel" style="top:160px;width:210px"></div>
+          <div class="f60-skel" style="top:204px;width:320px"></div>
+          <div class="f60-skel" style="top:248px;width:260px"></div>
+          <div class="f60-skel" style="top:292px;width:150px"></div>
+          <svg class="f60-nopen" viewBox="0 0 50 50"><path d="M12 38 L34 16 L40 22 L18 44 H12 Z" fill="none" stroke="#FF6B6B" stroke-width="3" stroke-linejoin="round"/><path d="M6 6 L44 44" stroke="#FF6B6B" stroke-width="4" stroke-linecap="round"/></svg>
+          <div class="f60-flash"></div>
+          <svg class="f60-lock" viewBox="0 0 120 150"><g class="f60-shackle"><path d="M30 72 V44 A30 30 0 0 1 90 44 V72" fill="none" stroke="#FFD23F" stroke-width="12" stroke-linecap="round"/></g><rect x="10" y="66" width="100" height="80" rx="14" fill="#FFD23F"/><circle cx="60" cy="98" r="10" fill="#0B1026"/><rect x="55" y="100" width="10" height="24" rx="4" fill="#0B1026"/></svg>
+        </div>
+        <div id="f60-card3" class="f60-card">
+          <div class="f60-tint"></div>
+          <svg class="f60-glyph" viewBox="0 0 58 72"><path d="M4 14 H22 L28 22 H54 V66 H4 Z" fill="none" stroke="#8E93B5" stroke-width="3" stroke-linejoin="round"/></svg>
+          <div class="f60-fname f60-mono">~/.ssh/</div>
+          <div class="f60-skel" style="top:160px;width:280px"></div>
+          <div class="f60-skel" style="top:204px;width:200px"></div>
+          <div class="f60-skel" style="top:248px;width:310px"></div>
+          <div class="f60-skel" style="top:292px;width:240px"></div>
+          <svg class="f60-nopen" viewBox="0 0 50 50"><path d="M12 38 L34 16 L40 22 L18 44 H12 Z" fill="none" stroke="#FF6B6B" stroke-width="3" stroke-linejoin="round"/><path d="M6 6 L44 44" stroke="#FF6B6B" stroke-width="4" stroke-linecap="round"/></svg>
+          <div class="f60-flash"></div>
+          <svg class="f60-lock" viewBox="0 0 120 150"><g class="f60-shackle"><path d="M30 72 V44 A30 30 0 0 1 90 44 V72" fill="none" stroke="#FFD23F" stroke-width="12" stroke-linecap="round"/></g><rect x="10" y="66" width="100" height="80" rx="14" fill="#FFD23F"/><circle cx="60" cy="98" r="10" fill="#0B1026"/><rect x="55" y="100" width="10" height="24" rx="4" fill="#0B1026"/></svg>
+        </div>
+      </div>
+
+      <!-- scene 2: log panel, key-like string redacted -->
+      <div id="f60-cam2">
+        <div id="f60-panel">
+          <div id="f60-bar-top">
+            <div class="f60-dot" style="left:26px"></div>
+            <div class="f60-dot" style="left:54px"></div>
+            <div class="f60-dot" style="left:82px"></div>
+            <div id="f60-ptitle" class="f60-mono">nhật ký</div>
+          </div>
+          <div id="f60-row-warn" class="f60-row"></div>
+          <div id="f60-row-ok" class="f60-row"></div>
+          <div id="f60-l1" class="f60-line f60-mono"><span class="f60-cy">›</span> terminal</div>
+          <div id="f60-l2" class="f60-line f60-mono">API_KEY=<span id="f60-key">sk-••••••••••••<span id="f60-redact"><span id="f60-redact-edge"></span></span></span></div>
+          <div id="f60-l3" class="f60-line f60-mono"><span class="f60-cy">›</span> web_search</div>
+          <div id="f60-chip">← khóa API</div>
+          <div id="f60-saved">✓ ghi nhật ký</div>
+        </div>
+      </div>
+
+      <!-- scene 3: local hub ~/.hermes/ -->
+      <div id="f60-cam3">
+        <div id="f60-halo"></div>
+        <svg id="f60-hubsvg" viewBox="0 0 1760 820">
+          <circle id="f60-ring" cx="620" cy="380" r="240" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="1508" stroke-dashoffset="1508" transform="rotate(-90 620 380)"/>
+        </svg>
+        <div id="f60-orbit">
+          <div class="f60-data" style="left:470px;top:230px"></div>
+          <div class="f60-data" style="left:350px;top:438px"></div>
+          <div class="f60-data" style="left:110px;top:438px"></div>
+          <div class="f60-data" style="left:-10px;top:230px"></div>
+          <div class="f60-data" style="left:110px;top:22px"></div>
+          <div class="f60-data" style="left:350px;top:22px"></div>
+        </div>
+        <svg id="f60-disk" viewBox="0 0 200 160"><path d="M20 30 V122 A80 22 0 0 0 180 122 V30" fill="#141B3A" stroke="#F4F1E8" stroke-width="4"/><ellipse cx="100" cy="30" rx="80" ry="22" fill="#1C2550" stroke="#F4F1E8" stroke-width="4"/><path d="M20 76 A80 22 0 0 0 180 76" fill="none" stroke="rgba(244,241,232,0.45)" stroke-width="3"/><circle cx="150" cy="108" r="7" fill="#3EE6D0"/></svg>
+        <div id="f60-disklabel" class="f60-mono">~/.hermes/</div>
+        <div id="f60-badgerow">
+          <div id="f60-badge"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="#3EE6D0" stroke-width="3"/><path d="M10 18 L16 24 L27 12" fill="none" stroke="#3EE6D0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="f60-w1" class="f60-w">lưu</span><span id="f60-w2" class="f60-w">trên</span><span id="f60-w3" class="f60-w">máy</span></div>
+        </div>
+        <svg id="f60-cloud" viewBox="0 0 280 180"><path d="M70 150 H214 A48 48 0 0 0 206 55 A70 70 0 0 0 76 64 A44 44 0 0 0 70 150 Z" fill="none" stroke="#8E93B5" stroke-width="5" stroke-linejoin="round"/></svg>
+        <svg id="f60-arrA" class="f60-arr" viewBox="0 0 200 60"><path id="f60-arrApath" d="M4 30 H196" fill="none" stroke="#8E93B5" stroke-width="5" stroke-linecap="round" stroke-dasharray="192" stroke-dashoffset="192"/></svg>
+        <svg id="f60-arrB" class="f60-arr" viewBox="0 0 190 60"><path id="f60-arrBpath" d="M4 30 H178 M160 14 L180 30 L160 46" fill="none" stroke="#8E93B5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="232" stroke-dashoffset="232"/></svg>
+        <svg id="f60-cut" viewBox="0 0 80 80"><path d="M14 14 L66 66 M66 14 L14 66" stroke="#FF6B6B" stroke-width="9" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (s) { return document.querySelector(s); };
+      var cards = [q("#f60-card1"), q("#f60-card2"), q("#f60-card3")];
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0–3.01): cards assemble, padlocks snap ---------- */
+      cards.forEach(function (c, i) {
+        tl.fromTo(c, { opacity: 0, y: 44, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, 0.3 + i * 0.15);
+      });
+      // "sửa"
+      tl.fromTo("#f60-kick1", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.1);
+
+      // lock snaps: .env on "mật" 1.94, auth.json on "khẩu" 2.10, ~/.ssh/ on "khóa" 3.01
+      [1.94, 2.1, 3.01].forEach(function (t, i) {
+        var c = cards[i];
+        var lock = c.querySelector(".f60-lock");
+        var shackle = c.querySelector(".f60-shackle");
+        tl.fromTo(lock, { opacity: 0, y: -80, scale: 1.3 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "power3.out" }, t);
+        tl.fromTo(shackle, { y: -16 }, { y: 0, duration: 0.12, ease: "power2.in" }, t + 0.26);
+        tl.fromTo(c.querySelector(".f60-flash"), { opacity: 0.9, scale: 0.6 }, { opacity: 0, scale: 1.7, duration: 0.5, ease: "power2.out" }, t + 0.28);
+        tl.fromTo(c.querySelector(".f60-tint"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, t + 0.2);
+        tl.to(c, { borderColor: "rgba(255, 107, 107, 0.75)", duration: 0.3, ease: "power2.out" }, t + 0.2);
+        tl.fromTo(c.querySelector(".f60-nopen"), { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t + 0.26);
+      });
+
+      /* ---------- Scene 2 (3.01–7.87): zoom-through onto the log line ---------- */
+      tl.to("#f60-kick1", { opacity: 0, duration: 0.3, ease: "power2.in" }, 3.4);
+      tl.to("#f60-cam1", { scale: 1.1, opacity: 0, filter: "blur(10px)", duration: 0.45, ease: "power2.in" }, 3.4);
+      tl.fromTo("#f60-panel", { opacity: 0, scale: 0.88, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 3.6);
+      tl.fromTo("#f60-l1", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.8);
+      tl.fromTo("#f60-l2", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.9);
+      tl.fromTo("#f60-l3", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.0);
+      // slow camera push onto the key line
+      tl.fromTo("#f60-cam2", { scale: 1 }, { scale: 1.06, duration: 3.75, ease: "power1.inOut" }, 4.05);
+      // "Nó" — the dangerous line lights up
+      tl.fromTo("#f60-row-warn", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 4.05);
+      // "tự"
+      tl.fromTo("#f60-kick2", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.37);
+      // "che" — redaction bar sweeps across the key-like string
+      tl.fromTo("#f60-redact", { opacity: 1, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 4.55);
+      // "khóa API"
+      tl.fromTo("#f60-chip", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 5.34);
+      // "API" — line is safe now
+      tl.to("#f60-row-warn", { opacity: 0, duration: 0.4, ease: "power2.inOut" }, 5.8);
+      tl.fromTo("#f60-row-ok", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 5.8);
+      // "ghi vào nhật ký"
+      tl.fromTo("#f60-saved", { opacity: 0, y: 18, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 7.07);
+
+      /* ---------- Scene 3 (7.87–11.81): local hub ---------- */
+      tl.to("#f60-kick2", { opacity: 0, duration: 0.3, ease: "power2.in" }, 7.87);
+      tl.to("#f60-cam2", { scale: 1.16, opacity: 0, filter: "blur(10px)", duration: 0.4, ease: "power2.in" }, 7.87);
+      tl.fromTo("#f60-disk", { opacity: 0, scale: 0.8, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 8.05);
+      tl.fromTo("#f60-disklabel", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 8.2);
+      tl.fromTo("#f60-halo", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.8, ease: "power2.out" }, 8.1);
+      // "dữ liệu" — gold orbit draws on, data dots join and orbit
+      tl.fromTo("#f60-ring", { attr: { "stroke-dashoffset": 1508 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.9, ease: "none" }, 8.47);
+      tl.fromTo(".f60-data", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out", stagger: 0.1 }, 8.5);
+      tl.fromTo("#f60-orbit", { rotation: 0 }, { rotation: 75, duration: 3.3, ease: "none" }, 8.5);
+      // "lưu trên máy" badge, word by word
+      tl.fromTo("#f60-badge", { opacity: 0, y: 20, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, 9.24);
+      tl.fromTo("#f60-w1", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 9.3);
+      tl.fromTo("#f60-w2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 9.46);
+      tl.fromTo("#f60-w3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 9.62);
+      // "không gửi đi đâu cả" — outward arrow drawn, then cut
+      tl.fromTo("#f60-kick3", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 10.22);
+      tl.fromTo("#f60-cloud", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 10.22);
+      tl.fromTo("#f60-arrApath", { attr: { "stroke-dashoffset": 192 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 10.25);
+      tl.fromTo("#f60-arrBpath", { attr: { "stroke-dashoffset": 232 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 10.44);
+      tl.fromTo("#f60-cut", { opacity: 0, scale: 1.6, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.25, ease: "power3.out" }, 10.6);
+      tl.to("#f60-arrA", { x: -14, duration: 0.3, ease: "power2.out" }, 10.66);
+      tl.to("#f60-arrB", { x: 22, opacity: 0.3, duration: 0.3, ease: "power2.out" }, 10.66);
+      tl.to("#f60-cloud", { opacity: 0.3, duration: 0.35, ease: "power2.out" }, 10.73);
+      // hold: subtle drift
+      tl.fromTo("#f60-cam3", { scale: 1 }, { scale: 1.015, duration: 0.8, ease: "power1.out" }, 11.0);
+
+      tl.to({}, { duration: 11.808 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["60-bao-ve-bi-mat-cua-ban"] = tl;
+    })();
+  </script>
+</template>

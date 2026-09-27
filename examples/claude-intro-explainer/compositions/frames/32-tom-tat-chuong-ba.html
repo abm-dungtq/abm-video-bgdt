@@ -1,0 +1,239 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f32-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f32-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f32-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f32-spk { display: inline-block; }
+    .f32-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* pinned anchor (left column, never moves after landing) */
+    #f32-anchor { position: absolute; left: 30px; top: 300px; width: 420px; height: 200px; }
+    #f32-anchor-spark {
+      position: absolute; left: 0; top: 0; width: 56px; height: 56px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f32-anchor-word {
+      position: absolute; left: 0; top: 76px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+
+    /* scene 1: three recap rows stack in the adjacent slot */
+    #f32-list { position: absolute; left: 560px; top: 120px; width: 1120px; height: 510px; }
+    .f32-row {
+      position: absolute; left: 0; width: 1120px; height: 150px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f32-row1 { top: 0; }
+    #f32-row2 { top: 180px; }
+    #f32-row3 { top: 360px; }
+    .f32-ring { position: absolute; left: 40px; top: 39px; width: 72px; height: 72px; overflow: visible; }
+    .f32-label {
+      position: absolute; left: 146px; top: 36px; height: 78px;
+      display: flex; align-items: baseline; gap: 26px; white-space: nowrap;
+    }
+    .f32-name { font-size: 56px; font-weight: 600; line-height: 1.3; }
+    .f32-verb { font-size: 42px; font-weight: 500; line-height: 1.3; color: var(--muted); opacity: 0; }
+    .f32-num {
+      position: absolute; right: 44px; top: 44px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 48px; line-height: 1.2;
+      color: var(--muted);
+    }
+
+    /* scene 2: the hub — three tools on a ring around "trợ lý riêng" */
+    .f32-node {
+      position: absolute; height: 80px; width: 300px; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface);
+      border: 1.5px solid rgba(143,184,168,.55);
+      border-radius: 40px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      font-size: 44px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+      opacity: 0;
+    }
+    #f32-node1 { left: 970px; top: 20px; }   /* centre (1120, 60)  */
+    #f32-node2 { left: 1256px; top: 515px; } /* centre (1406, 555) */
+    #f32-node3 { left: 684px; top: 515px; }  /* centre (834, 555)  */
+    #f32-center {
+      position: absolute; left: 820px; top: 300px; width: 600px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 84px; line-height: 1.12;
+      letter-spacing: -0.01em; white-space: nowrap; color: var(--gold);
+    }
+    .f32-w { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="32-tom-tat-chuong-ba" data-width="1920" data-height="1080" data-duration="10.775">
+    <div id="f32-ground" class="clip" data-start="0" data-duration="10.775" data-track-index="0"></div>
+    <div id="f32-stage" class="clip" data-start="0" data-duration="10.775" data-track-index="1">
+
+      <!-- hand-drawn divider between the pinned anchor and the changing region -->
+      <svg class="f32-svgfull" viewBox="0 0 1760 820">
+        <path id="f32-divider" d="M482 90 C 476 250, 488 420, 478 560 S 484 700, 480 740" fill="none" stroke="#F0EEE6" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <!-- pinned anchor -->
+      <div id="f32-anchor">
+        <div id="f32-anchor-spark" class="f32-spk f32-spk-gold"></div>
+        <div id="f32-anchor-word">Tóm lại</div>
+      </div>
+
+      <!-- scene 1: rows stack, never swap -->
+      <div id="f32-list">
+        <div id="f32-row1" class="f32-row">
+          <svg class="f32-ring" viewBox="0 0 72 72">
+            <circle id="f32-ring1" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f32-tick1" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f32-label"><span class="f32-name">Projects</span><span id="f32-verb1" class="f32-verb">sắp xếp</span></div>
+          <div id="f32-num1" class="f32-num">1</div>
+        </div>
+        <div id="f32-row2" class="f32-row">
+          <svg class="f32-ring" viewBox="0 0 72 72">
+            <circle id="f32-ring2" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f32-tick2" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f32-label"><span class="f32-name">Artifacts</span><span id="f32-verb2" class="f32-verb">tạo sản phẩm</span></div>
+          <div id="f32-num2" class="f32-num">2</div>
+        </div>
+        <div id="f32-row3" class="f32-row">
+          <svg class="f32-ring" viewBox="0 0 72 72">
+            <circle id="f32-ring3" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f32-tick3" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f32-label"><span class="f32-name">bộ nhớ</span><span id="f32-verb3" class="f32-verb">hiểu bạn</span></div>
+          <div id="f32-num3" class="f32-num">3</div>
+        </div>
+      </div>
+
+      <!-- scene 2: hub ring + hand-drawn spokes -->
+      <svg class="f32-svgfull" viewBox="0 0 1760 820">
+        <circle id="f32-orbit" cx="1120" cy="390" r="330" fill="none" stroke="#F0EEE6" stroke-opacity="0.12" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 1120 390)"/>
+        <g id="f32-spokes" stroke="#8FB8A8" stroke-opacity="0.6" stroke-width="3.5" stroke-linecap="round" fill="none">
+          <path id="f32-spoke1" d="M1120 270 C 1114 220, 1126 170, 1119 106" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f32-spoke2" d="M1236 442 C 1275 464, 1312 486, 1352 512" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f32-spoke3" d="M1004 442 C 965 464, 928 486, 888 512" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </g>
+        <path id="f32-under" d="M930 412 C 1010 424, 1110 406, 1210 418 S 1290 420, 1310 412" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+      <div id="f32-node1" class="f32-node">Projects</div>
+      <div id="f32-node2" class="f32-node">Artifacts</div>
+      <div id="f32-node3" class="f32-node">bộ nhớ</div>
+      <div id="f32-center"><span id="f32-w1" class="f32-w">trợ</span> <span id="f32-w2" class="f32-w">lý</span> <span id="f32-w3" class="f32-w">riêng</span></div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="32-tom-tat-chuong-ba"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var spark = function (color) {
+        return '<svg viewBox="-50 -50 100 100"><g stroke="' + color + '" stroke-width="11" stroke-linecap="round">' +
+          '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+          '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      };
+      qa('.f32-spk-gold').forEach(function (el) { el.innerHTML = spark('#D97757'); });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var pop = function (d) { return { scale: 1, rotation: 0, opacity: 1, duration: d || 0.45, ease: IN }; };
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var rowIn = function (sel, t) {
+        tl.fromTo(sel, { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, t);
+      };
+      var verbIn = function (sel, t) {
+        tl.fromTo(sel, { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, t);
+      };
+
+      // ---- Scene 1 (0–7.7) [anchor]: "Tóm lại" pins left; rows stack on their cues
+      tl.fromTo('#f32-anchor-spark', popFrom, pop(0.45), 0.31);           // "Tóm"
+      tl.fromTo('#f32-anchor-word', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.31);
+      draw('#f32-divider', 0.5, 0.8);
+
+      rowIn('#f32-row1', 0.93);                                           // "Projects"
+      draw('#f32-ring1', 0.98, 0.4);
+      verbIn('#f32-verb1', 1.68);                                         // "sắp xếp"
+      draw('#f32-tick1', 1.8, 0.3);
+
+      rowIn('#f32-row2', 2.4);                                            // "Artifacts"
+      draw('#f32-ring2', 2.45, 0.4);
+      verbIn('#f32-verb2', 3.18);                                         // "tạo sản phẩm"
+      draw('#f32-tick2', 3.4, 0.3);
+
+      rowIn('#f32-row3', 4.21);                                           // "bộ nhớ"
+      draw('#f32-ring3', 4.26, 0.4);
+      verbIn('#f32-verb3', 5.13);                                         // "hiểu bạn"
+      draw('#f32-tick3', 5.25, 0.3);
+
+      // "Ba công cụ" (6.13 / 6.27 / 6.42): the three row numbers light up in turn
+      tl.fromTo('#f32-num1', { scale: 1, color: '#9A968C' }, { scale: 1.2, color: '#F0EEE6', duration: 0.3, ease: IN }, 6.13);
+      tl.fromTo('#f32-num2', { scale: 1, color: '#9A968C' }, { scale: 1.2, color: '#F0EEE6', duration: 0.3, ease: IN }, 6.27);
+      tl.fromTo('#f32-num3', { scale: 1, color: '#9A968C' }, { scale: 1.2, color: '#F0EEE6', duration: 0.3, ease: IN }, 6.42);
+
+      // ---- Scene 2 (from "biến" 6.9 → hub at 7.7): rows clear, labels fly into a ring
+      tl.to('#f32-list', { x: -40, opacity: 0, duration: 0.5, ease: 'power2.inOut' }, 6.9);
+      tl.fromTo('#f32-node1', { x: -294, y: 134, scale: 1.2, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'power2.inOut' }, 6.9);
+      tl.fromTo('#f32-node2', { x: -575, y: -181, scale: 1.2, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'power2.inOut' }, 6.98);
+      tl.fromTo('#f32-node3', { x: -28, y: -1, scale: 1.2, opacity: 0 }, { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'power2.inOut' }, 7.06);
+      draw('#f32-orbit', 7.14, 0.8);                                      // "Claude thành"
+      draw('#f32-spoke1', 7.5, 0.3);
+      draw('#f32-spoke2', 7.58, 0.3);
+      draw('#f32-spoke3', 7.66, 0.3);
+
+      // "trợ lý riêng" lands word by word in the centre, Lora terracotta
+      tl.fromTo('#f32-w1', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 7.7);   // "trợ"
+      tl.fromTo('#f32-w2', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 7.91);  // "lý"
+      tl.fromTo('#f32-w3', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 8.07);  // "riêng"
+      draw('#f32-under', 8.35, 0.45);
+
+      // "cho từng việc" (8.81): the spokes firm up — every tool connected to you
+      tl.fromTo('#f32-spokes', { attr: { 'stroke-opacity': 0.6 } }, { attr: { 'stroke-opacity': 1 }, duration: 0.4, ease: IN }, 8.81);
+
+      tl.to({}, { duration: 10.175 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["32-tom-tat-chuong-ba"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,431 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f19-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f19-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f19- */
+
+    /* ---------- Shot 1: split ---------- */
+    #f19-s1, #f19-s1in {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 400px;
+    }
+    .f19-col {
+      position: absolute;
+      top: 20px;
+      width: 800px;
+      height: 760px;
+    }
+    #f19-left { left: 50px; }
+    #f19-right { left: 910px; }
+    .f19-head {
+      position: absolute;
+      left: 8px;
+      top: 0;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 76px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+    .f19-head span { display: inline-block; }
+    #f19-left .f19-head { color: var(--muted); }
+    #f19-right .f19-head { color: var(--gold); }
+    #f19-scribble {
+      position: absolute;
+      left: 0;
+      top: 88px;
+      width: 440px;
+      height: 44px;
+      overflow: visible;
+    }
+    #f19-underline {
+      position: absolute;
+      left: 0;
+      top: 90px;
+      width: 260px;
+      height: 30px;
+      overflow: visible;
+    }
+    #f19-spark {
+      width: 48px;
+      height: 48px;
+      display: inline-block;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    .f19-card {
+      position: absolute;
+      left: 0;
+      top: 150px;
+      width: 800px;
+      height: 590px;
+      box-sizing: border-box;
+      padding: 44px 48px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f19-rcard-edge {
+      position: absolute;
+      inset: -1px;
+      border: 2px solid var(--cyan);
+      border-radius: 16px;
+      opacity: 0;
+    }
+    .f19-prompt {
+      position: relative;
+      box-sizing: border-box;
+      width: 704px;
+      min-height: 120px;
+      padding: 26px 30px;
+      background: var(--canvas);
+      border: 1px solid rgba(240,238,230,.14);
+      border-radius: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px 12px;
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.25;
+    }
+    .f19-w { display: inline-block; }
+    .f19-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 20px 10px 16px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid rgba(143,184,168,.55);
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .f19-chip i {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--cyan);
+    }
+    .f19-answer {
+      position: absolute;
+      left: 48px;
+      top: 330px;
+      width: 704px;
+      height: 220px;
+    }
+    .f19-avatar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(240,238,230,.35);
+      box-sizing: border-box;
+    }
+    .f19-bar {
+      position: absolute;
+      left: 64px;
+      height: 18px;
+      border-radius: 9px;
+      transform-origin: 0 50%;
+    }
+    #f19-left .f19-bar { background: rgba(154,150,140,.55); filter: blur(3px); }
+    #f19-right .f19-bar { background: rgba(240,238,230,.85); }
+    #f19-tick {
+      position: absolute;
+      right: 0;
+      top: -6px;
+      width: 56px;
+      height: 56px;
+      overflow: visible;
+    }
+
+    /* ---------- Shot 2: metaphor (target) ---------- */
+    #f19-s2 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 380px;
+    }
+    #f19-target {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    .f19-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f19-pulse {
+      position: absolute;
+      left: 800px;
+      top: 300px;
+      width: 160px;
+      height: 160px;
+      box-sizing: border-box;
+      border: 4px solid var(--gold);
+      border-radius: 50%;
+      opacity: 0;
+    }
+    #f19-arrow {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+      opacity: 0;
+    }
+    #f19-label {
+      position: absolute;
+      left: 0;
+      top: 672px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--gold);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="19-hoi-chung-chung-va-hoi-cu-the" data-width="1920" data-height="1080" data-duration="12.946">
+    <div id="f19-ground" class="clip" data-start="0" data-duration="12.946" data-track-index="0"></div>
+    <div id="f19-stage" class="clip" data-start="0" data-duration="12.946" data-track-index="1">
+
+      <!-- Shot 1: split (0–8.9 s) -->
+      <div id="f19-s1">
+        <div id="f19-s1in">
+          <!-- left: vague -->
+          <div id="f19-left" class="f19-col">
+            <div id="f19-ldim">
+              <div class="f19-head">
+                <span id="f19-lh1">chung</span><span id="f19-lh2">chung</span>
+              </div>
+              <svg id="f19-scribble" viewBox="0 0 440 44">
+                <path class="f19-draw" pathLength="1" stroke="rgba(154,150,140,.9)" stroke-width="4"
+                  d="M6 22 C 40 6, 60 38, 96 20 S 150 4, 176 26 S 232 40, 262 16 S 318 2, 342 30 S 400 36, 432 14" />
+              </svg>
+              <div id="f19-lcard" class="f19-card">
+                <div class="f19-prompt">
+                  <span id="f19-lw1" class="f19-w">viết</span>
+                  <span id="f19-lw2" class="f19-w">bài</span>
+                  <span id="f19-lw3" class="f19-w">về</span>
+                  <span id="f19-lw4" class="f19-w">sản phẩm</span>
+                </div>
+                <div id="f19-lans" class="f19-answer">
+                  <div class="f19-avatar"></div>
+                  <div class="f19-bar" style="top:10px;width:560px"></div>
+                  <div class="f19-bar" style="top:58px;width:430px"></div>
+                  <div class="f19-bar" style="top:106px;width:600px"></div>
+                  <div class="f19-bar" style="top:154px;width:320px"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- right: specific -->
+          <div id="f19-right" class="f19-col">
+            <div class="f19-head">
+              <span id="f19-rh1">cụ</span><span id="f19-rh2">thể</span>
+              <svg id="f19-spark" viewBox="-24 -24 48 48">
+                <g stroke="#D97757" stroke-width="5" stroke-linecap="round">
+                  <line x1="0" y1="-20" x2="0" y2="20" />
+                  <line x1="-20" y1="0" x2="20" y2="0" />
+                  <line x1="-14" y1="-14" x2="14" y2="14" />
+                  <line x1="-14" y1="14" x2="14" y2="-14" />
+                </g>
+              </svg>
+            </div>
+            <svg id="f19-underline" viewBox="0 0 260 30">
+              <path class="f19-draw" pathLength="1" stroke="#D97757" stroke-width="4"
+                d="M6 18 C 60 10, 120 8, 170 14 S 236 22, 254 12" />
+            </svg>
+            <div id="f19-rcard" class="f19-card">
+              <div id="f19-rcard-edge"></div>
+              <div class="f19-prompt">
+                <span id="f19-rw1" class="f19-w">viết</span>
+                <span id="f19-rw2" class="f19-w">bài</span>
+                <span id="f19-c1" class="f19-chip"><i></i>200 chữ</span>
+                <span id="f19-c2" class="f19-chip"><i></i>khách văn phòng</span>
+                <span id="f19-c3" class="f19-chip"><i></i>giọng thân thiện</span>
+              </div>
+              <div id="f19-rans" class="f19-answer" style="top:370px">
+                <div class="f19-avatar"></div>
+                <div class="f19-bar" style="top:10px;width:520px"></div>
+                <div class="f19-bar" style="top:58px;width:560px"></div>
+                <div class="f19-bar" style="top:106px;width:380px"></div>
+                <svg id="f19-tick" viewBox="0 0 56 56">
+                  <circle cx="28" cy="28" r="25" fill="none" stroke="#8FB8A8" stroke-width="3" />
+                  <path class="f19-draw" pathLength="1" stroke="#8FB8A8" stroke-width="4" d="M16 29 L25 38 L41 19" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shot 2: metaphor (8.9–12.446 s) -->
+      <div id="f19-s2">
+        <svg id="f19-target" viewBox="0 0 1760 820">
+          <path id="f19-r3" class="f19-draw" pathLength="1" stroke="#F0EEE6" stroke-width="4" d="" />
+          <path id="f19-r2" class="f19-draw" pathLength="1" stroke="#F0EEE6" stroke-width="4" d="" />
+          <path id="f19-r1" class="f19-draw" pathLength="1" stroke="#F0EEE6" stroke-width="4" d="" />
+          <circle id="f19-bull" cx="880" cy="380" r="16" fill="#F0EEE6" />
+        </svg>
+        <div id="f19-pulse"></div>
+        <svg id="f19-arrow" viewBox="0 0 1760 820">
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <!-- shaft from tail to tip (tip = target centre 880,380) -->
+            <line x1="548" y1="238" x2="872" y2="377" stroke="#D97757" stroke-width="7" />
+            <!-- head -->
+            <path d="M880 380 L846 352 M880 380 L842 385" stroke="#D97757" stroke-width="7" />
+            <!-- fletching -->
+            <path d="M548 238 L520 206 M548 238 L506 238 M572 248 L544 216 M572 248 L530 248" stroke="#F0EEE6" stroke-width="5" />
+          </g>
+        </svg>
+        <div id="f19-label">sát ý</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // hand-drawn rings: deterministic wobble around the target centre
+      function ring(r, k) {
+        var d = "", n = 72, i, a, rr, x, y;
+        for (i = 0; i <= n; i++) {
+          a = -Math.PI / 2 + (i / n) * Math.PI * 2 * 1.03;
+          rr = r * (1 + 0.018 * Math.sin(3 * a + k) + 0.01 * Math.sin(5 * a + 2 * k));
+          x = (880 + rr * Math.cos(a)).toFixed(1);
+          y = (380 + rr * Math.sin(a)).toFixed(1);
+          d += (i ? " L" : "M") + x + " " + y;
+        }
+        return d;
+      }
+      document.getElementById("f19-r1").setAttribute("d", ring(95, 0.4));
+      document.getElementById("f19-r2").setAttribute("d", ring(190, 1.7));
+      document.getElementById("f19-r3").setAttribute("d", ring(285, 2.9));
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = "power3.out";
+
+      /* ===== Shot 1 — split (0–8.9 s) ===== */
+      // slow macro push under the whole split
+      tl.fromTo("#f19-s1", { scale: 1 }, { scale: 1.025, duration: 8.9, ease: "none" }, 0);
+
+      // "viết" @1.12 — left card slides in from the left, prompt types on word by word
+      tl.fromTo("#f19-lcard", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.6, ease: IN }, 0.35);
+      tl.fromTo("#f19-lw1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 1.12);
+      tl.fromTo("#f19-lw2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 1.30);
+      tl.fromTo("#f19-lw3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 1.48);
+      tl.fromTo("#f19-lw4", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 1.58);
+
+      // "chung" @2.71, "chung" @2.87 — muted header, wobbly scribble underneath
+      tl.fromTo("#f19-lh1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 2.71);
+      tl.fromTo("#f19-lh2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 2.87);
+      tl.fromTo("#f19-scribble path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 2.87);
+      // vague answer: blurred, uneven bars
+      tl.fromTo("#f19-lans .f19-avatar", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 3.2);
+      tl.fromTo("#f19-lans .f19-bar", { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.5, ease: IN, stagger: 0.12 }, 3.3);
+
+      // "Còn" @4.46 — right card slides in from the right
+      tl.fromTo("#f19-rcard", { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.6, ease: IN }, 4.46);
+      tl.fromTo("#f19-rw1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 4.63);
+      tl.fromTo("#f19-rw2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 4.78);
+      // chips pop on their spoken words: "hai" @4.94, "khách" @5.62, "giọng" @6.46
+      tl.fromTo("#f19-c1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: IN }, 4.94);
+      tl.fromTo("#f19-c2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: IN }, 5.62);
+      tl.fromTo("#f19-c3", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: IN }, 6.46);
+
+      // "cụ" @7.56, "thể" @7.76 — terracotta header, spark pops, underline draws
+      tl.fromTo("#f19-rh1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 7.56);
+      tl.fromTo("#f19-rh2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 7.76);
+      tl.fromTo("#f19-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: IN }, 7.76);
+      tl.fromTo("#f19-underline path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 7.8);
+      // the vague side steps back
+      tl.fromTo("#f19-ldim", { opacity: 1 }, { opacity: 0.5, duration: 0.5, ease: "power2.inOut", immediateRender: false }, 7.76);
+      // "hơn" @8.0 — sharp answer: crisp bars, sage tick, sage edge
+      tl.fromTo("#f19-rans .f19-avatar", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 8.0);
+      tl.fromTo("#f19-rans .f19-bar", { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: IN, stagger: 0.08 }, 8.0);
+      tl.fromTo("#f19-tick circle", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 8.3);
+      tl.fromTo("#f19-tick path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 8.4);
+      tl.fromTo("#f19-rcard-edge", { opacity: 0 }, { opacity: 0.8, duration: 0.4, ease: IN }, 8.16);
+
+      /* ===== Shot 2 — metaphor (8.9–12.446 s) ===== */
+      // zoom-through out of the split
+      tl.fromTo("#f19-s1in", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.9, filter: "blur(8px)", duration: 0.35, ease: "power2.in", immediateRender: false }, 8.9);
+      // "Câu" @9.04 — target rings draw on, inside out
+      tl.fromTo("#f19-bull", { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: IN }, 9.04);
+      tl.fromTo("#f19-r1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 9.1);
+      tl.fromTo("#f19-r2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 9.35);
+      tl.fromTo("#f19-r3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 9.63);
+      // slow push into the target
+      tl.fromTo("#f19-s2", { scale: 1 }, { scale: 1.03, duration: 3.4, ease: "none" }, 9.04);
+
+      // arrow flies in and lands dead centre on "sát" @11.2
+      tl.fromTo("#f19-arrow", { opacity: 0, x: -440, y: -190 }, { opacity: 1, x: 0, y: 0, duration: 0.5, ease: "power3.in" }, 10.7);
+      // impact: bullseye turns terracotta
+      tl.set("#f19-bull", { attr: { fill: "#D97757" } }, 11.2);
+      tl.fromTo("#f19-arrow", { x: 0 }, { x: -8, duration: 0.16, ease: "power2.out", immediateRender: false }, 11.2);
+      // "ý" @11.4 — label lands with a terracotta ring pulse
+      tl.fromTo("#f19-label", { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: IN }, 11.4);
+      tl.fromTo("#f19-pulse", { opacity: 0.95, scale: 0.4 }, { opacity: 0, scale: 2.2, duration: 0.9, ease: "power2.out", immediateRender: false }, 11.4);
+
+      tl.to({}, { duration: 12.446 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["19-hoi-chung-chung-va-hoi-cu-the"] = tl;
+    })();
+  </script>
+</template>

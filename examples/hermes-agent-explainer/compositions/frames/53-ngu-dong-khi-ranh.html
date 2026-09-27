@@ -1,0 +1,324 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f53-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f53-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- analyze rail ---------- */
+    #f53-rail {
+      position: absolute; left: 0; top: 10px; width: 1760px; height: 72px;
+      display: flex; gap: 40px;
+    }
+    .f53-slot {
+      position: relative; flex: 1; height: 72px; border-radius: 14px;
+      background: rgba(20,27,58,.7); border: 1px solid rgba(244,241,232,.12);
+    }
+    .f53-slot-face {
+      position: absolute; inset: 0; display: flex; align-items: center; gap: 18px; padding: 0 26px;
+      font-weight: 600; font-size: 30px; color: var(--muted);
+    }
+    .f53-slot-num {
+      width: 40px; height: 40px; border-radius: 50%; border: 2px solid currentColor;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-size: 20px; flex: none;
+    }
+    .f53-slot-on {
+      position: absolute; inset: -1px; border-radius: 14px; opacity: 0;
+      border: 2px solid var(--gold); background: rgba(255,210,63,.10);
+      box-shadow: 0 0 28px rgba(255,210,63,.25);
+    }
+    .f53-slot-on .f53-slot-face { color: var(--gold); }
+    /* ---------- camera viewport + world ---------- */
+    #f53-viewport {
+      position: absolute; left: 0; top: 110px; width: 1760px; height: 710px; overflow: hidden;
+    }
+    #f53-world {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 710px;
+      transform-origin: 880px 360px;
+    }
+    #f53-field {
+      position: absolute; inset: 0; opacity: .4;
+      background-image: radial-gradient(circle, rgba(244,241,232,.55) 1.6px, transparent 2px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 72%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 72%);
+    }
+    #f53-boxmove {
+      position: absolute; left: 570px; top: 180px; width: 620px; height: 360px;
+    }
+    #f53-glow {
+      position: absolute; inset: -6px; border-radius: 22px; opacity: 0;
+      border: 3px solid var(--cyan);
+      box-shadow: 0 0 50px rgba(62,230,208,.55), inset 0 0 30px rgba(62,230,208,.18);
+    }
+    #f53-box {
+      position: absolute; inset: 0; border-radius: 18px; overflow: hidden;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f53-head {
+      position: absolute; left: 36px; top: 30px; right: 36px; height: 70px;
+      display: flex; align-items: center; gap: 22px;
+    }
+    #f53-cloud { width: 84px; height: 60px; flex: none; }
+    #f53-label { font-weight: 600; font-size: 40px; line-height: 1.2; white-space: nowrap; }
+    #f53-label span { display: inline-block; }
+    #f53-dot { color: var(--muted); margin: 0 12px; }
+    .f53-bar {
+      position: absolute; left: 36px; right: 36px; height: 34px; border-radius: 8px;
+      background: rgba(244,241,232,.06); border: 1px solid rgba(244,241,232,.10);
+    }
+    .f53-bar i {
+      position: absolute; top: 11px; width: 12px; height: 12px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 10px rgba(62,230,208,.8);
+    }
+    .f53-bar b {
+      position: absolute; left: 18px; top: 14px; height: 6px; border-radius: 3px;
+      background: rgba(244,241,232,.18);
+    }
+    .f53-pill {
+      position: absolute; left: 36px; top: 284px; height: 48px; padding: 0 22px 0 18px;
+      border-radius: 24px; display: flex; align-items: center; gap: 12px;
+      font-weight: 600; font-size: 28px; opacity: 0; white-space: nowrap;
+    }
+    .f53-pill i { width: 14px; height: 14px; border-radius: 50%; }
+    #f53-pill-sleep { background: rgba(142,147,181,.18); color: var(--ink); border: 1px solid rgba(142,147,181,.5); }
+    #f53-pill-sleep i { background: var(--muted); }
+    #f53-pill-wake { background: rgba(62,230,208,.14); color: var(--cyan); border: 1px solid rgba(62,230,208,.6); }
+    #f53-pill-wake i { background: var(--cyan); box-shadow: 0 0 10px rgba(62,230,208,.9); }
+    #f53-sleepveil {
+      position: absolute; inset: 0; background: rgba(5,8,22,.66); opacity: 0;
+    }
+    #f53-scan {
+      position: absolute; top: 0; left: -160px; width: 140px; height: 360px;
+      background: linear-gradient(90deg, transparent, rgba(62,230,208,.45), transparent);
+      opacity: 0;
+    }
+    .f53-z {
+      position: absolute; font-weight: 800; color: #b9bde0; opacity: 0; line-height: 1.05;
+    }
+    #f53-z1 { left: 630px; top: 0px; font-size: 40px; }
+    #f53-z2 { left: 668px; top: -52px; font-size: 54px; }
+    #f53-z3 { left: 714px; top: -112px; font-size: 70px; }
+    /* ---------- scene 2: cost meter ---------- */
+    #f53-trail { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f53-meter {
+      position: absolute; left: 960px; top: 150px; width: 680px; height: 660px; opacity: 0;
+    }
+    #f53-kicker {
+      position: absolute; left: 0; right: 0; top: 0; height: 40px;
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      color: var(--muted); text-transform: uppercase; white-space: nowrap;
+    }
+    #f53-kicker i { width: 12px; height: 12px; background: var(--gold); transform: rotate(45deg); }
+    #f53-gauge { position: absolute; left: 0; top: 60px; width: 680px; height: 360px; overflow: visible; }
+    #f53-zero {
+      position: absolute; left: 0; right: 0; top: 400px; height: 190px;
+      display: flex; align-items: center; justify-content: center; gap: 22px; opacity: 0;
+    }
+    #f53-approx { width: 96px; height: 70px; }
+    #f53-zero-num {
+      font-weight: 800; font-size: 180px; line-height: 1.05; letter-spacing: -.03em; color: var(--gold);
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+    #f53-strip {
+      position: absolute; left: 40px; right: 40px; top: 606px; height: 40px;
+    }
+    .f53-seg {
+      position: absolute; top: 0; height: 40px; border-radius: 10px; transform-origin: 0 50%;
+    }
+    .f53-seg-work { background: var(--cyan); box-shadow: 0 0 14px rgba(62,230,208,.5); }
+    .f53-seg-sleep {
+      background: rgba(142,147,181,.16); border: 1px dashed rgba(142,147,181,.55);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 28px; color: var(--muted); letter-spacing: .2em;
+    }
+  </style>
+
+  <div id="root" data-composition-id="53-ngu-dong-khi-ranh" data-width="1920" data-height="1080" data-duration="9.573">
+    <div id="f53-ground" class="clip" data-start="0" data-duration="9.573" data-track-index="0"></div>
+    <div id="f53-stage" class="clip" data-start="0" data-duration="9.573" data-track-index="1">
+
+      <!-- camera viewport: the one continuous push onto the box -->
+      <div id="f53-viewport">
+        <div id="f53-world">
+          <div id="f53-field"></div>
+          <div id="f53-boxmove">
+            <div id="f53-glow"></div>
+            <div id="f53-box">
+              <div id="f53-head">
+                <svg id="f53-cloud" viewBox="0 0 84 60" fill="none">
+                  <path d="M22 52 H64 A16 16 0 0 0 66 20.2 A22 22 0 0 0 24.5 16 A18 18 0 0 0 22 52 Z"
+                        stroke="#F4F1E8" stroke-width="4" stroke-linejoin="round"/>
+                  <path d="M30 40 H56" stroke="#3EE6D0" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <div id="f53-label"><span id="f53-modal">Modal</span><span id="f53-dot">·</span><span id="f53-daytona">Daytona</span></div>
+              </div>
+              <div class="f53-bar" style="top:124px"><b style="width:220px"></b><i style="right:18px"></i><i style="right:42px"></i></div>
+              <div class="f53-bar" style="top:172px"><b style="width:300px"></b><i style="right:18px"></i><i style="right:42px"></i></div>
+              <div class="f53-bar" style="top:220px"><b style="width:160px"></b><i style="right:18px"></i><i style="right:42px"></i></div>
+              <div id="f53-sleepveil"></div>
+              <div id="f53-scan"></div>
+              <div id="f53-pill-sleep" class="f53-pill"><i></i>Ngủ đông</div>
+              <div id="f53-pill-wake" class="f53-pill"><i></i>Thức dậy</div>
+            </div>
+            <div id="f53-z1" class="f53-z">z</div>
+            <div id="f53-z2" class="f53-z">z</div>
+            <div id="f53-z3" class="f53-z">z</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- analyze rail (fixed, outside the camera) -->
+      <div id="f53-rail">
+        <div class="f53-slot">
+          <div class="f53-slot-face"><span class="f53-slot-num">1</span>Tính năng</div>
+          <div id="f53-on1" class="f53-slot-on"><div class="f53-slot-face"><span class="f53-slot-num">1</span>Tính năng</div></div>
+        </div>
+        <div class="f53-slot">
+          <div class="f53-slot-face"><span class="f53-slot-num">2</span>Vì sao nổi bật</div>
+          <div id="f53-on2" class="f53-slot-on"><div class="f53-slot-face"><span class="f53-slot-num">2</span>Vì sao nổi bật</div></div>
+        </div>
+        <div class="f53-slot">
+          <div class="f53-slot-face"><span class="f53-slot-num">3</span>Bạn được gì</div>
+          <div id="f53-on3" class="f53-slot-on"><div class="f53-slot-face"><span class="f53-slot-num">3</span>Bạn được gì</div></div>
+        </div>
+      </div>
+
+      <!-- courier trail: box -> meter -->
+      <svg id="f53-trail" viewBox="0 0 1760 820" fill="none">
+        <path id="f53-trail-path" d="M672 470 C 780 470, 850 560, 986 552" stroke="#FFD23F" stroke-width="5"
+              stroke-linecap="round" stroke-dasharray="360" stroke-dashoffset="360"
+              style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55))"/>
+        <circle id="f53-trail-dot" cx="986" cy="552" r="9" fill="#FFD23F" opacity="0"/>
+      </svg>
+
+      <!-- cost meter (scene 2 hero) -->
+      <div id="f53-meter">
+        <div id="f53-kicker"><i></i>Chi phí khi rảnh</div>
+        <svg id="f53-gauge" viewBox="0 0 680 360" fill="none">
+          <path d="M50 330 A290 290 0 0 1 630 330" stroke="rgba(244,241,232,.12)" stroke-width="20" stroke-linecap="round"/>
+          <g stroke="rgba(244,241,232,.35)" stroke-width="3" stroke-linecap="round">
+            <path d="M80 330 H98"/><path d="M114.8 200 L130.4 209"/><path d="M210 104.8 L219 120.4"/>
+            <path d="M340 70 V88"/><path d="M470 104.8 L461 120.4"/><path d="M565.2 200 L549.6 209"/><path d="M600 330 H582"/>
+          </g>
+          <path id="f53-arc" d="M50 330 A290 290 0 0 1 630 330" stroke="#FFD23F" stroke-width="20" stroke-linecap="round"
+                stroke-dasharray="911" stroke-dashoffset="203"/>
+          <g id="f53-needle">
+            <path d="M340 330 L112 330" stroke="#F4F1E8" stroke-width="7" stroke-linecap="round"/>
+          </g>
+          <circle cx="340" cy="330" r="18" fill="#F4F1E8"/>
+          <circle cx="340" cy="330" r="7" fill="#0B1026"/>
+        </svg>
+        <div id="f53-zero">
+          <svg id="f53-approx" viewBox="0 0 96 70" fill="none" stroke="#FFD23F" stroke-width="10" stroke-linecap="round">
+            <path d="M8 26 C 24 10, 40 10, 48 22 S 72 34, 88 18"/>
+            <path d="M8 54 C 24 38, 40 38, 48 50 S 72 62, 88 46"/>
+          </svg>
+          <div id="f53-zero-num">0</div>
+        </div>
+        <div id="f53-strip">
+          <div id="f53-seg1" class="f53-seg f53-seg-work" style="left:0;width:80px"></div>
+          <div id="f53-seg2" class="f53-seg f53-seg-sleep" style="left:96px;width:196px">z z</div>
+          <div id="f53-seg3" class="f53-seg f53-seg-work" style="left:308px;width:80px"></div>
+          <div id="f53-seg4" class="f53-seg f53-seg-sleep" style="left:404px;width:196px">z z</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // initial hidden / start states (before the timeline is built)
+      gsap.set("#f53-needle", { rotation: 140, svgOrigin: "340 330" });
+      gsap.set(["#f53-seg1", "#f53-seg2", "#f53-seg3", "#f53-seg4"], { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---------- Scene 1 (0–5.58): push onto the box; sleep, then wake ----------
+      // the one continuous camera move: slow push, eased to a stop before the stat shot
+      tl.fromTo("#f53-world", { scale: 1 }, { scale: 1.18, duration: 5.1, ease: "power2.inOut" }, 0.3);
+
+      // box enters on "Với"
+      tl.fromTo("#f53-box", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.3);
+      // label words on "Modal" / "Daytona"
+      tl.fromTo("#f53-modal", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.45);
+      tl.fromTo("#f53-dot", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 0.8);
+      tl.fromTo("#f53-daytona", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.87);
+      // rail 1 lights on "Modal"
+      tl.fromTo("#f53-on1", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 0.45);
+
+      // "ngủ đông" 2.62 / 2.79: box dims, zz glyphs float up, sleep pill
+      tl.fromTo("#f53-sleepveil", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.inOut" }, 2.62);
+      tl.fromTo("#f53-pill-sleep", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 2.62);
+      tl.fromTo("#f53-z1", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.62);
+      tl.fromTo("#f53-z2", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.79);
+      tl.fromTo("#f53-z3", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.0);
+
+      // "thức dậy" 3.57 / 3.71: veil lifts, cyan glow, scan sweep, wake pill; rail 2 lights
+      tl.to("#f53-sleepveil", { opacity: 0, duration: 0.35, ease: "power2.out" }, 3.57);
+      tl.to("#f53-pill-sleep", { opacity: 0, duration: 0.2, ease: "power2.out" }, 3.57);
+      tl.fromTo("#f53-pill-wake", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.6);
+      tl.to(["#f53-z1", "#f53-z2", "#f53-z3"], { opacity: 0, y: -24, duration: 0.3, ease: "power2.in" }, 3.57);
+      tl.fromTo("#f53-glow", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 3.57);
+      tl.fromTo("#f53-scan", { opacity: 1, x: 0 }, { opacity: 1, x: 800, duration: 0.6, ease: "power2.inOut" }, 3.71);
+      tl.to("#f53-on1", { opacity: 0, duration: 0.3, ease: "power2.out" }, 3.57);
+      tl.fromTo("#f53-on2", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 3.57);
+
+      // ---------- Scene 2 (5.58–9.07): stat — box steps aside, meter ticks to ~0 ----------
+      tl.to("#f53-on2", { opacity: 0, duration: 0.3, ease: "power2.out" }, 5.58);
+      tl.fromTo("#f53-on3", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 5.58);
+      tl.fromTo("#f53-boxmove", { x: 0, scale: 1 }, { x: -440, scale: 0.8, duration: 0.6, ease: "power2.inOut" }, 5.58);
+      tl.fromTo("#f53-meter", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 5.62);
+      tl.to("#f53-trail-path", { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 5.75);
+      tl.fromTo("#f53-trail-dot", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power3.out" }, 6.18);
+      // needle + arc tick down on "tốn" (5.80) and land near zero by "tiền"
+      tl.to("#f53-needle", { rotation: 7, svgOrigin: "340 330", duration: 0.55, ease: "steps(11)" }, 5.8);
+      tl.to("#f53-arc", { strokeDashoffset: 875, duration: 0.55, ease: "steps(11)" }, 5.8);
+      tl.fromTo("#f53-zero", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 5.98);
+
+      // "giữa các lần làm việc" 6.28–7.17: work / sleep strip draws on
+      tl.to("#f53-seg1", { scaleX: 1, duration: 0.3, ease: "power3.out" }, 6.28);
+      tl.to("#f53-seg2", { scaleX: 1, duration: 0.35, ease: "power3.out" }, 6.48);
+      tl.to("#f53-seg3", { scaleX: 1, duration: 0.3, ease: "power3.out" }, 6.68);
+      tl.to("#f53-seg4", { scaleX: 1, duration: 0.35, ease: "power3.out" }, 6.85);
+
+      // hold with a quiet 1.5% drift on the stat
+      tl.fromTo("#f53-zero-num", { scale: 1 }, { scale: 1.015, duration: 1.8, ease: "power1.inOut" }, 7.2);
+
+      tl.to({}, { duration: 9.073 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["53-ngu-dong-khi-ranh"] = tl;
+    })();
+  </script>
+</template>

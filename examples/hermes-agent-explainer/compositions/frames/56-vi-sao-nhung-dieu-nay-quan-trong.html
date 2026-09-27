@@ -1,0 +1,322 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f56-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f56-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f56- */
+    .f56-kicker {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f56-kicker-a { color: var(--muted); }
+    #f56-kicker-b { color: var(--gold); }
+    .f56-dia { color: var(--gold); margin-right: 14px; }
+
+    /* scene 1: camera viewport over an oversized world */
+    #f56-viewport {
+      position: absolute;
+      left: 0;
+      top: 60px;
+      width: 1760px;
+      height: 740px;
+      overflow: hidden;
+    }
+    #f56-cam {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 740px;
+    }
+    #f56-world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 3000px;
+      height: 740px;
+    }
+    #f56-world > svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      overflow: visible;
+    }
+    .f56-card {
+      position: absolute;
+      top: 255px;
+      width: 360px;
+      height: 190px;
+      box-sizing: border-box;
+      padding: 24px 28px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    .f56-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .f56-idx {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .f56-card svg.f56-icon {
+      position: static;
+      width: 60px;
+      height: 60px;
+    }
+    .f56-label {
+      margin-top: 30px;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .f56-card-out { border-color: rgba(62, 230, 208, 0.45); }
+
+    /* scene 2: three kinetic beats */
+    #f56-beats {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+    }
+    .f56-beat {
+      position: absolute;
+      left: 170px;
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    #f56-beat1 { top: 170px; }
+    #f56-beat2 { top: 330px; }
+    #f56-beat3 { top: 490px; color: var(--gold); filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.35)); }
+    .f56-w {
+      display: inline-block;
+      margin-right: 0.24em;
+      opacity: 0;
+    }
+    .f56-w-last { margin-right: 0; }
+    #f56-beat3-inner {
+      position: relative;
+      display: inline-block;
+    }
+    #f56-under {
+      position: absolute;
+      left: 0;
+      bottom: -26px;
+      width: 100%;
+      height: 20px;
+      overflow: visible;
+    }
+    #f56-rail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 200px;
+      height: 820px;
+      overflow: visible;
+    }
+  </style>
+
+  <div id="root" data-composition-id="56-vi-sao-nhung-dieu-nay-quan-trong" data-width="1920" data-height="1080" data-duration="9.642">
+    <div id="f56-ground" class="clip" data-start="0" data-duration="9.642" data-track-index="0"></div>
+    <div id="f56-stage" class="clip" data-start="0" data-duration="9.642" data-track-index="1">
+
+      <div id="f56-kicker-a" class="f56-kicker"><span class="f56-dia">◆</span>Vì sao quan trọng?</div>
+      <div id="f56-kicker-b" class="f56-kicker"><span class="f56-dia">◆</span>Bạn được gì</div>
+
+      <!-- Scene 1: one camera pans across five pre-placed stations -->
+      <div id="f56-viewport">
+        <div id="f56-cam">
+          <div id="f56-world">
+            <svg width="3000" height="740" viewBox="0 0 3000 740">
+              <!-- laptop outline: the one machine -->
+              <g id="f56-laptop" fill="none" stroke="#8e93b5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 1720 270 L 1720 110 Q 1720 90 1700 90 L 80 90 Q 60 90 60 110 L 60 590 Q 60 610 80 610 L 1700 610 Q 1720 610 1720 590 L 1720 430"></path>
+                <path d="M 0 640 L 1780 640 L 1760 610 M 0 640 L 20 610"></path>
+                <line id="f56-shard-a" x1="1720" y1="270" x2="1720" y2="350"></line>
+                <line id="f56-shard-b" x1="1720" y1="350" x2="1720" y2="430"></line>
+              </g>
+              <!-- the courier trail linking the five stations -->
+              <path id="f56-trail" d="M 300 350 C 480 270, 680 430, 860 350 C 1040 270, 1240 430, 1420 350 C 1560 290, 1640 350, 1720 350 L 1800 350 C 1900 350, 1960 270, 2100 350 C 2260 430, 2480 270, 2660 350"
+                    fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+                    pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"
+                    style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55));"></path>
+              <circle id="f56-burst" cx="1720" cy="350" r="40" fill="none" stroke="#ffd23f" stroke-width="4" opacity="0"></circle>
+            </svg>
+
+            <div id="f56-st1" class="f56-card" style="left:120px;">
+              <div class="f56-card-top"><span class="f56-idx">01</span>
+                <svg class="f56-icon" viewBox="0 0 60 60" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round">
+                  <circle cx="30" cy="14" r="8"></circle><circle cx="12" cy="46" r="6" stroke="#3ee6d0"></circle><circle cx="30" cy="48" r="6" stroke="#3ee6d0"></circle><circle cx="48" cy="46" r="6" stroke="#3ee6d0"></circle>
+                  <path d="M 30 22 L 14 40 M 30 22 L 30 42 M 30 22 L 46 40"></path>
+                </svg></div>
+              <div class="f56-label">Agent con</div>
+            </div>
+            <div id="f56-st2" class="f56-card" style="left:680px;">
+              <div class="f56-card-top"><span class="f56-idx">02</span>
+                <svg class="f56-icon" viewBox="0 0 60 60" fill="none" stroke="#f4f1e8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M 20 16 L 6 30 L 20 44 M 40 16 L 54 30 L 40 44"></path><path d="M 34 10 L 26 50" stroke="#3ee6d0"></path>
+                </svg></div>
+              <div class="f56-label">Code</div>
+            </div>
+            <div id="f56-st3" class="f56-card" style="left:1240px;">
+              <div class="f56-card-top"><span class="f56-idx">03</span>
+                <svg class="f56-icon" viewBox="0 0 60 60" fill="none" stroke="#f4f1e8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M 22 6 L 22 18 M 38 6 L 38 18"></path><path d="M 14 18 L 46 18 L 46 30 Q 46 42 30 42 Q 14 42 14 30 Z"></path><path d="M 30 42 L 30 54" stroke="#3ee6d0"></path>
+                </svg></div>
+              <div class="f56-label">MCP</div>
+            </div>
+            <div id="f56-st4" class="f56-card f56-card-out" style="left:1920px;">
+              <div class="f56-card-top"><span class="f56-idx">04</span>
+                <svg class="f56-icon" viewBox="0 0 60 60" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="8" y="8" width="44" height="12" rx="3"></rect><rect x="8" y="24" width="44" height="12" rx="3"></rect><rect x="8" y="40" width="44" height="12" rx="3"></rect>
+                  <path d="M 15 14 L 17 14 M 15 30 L 17 30 M 15 46 L 17 46" stroke="#3ee6d0" stroke-width="4"></path>
+                </svg></div>
+              <div class="f56-label">7 môi trường</div>
+            </div>
+            <div id="f56-st5" class="f56-card f56-card-out" style="left:2480px;">
+              <div class="f56-card-top"><span class="f56-idx">05</span>
+                <svg class="f56-icon" viewBox="0 0 60 60" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M 14 6 L 36 6 L 48 18 L 48 54 L 14 54 Z"></path><path d="M 36 6 L 36 18 L 48 18"></path>
+                  <path d="M 22 30 L 40 30 M 22 38 L 40 38 M 22 46 L 32 46" stroke="#3ee6d0"></path>
+                </svg></div>
+              <div class="f56-label">SOUL.md</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: three beats on a gold rail -->
+      <div id="f56-beats">
+        <svg id="f56-rail" viewBox="0 0 200 820" fill="none">
+          <line id="f56-rail-a" x1="100" y1="227" x2="100" y2="387" stroke="#ffd23f" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"></line>
+          <line id="f56-rail-b" x1="100" y1="387" x2="100" y2="547" stroke="#ffd23f" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"></line>
+          <circle id="f56-dot1" cx="100" cy="227" r="12" fill="#f4f1e8" opacity="0"></circle>
+          <circle id="f56-dot2" cx="100" cy="387" r="12" fill="#f4f1e8" opacity="0"></circle>
+          <circle id="f56-dot3" cx="100" cy="547" r="15" fill="#ffd23f" opacity="0" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.7));"></circle>
+        </svg>
+        <div id="f56-beat1" class="f56-beat"><span id="f56-w-lon" class="f56-w">Lớn</span><span id="f56-w-hon1" class="f56-w f56-w-last">hơn</span></div>
+        <div id="f56-beat2" class="f56-beat"><span id="f56-w-xa" class="f56-w">Xa</span><span id="f56-w-hon2" class="f56-w f56-w-last">hơn</span></div>
+        <div id="f56-beat3" class="f56-beat"><span id="f56-beat3-inner"><span id="f56-w-theo" class="f56-w">Theo</span><span id="f56-w-phong" class="f56-w">phong</span><span id="f56-w-cach" class="f56-w">cách</span><span id="f56-w-cua" class="f56-w">của</span><span id="f56-w-ban" class="f56-w f56-w-last">bạn</span>
+          <svg id="f56-under" viewBox="0 0 1000 20" preserveAspectRatio="none">
+            <path id="f56-under-path" d="M 0 10 L 1000 10" stroke="#ffd23f" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"></path>
+          </svg></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var P = "#f56-";
+
+      /* ---- Scene 1 (0–5.39): journey — camera pans across five stations ---- */
+      tl.fromTo(P + "laptop", { opacity: 0 }, { opacity: 0.6, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo(P + "st1", { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0.05);
+      tl.fromTo(P + "kicker-a", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.31);
+
+      // trail draws station to station (pathLength = 1)
+      tl.fromTo(P + "trail", { strokeDashoffset: 1 }, { strokeDashoffset: 0.525, duration: 1.2, ease: "none" }, 0.3);
+      tl.to(P + "trail", { strokeDashoffset: 0.40, duration: 1.1, ease: "none" }, 1.7);
+      tl.to(P + "trail", { strokeDashoffset: 0.24, duration: 0.7, ease: "none" }, 2.8);
+      tl.to(P + "trail", { strokeDashoffset: 0, duration: 0.8, ease: "none" }, 3.6);
+
+      tl.fromTo(P + "st2", { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0.79);
+      tl.fromTo(P + "st3", { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 1.34);
+
+      // camera pan 1: bring the laptop edge to centre just as "không bị giới hạn" lands
+      tl.fromTo(P + "world", { x: 0 }, { x: -840, duration: 2.2, ease: "power2.inOut" }, 0.6);
+
+      // break-out on "không bị giới hạn" (2.80–3.47)
+      tl.fromTo(P + "shard-a", { rotation: 0, x: 0, y: 0, opacity: 1 }, { rotation: -38, x: 40, y: -60, opacity: 0, duration: 0.7, ease: "power3.out", svgOrigin: "1720 270" }, 2.8);
+      tl.fromTo(P + "shard-b", { rotation: 0, x: 0, y: 0, opacity: 1 }, { rotation: 38, x: 40, y: 60, opacity: 0, duration: 0.7, ease: "power3.out", svgOrigin: "1720 430" }, 2.96);
+      tl.fromTo(P + "burst", { attr: { r: 20 }, opacity: 1 }, { attr: { r: 130 }, opacity: 0, duration: 0.7, ease: "power2.out" }, 3.12);
+      tl.to(P + "laptop", { opacity: 0.25, duration: 0.5, ease: "power2.inOut" }, 3.31);
+
+      // camera pan 2: out beyond the machine to stations 4 and 5, landing held
+      tl.to(P + "world", { x: -1780, duration: 1.6, ease: "power2.inOut" }, 2.9);
+      tl.fromTo(P + "st4", { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 3.5);
+      tl.fromTo(P + "st5", { opacity: 0, y: 30, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 4.2);
+
+      /* ---- Scene 2 (5.39–9.14): kinetic — three beats ---- */
+      // the journey recedes into a dim field; kicker swaps to "bạn được gì"
+      tl.to(P + "cam", { opacity: 0.14, scale: 0.9, duration: 0.6, ease: "power2.inOut", transformOrigin: "50% 45%" }, 5.1);
+      tl.to(P + "kicker-a", { opacity: 0, duration: 0.25, ease: "power2.inOut" }, 5.1);
+      tl.fromTo(P + "kicker-b", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 5.39);
+
+      // beat 1 — "lớn hơn" grows from small
+      tl.fromTo(P + "dot1", { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 5.39);
+      tl.fromTo(P + "w-lon", { opacity: 0, scale: 0.45, transformOrigin: "0% 80%" }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 5.39);
+      tl.fromTo(P + "w-hon1", { opacity: 0, scale: 0.45, transformOrigin: "0% 80%" }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 5.59);
+
+      // beat 2 — "xa hơn" travels in from far left
+      tl.fromTo(P + "rail-a", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 5.93);
+      tl.fromTo(P + "dot2", { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 6.38);
+      tl.fromTo(P + "w-xa", { opacity: 0, x: -160 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 6.38);
+      tl.fromTo(P + "w-hon2", { opacity: 0, x: -160 }, { opacity: 1, x: 0, duration: 0.55, ease: "power3.out" }, 6.58);
+
+      // beat 3 — "theo phong cách của bạn" in gold, word by word
+      tl.fromTo(P + "rail-b", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 7.24);
+      tl.fromTo(P + "dot3", { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 7.74);
+      tl.to([P + "beat1", P + "beat2"], { opacity: 0.5, duration: 0.5, ease: "power2.inOut" }, 7.74);
+      tl.fromTo(P + "w-theo", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.56);
+      tl.fromTo(P + "w-phong", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.74);
+      tl.fromTo(P + "w-cach", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.92);
+      tl.fromTo(P + "w-cua", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 8.08);
+      tl.fromTo(P + "w-ban", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 8.2);
+      // the trail ends under "bạn" — then hold still
+      tl.fromTo(P + "under-path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 8.25);
+
+      tl.to({}, { duration: 9.142 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["56-vi-sao-nhung-dieu-nay-quan-trong"] = tl;
+    })();
+  </script>
+</template>

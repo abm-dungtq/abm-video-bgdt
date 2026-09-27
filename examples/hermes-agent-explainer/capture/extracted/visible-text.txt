@@ -1,0 +1,115 @@
+## What Hermes is, who made it, license, what makes it different
+
+[F-01] Hermes Agent is described as "the self-improving AI agent built by Nous Research." — README.md
+[F-02] Hermes Agent is licensed under MIT. — README.md
+[F-03] Nous Research is described as the lab behind the Hermes, Nomos, and Psyche models. — README.md
+[F-04] The docs call it "the only agent with a built-in learning loop" that creates skills from experience, improves them during use, and builds a deepening model of the user across sessions. — website/docs/index.mdx
+[F-05] The installed version is Hermes Agent v0.21.3, build 2026.9.14, upstream commit fff10484. — captured via `hermes --version` (see capture/terminal/version.txt)
+[F-06] Hermes can run on a $5 VPS, a GPU cluster, or serverless infrastructure and is "not tied to your laptop." — README.md
+[F-07] Switching model providers requires no code changes: "Switch with `hermes model` — no code changes, no lock-in." — README.md
+
+## Agent vs chatbot concepts (agent loop, tools)
+
+[F-08] index.mdx states: "It's not a coding copilot tethered to an IDE or a chatbot wrapper around a single API. It's an autonomous agent that gets more capable the longer it runs." — website/docs/index.mdx
+[F-09] The CLI is a full terminal interface, not a web UI, with multiline editing, slash-command autocomplete, conversation history, and streaming tool output. — website/docs/user-guide/cli.md
+[F-10] delegate_task spawns child agent instances with isolated context, inherited tool access, and their own terminal sessions. — website/docs/user-guide/features/delegation.md
+[F-11] execute_code lets the agent write Python scripts that call Hermes tools programmatically over a Unix domain socket RPC, collapsing multi-step workflows into a single LLM turn. — website/docs/user-guide/features/code-execution.md
+[F-12] Toolsets are named bundles of tools that control what the agent can do, coming in core, composite, and platform kinds. — website/docs/reference/toolsets-reference.md
+
+## Install (Windows and Linux), first run, `hermes model`, providers, TUI features
+
+[F-13] Linux/macOS/WSL2/Termux install command: `curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash`. — README.md
+[F-14] Windows native install command (PowerShell): `iex (irm https://hermes-agent.nousresearch.com/install.ps1)`. — README.md
+[F-15] Per-user git installer places code at ~/.hermes/hermes-agent/, the `hermes` binary at ~/.local/bin/hermes (symlink), and data at ~/.hermes/. — website/docs/getting-started/installation.md
+[F-16] Root-mode install places code at /usr/local/lib/hermes-agent/ and the binary at /usr/local/bin/hermes, following the FHS layout. — website/docs/getting-started/installation.md
+[F-17] Hermes requires a model with at least 64,000 tokens of context; smaller windows are rejected at startup. — website/docs/getting-started/quickstart.md
+[F-18] `hermes model` interactively walks the user through choosing an inference provider and default model. — website/docs/getting-started/quickstart.md
+[F-19] `hermes setup --portal` logs the user in via OAuth to Nous Portal, sets Nous as the provider, and turns on the Tool Gateway (web search, image generation, TTS, cloud browser) in one command. — README.md
+[F-20] Nous Portal offers 300+ models under one subscription, switchable with `/model <name>`. — README.md
+[F-21] On a fresh install, `hermes setup` offers three modes: Quick Setup (Nous Portal), Full Setup, and Blank Slate. — website/docs/getting-started/quickstart.md
+[F-22] Secrets and tokens are stored in ~/.hermes/.env, while non-secret settings are stored in ~/.hermes/config.yaml. — website/docs/getting-started/quickstart.md
+[F-23] Hermes ships two terminal interfaces: the classic CLI launched with `hermes`, and a newer TUI launched with `hermes --tui` that has modal overlays, mouse selection, and non-blocking input. — website/docs/getting-started/quickstart.md
+[F-24] `hermes --continue` (short form `-c`) resumes the most recent CLI session. — website/docs/user-guide/cli.md
+[F-25] The provider catalog includes Nous Portal, OpenAI Codex, Anthropic, OpenRouter, Fireworks AI, Z.AI, Kimi/Moonshot, AWS Bedrock, Azure Foundry, Google AI Studio, xAI, GitHub Copilot, and custom OpenAI-compatible endpoints, among many others. — website/docs/getting-started/quickstart.md
+[F-26] The CLI status bar shows the model name, token usage, a context fill bar, estimated session cost, and elapsed duration. — website/docs/user-guide/cli.md
+[F-27] Typing `/` in the CLI opens an autocomplete dropdown listing available slash commands. — website/docs/user-guide/cli.md
+[F-28] The Windows installer bundles uv, Python 3.11, Node.js, ripgrep, ffmpeg, and a portable Git Bash (MinGit) with no admin rights required. — README.md
+
+## Tools and toolsets
+
+[F-29] The documentation homepage advertises "60+ built-in tools." — website/docs/index.mdx
+[F-30] The `file` toolset bundles patch, read_file, search_files, and write_file. — website/docs/reference/toolsets-reference.md
+[F-31] The `terminal` toolset bundles the process and terminal tools for shell execution and background process management. — website/docs/reference/toolsets-reference.md
+[F-32] The `coding` toolset is a composite bundling file, terminal, search, web, skills, browser, todo, memory, session_search, clarify, code_execution, delegation, and vision. — website/docs/reference/toolsets-reference.md
+[F-33] `hermes tools` opens a curses UI to enable or disable toolsets per platform. — website/docs/reference/toolsets-reference.md
+[F-34] In-session slash commands such as `/tools list`, `/tools disable browser`, and `/tools enable homeassistant` toggle toolsets live. — website/docs/reference/toolsets-reference.md
+[F-35] The `hermes-cli` platform toolset includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, clarify, computer_use, Home Assistant, and kanban tools. — website/docs/reference/toolsets-reference.md
+[F-36] The `safe` toolset provides read-only research and media generation (image_generate, vision_analyze, web_extract, web_search) with no file writes, terminal, or code execution. — website/docs/reference/toolsets-reference.md
+[F-37] Each configured MCP server that contributes a tool creates its own runtime toolset named `mcp-<server>`. — website/docs/user-guide/features/mcp.md
+
+## Learning loop: memory, skills, session search, Honcho, curator
+
+[F-38] Persistent memory has two files: MEMORY.md (2,200-char limit, the agent's own notes) and USER.md (1,375-char limit, the user profile), stored under ~/.hermes/memories/. — website/docs/user-guide/features/memory.md
+[F-39] Memory entries are injected into the system prompt as a frozen snapshot at session start and are managed by the agent through the `memory` tool with add/replace/remove actions. — website/docs/user-guide/features/memory.md
+[F-40] Memory entries are scanned for prompt-injection and credential-exfiltration patterns before being accepted. — website/docs/user-guide/features/memory.md
+[F-41] Beyond MEMORY.md/USER.md, the agent can search past conversations with the `session_search` tool, backed by SQLite FTS5 full-text search over ~/.hermes/state.db. — website/docs/user-guide/features/memory.md
+[F-42] Hermes ships 8 external memory provider plugins, including Honcho, OpenViking, Mem0, Hindsight, Holographic, RetainDB, ByteRover, and Supermemory. — website/docs/user-guide/features/memory.md
+[F-43] Skills are on-demand knowledge documents that follow a progressive-disclosure pattern and are compatible with the agentskills.io open standard. — website/docs/user-guide/features/skills.md
+[F-44] All skills live in ~/.hermes/skills/, and every installed skill is automatically registered as a slash command. — website/docs/user-guide/features/skills.md
+[F-45] The agent can create, update, and delete its own skills via the `skill_manage` tool, described as the agent's "procedural memory." — website/docs/user-guide/features/skills.md
+[F-46] `/learn` turns a source — local docs, a URL, a described workflow, or a whole book/PDF — into a reusable skill without the user hand-writing the SKILL.md. — website/docs/user-guide/features/skills.md
+[F-47] `hermes skills browse`, `hermes skills search`, and `hermes skills install` browse and install skills from the Skills Hub, including sources like skills.sh, well-known endpoints, and direct GitHub repos. — website/docs/user-guide/features/skills.md
+[F-48] All hub-installed skills go through a security scanner that checks for data exfiltration, prompt injection, and destructive commands before install. — website/docs/user-guide/features/skills.md
+[F-49] The curator is a background maintenance pass for agent-created skills that moves unused skills through active → stale → archived states and can optionally run an LLM consolidation pass. — website/docs/user-guide/features/curator.md
+[F-50] By default the curator's automatic transitions mark a skill stale after 14 days of non-use and archive it after 30 days. — website/docs/user-guide/features/curator.md
+[F-51] Honcho is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of Hermes's built-in memory by reasoning about conversations after they happen. — website/docs/user-guide/features/honcho.md
+[F-52] Honcho is integrated as one of Hermes's Memory Provider plugins and is configured with `hermes memory setup`. — website/docs/user-guide/features/honcho.md
+[F-53] The Learning Journey (`hermes journey`, aliases `hermes learning`/`hermes memory-graph`, or `/journey` in chat) is a timeline view of every skill and memory entry Hermes has learned, plotted over time. — website/docs/user-guide/features/memory.md
+
+## Gateway platforms and cron automations
+
+[F-54] The messaging gateway lets users chat with Hermes from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Feishu/Lark, WeCom, Weixin, BlueBubbles, QQ, Yuanbao, Microsoft Teams, LINE, ntfy, or a browser. — website/docs/user-guide/messaging/index.md
+[F-55] The docs describe the gateway as reaching "20+ platforms from one gateway." — website/docs/index.mdx
+[F-56] The gateway is a single background process that connects to all configured platforms, handles sessions, runs cron jobs, and delivers voice messages. — website/docs/user-guide/messaging/index.md
+[F-57] `hermes gateway setup` interactively configures messaging platforms, and `hermes gateway start` / `hermes gateway run` starts the gateway process. — README.md
+[F-58] Hermes exposes cron scheduling through a single `cronjob` tool with create/list/pause/resume/run/remove/edit actions instead of separate tools. — website/docs/user-guide/features/cron.md
+[F-59] Schedules can be expressed in natural language ("in 30m", "every 2h", "every monday 9am") as well as raw cron expressions ("0 9 * * *"). — website/docs/user-guide/features/cron.md
+[F-60] A cron job can run in "no-agent mode" (`no_agent=True`), running a script on schedule and delivering its stdout verbatim with zero LLM involvement. — website/docs/user-guide/features/cron.md
+[F-61] Cron jobs can chain outputs between each other using `context_from`, and a job can carry forward its own previous output with `continuity=true`. — website/docs/user-guide/features/cron.md
+[F-62] Cron execution is handled by the gateway daemon, which ticks the scheduler every 60 seconds. — website/docs/user-guide/features/cron.md
+[F-63] In chat, `/cron add "in 30m" "Remind me to check the build"` schedules a task directly from natural language. — website/docs/user-guide/features/cron.md
+
+## Advanced: subagents/delegation, code execution, MCP, terminal backends, SOUL.md, context files
+
+[F-64] `delegate_task` spawns child AIAgent instances with a completely fresh conversation; only the child's final summary enters the parent's context. — website/docs/user-guide/features/delegation.md
+[F-65] Up to 10 concurrent subagents run per batch by default (configurable, no hard ceiling). — website/docs/user-guide/features/delegation.md
+[F-66] Leaf subagents cannot call delegate_task, clarify, memory, send_message, or cronjob; only "orchestrator" role children (opt-in via `max_spawn_depth`) can delegate further. — website/docs/user-guide/features/delegation.md
+[F-67] execute_code scripts can call web_search, web_extract, read_file, write_file, search_files, patch, and terminal (foreground only) via RPC. — website/docs/user-guide/features/code-execution.md
+[F-68] MCP (Model Context Protocol) lets Hermes connect to external tool servers such as GitHub, databases, and internal APIs; MCP tools are registered as `mcp_<server_name>_<tool_name>`. — website/docs/user-guide/features/mcp.md
+[F-69] Hermes supports both stdio MCP servers (local subprocess) and HTTP MCP servers (remote endpoint, including OAuth-authenticated ones). — website/docs/user-guide/features/mcp.md
+[F-70] `hermes mcp` opens an interactive picker for a curated catalog of Nous-reviewed MCP servers. — website/docs/user-guide/features/mcp.md
+[F-71] Hermes supports seven terminal backends: local, Docker, SSH, Daytona, Singularity, Modal, and Vercel Sandbox. — README.md
+[F-72] Daytona and Modal offer serverless persistence: "your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions." — README.md
+[F-73] The Docker backend runs commands inside a single persistent container shared across sessions, `/new`, `/reset`, and subagents, hardened with dropped capabilities, no privilege escalation, and PID limits. — website/docs/user-guide/configuration.md
+[F-74] The SSH backend connects to a remote server and can keep a persistent `bash -l` shell alive on the remote host. — website/docs/user-guide/configuration.md
+[F-75] The Modal backend runs each task in an isolated cloud VM and can snapshot/restore its filesystem across sessions when `container_persistent: true`. — website/docs/user-guide/configuration.md
+[F-76] The Daytona backend runs commands in a Daytona managed workspace and supports stop/resume for persistence, requiring a `DAYTONA_API_KEY`. — website/docs/user-guide/configuration.md
+[F-77] The Vercel Sandbox backend runs commands in a Vercel Sandbox cloud microVM with snapshot-backed filesystem persistence. — website/docs/user-guide/configuration.md
+[F-78] The terminal backend is configured via `terminal.backend` in config.yaml, or with `hermes config set terminal.backend docker`. — website/docs/user-guide/configuration.md
+[F-79] SOUL.md controls the agent's personality, tone, and communication style, and is loaded only from HERMES_HOME (e.g. ~/.hermes/SOUL.md), never from the working directory. — website/docs/user-guide/features/context-files.md
+[F-80] AGENTS.md (along with CLAUDE.md, .hermes.md, and .cursorrules) are project context files auto-discovered from the working directory and injected into the system prompt, with .hermes.md taking highest priority. — website/docs/user-guide/features/context-files.md
+[F-81] Inside a git repository, Hermes loads a merged chain of AGENTS.md files from the git root down to the working directory, with deeper files taking precedence. — website/docs/user-guide/features/context-files.md
+[F-82] All context files are scanned for prompt-injection patterns (instruction overrides, hidden HTML, credential exfiltration) before being loaded, and blocked content is not injected. — website/docs/user-guide/features/context-files.md
+
+## Safety: approvals, secrets, work-machine guidance, sandboxing
+
+[F-83] The default approval mode `approvals.mode: smart` uses an auxiliary LLM to assess command risk: low-risk commands auto-approve, dangerous ones auto-deny, and uncertain cases escalate to a manual prompt. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-84] If an approval prompt times out (default 300 seconds) without a response, the command is denied. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-85] A hardline blocklist refuses commands such as `rm -rf /`, fork bombs, or zeroing a physical disk regardless of approval mode, `--yolo`, or an explicit "allow always." — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-86] write_file and patch cannot touch OS credential stores (~/.ssh/, ~/.aws/, ~/.kube/, /etc/sudoers, ~/.netrc) or Hermes/project secret files (auth.json, .env, .env.local) anywhere on disk. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-87] `security.redact_secrets` is on by default, redacting patterns that look like API keys, tokens, and passwords from tool output before they enter context or logs. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-88] Hermes Agent does not collect telemetry, usage data, or analytics; conversations, memory, and skills are stored locally in ~/.hermes/. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-89] `approvals.deny` lets a user add glob patterns that block matching terminal commands unconditionally, even under `--yolo`. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-90] `HERMES_WRITE_SAFE_ROOT` restricts write_file and patch to listed directory prefixes, hard-blocking writes outside them. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-91] On the gateway, if no allowlists are configured and `GATEWAY_ALLOW_ALL_USERS` is not set, all users are denied by default. — website/docs/guides/secure-hermes-on-a-work-machine.md
+[F-92] Checkpoints automatically snapshot a project before destructive operations (write_file, patch, rm, mv, sed -i, git reset) into a shadow git store under ~/.hermes/checkpoints/store/, restorable with `/rollback`. — website/docs/guides/secure-hermes-on-a-work-machine.md

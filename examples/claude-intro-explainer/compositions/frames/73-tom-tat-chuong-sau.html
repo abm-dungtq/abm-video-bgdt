@@ -1,0 +1,218 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 x chapter */
+    #f73-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 38% 42%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80-1840, y 60-880 */
+    #f73-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below */
+    .f73-spk svg { display: block; width: 100%; height: 100%; }
+    .f73-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* kicker */
+    #f73-kicker {
+      position: absolute; left: 80px; top: 120px;
+      display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); line-height: 1.3; white-space: nowrap;
+      opacity: 0;
+    }
+    #f73-kick-spark { width: 28px; height: 28px; }
+
+    /* pinned anchor card (left 60%) */
+    #f73-card {
+      position: absolute; left: 80px; top: 200px; width: 800px; height: 320px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f73-name {
+      position: absolute; left: 72px; top: 70px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 156px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+    #f73-card-spark {
+      position: absolute; left: 620px; top: 108px; width: 104px; height: 104px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+
+    /* the cycling slot (right 40%) */
+    #f73-slot {
+      position: absolute; left: 1010px; top: 200px; width: 700px; height: 320px;
+      box-sizing: border-box; border: 2px dashed rgba(240,238,230,.22); border-radius: 16px;
+      opacity: 0;
+    }
+    .f73-row {
+      position: absolute; left: 0; top: 112px; width: 700px; height: 100px;
+      text-align: center; white-space: nowrap;
+    }
+    #f73-old {
+      display: inline-block; position: relative; opacity: 0;
+      font-size: 76px; font-weight: 600; line-height: 1.25; color: var(--ink);
+    }
+    #f73-strike {
+      position: absolute; left: -18px; top: 44%; width: calc(100% + 36px); height: 30px; overflow: visible;
+    }
+    #f73-new {
+      font-family: "Lora", serif; font-weight: 700; font-size: 84px; line-height: 1.18;
+      letter-spacing: -0.01em;
+    }
+    .f73-nw { display: inline-block; opacity: 0; }
+    #f73-people { position: absolute; left: 0; top: 232px; width: 700px; height: 64px; }
+    .f73-person { position: absolute; top: 0; width: 56px; height: 64px; opacity: 0; }
+    #f73-p1 { left: 322px; }
+    #f73-p2 { left: 250px; }
+    #f73-p3 { left: 394px; }
+
+    /* chip under the anchor */
+    #f73-chip {
+      position: absolute; left: 80px; top: 572px; height: 88px; padding: 0 44px 0 34px;
+      box-sizing: border-box; border-radius: 44px;
+      display: flex; align-items: center; gap: 18px;
+      background: var(--surface);
+      border: 1.5px solid rgba(143,184,168,.75);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      font-size: 44px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+      opacity: 0;
+    }
+    #f73-eye { width: 48px; height: 32px; }
+  </style>
+
+  <div id="root" data-composition-id="73-tom-tat-chuong-sau" data-width="1920" data-height="1080" data-duration="8.963">
+    <div id="f73-ground" class="clip" data-start="0" data-duration="8.963" data-track-index="0"></div>
+    <div id="f73-stage" class="clip" data-start="0" data-duration="8.963" data-track-index="1">
+
+      <div id="f73-kicker"><span id="f73-kick-spark" class="f73-spk"></span><span>Tóm lại</span></div>
+
+      <!-- connector from the anchor to the slot ("từ ... sang") -->
+      <svg class="f73-svgfull" viewBox="0 0 1760 820">
+        <path id="f73-link" d="M890 362 C 920 352, 950 368, 986 358" fill="none" stroke="#9A968C" stroke-width="3.5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        <path id="f73-link-head" d="M972 344 L 990 358 L 972 374" fill="none" stroke="#9A968C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <div id="f73-card">
+        <div id="f73-name">Claude</div>
+        <div id="f73-card-spark" class="f73-spk"></div>
+      </div>
+
+      <div id="f73-slot">
+        <div class="f73-row">
+          <span id="f73-old">trả lời<svg id="f73-strike" viewBox="0 0 100 30" preserveAspectRatio="none"><path id="f73-strike-path" d="M0 18 C 20 12, 42 20, 62 13 S 90 10, 100 14" fill="none" stroke="#D97757" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></span>
+        </div>
+        <div class="f73-row" id="f73-new"><span id="f73-nw1" class="f73-nw">cùng</span> <span id="f73-nw2" class="f73-nw">làm</span> <span id="f73-nw3" class="f73-nw">việc</span></div>
+        <div id="f73-people">
+          <div id="f73-p1" class="f73-person"></div>
+          <div id="f73-p2" class="f73-person"></div>
+          <div id="f73-p3" class="f73-person"></div>
+        </div>
+      </div>
+
+      <div id="f73-chip">
+        <svg id="f73-eye" viewBox="0 0 48 32"><path d="M3 16 C 12 3, 36 3, 45 16 C 36 29, 12 29, 3 16 Z" fill="none" stroke="#8FB8A8" stroke-width="3" stroke-linejoin="round"/><circle cx="24" cy="16" r="6" fill="#8FB8A8"/></svg>
+        <span>theo dõi</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="73-tom-tat-chuong-sau"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk) drawn as SVG
+      var spark = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f73-spk').forEach(function (el) { el.innerHTML = spark; });
+
+      // simple person glyph (head + shoulders)
+      var person = function (color) {
+        return '<svg viewBox="0 0 56 64" width="56" height="64"><circle cx="28" cy="17" r="12" fill="none" stroke="' + color + '" stroke-width="3.5"/>' +
+          '<path d="M6 60 C 6 42, 16 34, 28 34 C 40 34, 50 42, 50 60" fill="none" stroke="' + color + '" stroke-width="3.5" stroke-linecap="round"/></svg>';
+      };
+      root.querySelector('#f73-p1').innerHTML = person('#F0EEE6');
+      root.querySelector('#f73-p2').innerHTML = person('#9A968C');
+      root.querySelector('#f73-p3').innerHTML = person('#9A968C');
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var word = function (sel, t) {
+        tl.fromTo(sel, { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, t);
+      };
+
+      // ---- Anchor lands on "Tóm lại" and pins (zero movement afterwards)
+      tl.fromTo('#f73-kicker', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 0.29);   // "Tóm"
+      tl.fromTo('#f73-kick-spark', { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: IN }, 0.29);
+      tl.fromTo('#f73-card', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.35);
+      tl.fromTo('#f73-name', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 1.01);    // "Claude"
+      tl.fromTo('#f73-card-spark', { scale: 0, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN }, 1.20);
+
+      // "từ" (1.50): the connector draws toward the empty slot
+      draw('#f73-link', 1.50, 0.25);
+      draw('#f73-link-head', 1.72, 0.12);
+      tl.fromTo('#f73-slot', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 1.50);
+
+      // "trả lời" (1.62) fills the slot, then the hand-drawn strike crosses it
+      tl.fromTo('#f73-old', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: IN }, 1.62);
+      draw('#f73-strike-path', 1.86, 0.22);
+      // struck "trả lời" lifts to a quiet ghost label at the top of the slot
+      tl.to('#f73-old', { y: -84, scale: 0.5, opacity: 0.45, duration: 0.35, ease: 'power2.inOut' }, 2.08);
+
+      // "cùng làm việc" swaps in word by word on the cues
+      word('#f73-nw1', 2.14);
+      word('#f73-nw2', 2.30);
+      word('#f73-nw3', 2.46);
+
+      // "bạn" (2.78) then "cả nhóm" (3.43): people gather under the new verb
+      tl.fromTo('#f73-p1', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, 2.78);
+      tl.fromTo('#f73-p2', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, 3.43);
+      tl.fromTo('#f73-p3', { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, 3.43);
+
+      // held beat: ~3.85-6.82 nothing moves (still read)
+
+      // "theo dõi" (6.82): the chip joins under the anchor; the spark pops once
+      tl.fromTo('#f73-chip', { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 6.82);
+      tl.to('#f73-card-spark', { scale: 1.3, rotation: 20, duration: 0.2, ease: 'power2.out' }, 6.82);
+      tl.to('#f73-card-spark', { scale: 1, rotation: 0, duration: 0.35, ease: 'power2.inOut' }, 7.04);
+
+      tl.to({}, { duration: 8.363 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["73-tom-tat-chuong-sau"] = tl;
+    })();
+  </script>
+</template>

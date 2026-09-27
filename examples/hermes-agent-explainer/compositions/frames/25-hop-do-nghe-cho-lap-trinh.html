@@ -1,0 +1,423 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f25-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f25-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f25- */
+    .f25-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    .f25-layer svg { position: absolute; left: 0; top: 0; overflow: visible; }
+    .f25-kicker {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+      white-space: nowrap;
+    }
+    .f25-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+
+    /* background field: faint orbit rings */
+    #f25-field { opacity: 0; }
+
+    /* hubs */
+    .f25-hub {
+      position: absolute;
+      box-sizing: border-box;
+      border-radius: 50%;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      opacity: 0;
+    }
+    #f25-socket {
+      position: absolute;
+      left: 880px;
+      top: 410px;
+      width: 230px;
+      height: 230px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 3px dashed rgba(244, 241, 232, 0.28);
+      opacity: 0;
+    }
+    #f25-hub-coding {
+      left: 880px;
+      top: 410px;
+      width: 230px;
+      height: 230px;
+      border: 5px solid var(--gold);
+      font-size: 56px;
+      color: var(--ink);
+      box-shadow: 0 0 40px rgba(255, 210, 63, 0.35), 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    #f25-hub-safe {
+      left: 1320px;
+      top: 420px;
+      width: 190px;
+      height: 190px;
+      border: 5px solid var(--cyan);
+      font-size: 48px;
+      color: var(--ink);
+      box-shadow: 0 0 34px rgba(62, 230, 208, 0.3), 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    #f25-lock {
+      position: absolute;
+      left: 1392px;
+      top: 346px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    #f25-hub-mcp {
+      left: 880px;
+      top: 410px;
+      width: 230px;
+      height: 230px;
+      border: 5px solid var(--gold);
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 60px;
+      color: var(--ink);
+      box-shadow: 0 0 44px rgba(255, 210, 63, 0.4), 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    /* tool nodes (spokes) */
+    .f25-node {
+      position: absolute;
+      box-sizing: border-box;
+      height: 80px;
+      padding: 0 30px 0 26px;
+      border-radius: 40px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.14);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 40px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: var(--ink);
+      opacity: 0;
+    }
+    .f25-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex: none;
+    }
+    .f25-node-safe .f25-dot { background: var(--cyan); }
+    #f25-n-edit {
+      border: 2px dashed rgba(142, 147, 181, 0.7);
+    }
+    #f25-n-edit .f25-dot { background: var(--muted); }
+    .f25-strikewrap { position: relative; display: inline-block; }
+    #f25-strike {
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      top: 50%;
+      height: 6px;
+      margin-top: -3px;
+      border-radius: 3px;
+      background: var(--gold);
+      transform-origin: 0 50%;
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.6));
+    }
+
+    /* MCP plug */
+    #f25-plug {
+      position: absolute;
+      left: 880px;
+      top: 410px;
+      width: 220px;
+      height: 100px;
+      opacity: 0;
+    }
+    .f25-prong {
+      position: absolute;
+      left: 0;
+      width: 56px;
+      height: 14px;
+      border-radius: 4px;
+      background: var(--gold);
+    }
+    #f25-plugbody {
+      position: absolute;
+      left: 50px;
+      top: 0;
+      width: 170px;
+      height: 100px;
+      box-sizing: border-box;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 4px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 40px;
+      color: var(--ink);
+      box-shadow: 0 0 30px rgba(255, 210, 63, 0.35);
+    }
+
+    /* caption pill under the new hub */
+    #f25-own {
+      position: absolute;
+      left: 880px;
+      top: 690px;
+      height: 92px;
+      box-sizing: border-box;
+      padding: 0 40px;
+      border-radius: 46px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.14);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f25-w { display: inline-block; opacity: 0; }
+    #f25-w2 { color: var(--gold); }
+  </style>
+
+  <div id="root" data-composition-id="25-hop-do-nghe-cho-lap-trinh" data-width="1920" data-height="1080" data-duration="14.903">
+    <div id="f25-ground" class="clip" data-start="0" data-duration="14.903" data-track-index="0"></div>
+    <div id="f25-stage" class="clip" data-start="0" data-duration="14.903" data-track-index="1">
+
+      <!-- background field (dim) -->
+      <div id="f25-field" class="f25-layer">
+        <svg width="1760" height="820" viewBox="0 0 1760 820">
+          <g fill="none" stroke="#8e93b5" stroke-linecap="round">
+            <circle cx="880" cy="410" r="190" stroke-width="2" stroke-dasharray="2 16" opacity="0.5"></circle>
+            <circle cx="880" cy="410" r="300" stroke-width="2" stroke-dasharray="2 18" opacity="0.4"></circle>
+            <circle cx="880" cy="410" r="400" stroke-width="2" stroke-dasharray="2 22" opacity="0.3"></circle>
+          </g>
+        </svg>
+      </div>
+
+      <div class="f25-kicker" id="f25-kicker"><b>◆</b>Toolset</div>
+
+      <!-- world: the coding hub + the safe hub (recedes in scene 3) -->
+      <div id="f25-world" class="f25-layer">
+
+        <!-- coding hub group -->
+        <div id="f25-coding" class="f25-layer">
+          <svg width="1760" height="820" viewBox="0 0 1760 820">
+            <g fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round">
+              <line id="f25-l1" x1="880" y1="410" x2="880" y2="130"></line>
+              <line id="f25-l2" x1="880" y1="410" x2="1327" y2="323"></line>
+              <line id="f25-l3" x1="880" y1="410" x2="1156" y2="636"></line>
+              <line id="f25-l4" x1="880" y1="410" x2="604" y2="636"></line>
+              <line id="f25-l5" x1="880" y1="410" x2="433" y2="323"></line>
+            </g>
+          </svg>
+          <div id="f25-socket"></div>
+          <div class="f25-node" id="f25-n1" style="left:880px;top:130px;"><span class="f25-dot"></span>file</div>
+          <div class="f25-node" id="f25-n2" style="left:1327px;top:323px;"><span class="f25-dot"></span>terminal</div>
+          <div class="f25-node" id="f25-n3" style="left:1156px;top:636px;"><span class="f25-dot"></span>web</div>
+          <div class="f25-node" id="f25-n4" style="left:604px;top:636px;"><span class="f25-dot"></span>trình duyệt</div>
+          <div class="f25-node" id="f25-n5" style="left:433px;top:323px;"><span class="f25-dot"></span>bộ nhớ</div>
+          <div class="f25-hub" id="f25-hub-coding">coding</div>
+        </div>
+
+        <!-- safe hub group -->
+        <div id="f25-safe" class="f25-layer">
+          <svg width="1760" height="820" viewBox="0 0 1760 820">
+            <g fill="none" stroke-width="5" stroke-linecap="round">
+              <line id="f25-s1" x1="1320" y1="420" x2="1110" y2="170" stroke="#3ee6d0"></line>
+              <line id="f25-s2" x1="1320" y1="420" x2="1530" y2="170" stroke="#3ee6d0"></line>
+              <line id="f25-s3" x1="1320" y1="515" x2="1320" y2="610" stroke="#8e93b5"></line>
+            </g>
+          </svg>
+          <div class="f25-node f25-node-safe" id="f25-n-search" style="left:1110px;top:170px;"><span class="f25-dot"></span>tìm kiếm</div>
+          <div class="f25-node f25-node-safe" id="f25-n-read" style="left:1530px;top:170px;"><span class="f25-dot"></span>đọc</div>
+          <div class="f25-node" id="f25-n-edit" style="left:1320px;top:650px;"><span class="f25-dot"></span><span class="f25-strikewrap"><span id="f25-edit-txt">sửa file</span><span id="f25-strike"></span></span></div>
+          <div class="f25-hub" id="f25-hub-safe">safe</div>
+          <div id="f25-lock">
+            <svg width="36" height="40" viewBox="0 0 36 40">
+              <path d="M9 17 V11 a9 9 0 0 1 18 0 V17" fill="none" stroke="#0b1026" stroke-width="4.5" stroke-linecap="round"></path>
+              <rect x="3" y="16" width="30" height="22" rx="5" fill="#0b1026"></rect>
+              <circle cx="18" cy="26" r="3.4" fill="#3ee6d0"></circle>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- scene 3: MCP plug → new hub -->
+      <div id="f25-mcp" class="f25-layer">
+        <svg width="1760" height="820" viewBox="0 0 1760 820">
+          <path id="f25-trail" d="M1690 410 L990 410" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55));"></path>
+        </svg>
+        <div id="f25-orbit" class="f25-layer">
+          <svg width="1760" height="820" viewBox="0 0 1760 820">
+            <circle id="f25-orbit-ring" cx="880" cy="410" r="175" fill="none" stroke="#3ee6d0" stroke-width="2.5" opacity="0.8"></circle>
+            <circle id="f25-sat1" cx="1004" cy="286" r="0" fill="#3ee6d0"></circle>
+            <circle id="f25-sat2" cx="1004" cy="534" r="0" fill="#3ee6d0"></circle>
+            <circle id="f25-sat3" cx="756" cy="534" r="0" fill="#3ee6d0"></circle>
+            <circle id="f25-sat4" cx="756" cy="286" r="0" fill="#3ee6d0"></circle>
+          </svg>
+        </div>
+        <div class="f25-hub" id="f25-hub-mcp">MCP</div>
+        <div id="f25-plug">
+          <div class="f25-prong" style="top:26px;"></div>
+          <div class="f25-prong" style="top:60px;"></div>
+          <div id="f25-plugbody">MCP</div>
+        </div>
+        <div id="f25-own"><span class="f25-w" id="f25-w1">một</span><span class="f25-w" id="f25-w2">toolset</span><span class="f25-w" id="f25-w3">riêng</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (id) { return document.getElementById(id); };
+      function hidden(o) { var r = { xPercent: -50, yPercent: -50 }; for (var k in o) r[k] = o[k]; return r; }
+
+      // stroke-draw prep: dash = real length, offset = length (hidden)
+      var lines = ["f25-l1", "f25-l2", "f25-l3", "f25-l4", "f25-l5", "f25-s1", "f25-s2", "f25-s3", "f25-trail", "f25-orbit-ring"];
+      var len = {};
+      lines.forEach(function (id) {
+        var el = q(id);
+        var L = el.getTotalLength ? el.getTotalLength() : 0;
+        if (!L && el.tagName.toLowerCase() === "line") {
+          L = Math.hypot(el.x2.baseVal.value - el.x1.baseVal.value, el.y2.baseVal.value - el.y1.baseVal.value);
+        }
+        len[id] = L;
+        gsap.set(el, { strokeDasharray: L, strokeDashoffset: L });
+      });
+
+      // centered, hidden starting states for positioned elements
+      ["f25-socket", "f25-hub-coding", "f25-hub-safe", "f25-hub-mcp", "f25-plug", "f25-own",
+       "f25-n1", "f25-n2", "f25-n3", "f25-n4", "f25-n5", "f25-n-search", "f25-n-read", "f25-n-edit"]
+        .forEach(function (id) { gsap.set(q(id), { xPercent: -50, yPercent: -50 }); });
+      gsap.set(q("f25-strike"), { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---------- Scene 1 (0–5.16): coding hub + five spokes ----------
+      tl.fromTo("#f25-field", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 0);
+      tl.fromTo("#f25-field", { rotation: 0 }, { rotation: 14, duration: 14.4, ease: "none" }, 0);
+      tl.fromTo("#f25-socket", hidden({ opacity: 0, scale: 0.8 }), hidden({ opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }), 0.1);
+      tl.fromTo("#f25-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.93);
+
+      // "coding" @1.43
+      tl.fromTo("#f25-hub-coding", hidden({ opacity: 0, scale: 0.3 }), hidden({ opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.4)" }), 1.43);
+
+      // spokes on their words: file 2.52 · terminal 3.10 · web 3.84 · trình duyệt 4.26 · bộ nhớ 4.74
+      var spokeCues = [2.52, 3.10, 3.84, 4.26, 4.74];
+      spokeCues.forEach(function (t, i) {
+        var n = i + 1;
+        tl.fromTo("#f25-l" + n, { strokeDashoffset: len["f25-l" + n] }, { strokeDashoffset: 0, duration: 0.35, ease: "power2.out" }, t);
+        tl.fromTo("#f25-n" + n, hidden({ opacity: 0, scale: 0.3 }), hidden({ opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }), t + 0.05);
+      });
+
+      // ---------- Scene 2 (5.16–10.45): split — coding shrinks left, locked "safe" hub right ----------
+      tl.fromTo("#f25-coding", { x: 0, scale: 1, opacity: 1 }, { x: -440, scale: 0.7, opacity: 0.45, duration: 0.8, ease: "power2.inOut" }, 5.16);
+
+      // "safe" @6.41 + padlock
+      tl.fromTo("#f25-hub-safe", hidden({ opacity: 0, scale: 0.3 }), hidden({ opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.4)" }), 6.41);
+      tl.fromTo("#f25-lock", { opacity: 0, scale: 0.2, rotation: -25 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "back.out(1.6)" }, 6.65);
+
+      // "tìm kiếm" @7.11
+      tl.fromTo("#f25-s1", { strokeDashoffset: len["f25-s1"] }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 7.11);
+      tl.fromTo("#f25-n-search", hidden({ opacity: 0, scale: 0.3 }), hidden({ opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }), 7.16);
+      // "đọc" @7.68
+      tl.fromTo("#f25-s2", { strokeDashoffset: len["f25-s2"] }, { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 7.68);
+      tl.fromTo("#f25-n-read", hidden({ opacity: 0, scale: 0.3 }), hidden({ opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }), 7.72);
+
+      // "sửa" @8.60 — tries to attach, rejected and struck through in gold
+      tl.fromTo("#f25-n-edit", hidden({ opacity: 0, y: 90 }), hidden({ opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }), 8.60);
+      tl.fromTo("#f25-s3", { strokeDashoffset: len["f25-s3"] }, { strokeDashoffset: 0, duration: 0.25, ease: "power2.out" }, 8.70);
+      tl.fromTo("#f25-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.out" }, 8.95);
+      tl.fromTo("#f25-n-edit", { y: 0 }, { y: 40, duration: 0.45, ease: "power2.out" }, 9.05);
+      tl.fromTo("#f25-s3", { opacity: 1 }, { opacity: 0.2, duration: 0.4, ease: "power2.out" }, 9.05);
+      tl.set("#f25-edit-txt", { color: "#8e93b5" }, 9.1);
+
+      // ---------- Scene 3 (10.45–14.4): MCP plug flows in, docks, becomes its own toolset ----------
+      tl.fromTo("#f25-world", { scale: 1, opacity: 1, filter: "blur(0px)" }, { scale: 0.86, opacity: 0.2, filter: "blur(5px)", duration: 0.7, ease: "power2.inOut" }, 10.05);
+
+      // "MCP" @10.45 — plug rides the gold trail from the right and docks at center
+      tl.fromTo("#f25-plug", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 10.45);
+      tl.fromTo("#f25-plug", { x: 700 }, { x: 0, duration: 1.05, ease: "power2.inOut" }, 10.45);
+      tl.fromTo("#f25-trail", { strokeDashoffset: len["f25-trail"] }, { strokeDashoffset: 0, duration: 1.05, ease: "power2.inOut" }, 10.45);
+
+      // dock → the plug becomes a hub
+      tl.fromTo("#f25-plug", { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.55, duration: 0.3, ease: "power2.in" }, 11.5);
+      tl.fromTo("#f25-hub-mcp", hidden({ opacity: 0, scale: 0.4 }), hidden({ opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.4)" }), 11.55);
+      tl.fromTo("#f25-orbit-ring", { strokeDashoffset: len["f25-orbit-ring"] }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.out" }, 11.75);
+      ["f25-sat1", "f25-sat2", "f25-sat3", "f25-sat4"].forEach(function (id, i) {
+        tl.fromTo("#" + id, { attr: { r: 0 } }, { attr: { r: 11 }, duration: 0.35, ease: "back.out(1.6)" }, 11.95 + i * 0.08);
+      });
+      tl.fromTo("#f25-orbit", { rotation: 0 }, { rotation: 30, duration: 2.1, ease: "none" }, 12.3);
+
+      // "một" @12.34 · "toolset" @12.92 · "riêng" @13.40
+      tl.fromTo("#f25-own", hidden({ opacity: 0, scale: 0.85 }), hidden({ opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }), 12.34);
+      tl.fromTo("#f25-w1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.34);
+      tl.fromTo("#f25-w2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.92);
+      tl.fromTo("#f25-w3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 13.40);
+
+      tl.to({}, { duration: 14.403 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["25-hop-do-nghe-cho-lap-trinh"] = tl;
+    })();
+  </script>
+</template>

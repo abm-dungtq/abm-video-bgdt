@@ -1,0 +1,252 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f37-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f37-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+
+    /* ---------- scene 3: answer card (pull-back) ---------- */
+    #f37-s3 { position: absolute; inset: 0; opacity: 0; }
+    #f37-card {
+      position: absolute; left: 380px; top: 30px; width: 760px; height: 760px;
+      background: var(--surface); border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f37-card-head {
+      position: absolute; left: 56px; top: 58px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 80px; line-height: 1.1;
+      color: var(--ink); opacity: 0;
+    }
+    #f37-stamp {
+      position: absolute; right: 40px; top: 36px; width: 150px; height: 150px;
+      border-radius: 50%; border: 4px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1;
+      color: var(--gold);
+    }
+    .f37-bar {
+      position: absolute; left: 56px; height: 22px; border-radius: 11px;
+      background: rgba(240,238,230,.16); transform-origin: left center;
+
+    }
+    #f37-clock { position: absolute; left: 1250px; top: 300px; width: 160px; height: 160px; }
+    #f37-time {
+      position: absolute; left: 1250px; top: 490px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 88px; line-height: 1.1;
+      color: var(--ink); opacity: 0; white-space: nowrap;
+    }
+
+    /* ---------- scene 1: hero word ---------- */
+    #f37-hero {
+      position: absolute; left: 0; right: 0; top: 250px; margin: 0 auto; width: max-content;
+      font-family: "Lora", serif; font-weight: 700; font-size: 180px; line-height: 1.08;
+      letter-spacing: -0.01em; color: var(--ink); opacity: 0;
+    }
+    #f37-spark {
+      position: absolute; right: -64px; top: 8px; width: 48px; height: 48px;
+      opacity: 0;
+    }
+    #f37-phrase {
+      position: absolute; left: 0; right: 0; top: 462px; text-align: center;
+      font-weight: 600; font-size: 48px; line-height: 1.3; color: var(--muted); opacity: 0;
+    }
+    #f37-dots {
+      position: absolute; left: 790px; top: 548px; width: 180px; height: 36px;
+      display: flex; justify-content: space-between; opacity: 0;
+    }
+    .f37-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 3px solid rgba(240,238,230,.55); background: transparent;
+    }
+
+    /* ---------- scene 2: step counter ---------- */
+    #f37-s2 { position: absolute; inset: 0; }
+    #f37-counter { position: absolute; left: 260px; top: 170px; width: 440px; height: 360px; }
+    .f37-digit {
+      position: absolute; inset: 0; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 320px; line-height: 360px;
+      letter-spacing: -0.02em; color: var(--ink); opacity: 0;
+    }
+    #f37-divider {
+      position: absolute; left: 820px; top: 210px; width: 2px; height: 380px;
+      background: rgba(240,238,230,.14); transform-origin: center top;
+    }
+    #f37-label1 {
+      position: absolute; left: 900px; top: 228px;
+      font-weight: 500; font-size: 44px; line-height: 1.3; color: var(--muted); opacity: 0;
+      white-space: nowrap;
+    }
+    #f37-label2 {
+      position: absolute; left: 900px; top: 300px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 104px; line-height: 1.1;
+      color: var(--ink); opacity: 0; white-space: nowrap;
+    }
+    #f37-q { position: absolute; left: 1480px; top: 268px; width: 180px; height: 180px; }
+    #f37-q-mark {
+      position: absolute; inset: 0; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 120px; line-height: 180px;
+      color: var(--ink); opacity: 0;
+    }
+    #f37-q svg { position: absolute; inset: 0; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="37-research-nghien-cuu-sau" data-width="1920" data-height="1080" data-duration="10.09">
+    <div id="f37-ground" class="clip" data-start="0" data-duration="10.09" data-track-index="0"></div>
+    <div id="f37-stage" class="clip" data-start="0" data-duration="10.09" data-track-index="1">
+
+      <!-- scene 3: tall answer card, counter becomes its corner stamp -->
+      <div id="f37-s3">
+        <div id="f37-card">
+          <div id="f37-card-head">Chi tiết</div>
+          <div id="f37-stamp">3</div>
+          <div class="f37-bar" style="top:230px;width:640px;"></div>
+          <div class="f37-bar" style="top:282px;width:590px;"></div>
+          <div class="f37-bar" style="top:334px;width:620px;"></div>
+          <div class="f37-bar" style="top:386px;width:470px;"></div>
+          <div class="f37-bar" style="top:466px;width:640px;"></div>
+          <div class="f37-bar" style="top:518px;width:560px;"></div>
+          <div class="f37-bar" style="top:570px;width:610px;"></div>
+          <div class="f37-bar" style="top:622px;width:380px;"></div>
+        </div>
+        <svg id="f37-clock" viewBox="0 0 160 160">
+          <path id="f37-clock-face" d="M80 10 C121 9 151 40 150 81 C149 121 119 151 79 150 C39 149 9 120 10 79 C11 40 40 11 80 10 Z" pathLength="1" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-dasharray="1" stroke-dashoffset="1" opacity="0"/>
+          <g id="f37-clock-hands" opacity="0">
+            <line x1="80" y1="80" x2="80" y2="46" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+            <line id="f37-clock-hand" x1="80" y1="80" x2="80" y2="30" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="80" cy="80" r="6" fill="#F0EEE6"/>
+          </g>
+        </svg>
+        <div id="f37-time">Vài phút</div>
+      </div>
+
+      <!-- scene 2: step counter + what to search next -->
+      <div id="f37-s2">
+        <div id="f37-counter">
+          <div class="f37-digit" id="f37-d1">1</div>
+          <div class="f37-digit" id="f37-d2">2</div>
+          <div class="f37-digit" id="f37-d3">3</div>
+        </div>
+        <div id="f37-divider"></div>
+        <div id="f37-label1">Tự quyết định</div>
+        <div id="f37-label2">Cần tìm gì</div>
+        <div id="f37-q">
+          <div id="f37-q-mark">?</div>
+          <svg viewBox="0 0 180 180">
+            <path id="f37-q-ring" d="M96 12 C140 14 170 48 168 92 C166 136 132 168 88 166 C44 164 12 132 14 88 C16 50 44 20 84 14 C92 13 104 16 110 20" pathLength="1" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="1" stroke-dashoffset="1" opacity="0"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- scene 1: hero word, becomes the kicker -->
+      <div id="f37-phrase">Nhiều bước</div>
+      <div id="f37-dots">
+        <div class="f37-dot" id="f37-dot1"></div>
+        <div class="f37-dot" id="f37-dot2"></div>
+        <div class="f37-dot" id="f37-dot3"></div>
+      </div>
+      <div id="f37-hero">Research<svg id="f37-spark" viewBox="-24 -24 48 48"><g stroke="#D97757" stroke-width="5" stroke-linecap="round"><line x1="0" y1="-20" x2="0" y2="20"/><line x1="-20" y1="0" x2="20" y2="0"/><line x1="-14" y1="-14" x2="14" y2="14"/><line x1="-14" y1="14" x2="14" y2="-14"/></g></svg></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var P = "#f37-";
+
+      /* Scene 1 (0–2.61): "Research" lands on its cue, spark pops, "nhiều bước" + three step dots slide in */
+      tl.fromTo(P + "hero", { opacity: 0, scale: 1.18, filter: "blur(10px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.55, ease: "power3.out" }, 0.35);
+      tl.fromTo(P + "spark", { opacity: 0, scale: 0, rotation: -20 },
+        { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 0.6);
+      tl.fromTo(P + "phrase", { opacity: 0, y: 36 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.43);
+      tl.fromTo(P + "dots", { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.61);
+
+      /* Scene 2 (2.61–7.38): hero shrinks to a kicker, dots move under a big step counter */
+      tl.to(P + "hero", { x: -675, y: -307, scale: 0.36, color: "#9A968C", duration: 0.6, ease: "power2.inOut" }, 2.85);
+      tl.to(P + "phrase", { opacity: 0, y: -24, duration: 0.3, ease: "power2.inOut" }, 2.85);
+      tl.to(P + "dots", { x: -396, y: 12, duration: 0.6, ease: "power2.inOut" }, 2.9);
+      tl.fromTo(P + "divider", { scaleY: 0 }, { scaleY: 1, duration: 0.5, ease: "power3.out" }, 3.1);
+
+      // step 1
+      tl.fromTo(P + "d1", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.0);
+      tl.to(P + "dot1", { backgroundColor: "#D97757", borderColor: "#D97757", duration: 0.25, ease: "power2.out" }, 3.1);
+      tl.fromTo(P + "dot1", { scale: 1.5 }, { scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, 3.1);
+
+      // "tự quyết định"
+      tl.fromTo(P + "label1", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.86);
+
+      // step 2 on "bước (tiếp theo)"
+      tl.to(P + "d1", { opacity: 0, y: -70, duration: 0.35, ease: "power2.in" }, 4.4);
+      tl.fromTo(P + "d2", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 4.45);
+      tl.to(P + "dot2", { backgroundColor: "#D97757", borderColor: "#D97757", duration: 0.25, ease: "power2.out" }, 4.45);
+      tl.fromTo(P + "dot2", { scale: 1.5 }, { scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, 4.45);
+
+      // "cần tìm gì" + hand-drawn "?" circle
+      tl.fromTo(P + "label2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 5.18);
+      tl.fromTo(P + "q-mark", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 5.37);
+      tl.fromTo(P + "q-ring", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 5.42);
+      tl.fromTo(P + "q-ring", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 5.42);
+
+      // step 3 on "Kết (quả)"
+      tl.to(P + "d2", { opacity: 0, y: -70, duration: 0.35, ease: "power2.in" }, 6.19);
+      tl.fromTo(P + "d3", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.24);
+      tl.to(P + "dot3", { backgroundColor: "#D97757", borderColor: "#D97757", duration: 0.25, ease: "power2.out" }, 6.24);
+      tl.fromTo(P + "dot3", { scale: 1.5 }, { scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, 6.24);
+
+      /* Scene 3 (7.38–9.59): tight on the counter, one decelerating pull-back reveals it as the card's stamp */
+      tl.to(P + "s2", { opacity: 0, duration: 0.22, ease: "power2.in" }, 7.38);
+      tl.to(P + "dots", { opacity: 0, duration: 0.22, ease: "power2.in" }, 7.38);
+      tl.fromTo(P + "s3", { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out", immediateRender: false }, 7.38);
+      tl.fromTo(P + "s3", { scale: 3.0, x: -545, y: 209, transformOrigin: "1025px 141px" },
+        { scale: 1, x: 0, y: 0, transformOrigin: "1025px 141px", duration: 1.05, ease: "power3.out" }, 7.38);
+
+      tl.fromTo(P + "card-head", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.6);
+      tl.fromTo(".f37-bar", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out", stagger: 0.07 }, 7.85);
+
+      // "vài phút" beside a drawn clock
+      tl.fromTo(P + "clock-face", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 8.47);
+      tl.fromTo(P + "clock-face", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 8.47);
+      tl.fromTo(P + "clock-hands", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 8.6);
+      tl.fromTo(P + "clock-hand", { rotation: 0, svgOrigin: "80 80" }, { rotation: 300, svgOrigin: "80 80", duration: 0.8, ease: "power2.out" }, 8.6);
+      tl.fromTo(P + "time", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 8.67);
+
+      tl.to({}, { duration: 9.59 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["37-research-nghien-cuu-sau"] = tl;
+    })();
+  </script>
+</template>

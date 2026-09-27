@@ -1,0 +1,400 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f10-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f10-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f10- */
+    .f10-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; }
+
+    /* ---------- Scene 1: docs quote strip + one chat bubble ---------- */
+    #f10-s1 { position: absolute; inset: 0; }
+    #f10-kicker {
+      position: absolute; left: 60px; top: 40px; height: 40px;
+      display: flex; align-items: center; gap: 18px;
+      font-size: 28px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+    }
+    #f10-kicker b { color: var(--gold); font-weight: 400; }
+    #f10-kfile { text-transform: none; letter-spacing: .04em; color: var(--ink); opacity: .8; }
+    #f10-card {
+      position: absolute; left: 60px; top: 130px; width: 1640px; min-height: 190px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; padding: 30px 50px 30px 130px;
+    }
+    #f10-cardbar {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 8px;
+      border-radius: 16px 0 0 16px; background: rgba(244,241,232,.28);
+    }
+    #f10-qmark {
+      position: absolute; left: 40px; top: 18px;
+      font-size: 140px; font-weight: 800; line-height: 1.05; color: var(--muted);
+    }
+    #f10-quote {
+      font-size: 56px; font-weight: 800; line-height: 1.2; letter-spacing: -.015em;
+      display: flex; flex-wrap: wrap; column-gap: 20px;
+    }
+    .f10-w { display: inline-block; position: relative; }
+    #f10-wapi { color: var(--cyan); }
+    #f10-strike {
+      position: absolute; left: -6px; right: -6px; top: 54%; height: 8px; margin-top: -4px;
+      border-radius: 4px; background: var(--gold);
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+      transform-origin: 0 50%;
+    }
+
+    /* chat bubble (shared by scene 1 and the workspace); --u scales it */
+    .f10-bub {
+      position: absolute;
+      width: calc(380 * var(--u)); height: calc(110 * var(--u));
+      border-radius: calc(26 * var(--u)); border-bottom-left-radius: calc(6 * var(--u));
+      background: rgba(62,230,208,.12); border: calc(2 * var(--u)) solid rgba(62,230,208,.5);
+      display: flex; align-items: center; gap: calc(26 * var(--u)); padding: 0 calc(24 * var(--u));
+    }
+    .f10-ava {
+      width: calc(64 * var(--u)); height: calc(64 * var(--u)); border-radius: 50%;
+      background: rgba(62,230,208,.16); border: calc(2 * var(--u)) solid var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+      font-size: calc(32 * var(--u)); font-weight: 800; line-height: 1.05; color: var(--ink);
+    }
+    .f10-dots { display: flex; gap: calc(16 * var(--u)); }
+    .f10-dot { width: calc(20 * var(--u)); height: calc(20 * var(--u)); border-radius: 50%; background: var(--ink); }
+    .f10-sname { font-size: calc(30 * var(--u)); font-weight: 600; color: var(--ink); margin-left: auto; }
+
+    #f10-bub1 { --u: 1.4px; left: 614px; top: 470px; transform-origin: 50% 50%; }
+    #f10-wrap {
+      position: absolute; left: 560px; top: 420px; width: 640px; height: 254px;
+      border: 3px dashed rgba(142,147,181,.7); border-radius: 30px;
+      transform-origin: 50% 50%;
+    }
+    #f10-apitag {
+      position: absolute; left: 34px; top: -24px; height: 44px; padding: 0 16px;
+      display: flex; align-items: center; background: var(--canvas);
+      font-size: 30px; letter-spacing: .12em; color: var(--ink);
+    }
+
+    /* ---------- Scene 2: headline + zoom-out workspace ---------- */
+    #f10-s2 { position: absolute; inset: 0; }
+    #f10-head {
+      position: absolute; left: 0; top: 12px; height: 120px;
+      display: flex; align-items: center; gap: 26px;
+      font-size: 88px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em;
+    }
+    .f10-hw { display: inline-block; }
+    #f10-gcard {
+      position: absolute; left: 1090px; top: 12px; width: 670px; height: 124px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12); border-radius: 16px;
+      display: flex; align-items: center; padding: 0 22px 0 30px; gap: 20px;
+    }
+    #f10-glabel { font-size: 32px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    #f10-gsvg { margin-left: auto; overflow: visible; }
+
+    #f10-view {
+      position: absolute; left: 0; top: 160px; width: 1760px; height: 660px;
+      overflow: hidden; border-radius: 18px;
+    }
+    #f10-world {
+      position: absolute; left: 0; top: 10px; width: 1760px; height: 640px;
+      transform-origin: 0 0;
+    }
+    .f10-pane {
+      position: absolute; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12); border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f10-ph {
+      position: absolute; left: 0; right: 0; top: 0; height: 56px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; padding-left: 60px;
+      font-size: 28px; letter-spacing: .12em; color: var(--muted);
+    }
+    .f10-pdot {
+      position: absolute; left: 22px; top: 20px; width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(142,147,181,.6);
+    }
+    .f10-hl {
+      position: absolute; inset: -1px; border-radius: 16px;
+      border: 2px solid var(--cyan); box-shadow: 0 0 24px rgba(62,230,208,.25);
+    }
+    .f10-row {
+      position: absolute; left: 60px; height: 40px; display: flex; align-items: center;
+      font-size: 28px; color: var(--ink);
+    }
+    #f10-pchat { left: 0; top: 0; width: 500px; height: 640px; }
+    #f10-pterm { left: 530px; top: 0; width: 600px; height: 300px; }
+    #f10-pweb  { left: 530px; top: 330px; width: 600px; height: 310px; }
+    #f10-pfile { left: 1160px; top: 0; width: 600px; height: 300px; }
+    #f10-pmem  { left: 1160px; top: 330px; width: 600px; height: 310px; }
+
+    #f10-ubub {
+      position: absolute; left: 190px; top: 84px; width: 280px; height: 96px;
+      border-radius: 22px; border-bottom-right-radius: 6px;
+      background: rgba(244,241,232,.10); border: 1px solid rgba(244,241,232,.22);
+    }
+    .f10-bar { position: absolute; left: 26px; height: 14px; border-radius: 7px; background: rgba(244,241,232,.5); }
+    #f10-bub2 { --u: 1px; left: 60px; top: 245px; }
+    .f10-chip {
+      position: absolute; left: 60px; height: 40px; display: flex; align-items: center; gap: 16px;
+      font-size: 28px; color: var(--cyan);
+    }
+    .f10-chip i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); }
+
+    .f10-t { position: absolute; left: 60px; font-size: 30px; line-height: 1.55; white-space: nowrap; }
+    .f10-t b { color: var(--cyan); font-weight: 400; }
+    #f10-cursor { position: absolute; left: 60px; top: 190px; width: 16px; height: 34px; background: var(--ink); opacity: .7; }
+    #f10-url {
+      position: absolute; left: 36px; top: 80px; width: 528px; height: 52px; border-radius: 26px;
+      background: rgba(11,16,38,.7); border: 1px solid rgba(244,241,232,.14);
+      display: flex; align-items: center; padding-left: 22px; font-size: 28px; color: var(--ink);
+    }
+
+    #f10-trail { position: absolute; left: 0; top: 0; overflow: visible; }
+    .f10-seg {
+      fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+      filter: drop-shadow(0 0 10px rgba(255,210,63,.55));
+    }
+    #f10-spark {
+      position: absolute; left: -26px; top: -18px; width: 52px; height: 36px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="10-hermes-khong-chi-la-chatbot" data-width="1920" data-height="1080" data-duration="8.927">
+    <div id="f10-ground" class="clip" data-start="0" data-duration="8.927" data-track-index="0"></div>
+    <div id="f10-stage" class="clip" data-start="0" data-duration="8.927" data-track-index="1">
+
+      <!-- Scene 1: docs quote strip, one chat bubble wrapped by "API" -->
+      <div id="f10-s1">
+        <div id="f10-kicker" class="f10-mono"><span id="f10-kmain"><b>◆</b> Tài liệu Hermes</span><span id="f10-kfile">· index.mdx</span></div>
+        <div id="f10-card">
+          <div id="f10-cardbar"></div>
+          <div id="f10-qmark">“</div>
+          <div id="f10-quote">
+            <span class="f10-w" id="f10-w1">không</span>
+            <span class="f10-w" id="f10-w2">phải</span>
+            <span class="f10-w" id="f10-w3">một</span>
+            <span class="f10-w" id="f10-w4">chatbot<span id="f10-strike"></span></span>
+            <span class="f10-w" id="f10-w5">bọc</span>
+            <span class="f10-w" id="f10-w6">quanh</span>
+            <span class="f10-w" id="f10-w7">một</span>
+            <span class="f10-w" id="f10-wapi">API</span>
+          </div>
+        </div>
+        <div id="f10-wrap"><div id="f10-apitag" class="f10-mono">API</div></div>
+        <div id="f10-bub1" class="f10-bub">
+          <div class="f10-ava">H</div>
+          <div class="f10-dots"><div class="f10-dot f10-d1a"></div><div class="f10-dot f10-d1b"></div><div class="f10-dot f10-d1c"></div></div>
+        </div>
+      </div>
+
+      <!-- Scene 2: the bubble was one corner of an autonomous workspace -->
+      <div id="f10-s2">
+        <div id="f10-head">
+          <span class="f10-hw" id="f10-h1">Agent</span>
+          <span class="f10-hw" id="f10-h2">tự</span>
+          <span class="f10-hw" id="f10-h3">chủ</span>
+        </div>
+        <div id="f10-gcard">
+          <div id="f10-glabel">càng chạy càng giỏi</div>
+          <svg id="f10-gsvg" width="220" height="96" viewBox="0 0 220 96">
+            <path id="f10-gaxis" d="M6 6 V88 H214" fill="none" stroke="rgba(142,147,181,.7)" stroke-width="3" stroke-linecap="round"/>
+            <path id="f10-gline" d="M14 80 C60 78 86 64 118 52 S178 22 204 14" fill="none" stroke="#3ee6d0" stroke-width="5" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220"/>
+            <circle id="f10-gdot" cx="204" cy="14" r="10" fill="#ffd23f" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55))"/>
+          </svg>
+        </div>
+
+        <div id="f10-view">
+          <div id="f10-world">
+            <div id="f10-pchat" class="f10-pane">
+              <div class="f10-ph f10-mono"><span class="f10-pdot"></span>chat</div>
+              <div id="f10-ubub"><div class="f10-bar" style="top:28px;width:220px"></div><div class="f10-bar" style="top:56px;width:150px"></div></div>
+              <div id="f10-bub2" class="f10-bub">
+                <div class="f10-ava">H</div>
+                <div class="f10-dots"><div class="f10-dot f10-d2a"></div><div class="f10-dot f10-d2b"></div><div class="f10-dot f10-d2c"></div></div>
+              </div>
+              <div class="f10-chip f10-mono" id="f10-c1" style="top:400px"><i></i>terminal</div>
+              <div class="f10-chip f10-mono" id="f10-c2" style="top:452px"><i></i>web</div>
+              <div class="f10-chip f10-mono" id="f10-c3" style="top:504px"><i></i>file</div>
+              <div class="f10-chip f10-mono" id="f10-c4" style="top:556px"><i></i>memory</div>
+            </div>
+            <div id="f10-pterm" class="f10-pane">
+              <div class="f10-ph f10-mono"><span class="f10-pdot"></span>terminal</div>
+              <div class="f10-t f10-mono" style="top:80px"><b>$</b> hermes --version</div>
+              <div class="f10-t f10-mono" id="f10-tout" style="top:128px">Hermes Agent v0.21.3</div>
+              <div id="f10-cursor"></div>
+              <div class="f10-hl" id="f10-hl1"></div>
+            </div>
+            <div id="f10-pweb" class="f10-pane">
+              <div class="f10-ph f10-mono"><span class="f10-pdot"></span>web</div>
+              <div id="f10-url" class="f10-mono">hermes-agent.nousresearch.com</div>
+              <div class="f10-row f10-mono" style="top:170px">web_search</div>
+              <div class="f10-row f10-mono" style="top:220px">web_extract</div>
+              <div class="f10-hl" id="f10-hl2"></div>
+            </div>
+            <div id="f10-pfile" class="f10-pane">
+              <div class="f10-ph f10-mono"><span class="f10-pdot"></span>file</div>
+              <div class="f10-row f10-mono" style="top:76px">read_file</div>
+              <div class="f10-row f10-mono" style="top:126px">write_file</div>
+              <div class="f10-row f10-mono" style="top:176px">search_files</div>
+              <div class="f10-row f10-mono" style="top:226px">patch</div>
+              <div class="f10-hl" id="f10-hl3"></div>
+            </div>
+            <div id="f10-pmem" class="f10-pane">
+              <div class="f10-ph f10-mono"><span class="f10-pdot"></span>memory</div>
+              <div class="f10-row f10-mono" style="top:80px;color:#8e93b5">~/.hermes/memories/</div>
+              <div class="f10-row f10-mono" style="top:140px">MEMORY.md</div>
+              <div class="f10-row f10-mono" style="top:194px">USER.md</div>
+              <div class="f10-hl" id="f10-hl4"></div>
+            </div>
+
+            <svg id="f10-trail" width="1760" height="640" viewBox="0 0 1760 640">
+              <path class="f10-seg" id="f10-s1p" d="M440 300 L515 300 L515 28 L560 28"/>
+              <path class="f10-seg" id="f10-s2p" d="M560 28 L560 358"/>
+              <path class="f10-seg" id="f10-s3p" d="M560 358 L560 315 L1145 315 L1145 28 L1190 28"/>
+              <path class="f10-seg" id="f10-s4p" d="M1190 28 L1190 358"/>
+            </svg>
+            <svg id="f10-spark" width="52" height="36" viewBox="0 0 52 36">
+              <path d="M20 16 C14 6 6 4 2 8 C8 10 12 14 18 20" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round"/>
+              <path d="M32 16 C38 6 46 4 50 8 C44 10 40 14 34 20" fill="none" stroke="#f4f1e8" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="26" cy="18" r="9" fill="#ffd23f" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.7))"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var q = function (s) { return document.querySelector(s); };
+      var IN = "power3.out";
+
+      // ---------- Scene 1 (0 – 5.32): docs quote builds per word ----------
+      gsap.set("#f10-s2", { autoAlpha: 0 });
+      tl.fromTo("#f10-kmain", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: IN }, 0.29);
+      tl.fromTo("#f10-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: IN }, 0.29);
+      tl.fromTo("#f10-kfile", { opacity: 0, x: -16 }, { opacity: 0.8, x: 0, duration: 0.4, ease: IN }, 0.79);
+      tl.fromTo("#f10-qmark", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN }, 0.79);
+
+      // spoken word times (audio_meta.json, frame 10)
+      var words = [["#f10-w1", 2.18], ["#f10-w2", 2.34], ["#f10-w3", 2.54], ["#f10-w4", 2.68],
+                   ["#f10-w5", 3.15], ["#f10-w6", 3.31], ["#f10-w7", 3.51], ["#f10-wapi", 3.71]];
+      words.forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, w[1]);
+      });
+      // "chatbot" (2.68): gold strike draws across it, word dims
+      tl.fromTo("#f10-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.34, ease: "none" }, 2.72);
+      tl.to("#f10-w4", { color: "#8e93b5", duration: 0.3, ease: "power2.inOut" }, 3.0);
+      // the tight chat bubble below — this is what "a chatbot" is
+      tl.fromTo("#f10-bub1", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN }, 2.68);
+      // "API" (3.71): the bubble is only a wrapper around an API
+      tl.fromTo("#f10-wrap", { opacity: 0, scale: 1.08 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN }, 3.71);
+      // "Nó là một" (4.79): the quote recedes, the bubble steps forward
+      tl.to("#f10-card", { opacity: 0.35, duration: 0.4, ease: "power2.inOut" }, 4.79);
+      tl.to("#f10-kicker", { opacity: 0.35, duration: 0.4, ease: "power2.inOut" }, 4.79);
+      tl.to("#f10-wrap", { opacity: 0.3, duration: 0.4, ease: "power2.inOut" }, 4.79);
+      tl.to("#f10-bub1", { scale: 1.08, duration: 0.5, ease: "power2.inOut" }, 4.79);
+
+      // typing dots: finite hand-built bounces (no repeat/yoyo)
+      function typing(cls, t0, cycles, amp) {
+        ["a", "b", "c"].forEach(function (k, i) {
+          for (var c = 0; c < cycles; c++) {
+            var t = t0 + c * 0.6 + i * 0.12;
+            tl.to(cls + k, { y: -amp, duration: 0.18, ease: "power2.out" }, t);
+            tl.to(cls + k, { y: 0, duration: 0.18, ease: "power2.in" }, t + 0.18);
+          }
+        });
+      }
+      typing(".f10-d1", 3.2, 3, 12);
+
+      // ---------- Scene 2 (5.32 – 8.427): cut tight on the bubble, ONE zoom-out ----------
+      tl.set("#f10-s1", { autoAlpha: 0 }, 5.32);
+      tl.set("#f10-s2", { autoAlpha: 1 }, 5.32);
+      // camera: bubble centre (250,300) held at view centre at S0, then scale → 1, translate → 0
+      var S0 = 3.2;
+      tl.fromTo("#f10-world",
+        { scale: S0, x: 880 - S0 * 250, y: 320 - S0 * 300 },
+        { scale: 1, x: 0, y: 0, duration: 0.9, ease: "expo.out" }, 5.4);
+      typing(".f10-d2", 5.36, 2, 8);
+
+      // headline lands on "agent" 5.32 · "tự" 5.64 · "chủ" 5.80
+      tl.fromTo("#f10-h1", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 5.32);
+      tl.fromTo("#f10-h2", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 5.64);
+      tl.fromTo("#f10-h3", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 5.80);
+
+      // hidden-until-visited states on the locked wide
+      ["#f10-hl1", "#f10-hl2", "#f10-hl3", "#f10-hl4"].forEach(function (s) { gsap.set(s, { opacity: 0 }); });
+
+      // courier trail: spark works across the panes after the lock (camera static from 6.30)
+      function legs(pts) {
+        var L = 0, out = [];
+        for (var i = 1; i < pts.length; i++) {
+          var d = Math.abs(pts[i][0] - pts[i - 1][0]) + Math.abs(pts[i][1] - pts[i - 1][1]);
+          out.push(d); L += d;
+        }
+        return { lens: out, total: L };
+      }
+      var segs = [
+        { id: "#f10-s1p", t0: 6.30, t1: 6.50, pts: [[440, 300], [515, 300], [515, 28], [560, 28]], hl: "#f10-hl1", chip: "#f10-c1" },
+        { id: "#f10-s2p", t0: 6.50, t1: 6.68, pts: [[560, 28], [560, 358]], hl: "#f10-hl2", chip: "#f10-c2" },
+        { id: "#f10-s3p", t0: 6.68, t1: 7.02, pts: [[560, 358], [560, 315], [1145, 315], [1145, 28], [1190, 28]], hl: "#f10-hl3", chip: "#f10-c3" },
+        { id: "#f10-s4p", t0: 7.02, t1: 7.18, pts: [[1190, 28], [1190, 358]], hl: "#f10-hl4", chip: "#f10-c4" }
+      ];
+      tl.set("#f10-spark", { x: 440, y: 300 }, 0);
+      tl.fromTo("#f10-spark", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, 6.30);
+      segs.forEach(function (s) {
+        var m = legs(s.pts), path = q(s.id), dur = s.t1 - s.t0, t = s.t0;
+        path.setAttribute("stroke-dasharray", String(m.total));
+        tl.fromTo(path, { strokeDashoffset: m.total }, { strokeDashoffset: 0, duration: dur, ease: "none" }, s.t0);
+        for (var i = 1; i < s.pts.length; i++) {
+          var ld = dur * m.lens[i - 1] / m.total;
+          tl.to("#f10-spark", { x: s.pts[i][0], y: s.pts[i][1], duration: ld, ease: "none" }, t);
+          t += ld;
+        }
+        // arrival: pane lights cyan, the tool call lands in the chat pane
+        tl.to(s.hl, { opacity: 1, duration: 0.25, ease: IN }, s.t1);
+        tl.fromTo(s.chip, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, ease: IN }, s.t1);
+      });
+      // terminal output appears when the spark runs the command
+      tl.fromTo("#f10-tout", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 6.52);
+      tl.fromTo("#f10-cursor", { y: -48 }, { y: 0, duration: 0.2, ease: "none" }, 6.52);
+
+      // "càng chạy càng giỏi": card at 6.50, rising line draws, gold point on "giỏi" 7.21
+      tl.fromTo("#f10-gcard", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 6.50);
+      tl.fromTo("#f10-gline", { strokeDashoffset: 220 }, { strokeDashoffset: 0, duration: 0.71, ease: "none" }, 6.50);
+      tl.fromTo("#f10-gdot", { opacity: 0, scale: 0, svgOrigin: "204 14" }, { opacity: 1, scale: 1, svgOrigin: "204 14", duration: 0.35, ease: IN }, 7.21);
+
+      tl.to({}, { duration: 8.427 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["10-hermes-khong-chi-la-chatbot"] = tl;
+    })();
+  </script>
+</template>

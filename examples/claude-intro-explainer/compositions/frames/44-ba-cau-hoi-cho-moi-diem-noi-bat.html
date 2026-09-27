@@ -1,0 +1,232 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f44-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f44-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- Scene 1: kinetic intro (stage coords) ---- */
+    #f44-intro {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+    }
+    .f44-kicker {
+      position: absolute;
+      left: 0;
+      width: 1760px;
+      top: 190px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .f44-kicker-star { display: inline-block; width: 26px; height: 26px; margin-right: 14px; vertical-align: -3px; }
+    .f44-sub {
+      position: absolute;
+      left: 0;
+      width: 1760px;
+      top: 250px;
+      text-align: center;
+      font-size: 34px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .f44-sparks {
+      position: absolute;
+      left: 760px;
+      top: 340px;
+      width: 240px;
+      height: 44px;
+    }
+    .f44-spark {
+      position: absolute;
+      top: 0;
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    .f44-phrase {
+      position: absolute;
+      left: 0;
+      width: 1760px;
+      top: 400px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    /* ---- Analyze rail: resting geometry x 560, y 64–108 (stage offset 80,60) ---- */
+    #f44-rail {
+      position: absolute;
+      left: 480px;
+      top: 4px;
+      width: 1068px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      transform-origin: 50% 50%;
+    }
+    .f44-pill {
+      position: relative;
+      box-sizing: border-box;
+      width: 340px;
+      height: 44px;
+      flex: 0 0 340px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted);
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 42px;
+      text-align: center;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f44-badge {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 26px;
+      height: 26px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #9A968C;
+      color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 23px;
+      text-align: center;
+      vertical-align: 3px;
+    }
+    .f44-pill-spark {
+      position: absolute;
+      right: 12px;
+      top: 9px;
+      width: 26px;
+      height: 26px;
+      opacity: 0;
+    }
+    .f44-link {
+      flex: 0 0 24px;
+      width: 24px;
+      height: 44px;
+      overflow: visible;
+    }
+  </style>
+
+  <div id="root" data-composition-id="44-ba-cau-hoi-cho-moi-diem-noi-bat" data-width="1920" data-height="1080" data-duration="10.407">
+    <div id="f44-ground" class="clip" data-start="0" data-duration="10.407" data-track-index="0"></div>
+    <div id="f44-stage" class="clip" data-start="0" data-duration="10.407" data-track-index="1">
+
+      <div id="f44-intro">
+        <div id="f44-kicker" class="f44-kicker"><svg class="f44-kicker-star" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>Nâng cao</div>
+        <div id="f44-sub" class="f44-sub">mỗi tính năng</div>
+        <div class="f44-sparks">
+          <svg id="f44-s1" class="f44-spark" style="left:0px" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+          <svg id="f44-s2" class="f44-spark" style="left:98px" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+          <svg id="f44-s3" class="f44-spark" style="left:196px" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+        </div>
+        <div id="f44-phrase" class="f44-phrase">ba câu hỏi</div>
+      </div>
+
+      <!-- RAIL SPEC: resting geometry row y 64–108, x 560–1628; three 340×44 pills, radius 22, surface #2A2926, 1px border rgba(240,238,230,.12); 24px gaps with a thin terracotta connector; Be Vietnam Pro 600 26px, muted when off; labels preceded by a 26px round number badge (1.5px border, digit Be Vietnam Pro 600 16px, margin-right 10px; muted unlit, terracotta lit); lit = terracotta border + cream text + badge terracotta + SVG spark (26px, right 12px, top 9px) visible -->
+      <div id="f44-rail">
+        <div id="f44-p1" class="f44-pill"><span id="f44-b1" class="f44-badge">1</span>Tính năng<svg id="f44-ps1" class="f44-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f44-link" viewBox="0 0 24 44"><path id="f44-l1" d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round" stroke-dasharray="30" stroke-dashoffset="30"/></svg>
+        <div id="f44-p2" class="f44-pill"><span id="f44-b2" class="f44-badge">2</span>Vì sao nổi bật<svg id="f44-ps2" class="f44-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f44-link" viewBox="0 0 24 44"><path id="f44-l2" d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round" stroke-dasharray="30" stroke-dashoffset="30"/></svg>
+        <div id="f44-p3" class="f44-pill"><span id="f44-b3" class="f44-badge">3</span>Bạn được gì<svg id="f44-ps3" class="f44-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // Rail starts large and centred (centre 960,400; resting centre 1094,86)
+      gsap.set("#f44-rail", { x: -134, y: 314, scale: 1.5 });
+      gsap.set(["#f44-s1", "#f44-s2", "#f44-s3"], { opacity: 0, scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(["#f44-ps1", "#f44-ps2", "#f44-ps3"], { scale: 0, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 — kinetic: "phần nâng cao", "mỗi tính năng", "ba câu hỏi" + three sparks
+      tl.fromTo("#f44-kicker", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.37);
+      tl.fromTo("#f44-sub", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.64);
+      tl.fromTo("#f44-phrase", { opacity: 0, y: 40, scale: 1.12 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 2.61);
+      tl.fromTo("#f44-s1", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "power3.out" }, 2.61);
+      tl.fromTo("#f44-s2", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "power3.out" }, 2.79);
+      tl.fromTo("#f44-s3", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "power3.out" }, 2.93);
+
+      // Scene 2 — flow: phrase lifts away, three pills draw in left to right with connectors
+      tl.fromTo("#f44-intro", { opacity: 1, y: 0 }, { opacity: 0, y: -90, duration: 0.5, ease: "power2.inOut" }, 3.12);
+      tl.fromTo("#f44-p1", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.3);
+      tl.fromTo("#f44-l1", { attr: { "stroke-dashoffset": 30 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 3.5);
+      tl.fromTo("#f44-p2", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.55);
+      tl.fromTo("#f44-l2", { attr: { "stroke-dashoffset": 30 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 3.75);
+      tl.fromTo("#f44-p3", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.8);
+
+      // Slot lighting: 0.3 s tween starting on the spoken cue, fully lit at the rail time
+      function light(n, t) {
+        tl.fromTo("#f44-p" + n,
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo("#f44-b" + n,
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo("#f44-ps" + n,
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: "power3.out" }, t);
+      }
+      light(1, 3.79);  // "Nó là gì": lit by 4.09 (rail slot 1 at 3.9)
+      light(2, 5.1);   // "nổi bật": lit by 5.4 (rail slot 2 at 5.4)
+      light(3, 6.0);   // "bạn được gì": lit by 6.3 (rail slot 3 at 6.3)
+
+      // Hold with a quiet 1 % drift, then glide up to the resting place
+      tl.fromTo("#f44-rail", { scale: 1.5 }, { scale: 1.515, duration: 2.1, ease: "none", immediateRender: false }, 6.3);
+      tl.fromTo("#f44-rail", { x: -134, y: 314, scale: 1.515 }, { x: 0, y: 0, scale: 1, duration: 1.13, ease: "power2.inOut", immediateRender: false }, 8.4);
+
+      tl.to({}, { duration: 9.907 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["44-ba-cau-hoi-cho-moi-diem-noi-bat"] = tl;
+    })();
+  </script>
+</template>

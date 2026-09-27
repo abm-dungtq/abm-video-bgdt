@@ -1,0 +1,377 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    #f18-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    #f18-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific */
+    .f18-shot { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f18-kicker {
+      position: absolute; left: 40px; top: 70px;
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .f18-kicker svg { width: 30px; height: 30px; }
+
+    /* flow nodes */
+    .f18-node { position: absolute; top: 260px; width: 440px; height: 320px; }
+    .f18-ghost {
+      position: absolute; inset: 0; border-radius: 16px;
+      border: 2px dashed rgba(240,238,230,.16);
+    }
+    .f18-fill {
+      position: absolute; inset: 0; border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f18-ring-acc, .f18-ring-ok {
+      position: absolute; inset: -1px; border-radius: 17px; opacity: 0;
+    }
+    .f18-ring-acc { border: 3px solid var(--gold); }
+    .f18-ring-ok { border: 2px solid rgba(143,184,168,.55); }
+    .f18-badge {
+      position: absolute; left: 32px; top: 30px; width: 52px; height: 52px; border-radius: 50%;
+      border: 2px solid rgba(240,238,230,.28); color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 28px;
+    }
+    .f18-title {
+      position: absolute; left: 0; right: 0; top: 110px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 66px; line-height: 1.12;
+      letter-spacing: -0.01em; color: var(--ink); opacity: 0;
+    }
+    .f18-sub {
+      position: absolute; left: 0; right: 0; top: 214px; text-align: center;
+      font-size: 34px; font-weight: 500; color: var(--muted); opacity: 0;
+    }
+    .f18-ticks {
+      position: absolute; left: 0; right: 0; top: 212px;
+      display: flex; justify-content: center; gap: 22px;
+    }
+    .f18-tick {
+      width: 96px; height: 56px; border-radius: 28px;
+      background: rgba(143,184,168,.10); border: 2px solid rgba(143,184,168,.6);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-weight: 600; font-size: 28px; color: var(--ink); opacity: 0;
+    }
+    .f18-tick svg { width: 26px; height: 26px; }
+    #f18-arrows { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f18-spark { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+    #f18-spark svg { width: 44px; height: 44px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    /* shot 2 */
+    #f18-shot2 { opacity: 0; }
+    #f18-bar {
+      position: absolute; left: 40px; top: 300px; width: 1000px; height: 150px;
+      border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f18-line {
+      position: absolute; left: 52px; right: 140px; top: 0; bottom: 0;
+      display: flex; align-items: center; white-space: pre;
+      font-size: 46px; font-weight: 500; line-height: 1.3;
+    }
+    #f18-old { color: var(--muted); }
+    #f18-new { color: var(--ink); }
+    .f18-ch { display: none; }
+    #f18-caret {
+      display: inline-block; width: 4px; height: 58px; margin-left: 4px;
+      background: var(--ink); vertical-align: middle;
+    }
+    #f18-send {
+      position: absolute; right: 36px; top: 43px; width: 64px; height: 64px; border-radius: 50%;
+      border: 2px solid rgba(240,238,230,.30);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f18-send svg { width: 30px; height: 30px; }
+    #f18-barlabel {
+      position: absolute; left: 44px; top: 222px;
+      font-size: 30px; font-weight: 600; color: var(--muted); opacity: 0;
+    }
+    #f18-right { position: absolute; left: 1180px; top: 205px; width: 400px; height: 340px; }
+    #f18-q {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+    }
+    #f18-q svg { position: absolute; left: 30px; top: 0; width: 340px; height: 340px; }
+    #f18-qmark {
+      position: relative; font-family: "Lora", serif; font-weight: 700; font-size: 200px;
+      line-height: 1; color: var(--muted);
+    }
+    #f18-check { position: absolute; left: 30px; top: 0; width: 340px; height: 340px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="18-cach-hoi-de-duoc-tra-loi-hay" data-width="1920" data-height="1080" data-duration="15.15">
+    <div id="f18-ground" class="clip" data-start="0" data-duration="15.15" data-track-index="0"></div>
+    <div id="f18-stage" class="clip" data-start="0" data-duration="15.15" data-track-index="1">
+
+      <!-- SHOT 1: three-step flow -->
+      <div id="f18-shot1" class="f18-shot">
+        <div id="f18-drift" class="f18-shot">
+          <div id="f18-kick1" class="f18-kicker">
+            <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></g></svg>
+            <span>Câu trả lời hay</span>
+          </div>
+
+          <svg id="f18-arrows" viewBox="0 0 1760 820">
+            <g fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path id="f18-a1" d="M 498 424 C 530 404, 566 440, 604 418 S 636 414, 646 420"/>
+              <path id="f18-a1h" d="M 624 402 L 648 420 L 622 438"/>
+              <path id="f18-a2" d="M 1118 424 C 1150 404, 1186 440, 1224 418 S 1256 414, 1266 420"/>
+              <path id="f18-a2h" d="M 1244 402 L 1268 420 L 1242 438"/>
+            </g>
+          </svg>
+
+          <div id="f18-n1" class="f18-node" style="left:40px">
+            <div class="f18-ghost"></div>
+            <div class="f18-fill"></div>
+            <div class="f18-ring-ok"></div>
+            <div class="f18-ring-acc"></div>
+            <div class="f18-badge">1</div>
+            <div class="f18-title">rõ ràng</div>
+            <div class="f18-sub">đơn giản</div>
+          </div>
+          <div id="f18-n2" class="f18-node" style="left:660px">
+            <div class="f18-ghost"></div>
+            <div class="f18-fill"></div>
+            <div class="f18-ring-ok"></div>
+            <div class="f18-ring-acc"></div>
+            <div class="f18-badge">2</div>
+            <div class="f18-title">ngữ cảnh</div>
+            <div class="f18-sub">như người mới</div>
+          </div>
+          <div id="f18-n3" class="f18-node" style="left:1280px">
+            <div class="f18-ghost"></div>
+            <div class="f18-fill"></div>
+            <div class="f18-ring-ok"></div>
+            <div class="f18-ring-acc"></div>
+            <div class="f18-badge">3</div>
+            <div class="f18-title">chia nhỏ</div>
+            <div class="f18-ticks">
+              <div class="f18-tick"><svg viewBox="0 0 26 26"><path d="M5 14 L11 19 L21 7" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>1</div>
+              <div class="f18-tick"><svg viewBox="0 0 26 26"><path d="M5 14 L11 19 L21 7" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>2</div>
+              <div class="f18-tick"><svg viewBox="0 0 26 26"><path d="M5 14 L11 19 L21 7" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>3</div>
+            </div>
+          </div>
+
+          <div id="f18-spark">
+            <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"/><line x1="3" y1="20" x2="37" y2="20"/><line x1="8" y1="8" x2="32" y2="32"/><line x1="32" y1="8" x2="8" y2="32"/></g></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOT 2: prompt rewrite -->
+      <div id="f18-shot2" class="f18-shot">
+        <div id="f18-kick2" class="f18-kicker">
+          <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></g></svg>
+          <span>Ví dụ</span>
+        </div>
+        <div id="f18-bar">
+          <div id="f18-line"><span id="f18-old"></span><span id="f18-new"></span><span id="f18-caret"></span></div>
+          <div id="f18-send">
+            <svg viewBox="0 0 30 30"><path d="M15 24 L15 7 M8 13 L15 6 L22 13" fill="none" stroke="#F0EEE6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div id="f18-right">
+          <div id="f18-q">
+            <svg viewBox="0 0 340 340"><circle cx="170" cy="170" r="150" fill="none" stroke="rgba(154,150,140,.55)" stroke-width="3" stroke-dasharray="12 12"/></svg>
+            <div id="f18-qmark">?</div>
+          </div>
+          <svg id="f18-check" viewBox="0 0 340 340">
+            <path id="f18-ck-ring" d="M 172 22 C 258 20, 322 86, 320 172 C 318 256, 252 320, 168 318 C 86 316, 20 252, 22 168 C 24 90, 86 26, 164 24" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round"/>
+            <path id="f18-ck-mark" d="M 100 176 C 118 192, 136 212, 150 230 C 180 186, 214 142, 250 108" fill="none" stroke="#8FB8A8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="18-cach-hoi-de-duoc-tra-loi-hay"]');
+      function q(sel) { return root.querySelector(sel); }
+      function qa(sel) { return root.querySelectorAll(sel); }
+
+      // stroke draw-on prep
+      var strokes = ["#f18-a1", "#f18-a1h", "#f18-a2", "#f18-a2h", "#f18-ck-ring", "#f18-ck-mark"];
+      var lens = {};
+      strokes.forEach(function (s) {
+        var el = q(s);
+        var L = Math.ceil(el.getTotalLength()) + 2;
+        lens[s] = L;
+        gsap.set(el, { strokeDasharray: L, strokeDashoffset: L });
+      });
+      gsap.set(q("#f18-check"), { opacity: 1 });
+
+      // typewriter spans (built once, deterministic)
+      var tl = gsap.timeline({ paused: true });
+      function typeInto(container, words) {
+        var spans = [];
+        words.forEach(function (w, wi) {
+          var target = container;
+          if (w.wrap) {
+            target = document.createElement("span");
+            target.id = w.wrap;
+            container.appendChild(target);
+          }
+          var chars = Array.from(w.t);
+          var step = (w.e - w.s) / chars.length;
+          chars.forEach(function (c, ci) {
+            var sp = document.createElement("span");
+            sp.className = "f18-ch";
+            sp.textContent = c;
+            target.appendChild(sp);
+            tl.set(sp, { display: "inline" }, w.s + ci * step);
+            spans.push(sp);
+          });
+          if (wi < words.length - 1) {
+            var sp2 = document.createElement("span");
+            sp2.className = "f18-ch";
+            sp2.textContent = " ";
+            container.appendChild(sp2);
+            tl.set(sp2, { display: "inline" }, w.e);
+            spans.push(sp2);
+          }
+        });
+        return spans;
+      }
+
+      // ---------- SHOT 1 (0 – ~8.9 s): three-step flow ----------
+      var nodes = [q("#f18-n1"), q("#f18-n2"), q("#f18-n3")];
+      gsap.set(nodes, { opacity: 0 });
+      tl.fromTo(nodes, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.08 }, 0.1);
+      tl.fromTo(q("#f18-kick1"), { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.94);
+      tl.fromTo(q("#f18-drift"), { scale: 1 }, { scale: 1.02, duration: 8.8, ease: "none", transformOrigin: "50% 50%" }, 0.1);
+
+      function activate(n, t) {
+        tl.fromTo(n.querySelector(".f18-fill"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, t);
+        tl.fromTo(n.querySelector(".f18-ghost"), { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.inOut" }, t);
+        tl.fromTo(n.querySelector(".f18-ring-acc"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo(n.querySelector(".f18-title"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, t);
+        tl.fromTo(n.querySelector(".f18-badge"), { color: "#9A968C", borderColor: "rgba(240,238,230,.28)" }, { color: "#F0EEE6", borderColor: "#D97757", duration: 0.3, ease: "power3.out" }, t);
+      }
+      function settle(n, t) {
+        tl.to(n.querySelector(".f18-ring-acc"), { opacity: 0, duration: 0.3, ease: "power2.inOut" }, t);
+        tl.fromTo(n.querySelector(".f18-ring-ok"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.inOut" }, t);
+        tl.to(n.querySelector(".f18-badge"), { borderColor: "#8FB8A8", duration: 0.3, ease: "power2.inOut" }, t);
+      }
+
+      var spark = q("#f18-spark");
+      var sx = [238, 858, 1478], sy = 238;
+      // node 1 — "rõ ràng" @2.13, "đơn giản" @2.73
+      activate(nodes[0], 2.13);
+      tl.fromTo(spark, { opacity: 0, scale: 0, rotation: -20, x: sx[0], y: sy }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 2.13);
+      tl.fromTo(nodes[0].querySelector(".f18-sub"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.73);
+
+      // arrow 1 draws, spark travels, node 2 "ngữ cảnh" @4.04
+      tl.to(q("#f18-a1"), { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 3.6);
+      tl.to(q("#f18-a1h"), { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 4.0);
+      tl.to(spark, { x: sx[1], rotation: 180, duration: 0.5, ease: "power2.inOut" }, 3.6);
+      tl.to(spark, { y: sy - 70, duration: 0.25, ease: "power2.out" }, 3.6);
+      tl.to(spark, { y: sy, duration: 0.25, ease: "power2.in" }, 3.85);
+      settle(nodes[0], 4.04);
+      activate(nodes[1], 4.04);
+      // "như người mới" @5.89
+      tl.fromTo(nodes[1].querySelector(".f18-sub"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.89);
+
+      // arrow 2 draws, spark travels, node 3 "chia nhỏ" @7.98
+      tl.to(q("#f18-a2"), { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 7.0);
+      tl.to(q("#f18-a2h"), { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 7.45);
+      tl.to(spark, { x: sx[2], rotation: 360, duration: 0.6, ease: "power2.inOut" }, 7.3);
+      tl.to(spark, { y: sy - 70, duration: 0.3, ease: "power2.out" }, 7.3);
+      tl.to(spark, { y: sy, duration: 0.3, ease: "power2.in" }, 7.6);
+      settle(nodes[1], 7.98);
+      activate(nodes[2], 7.98);
+      // splits into three step ticks on "thành / từng / bước"
+      var ticks = qa("#f18-n3 .f18-tick");
+      [8.38, 8.56, 8.70].forEach(function (t, i) {
+        tl.fromTo(ticks[i], { opacity: 0, scale: 0.6, x: -40 * (1 - i) }, { opacity: 1, scale: 1, x: 0, duration: 0.3, ease: "power3.out" }, t);
+      });
+
+      // shot change: zoom through the flow (within-frame cut)
+      tl.to(q("#f18-shot1"), { scale: 1.12, opacity: 0, filter: "blur(8px)", duration: 0.45, ease: "power2.in", transformOrigin: "75% 50%" }, 9.0);
+
+      // ---------- SHOT 2 (~9.2 – 14.65 s): prompt rewrite ----------
+      tl.fromTo(q("#f18-shot2"), { opacity: 0, scale: 0.92, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.5, ease: "power3.out", transformOrigin: "35% 50%" }, 9.2);
+      tl.fromTo(q("#f18-kick2"), { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 9.52);
+
+      // vague question, typed in muted as it is spoken
+      var oldSpans = typeInto(q("#f18-old"), [
+        { t: "báo", s: 10.665, e: 10.765 },
+        { t: "cáo", s: 10.805, e: 10.925 },
+        { t: "này", s: 10.965, e: 11.086 },
+        { t: "thế", s: 11.126, e: 11.206 },
+        { t: "nào?", s: 11.266, e: 11.466 }
+      ]);
+      tl.fromTo(q("#f18-q"), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 10.665);
+
+      // "nói rõ" @12.05 — caret backspaces the vague question
+      var bsStart = 12.05, bsEnd = 12.6;
+      var bsStep = (bsEnd - bsStart) / oldSpans.length;
+      for (var i = oldSpans.length - 1, k = 0; i >= 0; i--, k++) {
+        tl.set(oldSpans[i], { display: "none" }, bsStart + k * bsStep);
+      }
+      tl.to(q("#f18-q"), { opacity: 0, scale: 0.9, duration: 0.4, ease: "power2.inOut" }, 12.05);
+
+      // retype the precise request
+      typeInto(q("#f18-new"), [
+        { t: "cần", s: 12.728, e: 12.868 },
+        { t: "nhận xét", s: 12.949, e: 13.389, wrap: "f18-hl" },
+        { t: "phần", s: 13.469, e: 13.61 },
+        { t: "nào", s: 13.67, e: 13.85 }
+      ]);
+      tl.fromTo(q("#f18-hl"), { color: "#F0EEE6" }, { color: "#D97757", duration: 0.25, ease: "power3.out" }, 13.23);
+      tl.fromTo(q("#f18-bar"), { borderColor: "rgba(240,238,230,.14)" }, { borderColor: "rgba(143,184,168,.6)", duration: 0.4, ease: "power2.inOut" }, 13.9);
+
+      // sage check draws on the right, then holds
+      tl.to(q("#f18-ck-ring"), { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 13.9);
+      tl.to(q("#f18-ck-mark"), { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 14.25);
+
+      // caret blink during idle stretches (explicit sets, no repeat)
+      var caret = q("#f18-caret");
+      function blink(a, b) {
+        for (var t = a, on = false; t < b; t += 0.5, on = !on) tl.set(caret, { opacity: on ? 1 : 0 }, t);
+        tl.set(caret, { opacity: 1 }, b);
+      }
+      blink(9.8, 10.6);
+      blink(11.6, 12.0);
+      var t2 = 13.95, on2 = false;
+      for (; t2 < 14.6; t2 += 0.5, on2 = !on2) tl.set(caret, { opacity: on2 ? 1 : 0 }, t2);
+
+      tl.to({}, { duration: 14.65 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["18-cach-hoi-de-duoc-tra-loi-hay"] = tl;
+    })();
+  </script>
+</template>

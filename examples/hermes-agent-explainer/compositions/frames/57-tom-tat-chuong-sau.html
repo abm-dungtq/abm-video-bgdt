@@ -1,0 +1,351 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f57-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f57-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f57- */
+    #f57-field {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      opacity: 0;
+    }
+
+    /* ---- pinned anchor (left) ---- */
+    #f57-anchor {
+      position: absolute;
+      left: 20px;
+      top: 170px;
+      width: 600px;
+      opacity: 0;
+    }
+    #f57-kicker {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    #f57-kicker-dia { color: var(--gold); }
+    #f57-num {
+      margin-top: 10px;
+      font-weight: 800;
+      font-size: 200px;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    #f57-head {
+      margin-top: 6px;
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f57-ticks {
+      position: absolute;
+      left: 20px;
+      top: 590px;
+      width: 560px;
+      height: 14px;
+      opacity: 0;
+    }
+    .f57-seg {
+      position: absolute;
+      top: 0;
+      width: 100px;
+      height: 14px;
+      border-radius: 7px;
+      background: rgba(142, 147, 181, 0.25);
+      overflow: hidden;
+    }
+    .f57-segfill {
+      position: absolute;
+      inset: 0;
+      border-radius: 7px;
+      background: var(--gold);
+    }
+    #f57-count {
+      position: absolute;
+      left: 20px;
+      top: 628px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 32px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f57-countn { color: var(--ink); }
+
+    /* ---- courier trail gutter ---- */
+    #f57-trail {
+      position: absolute;
+      left: 660px;
+      top: 0;
+      width: 40px;
+      height: 820px;
+      overflow: visible;
+    }
+
+    /* ---- checklist (right) ---- */
+    .f57-row {
+      position: absolute;
+      left: 720px;
+      width: 1040px;
+      height: 128px;
+      box-sizing: border-box;
+      border: 2px dashed rgba(142, 147, 181, 0.32);
+      border-radius: 16px;
+      opacity: 0;
+    }
+    .f57-card {
+      position: absolute;
+      left: 720px;
+      width: 1040px;
+      height: 128px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    .f57-check {
+      position: absolute;
+      left: 26px;
+      top: 23px;
+      width: 82px;
+      height: 82px;
+      overflow: visible;
+    }
+    .f57-ring {
+      fill: rgba(62, 230, 208, 0.12);
+      stroke: #3ee6d0;
+      stroke-opacity: 0.4;
+      stroke-width: 3;
+    }
+    .f57-tick {
+      fill: none;
+      stroke: #3ee6d0;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 36;
+      stroke-dashoffset: 36;
+    }
+    .f57-idx {
+      position: absolute;
+      left: 138px;
+      top: 44px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    .f57-label {
+      position: absolute;
+      left: 220px;
+      top: 30px;
+      font-weight: 800;
+      font-size: 52px;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f57-mono {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 50px;
+      letter-spacing: 0;
+      top: 32px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="57-tom-tat-chuong-sau" data-width="1920" data-height="1080" data-duration="7.544">
+    <div id="f57-ground" class="clip" data-start="0" data-duration="7.544" data-track-index="0"></div>
+    <div id="f57-stage" class="clip" data-start="0" data-duration="7.544" data-track-index="1">
+      <!-- background field (dimmed ~40%): dot grid + faint orbit behind the anchor -->
+      <svg id="f57-field" viewBox="0 0 1760 820" width="1760" height="820">
+        <defs>
+          <pattern id="f57-dots" x="0" y="0" width="44" height="44" patternUnits="userSpaceOnUse">
+            <circle cx="22" cy="22" r="2" fill="#8e93b5" fill-opacity="0.45" />
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1760" height="820" fill="url(#f57-dots)" />
+        <circle cx="300" cy="420" r="300" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="2 14" />
+        <circle cx="300" cy="420" r="380" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.2" stroke-dasharray="2 18" />
+      </svg>
+
+      <!-- pinned anchor: enters once, never moves -->
+      <div id="f57-anchor">
+        <div id="f57-kicker"><span id="f57-kicker-dia">◆</span> chương 6</div>
+        <div id="f57-num">5</div>
+        <div id="f57-head">điểm nổi bật</div>
+      </div>
+      <div id="f57-ticks">
+        <div class="f57-seg" style="left:0px"><div id="f57-fill0" class="f57-segfill"></div></div>
+        <div class="f57-seg" style="left:115px"><div id="f57-fill1" class="f57-segfill"></div></div>
+        <div class="f57-seg" style="left:230px"><div id="f57-fill2" class="f57-segfill"></div></div>
+        <div class="f57-seg" style="left:345px"><div id="f57-fill3" class="f57-segfill"></div></div>
+        <div class="f57-seg" style="left:460px"><div id="f57-fill4" class="f57-segfill"></div></div>
+      </div>
+      <div id="f57-count"><span id="f57-countn">0</span> / 5</div>
+
+      <!-- courier trail linking the five rows (row centres y = 104 + 152·i) -->
+      <svg id="f57-trail" viewBox="0 0 40 820" width="40" height="820">
+        <path d="M20 104 L20 712" fill="none" stroke="#8e93b5" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="3 9" />
+        <path id="f57-trailline" d="M20 104 L20 712" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+          stroke-dasharray="608" stroke-dashoffset="608" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        <circle id="f57-node0" cx="20" cy="104" r="9" fill="#ffd23f" opacity="0" />
+        <circle id="f57-node1" cx="20" cy="256" r="9" fill="#ffd23f" opacity="0" />
+        <circle id="f57-node2" cx="20" cy="408" r="9" fill="#ffd23f" opacity="0" />
+        <circle id="f57-node3" cx="20" cy="560" r="9" fill="#ffd23f" opacity="0" />
+        <circle id="f57-node4" cx="20" cy="712" r="9" fill="#ffd23f" opacity="0" />
+      </svg>
+
+      <!-- empty checklist slots -->
+      <div class="f57-row" style="top:40px"></div>
+      <div class="f57-row" style="top:192px"></div>
+      <div class="f57-row" style="top:344px"></div>
+      <div class="f57-row" style="top:496px"></div>
+      <div class="f57-row" style="top:648px"></div>
+
+      <!-- checklist rows, ticked on each spoken item -->
+      <div id="f57-card0" class="f57-card" style="top:40px">
+        <svg id="f57-check0" class="f57-check" viewBox="0 0 64 64" width="82" height="82">
+          <circle class="f57-ring" cx="32" cy="32" r="27" />
+          <path id="f57-tick0" class="f57-tick" d="M20 33.5l8 8L45 23" />
+        </svg>
+        <div class="f57-idx">01</div>
+        <div id="f57-label0" class="f57-label">agent con</div>
+      </div>
+      <div id="f57-card1" class="f57-card" style="top:192px">
+        <svg id="f57-check1" class="f57-check" viewBox="0 0 64 64" width="82" height="82">
+          <circle class="f57-ring" cx="32" cy="32" r="27" />
+          <path id="f57-tick1" class="f57-tick" d="M20 33.5l8 8L45 23" />
+        </svg>
+        <div class="f57-idx">02</div>
+        <div id="f57-label1" class="f57-label">code gọi công cụ</div>
+      </div>
+      <div id="f57-card2" class="f57-card" style="top:344px">
+        <svg id="f57-check2" class="f57-check" viewBox="0 0 64 64" width="82" height="82">
+          <circle class="f57-ring" cx="32" cy="32" r="27" />
+          <path id="f57-tick2" class="f57-tick" d="M20 33.5l8 8L45 23" />
+        </svg>
+        <div class="f57-idx">03</div>
+        <div id="f57-label2" class="f57-label">MCP</div>
+      </div>
+      <div id="f57-card3" class="f57-card" style="top:496px">
+        <svg id="f57-check3" class="f57-check" viewBox="0 0 64 64" width="82" height="82">
+          <circle class="f57-ring" cx="32" cy="32" r="27" />
+          <path id="f57-tick3" class="f57-tick" d="M20 33.5l8 8L45 23" />
+        </svg>
+        <div class="f57-idx">04</div>
+        <div id="f57-label3" class="f57-label">7 môi trường</div>
+      </div>
+      <div id="f57-card4" class="f57-card" style="top:648px">
+        <svg id="f57-check4" class="f57-check" viewBox="0 0 64 64" width="82" height="82">
+          <circle class="f57-ring" cx="32" cy="32" r="27" />
+          <path id="f57-tick4" class="f57-tick" d="M20 33.5l8 8L45 23" />
+        </svg>
+        <div class="f57-idx">05</div>
+        <div id="f57-label4" class="f57-label f57-mono">SOUL.md</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", CYAN = "#3ee6d0", INK = "#f4f1e8";
+      var CARD_BORDER = "rgba(244, 241, 232, 0.12)";
+      gsap.set(".f57-segfill", { scaleX: 0, transformOrigin: "0% 50%" });
+      var tl = gsap.timeline({ paused: true });
+
+      // Background field settles in underneath (dimmed ~40%).
+      tl.fromTo("#f57-field", { opacity: 0 }, { opacity: 0.4, duration: 0.6, ease: "power2.inOut" }, 0);
+
+      // "Năm" (0.31): the anchor lands once and PINS — no movement after this.
+      tl.fromTo("#f57-anchor", { opacity: 0, scale: 0.94, transformOrigin: "0% 50%" },
+        { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.31);
+      // "điểm nổi bật" (0.47–0.91)
+      tl.fromTo("#f57-head", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.47);
+      tl.fromTo(["#f57-ticks", "#f57-count"], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out", stagger: 0.08 }, 0.79);
+      // five empty slots wait for the items
+      tl.fromTo(".f57-row", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out", stagger: 0.06 }, 0.85);
+
+      // Each spoken item ticks its row: card slides in, check pops, tick draws,
+      // label takes the gold focus, the anchor's progress segment fills, the trail
+      // walks down to the row's node.
+      var cues = [1.333, 2.074, 3.277, 4.019, 5.222];
+      var TRAIL = 608, STEP = 152;
+      cues.forEach(function (t, i) {
+        tl.fromTo("#f57-card" + i, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, t);
+        tl.set("#f57-card" + i, { borderColor: GOLD }, t);
+        tl.set("#f57-label" + i, { color: GOLD }, t);
+        tl.fromTo("#f57-check" + i, { scale: 0.6, rotation: -18, transformOrigin: "50% 50%" },
+          { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, t);
+        tl.fromTo("#f57-tick" + i, { strokeDashoffset: 36 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, t + 0.12);
+        tl.fromTo("#f57-fill" + i, { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power3.out" }, t);
+        tl.set("#f57-countn", { textContent: String(i + 1) }, t);
+        tl.fromTo("#f57-node" + i, { opacity: 0, scale: 0, svgOrigin: "20 " + (104 + STEP * i) },
+          { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t);
+        if (i > 0) {
+          tl.fromTo("#f57-trailline", { strokeDashoffset: TRAIL - STEP * (i - 1) },
+            { strokeDashoffset: TRAIL - STEP * i, duration: 0.3, ease: "none" }, t);
+          // the previous item settles into "done"
+          tl.set("#f57-label" + (i - 1), { color: INK }, t);
+          tl.set("#f57-card" + (i - 1), { borderColor: CARD_BORDER }, t);
+        }
+      });
+
+      // Emphasis beat after "SOUL.md." ends (6.02): the list is complete —
+      // every row snaps to "ok" cyan together and the anchor number takes the gold.
+      var R = 6.08;
+      tl.set("#f57-label4", { color: INK }, R);
+      tl.set(".f57-card", { borderColor: "rgba(62, 230, 208, 0.55)" }, R);
+      tl.set("#f57-countn", { color: CYAN }, R);
+      tl.set("#f57-num", { color: GOLD }, R);
+      tl.fromTo("#f57-num", { filter: "drop-shadow(0 0 0px rgba(255,210,63,0))" },
+        { filter: "drop-shadow(0 0 18px rgba(255,210,63,.55))", duration: 0.45, ease: "power3.out" }, R);
+
+      // Hold still to the end (no exit; the root transition is the exit).
+      tl.to({}, { duration: 6.944 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["57-tom-tat-chuong-sau"] = tl;
+    })();
+  </script>
+</template>

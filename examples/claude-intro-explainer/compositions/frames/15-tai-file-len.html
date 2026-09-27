@@ -1,0 +1,396 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f15-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f15-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f15- */
+
+    /* ---------- Shot 1: screen, 30 rail (left) / 70 viewport (right) ---------- */
+    #f15-s1 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    #f15-viewport {
+      position: absolute;
+      left: 520px;
+      top: 60px;
+      width: 1240px;
+      height: 697.5px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f15-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      transform-origin: 620px 348.75px;
+      opacity: 0;
+    }
+    #f15-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #f15-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      overflow: visible;
+    }
+    .f15-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f15-gold { stroke: var(--gold); }
+    .f15-sage { stroke: var(--cyan); }
+    #f15-pointer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    /* rail */
+    #f15-kicker {
+      position: absolute;
+      left: 24px;
+      top: 150px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f15-doc {
+      position: absolute;
+      left: 20px;
+      top: 194px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      white-space: nowrap;
+    }
+    #f15-tailieu {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 88px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    .f15-w {
+      display: inline-block;
+      opacity: 0;
+    }
+    #f15-spark1 {
+      width: 42px;
+      height: 42px;
+      display: block;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f15-plus-label {
+      position: absolute;
+      left: 22px;
+      top: 364px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 60px;
+      line-height: 1.12;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f15-chon {
+      position: absolute;
+      left: 24px;
+      top: 452px;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ---------- Shot 2: flow strip ---------- */
+    #f15-s2 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 420px;
+    }
+    #f15-keo {
+      position: absolute;
+      left: 0;
+      top: 70px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 120px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f15-keo .f15-w { margin: 0 16px; }
+    #f15-flow {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f15-zone {
+      position: absolute;
+      left: 1180px;
+      top: 320px;
+      width: 460px;
+      height: 320px;
+      opacity: 0;
+    }
+    #f15-zone-dash {
+      position: absolute;
+      inset: 0;
+      border: 3px dashed rgba(240,238,230,.55);
+      border-radius: 22px;
+    }
+    #f15-zone-ok {
+      position: absolute;
+      inset: 0;
+      border: 3px solid var(--cyan);
+      border-radius: 22px;
+      background: rgba(143,184,168,.12);
+      opacity: 0;
+    }
+    #f15-tick {
+      position: absolute;
+      left: 396px;
+      top: 18px;
+      width: 44px;
+      height: 44px;
+      overflow: visible;
+    }
+    #f15-zone-label {
+      position: absolute;
+      left: 1180px;
+      top: 664px;
+      width: 460px;
+      text-align: center;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f15-mover {
+      position: absolute;
+      left: 160px;
+      top: 360px;
+      width: 180px;
+      height: 230px;
+    }
+    #f15-card {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f15-page {
+      position: absolute;
+      left: 40px;
+      top: 45px;
+      width: 100px;
+      height: 130px;
+      overflow: visible;
+    }
+  </style>
+
+  <div id="root" data-composition-id="15-tai-file-len" data-width="1920" data-height="1080" data-duration="8.622">
+    <div id="f15-ground" class="clip" data-start="0" data-duration="8.622" data-track-index="0"></div>
+    <div id="f15-stage" class="clip" data-start="0" data-duration="8.622" data-track-index="1">
+
+      <!-- Shot 1: label rail (left) + screenshot viewport (right) -->
+      <div id="f15-s1">
+        <div id="f15-viewport">
+          <div id="f15-wrap">
+            <img id="f15-shot" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg id="f15-callout" viewBox="0 0 1240 697.5">
+              <rect id="f15-rect-plus" class="f15-draw f15-gold" x="373" y="330" width="35" height="34" rx="7" ry="7" pathLength="1" stroke-width="2.4"></rect>
+              <rect id="f15-rect-row" class="f15-draw f15-sage" x="384" y="367" width="178" height="24" rx="6" ry="6" pathLength="1" stroke-width="2"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <svg id="f15-pointer" viewBox="0 0 1760 820">
+          <path id="f15-ptr-line" class="f15-draw f15-gold" pathLength="1" stroke-width="3.5" d="M318 402 C 400 394, 500 410, 590 399 S 664 398, 684 401"></path>
+          <path id="f15-ptr-head" class="f15-draw f15-gold" pathLength="1" stroke-width="3.5" d="M662 387 L 685 401 L 661 415"></path>
+        </svg>
+
+        <div id="f15-kicker">Claude đọc</div>
+        <div id="f15-doc">
+          <span id="f15-tailieu"><span id="f15-tai" class="f15-w">tài</span> <span id="f15-lieu" class="f15-w">liệu</span></span>
+          <svg id="f15-spark1" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        </div>
+        <div id="f15-plus-label"><span id="f15-dau" class="f15-w">dấu</span> <span id="f15-cong" class="f15-w">cộng</span></div>
+        <div id="f15-chon"><span id="f15-chon-w" class="f15-w">chọn</span> <span id="f15-file-w" class="f15-w">file</span></div>
+      </div>
+
+      <!-- Shot 2: file card travels along a hand-drawn path into the drop zone -->
+      <div id="f15-s2">
+        <div id="f15-keo"><span id="f15-keo-w" class="f15-w">kéo</span><span id="f15-tha-w" class="f15-w">thả</span></div>
+
+        <svg id="f15-flow" viewBox="0 0 1760 820">
+          <path id="f15-path" class="f15-draw f15-gold" pathLength="1" stroke-width="4" d="M352 468 C 470 360, 620 332, 780 338 S 1010 356, 1080 400 S 1150 452, 1166 474"></path>
+          <path id="f15-path-head" class="f15-draw f15-gold" pathLength="1" stroke-width="4" d="M1140 462 L 1167 476 L 1162 446"></path>
+        </svg>
+
+        <div id="f15-zone">
+          <div id="f15-zone-dash"></div>
+          <div id="f15-zone-ok"></div>
+          <svg id="f15-tick" viewBox="0 0 44 44">
+            <path id="f15-tick-p" class="f15-draw f15-sage" pathLength="1" stroke-width="4.5" d="M8 23 L 18 33 L 37 11"></path>
+          </svg>
+        </div>
+        <div id="f15-zone-label">khung chat</div>
+
+        <div id="f15-mover">
+          <div id="f15-card">
+            <svg id="f15-page" viewBox="0 0 100 130">
+              <path d="M8 6 H 66 L 92 32 V 124 H 8 Z" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"></path>
+              <path d="M66 6 V 32 H 92" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"></path>
+              <g stroke="#9A968C" stroke-width="5" stroke-linecap="round">
+                <line x1="22" y1="56" x2="78" y2="56"></line>
+                <line x1="22" y1="76" x2="78" y2="76"></line>
+                <line x1="22" y1="96" x2="60" y2="96"></line>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // shot 2 container starts hidden (before the timeline is built)
+      gsap.set("#f15-s2", { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Shot 1 — screen (0–5.19 s) ===== */
+      // reveal the screenshot wrapper, full view
+      tl.fromTo("#f15-wrap", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0);
+      // "đọc" @1.018 — rail kicker
+      tl.fromTo("#f15-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 1.02);
+      // "tài" @1.382, "liệu" @1.564 — rail label lands with the spark
+      tl.fromTo("#f15-tai", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.38);
+      tl.fromTo("#f15-lieu", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.56);
+      tl.fromTo("#f15-spark1", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 1.56);
+      // "dấu" @2.912 — push to 1.35x onto the input's lower-left and the menu top
+      tl.fromTo("#f15-wrap", { x: 0, y: 0, scale: 1 }, { x: -110, y: -6, scale: 1.35, duration: 0.7, ease: "power2.inOut", immediateRender: false }, 2.91);
+      tl.fromTo("#f15-dau", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.91);
+      // "cộng" @3.073 — rectangle around the + button
+      tl.fromTo("#f15-cong", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.07);
+      tl.fromTo("#f15-rect-plus", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.07);
+      // short stroke from the rail label to the button, landing as the push settles
+      tl.fromTo("#f15-ptr-line", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 3.35);
+      tl.fromTo("#f15-ptr-head", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 3.65);
+      // "chọn" @3.597, "file" @3.86 — second rectangle frames the "Add files or photos" row
+      tl.fromTo("#f15-rect-row", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.6);
+      tl.fromTo("#f15-chon-w", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.6);
+      tl.fromTo("#f15-file-w", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.86);
+      // crop-zoom hold: slow tightening that keeps the + button in place (scale stays <= 1.4)
+      tl.fromTo("#f15-wrap", { x: -110, y: -6, scale: 1.35 }, { x: -98.5, y: -5.7, scale: 1.4, duration: 1.2, ease: "none", immediateRender: false }, 3.65);
+
+      /* ===== Shot 2 — flow (5.19–8.122 s) ===== */
+      // zoom-through (inverse) out of the screen shot, shrinking so nothing leaves the safe area
+      tl.fromTo("#f15-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 4.86);
+      tl.fromTo("#f15-s2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 5.0);
+      // "kéo" @5.045, "thả" @5.186 — key text lands above the path
+      tl.fromTo("#f15-keo-w", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out" }, 5.05);
+      tl.fromTo("#f15-tha-w", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: "power3.out" }, 5.19);
+      // card and drop zone appear with the verb
+      tl.fromTo("#f15-card", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 5.1);
+      tl.fromTo("#f15-zone", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 5.2);
+      // hand-drawn path draws ahead of the card
+      tl.fromTo("#f15-path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.25);
+      tl.fromTo("#f15-path-head", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 5.8);
+      // "file" @5.447 — card travels along the path (x straight, y arcs up then down)
+      tl.fromTo("#f15-mover", { x: 0 }, { x: 1160, duration: 1.4, ease: "power2.inOut", immediateRender: false }, 5.45);
+      tl.fromTo("#f15-mover", { y: 0 }, { y: -128, duration: 0.7, ease: "power1.out", immediateRender: false }, 5.45);
+      tl.fromTo("#f15-mover", { y: -128 }, { y: 5, duration: 0.7, ease: "power1.in", immediateRender: false }, 6.15);
+      tl.fromTo("#f15-card", { scale: 1 }, { scale: 0.8, duration: 0.5, ease: "power2.inOut", immediateRender: false }, 6.35);
+      // "khung" @6.193 — drop zone label
+      tl.fromTo("#f15-zone-label", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.19);
+      // arrival ~6.86 — drop zone turns sage, tick draws
+      tl.fromTo("#f15-zone-ok", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 6.86);
+      tl.fromTo("#f15-tick-p", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.9);
+      // quiet hold drift
+      tl.fromTo("#f15-s2", { scale: 1 }, { scale: 1.015, duration: 1.1, ease: "none", immediateRender: false }, 7.0);
+
+      tl.to({}, { duration: 8.122 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["15-tai-file-len"] = tl;
+    })();
+  </script>
+</template>

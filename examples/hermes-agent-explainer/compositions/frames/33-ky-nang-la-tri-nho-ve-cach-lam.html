@@ -1,0 +1,292 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f33-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f33-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f33- */
+    .f33-svg { position: absolute; left: 0; top: 0; overflow: visible; }
+    #f33-field { width: 1760px; height: 820px; opacity: 0.4; }
+    #f33-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+
+    /* kicker (outside the camera, stays put) */
+    #f33-kick {
+      position: absolute; left: 0; top: 0; height: 44px;
+      display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    #f33-kick span { display: block; opacity: 0; }
+    #f33-kick b { color: var(--gold); font-weight: 400; }
+    #f33-kick-a { color: var(--ink); }
+
+    /* recipe card — the hero */
+    #f33-card {
+      position: absolute; left: 580px; top: 120px; width: 600px; height: 560px;
+    }
+    #f33-card-fill {
+      position: absolute; left: 0; top: 0; width: 600px; height: 560px; border-radius: 18px;
+      background: var(--surface); box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0;
+    }
+    #f33-card-line { width: 600px; height: 560px; }
+    #f33-card-tag {
+      position: absolute; left: 40px; top: 36px; height: 34px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f33-card-tag b { color: var(--gold); font-weight: 400; }
+    #f33-title {
+      position: absolute; left: 40px; top: 78px; height: 72px;
+      display: flex; align-items: center; gap: 20px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f33-title span { display: block; opacity: 0; }
+    #f33-rule { position: absolute; left: 40px; top: 170px; width: 520px; height: 2px; background: rgba(244,241,232,.12); }
+    #f33-steps-line { width: 600px; height: 560px; }
+    .f33-row { position: absolute; left: 40px; width: 520px; height: 64px; opacity: 0; }
+    #f33-row1 { top: 200px; }
+    #f33-row2 { top: 320px; }
+    #f33-row3 { top: 440px; }
+    .f33-num {
+      position: absolute; left: 0; top: 0; width: 64px; height: 64px; border-radius: 32px;
+      background: var(--surface); border: 3px solid var(--gold); box-sizing: border-box;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 32px; font-weight: 800; line-height: 1; color: var(--gold);
+    }
+    .f33-bar { position: absolute; left: 96px; height: 16px; border-radius: 8px; background: rgba(142,147,181,.45); }
+    .f33-bar1 { top: 12px; width: 360px; }
+    .f33-bar2 { top: 38px; width: 240px; background: rgba(142,147,181,.25); }
+
+    /* card index box */
+    #f33-box-back, #f33-box-front { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f33-back-panel {
+      position: absolute; left: 1060px; top: 380px; width: 560px; height: 360px; border-radius: 18px;
+      background: #0f1530; border: 1px solid rgba(244,241,232,.12);
+    }
+    .f33-idx {
+      position: absolute; width: 260px; height: 300px; border-radius: 14px;
+      background: #1a2248; border: 1px solid rgba(244,241,232,.14);
+    }
+    .f33-idx-tab {
+      position: absolute; left: 24px; top: -26px; width: 110px; height: 30px; border-radius: 10px 10px 0 0;
+      background: #1a2248; border: 1px solid rgba(244,241,232,.14); border-bottom: none;
+    }
+    .f33-idx-bar { position: absolute; left: 26px; top: 34px; width: 150px; height: 14px; border-radius: 7px; background: rgba(142,147,181,.35); }
+    #f33-idx1 { left: 1080px; top: 300px; transform: rotate(-6deg); }
+    #f33-idx2 { left: 1350px; top: 310px; transform: rotate(5deg); }
+    #f33-front {
+      position: absolute; left: 1040px; top: 420px; width: 600px; height: 320px; border-radius: 18px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.18);
+      box-shadow: 0 -10px 40px rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f33-label {
+      position: absolute; left: 0; top: 56px; width: 600px; height: 70px;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      font-size: 52px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+      color: var(--gold);
+    }
+    #f33-label span { display: block; opacity: 0; filter: drop-shadow(0 0 12px rgba(255,210,63,.45)); }
+    #f33-uline { left: 80px; top: 140px; width: 440px; height: 12px; }
+    #f33-handle { position: absolute; left: 240px; top: 232px; width: 120px; height: 16px; border-radius: 8px; background: rgba(142,147,181,.4); }
+
+    /* Scene 3 — the tab that becomes a command */
+    #f33-tab {
+      position: absolute; left: 1100px; top: 151px; width: 480px; height: 90px; box-sizing: border-box;
+      border-radius: 16px 16px 0 0; background: #1d2654; border: 1px solid rgba(62,230,208,.45); border-bottom: none;
+      opacity: 0;
+    }
+    #f33-cmd {
+      position: absolute; left: 36px; top: 16px; height: 54px;
+      font-family: "JetBrains Mono", monospace; font-size: 40px; line-height: 54px; white-space: nowrap;
+      color: var(--ink);
+    }
+    #f33-cmd span { opacity: 0; }
+    #f33-cmd .f33-slash { color: var(--gold); }
+    #f33-caret {
+      position: absolute; left: 36px; top: 20px; width: 22px; height: 46px; background: var(--cyan); opacity: 0;
+    }
+    #f33-cmd-line { left: 36px; top: 72px; width: 300px; height: 8px; }
+    #f33-chip {
+      position: absolute; left: 1210px; top: 80px; height: 84px; padding: 0 34px; box-sizing: border-box;
+      border: 2px solid var(--cyan); border-radius: 42px; background: rgba(62,230,208,.08);
+      display: flex; align-items: center; gap: 14px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; color: var(--cyan); white-space: nowrap; opacity: 0;
+    }
+    #f33-chip span { display: block; }
+    #f33-chip-new { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="33-ky-nang-la-tri-nho-ve-cach-lam" data-width="1920" data-height="1080" data-duration="11.592">
+    <div id="f33-ground" class="clip" data-start="0" data-duration="11.592" data-track-index="0"></div>
+    <div id="f33-stage" class="clip" data-start="0" data-duration="11.592" data-track-index="1">
+      <!-- background field: faint ruled index lines (dimmed) -->
+      <svg id="f33-field" class="f33-svg" viewBox="0 0 1760 820" fill="none">
+        <g stroke="#8E93B5" stroke-width="1.5" opacity="0.3">
+          <line x1="0" y1="120" x2="1760" y2="120"/>
+          <line x1="0" y1="220" x2="1760" y2="220"/>
+          <line x1="0" y1="320" x2="1760" y2="320"/>
+          <line x1="0" y1="420" x2="1760" y2="420"/>
+          <line x1="0" y1="520" x2="1760" y2="520"/>
+          <line x1="0" y1="620" x2="1760" y2="620"/>
+          <line x1="0" y1="720" x2="1760" y2="720"/>
+        </g>
+        <line x1="140" y1="60" x2="140" y2="800" stroke="#8E93B5" stroke-width="1.5" opacity="0.25"/>
+      </svg>
+
+      <div id="f33-cam">
+        <!-- card index: back half -->
+        <div id="f33-box-back">
+          <div id="f33-back-panel"></div>
+          <div id="f33-idx1" class="f33-idx"><div class="f33-idx-tab"></div><div class="f33-idx-bar"></div></div>
+          <div id="f33-idx2" class="f33-idx"><div class="f33-idx-tab"></div><div class="f33-idx-bar"></div></div>
+        </div>
+
+        <!-- recipe card "cách làm" (hero) -->
+        <div id="f33-card">
+          <div id="f33-card-fill"></div>
+          <svg id="f33-card-line" class="f33-svg" viewBox="0 0 600 560" fill="none">
+            <rect id="f33-card-stroke" x="1.5" y="1.5" width="597" height="557" rx="18" pathLength="100"
+                  stroke="#F4F1E8" stroke-opacity="0.35" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          </svg>
+          <div id="f33-card-tag"><b>◆</b> Ghi chú</div>
+          <div id="f33-title"><span id="f33-t1">cách</span><span id="f33-t2">làm</span></div>
+          <div id="f33-rule"></div>
+          <svg id="f33-steps-line" class="f33-svg" viewBox="0 0 600 560" fill="none">
+            <line id="f33-steps-trail" x1="72" y1="232" x2="72" y2="472" pathLength="100"
+                  stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55));"/>
+          </svg>
+          <div id="f33-row1" class="f33-row"><div class="f33-num">1</div><div class="f33-bar f33-bar1"></div><div class="f33-bar f33-bar2"></div></div>
+          <div id="f33-row2" class="f33-row"><div class="f33-num">2</div><div class="f33-bar f33-bar1"></div><div class="f33-bar f33-bar2"></div></div>
+          <div id="f33-row3" class="f33-row"><div class="f33-num">3</div><div class="f33-bar f33-bar1"></div><div class="f33-bar f33-bar2"></div></div>
+        </div>
+
+        <!-- card index: front face + label -->
+        <div id="f33-box-front">
+          <div id="f33-front">
+            <div id="f33-label-wrap">
+              <div id="f33-label"><span id="f33-l1">trí</span><span id="f33-l2">nhớ</span><span id="f33-l3">quy</span><span id="f33-l4">trình</span></div>
+            </div>
+            <svg id="f33-uline" class="f33-svg" viewBox="0 0 440 12" fill="none">
+              <path id="f33-uline-path" d="M6 6 C150 1 290 11 434 5" pathLength="100"
+                    stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"
+                    style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55));"/>
+            </svg>
+            <div id="f33-handle"></div>
+          </div>
+        </div>
+
+        <!-- the card's tab that flips up into a command -->
+        <div id="f33-tab">
+          <div id="f33-cmd"><span class="f33-slash">/</span><span>t</span><span>ê</span><span>n</span><span>-</span><span>k</span><span>ỹ</span><span>-</span><span>n</span><span>ă</span><span>n</span><span>g</span></div>
+          <div id="f33-caret"></div>
+          <svg id="f33-cmd-line" class="f33-svg" viewBox="0 0 300 8" fill="none">
+            <line id="f33-cmd-trail" x1="2" y1="4" x2="286" y2="4" pathLength="100"
+                  stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  style="filter: drop-shadow(0 0 10px rgba(255,210,63,.55));"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- kicker (stays outside the camera) -->
+      <div id="f33-kick"><span id="f33-kick-a"><b>◆</b> Kỹ năng</span><span id="f33-kick-b">· skill</span></div>
+
+      <!-- "lệnh mới" chip (outside the camera) -->
+      <div id="f33-chip"><span>+</span><span>lệnh</span><span id="f33-chip-new">mới</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      gsap.set("#f33-cam", { transformOrigin: "0 0" });
+      var tl = gsap.timeline({ paused: true });
+
+      /* Scene 1 (0–3.94): kicker + recipe card draws on, steps appear */
+      tl.fromTo("#f33-kick-a", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f33-kick-b", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.154);
+
+      tl.fromTo("#f33-card", { y: 30 }, { y: 0, duration: 0.7, ease: "power3.out" }, 0.31);
+      tl.fromTo("#f33-card-stroke", { attr: { "stroke-dashoffset": 100 } }, { attr: { "stroke-dashoffset": 0 }, duration: 1.0, ease: "none" }, 0.31);
+      tl.fromTo("#f33-card-fill", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" }, 0.45);
+
+      tl.fromTo("#f33-card-tag", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 2.298);
+      tl.fromTo("#f33-t1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.82);
+      tl.fromTo("#f33-t2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.0);
+
+      tl.fromTo("#f33-steps-trail", { attr: { "stroke-dashoffset": 100 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.6, ease: "none" }, 3.162);
+      tl.fromTo("#f33-row1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 3.162);
+      tl.fromTo("#f33-row2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 3.342);
+      tl.fromTo("#f33-row3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 3.56);
+
+      /* Scene 2 (3.94–7.17): card slides into the card index; label lands gold */
+      tl.fromTo("#f33-box-back", { opacity: 0, x: 240 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 4.0);
+      tl.fromTo("#f33-box-front", { opacity: 0, x: 240 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 4.0);
+      tl.to("#f33-card", { x: 460, y: -160, scale: 0.55, rotation: -4, duration: 0.72, ease: "power2.inOut" }, 3.94);
+      tl.to("#f33-card", { y: -5, rotation: 0, duration: 0.32, ease: "power2.in" }, 4.66);
+
+      tl.fromTo("#f33-l1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 4.908);
+      tl.fromTo("#f33-l2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.049);
+      tl.fromTo("#f33-l3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.311);
+      tl.fromTo("#f33-l4", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.492);
+      tl.fromTo("#f33-uline-path", { attr: { "stroke-dashoffset": 100 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.6, ease: "none" }, 5.492);
+
+      /* Scene 3 (7.17–11.09): push in on the index; the tab flips up and types a command */
+      tl.to("#f33-cam", { x: -728, y: -106, scale: 1.2, duration: 0.75, ease: "power2.inOut" }, 7.17);
+      tl.to("#f33-label-wrap", { opacity: 0.45, duration: 0.5, ease: "power2.out" }, 7.3);
+      tl.fromTo("#f33-tab",
+        { opacity: 0, rotationX: -95, transformPerspective: 900, transformOrigin: "50% 100%" },
+        { opacity: 1, rotationX: 0, transformPerspective: 900, transformOrigin: "50% 100%", duration: 0.55, ease: "power3.out" }, 7.682);
+      tl.set("#f33-caret", { opacity: 1 }, 7.95);
+
+      var chars = document.querySelectorAll("#f33-cmd span");
+      var t0 = 8.144, step = 0.1, adv = 24;
+      for (var i = 0; i < chars.length; i++) {
+        tl.set(chars[i], { opacity: 1 }, t0 + i * step);
+        tl.set("#f33-caret", { x: (i + 1) * adv }, t0 + i * step);
+      }
+
+      /* caret on "một lệnh mới": turns gold, underline trail draws, then steady blink */
+      tl.set("#f33-caret", { opacity: 0 }, 9.55);
+      tl.set("#f33-caret", { opacity: 1, backgroundColor: "#FFD23F" }, 9.81);
+      tl.fromTo("#f33-cmd-trail", { attr: { "stroke-dashoffset": 100 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.45, ease: "none" }, 9.81);
+      tl.fromTo("#f33-chip", { opacity: 0, scale: 0.8, x: -30 }, { opacity: 1, scale: 1, x: 0, duration: 0.4, ease: "power3.out" }, 9.95);
+      tl.fromTo("#f33-chip-new", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 10.09);
+      tl.set("#f33-caret", { opacity: 0 }, 10.4);
+      tl.set("#f33-caret", { opacity: 1 }, 10.7);
+      tl.set("#f33-caret", { opacity: 0 }, 11.0);
+
+      tl.to({}, { duration: 11.092 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["33-ky-nang-la-tri-nho-ve-cach-lam"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,331 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f14-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f14-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f14- */
+    .f14-kick {
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    .f14-kick b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+
+    /* ---- Scene 1: terminal ---- */
+    #f14-newbie { position: absolute; left: 230px; top: 180px; }
+    #f14-term {
+      position: absolute; left: 230px; top: 250px; width: 1300px; height: 320px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); transform-origin: 0 0;
+    }
+    #f14-term-bar {
+      position: absolute; left: 0; top: 0; right: 0; height: 64px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; gap: 14px; padding: 0 28px;
+    }
+    .f14-tdot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .7; }
+    #f14-term-title {
+      margin-left: 18px; font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted);
+    }
+    #f14-cmd {
+      position: absolute; left: 70px; top: 120px; height: 130px; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 96px; line-height: 130px; color: var(--ink);
+    }
+    #f14-cmd .f14-prompt { color: var(--cyan); margin-right: 40px; }
+    #f14-cmd .f14-ch { display: none; }
+    #f14-caret {
+      display: inline-block; width: 50px; height: 96px; margin-left: 6px; vertical-align: -14px;
+      background: var(--gold);
+    }
+    #f14-cmd-line { position: absolute; left: 70px; top: 262px; width: 1160px; height: 14px; overflow: visible; }
+
+    /* ---- Scene 2: the door world ---- */
+    #f14-kick2 { position: absolute; left: 0; top: 0; }
+    #f14-world {
+      position: absolute; left: 0; top: 0; width: 3000px; height: 820px; transform-origin: 0 0;
+    }
+    #f14-field {
+      position: absolute; left: -400px; top: -400px; width: 3800px; height: 1700px; opacity: .4;
+      background-image: radial-gradient(circle, rgba(142,147,181,.55) 2px, transparent 2.5px);
+      background-size: 60px 60px;
+    }
+    #f14-floor { position: absolute; left: 0; top: 0; width: 3000px; height: 820px; overflow: visible; }
+    .f14-door { position: absolute; top: 150px; width: 500px; height: 560px; }
+    #f14-d1 { left: 350px; }
+    #f14-d2 { left: 1250px; }
+    #f14-d3 { left: 2150px; }
+    .f14-door svg { position: absolute; left: 0; top: 0; overflow: visible; }
+    .f14-num {
+      position: absolute; left: 0; width: 500px; top: 150px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    #f14-d1 .f14-num { color: var(--gold); }
+    .f14-label {
+      position: absolute; left: 0; width: 500px; top: 250px; text-align: center; white-space: nowrap;
+      font-size: 52px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; color: var(--ink);
+    }
+    #f14-tag1 {
+      position: absolute; left: 100px; width: 300px; top: 350px; height: 56px; border-radius: 28px;
+      border: 2px solid var(--gold); color: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.45));
+    }
+    #f14-spark { position: absolute; left: 560px; top: 660px; width: 80px; height: 80px; overflow: visible; transform-origin: 50% 50%; }
+
+
+    /* ---- Scene 3: 300+ ---- */
+    #f14-stat { position: absolute; inset: 0; transform-origin: 30% 45%; }
+    #f14-drift { position: absolute; inset: 0; transform-origin: 30% 45%; }
+    #f14-head {
+      position: absolute; left: 100px; top: 90px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; color: var(--ink);
+    }
+    #f14-head b { color: var(--gold); font-weight: 800; font-family: "JetBrains Mono", monospace; font-size: 34px; vertical-align: 12px; margin-right: 18px; }
+    #f14-numwrap {
+      position: absolute; left: 100px; top: 210px; height: 260px; white-space: nowrap;
+      font-size: 240px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; color: var(--gold);
+      font-variant-numeric: tabular-nums; transform-origin: 0 100%;
+      filter: drop-shadow(0 0 18px rgba(255,210,63,.35));
+    }
+    #f14-plus { display: inline-block; margin-left: 8px; transform-origin: 30% 60%; }
+    #f14-uline { position: absolute; left: 100px; top: 480px; width: 640px; height: 20px; overflow: visible; }
+    #f14-models {
+      position: absolute; left: 100px; top: 520px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; color: var(--ink);
+    }
+    #f14-sub {
+      position: absolute; left: 100px; top: 640px; height: 68px; padding: 0 30px; border-radius: 34px;
+      background: var(--surface); border: 1px solid rgba(255,210,63,.6);
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em; color: var(--ink);
+    }
+    #f14-sub b { color: var(--gold); font-weight: 400; }
+    #f14-grid {
+      position: absolute; left: 1060px; top: 190px; width: 560px; height: 420px;
+      display: grid; grid-template-columns: repeat(20, 28px); grid-auto-rows: 28px;
+    }
+    .f14-cell { width: 16px; height: 16px; margin: 6px; border-radius: 50%; background: rgba(142,147,181,.28); }
+  </style>
+
+  <div id="root" data-composition-id="14-cach-nhanh-nhat-cho-nguoi-moi" data-width="1920" data-height="1080" data-duration="13.613">
+    <div id="f14-ground" class="clip" data-start="0" data-duration="13.613" data-track-index="0"></div>
+    <div id="f14-stage" class="clip" data-start="0" data-duration="13.613" data-track-index="1">
+
+      <!-- Scene 2 world: three doors on one wide canvas, traversed by one camera -->
+      <div id="f14-world">
+        <div id="f14-field"></div>
+        <svg id="f14-floor" viewBox="0 0 3000 820" width="3000" height="820" fill="none">
+          <line id="f14-base" x1="120" y1="712" x2="2880" y2="712" stroke="rgba(244,241,232,.22)" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f14-trail" d="M2400 770 L760 770 Q600 770 600 712" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.6));"/>
+        </svg>
+
+        <div id="f14-d1" class="f14-door">
+          <svg width="500" height="560" viewBox="0 0 500 560" fill="none">
+            <defs>
+              <linearGradient id="f14-goldfill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#FFD23F" stop-opacity=".30"/>
+                <stop offset="1" stop-color="#FFD23F" stop-opacity=".04"/>
+              </linearGradient>
+            </defs>
+            <path class="f14-fill" d="M20 560 V250 A230 230 0 0 1 480 250 V560 Z" fill="#141B3A"/>
+            <path id="f14-glow1" d="M20 560 V250 A230 230 0 0 1 480 250 V560 Z" fill="url(#f14-goldfill)"/>
+            <path class="f14-frame" d="M20 560 V250 A230 230 0 0 1 480 250 V560" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+          </svg>
+          <div class="f14-num">01</div>
+          <div id="f14-l1" class="f14-label">Cài nhanh</div>
+          <div id="f14-tag1">NOUS PORTAL</div>
+        </div>
+
+        <div id="f14-d2" class="f14-door">
+          <svg width="500" height="560" viewBox="0 0 500 560" fill="none">
+            <path class="f14-fill" d="M20 560 V250 A230 230 0 0 1 480 250 V560 Z" fill="#141B3A"/>
+            <path class="f14-frame" d="M20 560 V250 A230 230 0 0 1 480 250 V560" stroke="#F4F1E8" stroke-opacity=".8" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f14-num">02</div>
+          <div id="f14-l2" class="f14-label">Cài đầy đủ</div>
+        </div>
+
+        <div id="f14-d3" class="f14-door">
+          <svg width="500" height="560" viewBox="0 0 500 560" fill="none">
+            <path class="f14-fill" d="M20 560 V250 A230 230 0 0 1 480 250 V560 Z" fill="#141B3A"/>
+            <path class="f14-frame" d="M20 560 V250 A230 230 0 0 1 480 250 V560" stroke="#F4F1E8" stroke-opacity=".8" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f14-num">03</div>
+          <div id="f14-l3" class="f14-label">Bắt đầu trống</div>
+        </div>
+
+        <!-- winged spark at the head of the trail, landing on door 1 -->
+        <svg id="f14-spark" viewBox="0 0 80 80" width="80" height="80" fill="none">
+          <path d="M34 40 C24 28 12 26 4 30 C12 34 22 38 34 40" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <path d="M46 40 C56 28 68 26 76 30 C68 34 58 38 46 40" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="40" cy="40" r="9" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+        </svg>
+      </div>
+
+      <div id="f14-kick2" class="f14-kick"><b>◆</b>Trình thiết lập</div>
+
+      <!-- Scene 1: the real command, typed -->
+      <div id="f14-newbie" class="f14-kick"><b>◆</b>Người mới</div>
+      <div id="f14-term">
+        <div id="f14-term-bar">
+          <div class="f14-tdot"></div><div class="f14-tdot"></div><div class="f14-tdot"></div>
+          <div id="f14-term-title">terminal</div>
+        </div>
+        <div id="f14-cmd"><span class="f14-prompt">$</span><span class="f14-ch">h</span><span class="f14-ch">e</span><span class="f14-ch">r</span><span class="f14-ch">m</span><span class="f14-ch">e</span><span class="f14-ch">s</span><span class="f14-ch">&nbsp;</span><span class="f14-ch">s</span><span class="f14-ch">e</span><span class="f14-ch">t</span><span class="f14-ch">u</span><span class="f14-ch">p</span><span id="f14-caret"></span></div>
+        <svg id="f14-cmd-line" viewBox="0 0 1160 14" width="1160" height="14" fill="none">
+          <path id="f14-cmd-trail" d="M130 7 H880" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.6));"/>
+        </svg>
+      </div>
+
+      <!-- Scene 3: through the door — 300+ models -->
+      <div id="f14-stat">
+        <div id="f14-drift">
+          <div id="f14-head"><b>◆</b>Nous Portal</div>
+          <div id="f14-numwrap"><span id="f14-num">0</span><span id="f14-plus">+</span></div>
+          <svg id="f14-uline" viewBox="0 0 640 20" width="640" height="20" fill="none">
+            <path id="f14-uline-p" d="M4 10 H620" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.6));"/>
+          </svg>
+          <div id="f14-models">mô hình</div>
+          <div id="f14-sub"><b>◆</b>MỘT GÓI ĐĂNG KÝ</div>
+          <div id="f14-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var q = function (s) { return document.querySelector(s); };
+
+      /* build the 300-model grid (20 × 15), deterministic */
+      var grid = q("#f14-grid");
+      for (var i = 0; i < 300; i++) {
+        var c = document.createElement("div");
+        c.className = "f14-cell";
+        grid.appendChild(c);
+      }
+
+      /* ================= Scene 1 (0–2.72): typewriter `hermes setup` ================= */
+      tl.fromTo("#f14-term", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.1);
+      // "người" @1.01
+      tl.fromTo("#f14-newbie", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.01);
+      // caret blinks twice before the command is spoken
+      tl.set("#f14-caret", { opacity: 0 }, 0.75);
+      tl.set("#f14-caret", { opacity: 1 }, 1.05);
+      tl.set("#f14-caret", { opacity: 0 }, 1.35);
+      tl.set("#f14-caret", { opacity: 1 }, 1.65);
+      // "hermes" @1.94–2.32, "setup" @2.72–3.04 — characters type on with the voice
+      var chars = document.querySelectorAll("#f14-cmd .f14-ch");
+      tl.set(chars, { display: "none" }, 0);
+      var hermesT = [1.94, 2.0, 2.06, 2.12, 2.18, 2.24];
+      var setupT = [2.62, 2.72, 2.79, 2.86, 2.93, 3.0];
+      for (var h = 0; h < 6; h++) tl.set(chars[h], { display: "inline" }, hermesT[h]);
+      for (var s = 0; s < 6; s++) tl.set(chars[6 + s], { display: "inline" }, setupT[s]);
+      // courier trail underlines the finished command
+      tl.fromTo("#f14-cmd-trail", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 2.72);
+
+      /* ================= Scene 2 (2.72–8.62): three doors, camera walks them ================= */
+      // terminal shrinks into a pinned header chip (top-right), kicker gives way
+      tl.to("#f14-newbie", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 3.2);
+      tl.to("#f14-term", { x: 1044, y: -250, scale: 0.36, duration: 0.6, ease: "power2.inOut" }, 3.2);
+      tl.set("#f14-caret", { opacity: 0 }, 3.2);
+      // "Trình" @3.66
+      tl.fromTo("#f14-kick2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.66);
+      // world arrives in overview (all three stations in view)
+      tl.fromTo("#f14-world", { opacity: 0, x: -140, y: 170, scale: 0.68 },
+        { opacity: 1, x: -170, y: 139, scale: 0.7, duration: 0.6, ease: "power3.out" }, 3.4);
+      tl.fromTo("#f14-base", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 3.66);
+      // "ba" @4.30 / "lựa" @4.48 / "chọn" @4.62 — the doors draw on
+      var doorT = [4.3, 4.48, 4.62];
+      ["#f14-d1", "#f14-d2", "#f14-d3"].forEach(function (d, k) {
+        tl.fromTo(d + " .f14-frame", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, doorT[k]);
+        tl.fromTo(d + " .f14-fill", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power3.out" }, doorT[k] + 0.1);
+        tl.fromTo(d + " .f14-num", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, doorT[k]);
+      });
+      // pan + settle on door 1
+      tl.to("#f14-world", { x: 280, y: 10, scale: 1, duration: 0.5, ease: "power2.inOut" }, 4.85);
+      // "cài nhanh" @5.16
+      tl.fromTo("#f14-l1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.16);
+      // "Nous" @5.80 — the portal tag and gold light
+      tl.fromTo("#f14-tag1", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 5.8);
+      tl.fromTo("#f14-glow1", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power3.out" }, 5.8);
+      // pan to door 2 — "cài đầy đủ" @6.79
+      tl.to("#f14-world", { x: -620, duration: 0.5, ease: "power2.inOut" }, 6.3);
+      tl.fromTo("#f14-l2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.79);
+      // pan to door 3 — "bắt đầu trống" @7.83
+      tl.to("#f14-world", { x: -1520, duration: 0.5, ease: "power2.inOut" }, 7.3);
+      tl.fromTo("#f14-l3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.83);
+      // pull back; the courier trail walks back into door 1
+      tl.to("#f14-world", { x: -170, y: 139, scale: 0.7, duration: 0.45, ease: "power2.inOut" }, 8.0);
+      tl.fromTo("#f14-trail", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 8.05);
+      tl.fromTo("#f14-spark", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out" }, 8.4);
+
+      /* ================= Scene 3 (8.62–13.11): through the door → 300+ ================= */
+      // zoom-through door 1 (scale + blur + opacity)
+      tl.set("#f14-world", { filter: "blur(0px)" }, 8.6);
+      tl.to("#f14-world", { x: -920, y: -850, scale: 3, opacity: 0, filter: "blur(10px)", duration: 0.5, ease: "power2.in" }, 8.62);
+      tl.to("#f14-term", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 8.62);
+      tl.to("#f14-kick2", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 8.62);
+      tl.fromTo("#f14-stat", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 8.85);
+      // "Nous" @9.07
+      tl.fromTo("#f14-head", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.07);
+      // the dim field of model slots waits
+      tl.fromTo("#f14-grid", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 9.4);
+      // "hơn" @10.52 → "ba" @10.74 → "trăm" @10.94: 0 → 300, value-scaled
+      tl.fromTo("#f14-numwrap", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" }, 10.52);
+      tl.set("#f14-plus", { opacity: 0 }, 0);
+      var numEl = q("#f14-num");
+      var steps = 18, cStart = 10.52, cDur = 0.6;
+      for (var n = 0; n <= steps; n++) {
+        var p = n / steps;
+        var eased = 1 - Math.pow(1 - p, 2);
+        tl.set(numEl, { textContent: String(Math.round(300 * eased)) }, cStart + cDur * p);
+      }
+      tl.fromTo(".f14-cell", { backgroundColor: "rgba(142,147,181,0.28)", scale: 0.6 },
+        { backgroundColor: "rgba(62,230,208,0.9)", scale: 1, duration: 0.14, ease: "power3.out", stagger: { amount: 0.46 } }, 10.52);
+      tl.fromTo("#f14-plus", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", immediateRender: false }, 10.94);
+      tl.fromTo("#f14-uline-p", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.94);
+      // "mô hình" @11.13
+      tl.fromTo("#f14-models", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 11.13);
+      // "một gói đăng ký" @11.69 — the tag settles and holds
+      tl.fromTo("#f14-sub", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 11.69);
+      // quiet hold drift
+      tl.fromTo("#f14-drift", { scale: 1 }, { scale: 1.015, duration: 1.9, ease: "none" }, 11.2);
+
+      tl.to({}, { duration: 13.113 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["14-cach-nhanh-nhat-cho-nguoi-moi"] = tl;
+    })();
+  </script>
+</template>

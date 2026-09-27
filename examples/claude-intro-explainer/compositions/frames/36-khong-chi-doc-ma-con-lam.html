@@ -1,0 +1,416 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    #f36-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    #f36-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- shot 1: flow pipeline ---------- */
+    #f36-flowcam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f36-flow { position: absolute; inset: 0; transform-origin: 50% 50%; filter: blur(0px); }
+    #f36-arrows { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f36-node { position: absolute; top: 320px; width: 160px; height: 160px; }
+    .f36-ring { position: absolute; left: 0; top: 0; width: 160px; height: 160px; overflow: visible; }
+    .f36-icon { position: absolute; left: 44px; top: 44px; width: 72px; height: 72px; overflow: visible; }
+    .f36-label {
+      position: absolute; left: -120px; top: 186px; width: 400px; text-align: center;
+      font-weight: 600; font-size: 34px; line-height: 1.3; color: var(--ink); white-space: nowrap;
+    }
+    .f36-label span { display: inline-block; opacity: 0; }
+    #f36-r2 { filter: drop-shadow(0 0 12px rgba(217,119,87,0.5)); }
+    #f36-r3 { filter: drop-shadow(0 0 0px rgba(217,119,87,0)); }
+    #f36-n3 .f36-icon, #f36-n4 .f36-icon, #f36-r3, #f36-r4 { opacity: 0; }
+    .f36-badge { position: absolute; left: 120px; top: -6px; width: 44px; height: 44px; opacity: 0; }
+    #f36-speech { position: absolute; left: 112px; top: -52px; width: 76px; height: 64px; opacity: 0; overflow: visible; }
+    #f36-disc {
+      position: absolute; left: 4px; top: 4px; width: 152px; height: 152px; border-radius: 50%;
+      background: var(--cyan); opacity: 0;
+    }
+    #f36-bigcheck { position: absolute; left: 36px; top: 36px; width: 88px; height: 88px; overflow: visible; }
+    #f36-read {
+      position: absolute; left: 393px; top: 236px; width: 500px; text-align: center; white-space: nowrap;
+      font-weight: 500; font-size: 38px; line-height: 1.3; color: var(--muted);
+    }
+    #f36-read span, #f36-act span, #f36-give span { display: inline-block; opacity: 0; }
+    #f36-act {
+      position: absolute; left: 717px; top: 214px; width: 800px; text-align: center; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 60px; line-height: 1.12; color: var(--gold);
+    }
+    #f36-give {
+      position: absolute; left: -30px; top: 580px; width: 400px; text-align: center; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 60px; line-height: 1.12; color: var(--gold);
+    }
+    #f36-mover { position: absolute; left: 711px; top: 378px; width: 44px; height: 44px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f36-mover svg { width: 44px; height: 44px; }
+    .f36-dot { position: absolute; top: 394px; width: 12px; height: 12px; border-radius: 50%;
+      background: var(--gold); opacity: 0; }
+    #f36-apps { position: absolute; left: 1140px; top: 640px; width: 480px; height: 110px; }
+    .f36-app { position: absolute; top: 12px; width: 124px; height: 88px; opacity: 0; }
+    #f36-strike { position: absolute; left: 0; top: 0; width: 480px; height: 110px; overflow: visible; }
+    /* ---------- shot 2: example cards ---------- */
+    #f36-cards { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f36-kicker {
+      position: absolute; left: 60px; top: 100px; display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); opacity: 0; white-space: nowrap;
+    }
+    #f36-kicker svg { width: 34px; height: 34px; }
+    .f36-card {
+      position: absolute; top: 200px; height: 440px; opacity: 0;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f36-card1 { left: 60px; width: 900px; }
+    #f36-card2 { left: 1120px; width: 580px; }
+    .f36-cicon { position: absolute; left: 56px; top: 52px; width: 110px; height: 110px; overflow: visible; }
+    .f36-ctitle {
+      position: absolute; left: 56px; top: 190px; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 76px; line-height: 1.12; color: var(--ink);
+    }
+    .f36-ctitle span { display: inline-block; opacity: 0; }
+    #f36-caption {
+      position: absolute; left: 56px; top: 330px; display: flex; align-items: center; gap: 22px;
+      font-weight: 500; font-size: 34px; line-height: 1.3; color: var(--muted); white-space: nowrap;
+    }
+    #f36-caption .f36-cw { display: inline-block; opacity: 0; }
+    #f36-sep { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: 0; }
+    #f36-chip {
+      display: flex; align-items: center; gap: 14px; opacity: 0;
+      padding: 8px 22px; border-radius: 28px; border: 2px solid rgba(143,184,168,0.8);
+      color: var(--ink); font-weight: 600; font-size: 32px;
+    }
+    #f36-chip i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); }
+    #f36-chip b { font-weight: 600; display: inline-block; }
+    #f36-drive { opacity: 0; }
+    #f36-link { position: absolute; left: 960px; top: 360px; width: 160px; height: 120px; overflow: visible; }
+    .f36-bar { position: absolute; left: 56px; height: 14px; border-radius: 7px;
+      background: rgba(240,238,230,0.22); transform-origin: 0 50%; }
+    #f36-spark2 { position: absolute; left: 1664px; top: 168px; width: 64px; height: 64px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f36-spark2 svg { width: 64px; height: 64px; }
+  </style>
+
+  <div id="root" data-composition-id="36-khong-chi-doc-ma-con-lam" data-width="1920" data-height="1080" data-duration="13.212">
+    <div id="f36-ground" class="clip" data-start="0" data-duration="13.212" data-track-index="0"></div>
+    <div id="f36-stage" class="clip" data-start="0" data-duration="13.212" data-track-index="1">
+
+      <!-- SHOT 1: request -> Claude -> connected service -> result -->
+      <div id="f36-flowcam">
+        <div id="f36-flow">
+          <svg id="f36-arrows" viewBox="0 0 1760 820">
+            <g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 258 404 C 340 394, 460 410, 552 400" stroke="rgba(240,238,230,0.55)"/>
+              <path d="M 534 388 L 554 400 L 533 413" stroke="rgba(240,238,230,0.55)"/>
+              <path id="f36-a23" d="M 731 402 C 820 392, 930 410, 1026 400" stroke="#D97757" stroke-dasharray="320" stroke-dashoffset="320"/>
+              <path id="f36-h23" d="M 1008 388 L 1028 400 L 1007 413" stroke="#D97757" opacity="0"/>
+              <path id="f36-a34" d="M 1205 402 C 1290 393, 1400 410, 1499 400" stroke="#8FB8A8" stroke-dasharray="320" stroke-dashoffset="320"/>
+              <path id="f36-h34" d="M 1481 388 L 1501 400 L 1480 413" stroke="#8FB8A8" opacity="0"/>
+            </g>
+          </svg>
+
+          <div id="f36-read"><span id="f36-rd1">đọc</span> <span id="f36-rd2">dữ</span> <span id="f36-rd3">liệu</span></div>
+          <div id="f36-act"><span id="f36-ac1">thực</span> <span id="f36-ac2">hiện</span> <span id="f36-ac3">hành</span> <span id="f36-ac4">động</span></div>
+
+          <!-- node 1: yêu cầu -->
+          <div id="f36-n1" class="f36-node" style="left:90px">
+            <svg class="f36-ring" viewBox="0 0 160 160"><circle cx="80" cy="80" r="76" fill="#2A2926" stroke="rgba(240,238,230,0.55)" stroke-width="4"/></svg>
+            <svg class="f36-icon" viewBox="0 0 72 72">
+              <circle cx="36" cy="24" r="13" fill="none" stroke="#F0EEE6" stroke-width="5"/>
+              <path d="M 12 64 C 14 48, 24 42, 36 42 C 48 42, 58 48, 60 64" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            <svg id="f36-speech" viewBox="0 0 76 64">
+              <path d="M 10 6 L 66 6 C 71 6, 72 8, 72 13 L 72 38 C 72 43, 70 45, 66 45 L 30 45 L 14 58 L 17 45 L 10 45 C 5 45, 4 43, 4 38 L 4 13 C 4 8, 5 6, 10 6 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+              <circle cx="24" cy="26" r="4" fill="#D97757"/><circle cx="38" cy="26" r="4" fill="#D97757"/><circle cx="52" cy="26" r="4" fill="#D97757"/>
+            </svg>
+            <div class="f36-label" id="f36-l1"><span style="opacity:1">yêu cầu</span></div>
+          </div>
+          <div id="f36-give"><span id="f36-gv1">giao</span> <span id="f36-gv2">việc</span></div>
+
+          <!-- node 2: Claude -->
+          <div id="f36-n2" class="f36-node" style="left:563px">
+            <svg class="f36-ring" id="f36-r2" viewBox="0 0 160 160"><circle id="f36-c2" cx="80" cy="80" r="76" fill="#2A2926" stroke="#D97757" stroke-width="4"/></svg>
+            <svg class="f36-icon" viewBox="0 0 56 56">
+              <g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+                <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+                <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/>
+              </g>
+            </svg>
+            <svg class="f36-badge" id="f36-b2" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="#8FB8A8"/>
+              <path d="M 12 23 L 19 30 L 32 15" fill="none" stroke="#1F1E1D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="f36-label"><span id="f36-l2">Claude</span></div>
+          </div>
+
+          <!-- node 3: dịch vụ đã kết nối -->
+          <div id="f36-n3" class="f36-node" style="left:1037px">
+            <svg class="f36-ring" id="f36-r3" viewBox="0 0 160 160"><circle id="f36-c3" cx="80" cy="80" r="76" fill="#2A2926" stroke="rgba(240,238,230,0.55)" stroke-width="4" stroke-dasharray="478" stroke-dashoffset="478" transform="rotate(-90 80 80)"/></svg>
+            <svg class="f36-icon" id="f36-i3" viewBox="0 0 72 72">
+              <g fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 30 42 L 20 52 C 15 57, 8 57, 4 52 C 0 48, 0 42, 5 37 L 16 26 C 21 21, 28 21, 32 26"/>
+                <path d="M 42 30 L 52 20 C 57 15, 64 15, 68 20 C 72 24, 72 30, 67 35 L 56 46 C 51 51, 44 51, 40 46"/>
+                <line x1="28" y1="44" x2="44" y2="28"/>
+              </g>
+            </svg>
+            <svg class="f36-badge" id="f36-b3" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="#8FB8A8"/>
+              <path d="M 12 23 L 19 30 L 32 15" fill="none" stroke="#1F1E1D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="f36-label"><span id="f36-l3a">dịch</span> <span id="f36-l3b">vụ</span> <span id="f36-l3c">đã</span> <span id="f36-l3d">kết nối</span></div>
+          </div>
+
+          <!-- working dots between node 3 and node 4 -->
+          <div class="f36-dot" id="f36-d1" style="left:1326px"></div>
+          <div class="f36-dot" id="f36-d2" style="left:1348px"></div>
+          <div class="f36-dot" id="f36-d3" style="left:1370px"></div>
+
+          <!-- node 4: kết quả -->
+          <div id="f36-n4" class="f36-node" style="left:1510px">
+            <svg class="f36-ring" id="f36-r4" viewBox="0 0 160 160"><circle id="f36-c4" cx="80" cy="80" r="76" fill="#2A2926" stroke="#8FB8A8" stroke-width="4" stroke-dasharray="478" stroke-dashoffset="478" transform="rotate(-90 80 80)"/></svg>
+            <svg class="f36-icon" id="f36-i4" viewBox="0 0 72 72">
+              <path d="M 14 6 L 46 6 L 60 20 L 60 66 L 14 66 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/>
+              <line x1="24" y1="32" x2="50" y2="32" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round"/>
+              <line x1="24" y1="44" x2="50" y2="44" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round"/>
+              <line x1="24" y1="56" x2="40" y2="56" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <div id="f36-disc"></div>
+            <svg id="f36-bigcheck" viewBox="0 0 88 88">
+              <path id="f36-tick" d="M 18 46 L 36 64 L 70 26" fill="none" stroke="#1F1E1D" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="80" stroke-dashoffset="80"/>
+            </svg>
+            <div class="f36-label"><span id="f36-l4">kết quả</span></div>
+          </div>
+
+          <!-- the travelling spark -->
+          <div id="f36-mover">
+            <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+              <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+              <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          </div>
+
+          <!-- the apps you no longer open one by one -->
+          <div id="f36-apps">
+            <svg class="f36-app" id="f36-ap1" style="left:10px" viewBox="0 0 124 88">
+              <rect x="2" y="2" width="120" height="84" rx="10" fill="#2A2926" stroke="rgba(240,238,230,0.40)" stroke-width="3"/>
+              <line x1="2" y1="24" x2="122" y2="24" stroke="rgba(240,238,230,0.25)" stroke-width="3"/>
+              <circle cx="16" cy="13" r="4" fill="#9A968C"/><circle cx="30" cy="13" r="4" fill="#9A968C"/><circle cx="44" cy="13" r="4" fill="#9A968C"/>
+            </svg>
+            <svg class="f36-app" id="f36-ap2" style="left:178px" viewBox="0 0 124 88">
+              <rect x="2" y="2" width="120" height="84" rx="10" fill="#2A2926" stroke="rgba(240,238,230,0.40)" stroke-width="3"/>
+              <line x1="2" y1="24" x2="122" y2="24" stroke="rgba(240,238,230,0.25)" stroke-width="3"/>
+              <circle cx="16" cy="13" r="4" fill="#9A968C"/><circle cx="30" cy="13" r="4" fill="#9A968C"/><circle cx="44" cy="13" r="4" fill="#9A968C"/>
+            </svg>
+            <svg class="f36-app" id="f36-ap3" style="left:346px" viewBox="0 0 124 88">
+              <rect x="2" y="2" width="120" height="84" rx="10" fill="#2A2926" stroke="rgba(240,238,230,0.40)" stroke-width="3"/>
+              <line x1="2" y1="24" x2="122" y2="24" stroke="rgba(240,238,230,0.25)" stroke-width="3"/>
+              <circle cx="16" cy="13" r="4" fill="#9A968C"/><circle cx="30" cy="13" r="4" fill="#9A968C"/><circle cx="44" cy="13" r="4" fill="#9A968C"/>
+            </svg>
+            <svg id="f36-strike" viewBox="0 0 480 110">
+              <path id="f36-strikeline" d="M 0 70 C 110 52, 260 78, 360 50 C 410 38, 450 44, 480 36" fill="none" stroke="rgba(240,238,230,0.75)" stroke-width="4" stroke-linecap="round" stroke-dasharray="520" stroke-dashoffset="520"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOT 2: example cards -->
+      <div id="f36-cards">
+        <div id="f36-kicker">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          <span>Ví dụ</span>
+        </div>
+
+        <div id="f36-card1" class="f36-card">
+          <svg class="f36-cicon" viewBox="0 0 110 110">
+            <path d="M 10 6 L 52 6 L 70 24 L 70 96 L 10 96 Z" fill="none" stroke="rgba(240,238,230,0.6)" stroke-width="4" stroke-linejoin="round"/>
+            <line x1="22" y1="40" x2="56" y2="40" stroke="rgba(240,238,230,0.45)" stroke-width="4" stroke-linecap="round"/>
+            <line x1="22" y1="54" x2="50" y2="54" stroke="rgba(240,238,230,0.45)" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="70" cy="70" r="20" fill="#2A2926" stroke="#F0EEE6" stroke-width="6"/>
+            <line x1="84" y1="84" x2="102" y2="102" stroke="#F0EEE6" stroke-width="7" stroke-linecap="round"/>
+          </svg>
+          <div class="f36-ctitle"><span id="f36-t1a">tìm</span> <span id="f36-t1b">file</span></div>
+          <div id="f36-caption">
+            <span class="f36-cw" id="f36-cp1">hợp đồng</span>
+            <span id="f36-sep"></span>
+            <span id="f36-chip"><i></i><b>Google</b><b id="f36-drive">Drive</b></span>
+          </div>
+        </div>
+
+        <svg id="f36-link" viewBox="0 0 160 120">
+          <path id="f36-linkpath" d="M 14 64 C 50 48, 96 74, 138 58" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="140" stroke-dashoffset="140"/>
+          <path id="f36-linkhead" d="M 120 44 L 140 57 L 122 74" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+        </svg>
+
+        <div id="f36-card2" class="f36-card">
+          <svg class="f36-cicon" viewBox="0 0 110 110">
+            <path d="M 18 6 L 60 6 L 78 24 L 78 100 L 18 100 Z" fill="none" stroke="rgba(240,238,230,0.6)" stroke-width="4" stroke-linejoin="round"/>
+            <line x1="30" y1="44" x2="66" y2="44" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+            <line x1="30" y1="62" x2="56" y2="62" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+          <div class="f36-ctitle"><span id="f36-t2a">tóm</span> <span id="f36-t2b">tắt</span></div>
+          <div class="f36-bar" id="f36-bar1" style="top:322px;width:440px"></div>
+          <div class="f36-bar" id="f36-bar2" style="top:350px;width:400px"></div>
+          <div class="f36-bar" id="f36-bar3" style="top:378px;width:420px"></div>
+        </div>
+
+        <div id="f36-spark2">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var OUT = "power3.out";
+      function word(sel, t, dy) {
+        tl.fromTo(sel, { opacity: 0, y: dy || 16 }, { opacity: 1, y: 0, duration: 0.35, ease: OUT }, t);
+      }
+      function pop(sel, t) {
+        tl.fromTo(sel, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: OUT }, t);
+      }
+
+      /* ---- Scene 1: flow (0 - 8.38) ---- */
+      // one slow camera push under the whole shot
+      tl.fromTo("#f36-flowcam", { scale: 1 }, { scale: 1.03, duration: 8.38, ease: "sine.inOut" }, 0);
+
+      // "Không chỉ đọc dữ liệu" - the old job, muted, above Claude
+      word("#f36-rd1", 0.63);
+      word("#f36-rd2", 0.81);
+      word("#f36-rd3", 0.95);
+      tl.fromTo("#f36-l2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: OUT }, 1.72);
+
+      // the stroke draws Claude -> third node; the node ring draws in
+      tl.to("#f36-a23", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 1.9);
+      tl.to("#f36-h23", { opacity: 1, duration: 0.15 }, 2.35);
+      tl.fromTo("#f36-r3", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: OUT }, 2.1);
+      tl.to("#f36-c3", { strokeDashoffset: 0, duration: 0.55, ease: "power2.inOut" }, 2.1);
+      tl.fromTo("#f36-i3", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: OUT }, 2.4);
+
+      // "thực hiện hành động" lands above the third node; "đọc dữ liệu" steps back
+      tl.to("#f36-read", { opacity: 0, y: -10, duration: 0.3, ease: "power2.inOut" }, 2.24);
+      word("#f36-ac1", 2.24, 22);
+      word("#f36-ac2", 2.38, 22);
+      word("#f36-ac3", 2.56, 22);
+      word("#f36-ac4", 2.75, 22);
+
+      // the spark leaves Claude and runs along the arrow into the service
+      pop("#f36-mover", 2.24);
+      tl.to("#f36-r2", { filter: "drop-shadow(0 0 0px rgba(217,119,87,0))", duration: 0.4 }, 2.3);
+      tl.set("#f36-c2", { attr: { stroke: "rgba(240,238,230,0.55)" } }, 2.6);
+      tl.to("#f36-mover", { x: 300, y: -2, duration: 0.55, ease: "power2.inOut" }, 2.6);
+      tl.to("#f36-mover", { scale: 0.2, opacity: 0, duration: 0.15, ease: "power2.in" }, 3.12);
+      // the service becomes the active step (terracotta glow)
+      tl.set("#f36-c3", { attr: { stroke: "#D97757" } }, 3.15);
+      tl.to("#f36-r3", { filter: "drop-shadow(0 0 14px rgba(217,119,87,0.55))", duration: 0.35, ease: OUT }, 3.15);
+
+      word("#f36-l3a", 3.21, 14);
+      word("#f36-l3b", 3.37, 14);
+      word("#f36-l3c", 3.57, 14);
+      word("#f36-l3d", 3.71, 14);
+
+      // working state: three dots pulse between the service and the result (finite, killed at 5.2)
+      ["#f36-d1", "#f36-d2", "#f36-d3"].forEach(function (d, i) {
+        for (var c = 0; c < 3; c++) {
+          var t0 = 3.9 + c * 0.38 + i * 0.1;
+          tl.to(d, { opacity: 1, duration: 0.14, ease: "sine.out" }, t0);
+          tl.to(d, { opacity: 0.25, duration: 0.14, ease: "sine.in" }, t0 + 0.14);
+        }
+        tl.set(d, { opacity: 0 }, 5.2);
+      });
+
+      // "giao việc": speech mark on the request node, key text under it
+      tl.fromTo("#f36-speech", { opacity: 0, scale: 0.4, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: OUT }, 5.2);
+      tl.to("#f36-act", { color: "#F0EEE6", duration: 0.3 }, 5.2);
+      word("#f36-gv1", 5.2, 20);
+      word("#f36-gv2", 5.4, 20);
+
+      // the result node draws in, then flips to a sage check
+      tl.to("#f36-a34", { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 5.2);
+      tl.to("#f36-h34", { opacity: 1, duration: 0.12 }, 5.52);
+      tl.fromTo("#f36-r4", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: OUT }, 5.4);
+      tl.to("#f36-c4", { strokeDashoffset: 0, duration: 0.45, ease: "power2.inOut" }, 5.4);
+      tl.fromTo("#f36-i4", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 5.45);
+      tl.fromTo("#f36-l4", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: OUT }, 5.5);
+      tl.to("#f36-i4", { opacity: 0, duration: 0.2 }, 5.95);
+      tl.fromTo("#f36-disc", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 5.95);
+      tl.to("#f36-tick", { strokeDashoffset: 0, duration: 0.3, ease: "power2.out" }, 6.1);
+      // finished steps flip to sage
+      tl.set("#f36-c3", { attr: { stroke: "#8FB8A8" } }, 6.0);
+      tl.to("#f36-r3", { filter: "drop-shadow(0 0 0px rgba(217,119,87,0))", duration: 0.3 }, 6.0);
+      tl.fromTo("#f36-b2", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: OUT }, 6.0);
+      tl.fromTo("#f36-b3", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: OUT }, 6.12);
+
+      // "không cần mở từng ứng dụng": app windows appear, then get struck through
+      tl.fromTo("#f36-ap1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 6.43);
+      tl.fromTo("#f36-ap2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 6.65);
+      tl.fromTo("#f36-ap3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: OUT }, 6.83);
+      tl.to(["#f36-ap1", "#f36-ap2", "#f36-ap3"], { opacity: 0.45, duration: 0.3 }, 7.23);
+      tl.to("#f36-strikeline", { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 7.23);
+
+      /* ---- Scene 2: cards (8.38 - 12.712) ---- */
+      // cut: the pipeline pulls back and blurs away, the example layer takes over
+      tl.to("#f36-flow", { opacity: 0, scale: 0.92, filter: "blur(12px)", duration: 0.45, ease: "power2.in" }, 8.38);
+      tl.fromTo("#f36-cards", { scale: 1 }, { scale: 1.02, duration: 4.33, ease: "sine.inOut" }, 8.38);
+      tl.fromTo("#f36-kicker", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: OUT }, 8.6);
+
+      // card 1 "tìm file" drops in
+      tl.fromTo("#f36-card1", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.5, ease: OUT }, 9.3);
+      word("#f36-t1a", 9.42, 20);
+      word("#f36-t1b", 9.6, 20);
+      word("#f36-cp1", 9.76, 12);
+      tl.fromTo("#f36-sep", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 10.2);
+      tl.fromTo("#f36-chip", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 10.29);
+      tl.fromTo("#f36-drive", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 10.61);
+
+      // hand-drawn arrow to card 2
+      tl.to("#f36-linkpath", { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 11.0);
+      tl.to("#f36-linkhead", { opacity: 1, duration: 0.12 }, 11.38);
+
+      // card 2 "tóm tắt" springs in with the spark pop
+      tl.fromTo("#f36-card2", { opacity: 0, scale: 0.86, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: OUT }, 11.51);
+      word("#f36-t2a", 11.51, 20);
+      word("#f36-t2b", 11.69, 20);
+      pop("#f36-spark2", 11.69);
+      // the long text condenses into a summary
+      tl.to("#f36-bar3", { scaleX: 0, opacity: 0, duration: 0.35, ease: "power2.inOut" }, 12.0);
+      tl.to("#f36-bar2", { scaleX: 0.55, duration: 0.35, ease: "power2.inOut" }, 12.1);
+
+      tl.to({}, { duration: 12.712 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["36-khong-chi-doc-ma-con-lam"] = tl;
+    })();
+  </script>
+</template>

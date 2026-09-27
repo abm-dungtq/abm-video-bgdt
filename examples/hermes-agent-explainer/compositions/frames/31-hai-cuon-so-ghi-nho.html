@@ -1,0 +1,311 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f31-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f31-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f31- */
+
+    /* kicker / session chip share the top slot (outside the camera) */
+    .f31-topline {
+      position: absolute; left: 0; top: 14px; width: 1760px; height: 56px;
+      display: flex; justify-content: center; align-items: center; gap: 18px;
+      font-family: "JetBrains Mono", monospace; font-size: 32px; letter-spacing: .16em;
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .f31-topline span { display: block; }
+    #f31-kick { color: var(--muted); }
+    #f31-kick .f31-dia, #f31-kg { color: var(--gold); }
+    #f31-chip { color: var(--cyan); }
+    #f31-chip .f31-pill {
+      display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 26px;
+      border-radius: 28px; border: 1px solid rgba(62,230,208,.45); background: rgba(20,27,58,.85);
+    }
+    #f31-first { color: var(--gold); }
+
+    /* camera */
+    #f31-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 400px; }
+
+    /* notebooks */
+    .f31-book { position: absolute; top: 160px; width: 700px; height: 470px; perspective: 2200px; }
+    #f31-bookL { left: 150px; }
+    #f31-bookR { left: 910px; }
+    .f31-back {
+      position: absolute; left: 10px; top: 12px; width: 700px; height: 470px; border-radius: 16px;
+      background: #0f1530; border: 1px solid rgba(244,241,232,.10);
+    }
+    .f31-page {
+      position: absolute; left: 0; top: 0; width: 700px; height: 470px; border-radius: 16px;
+      background:
+        repeating-linear-gradient(180deg, transparent 0 69px, rgba(142,147,181,.10) 69px 70px),
+        var(--surface);
+      border: 1px solid rgba(244,241,232,.14);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f31-ring {
+      position: absolute; left: -13px; width: 26px; height: 14px; border-radius: 7px;
+      border: 3px solid var(--muted); background: var(--canvas);
+    }
+    .f31-tab {
+      position: absolute; right: 36px; top: -48px; height: 48px; padding: 0 24px;
+      display: flex; align-items: center; border-radius: 12px 12px 0 0;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.14); border-bottom: none;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--cyan); white-space: nowrap;
+    }
+    .f31-title {
+      position: absolute; left: 80px; top: 44px; height: 80px;
+      font-size: 60px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    .f31-line, .f31-gold {
+      position: absolute; left: 80px; height: 16px; border-radius: 8px; transform-origin: 0 50%;
+    }
+    .f31-line { background: var(--ink); opacity: .5; }
+    .f31-gold { background: var(--gold); box-shadow: 0 0 22px rgba(255,210,63,.6); opacity: 0; }
+    .f31-l1 { top: 180px; width: 520px; }
+    .f31-l2 { top: 250px; width: 450px; }
+    .f31-l3 { top: 320px; width: 540px; }
+    .f31-l4 { top: 390px; width: 380px; }
+    .f31-mark {
+      position: absolute; left: 36px; width: 28px; height: 28px; margin-top: -6px;
+      color: var(--gold); font-size: 28px; line-height: 28px; text-align: center; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(255,210,63,.7));
+    }
+    .f31-cover {
+      position: absolute; left: 0; top: 0; width: 700px; height: 470px; border-radius: 16px;
+      transform-origin: 0 50%; backface-visibility: hidden;
+      background: linear-gradient(135deg, #2c2566 0%, #1b1845 60%, #151339 100%);
+      border: 1px solid rgba(244,241,232,.18); box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .f31-strap { position: absolute; right: 90px; top: 0; width: 16px; height: 470px; background: rgba(255,210,63,.75); }
+    .f31-emb {
+      position: absolute; left: 250px; top: 155px; width: 160px; height: 160px; border-radius: 80px;
+      border: 3px solid rgba(244,241,232,.35);
+      display: flex; justify-content: center; align-items: center;
+      color: var(--gold); font-size: 72px; filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+
+    /* courier trail + spark */
+    #f31-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f31-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f31-spark { position: absolute; left: 0; top: 0; width: 60px; height: 44px; }
+
+    /* capacity meters */
+    .f31-meter { position: absolute; top: 664px; width: 700px; height: 110px; }
+    #f31-meterL { left: 150px; }
+    #f31-meterR { left: 910px; }
+    .f31-track {
+      position: absolute; left: 0; top: 0; width: 700px; height: 18px; border-radius: 9px;
+      background: rgba(142,147,181,.22);
+    }
+    .f31-fill {
+      position: absolute; left: 0; top: 0; width: 700px; height: 18px; border-radius: 9px;
+      background: var(--cyan); transform-origin: 0 50%; box-shadow: 0 0 18px rgba(62,230,208,.45);
+    }
+    .f31-tick { position: absolute; left: 694px; top: -12px; width: 6px; height: 42px; border-radius: 3px; background: var(--ink); transform-origin: 50% 50%; }
+    .f31-cap {
+      position: absolute; left: 0; top: 40px; width: 700px; height: 44px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .08em;
+      color: var(--muted); text-transform: uppercase; white-space: nowrap;
+    }
+    .f31-cap b { color: var(--ink); font-weight: 400; }
+  </style>
+
+  <div id="root" data-composition-id="31-hai-cuon-so-ghi-nho" data-width="1920" data-height="1080" data-duration="14.99">
+    <div id="f31-ground" class="clip" data-start="0" data-duration="14.99" data-track-index="0"></div>
+    <div id="f31-stage" class="clip" data-start="0" data-duration="14.99" data-track-index="1">
+
+      <div id="f31-cam">
+        <!-- left notebook: MEMORY.md -->
+        <div id="f31-bookL" class="f31-book">
+          <div class="f31-back"></div>
+          <div class="f31-page">
+            <div id="f31-tabL" class="f31-tab">MEMORY.md</div>
+            <div id="f31-titleL" class="f31-title">Công việc</div>
+            <div id="f31-L1" class="f31-line f31-l1"></div>
+            <div id="f31-L2" class="f31-line f31-l2"></div>
+            <div id="f31-L3" class="f31-line f31-l3"></div>
+            <div id="f31-L4" class="f31-line f31-l4"></div>
+            <div id="f31-GL1" class="f31-gold f31-l1"></div>
+            <div id="f31-GL3" class="f31-gold f31-l3"></div>
+            <div id="f31-ML1" class="f31-mark" style="top:180px">◆</div>
+            <div id="f31-ML3" class="f31-mark" style="top:320px">◆</div>
+          </div>
+          <div class="f31-ring" style="top:60px"></div>
+          <div class="f31-ring" style="top:130px"></div>
+          <div class="f31-ring" style="top:200px"></div>
+          <div class="f31-ring" style="top:270px"></div>
+          <div class="f31-ring" style="top:340px"></div>
+          <div class="f31-ring" style="top:410px"></div>
+          <div id="f31-coverL" class="f31-cover"><div class="f31-strap"></div><div class="f31-emb">◆</div></div>
+        </div>
+
+        <!-- right notebook: USER.md -->
+        <div id="f31-bookR" class="f31-book">
+          <div class="f31-back"></div>
+          <div class="f31-page">
+            <div id="f31-tabR" class="f31-tab">USER.md</div>
+            <div id="f31-titleR" class="f31-title">Về bạn</div>
+            <div id="f31-R1" class="f31-line f31-l1"></div>
+            <div id="f31-R2" class="f31-line f31-l2"></div>
+            <div id="f31-R3" class="f31-line f31-l3"></div>
+            <div id="f31-R4" class="f31-line f31-l4"></div>
+            <div id="f31-GR1" class="f31-gold f31-l1"></div>
+            <div id="f31-GR3" class="f31-gold f31-l3"></div>
+            <div id="f31-MR1" class="f31-mark" style="top:180px">◆</div>
+            <div id="f31-MR3" class="f31-mark" style="top:320px">◆</div>
+          </div>
+          <div class="f31-ring" style="top:60px"></div>
+          <div class="f31-ring" style="top:130px"></div>
+          <div class="f31-ring" style="top:200px"></div>
+          <div class="f31-ring" style="top:270px"></div>
+          <div class="f31-ring" style="top:340px"></div>
+          <div class="f31-ring" style="top:410px"></div>
+          <div id="f31-coverR" class="f31-cover"><div class="f31-strap"></div><div class="f31-emb">◆</div></div>
+        </div>
+
+        <!-- courier trail: reads line 1 of each page -->
+        <svg id="f31-svg" viewBox="0 0 1760 820" fill="none">
+          <path id="f31-trail" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"
+                d="M230 368 L750 368 C 815 368 815 300 870 300 C 925 300 925 368 990 368 L1510 368"
+                stroke="#FFD23F" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+        <svg id="f31-spark" viewBox="0 0 60 44" fill="none">
+          <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="38" cy="22" r="10" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+        </svg>
+
+        <!-- capacity meters -->
+        <div id="f31-meterL" class="f31-meter">
+          <div id="f31-trackL" class="f31-track"></div>
+          <div id="f31-fillL" class="f31-fill"></div>
+          <div id="f31-tickL" class="f31-tick"></div>
+          <div id="f31-capL" class="f31-cap"><span>Giới hạn</span><b>2.200 ký tự</b></div>
+        </div>
+        <div id="f31-meterR" class="f31-meter">
+          <div id="f31-trackR" class="f31-track"></div>
+          <div id="f31-fillR" class="f31-fill"></div>
+          <div id="f31-tickR" class="f31-tick"></div>
+          <div id="f31-capR" class="f31-cap"><span>Giới hạn</span><b>1.375 ký tự</b></div>
+        </div>
+      </div>
+
+      <!-- top slot: kicker (scene 1–2), then session chip (scene 3–4) -->
+      <div id="f31-kick" class="f31-topline">
+        <span class="f31-dia" id="f31-kd">◆</span>
+        <span id="f31-k1">Hai cuốn sổ</span>
+        <span id="f31-kg">ghi nhớ</span>
+      </div>
+      <div id="f31-chip" class="f31-topline">
+        <div class="f31-pill" id="f31-pill">
+          <span>◆</span><span>Phiên mới</span>
+        </div>
+        <span id="f31-first">→ đọc trước tiên</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // initial hidden states (set before the timeline is built)
+      gsap.set(["#f31-kd", "#f31-k1", "#f31-kg", "#f31-pill", "#f31-first",
+                "#f31-tabL", "#f31-titleL", "#f31-tabR", "#f31-titleR",
+                "#f31-spark", "#f31-trackL", "#f31-trackR", "#f31-capL", "#f31-capR"], { opacity: 0 });
+      gsap.set(["#f31-L1", "#f31-L2", "#f31-L3", "#f31-L4", "#f31-R1", "#f31-R2", "#f31-R3", "#f31-R4",
+                "#f31-fillL", "#f31-fillR"], { scaleX: 0 });
+      gsap.set(["#f31-tickL", "#f31-tickR"], { scaleY: 0 });
+      gsap.set("#f31-spark", { x: 192, y: 346 });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = "power3.out", MOVE = "power2.inOut";
+
+      /* ---- Scene 1 (0–1.92): two closed notebooks slide in from opposite sides; kicker ---- */
+      tl.fromTo("#f31-bookL", { x: -1000, opacity: 0 }, { x: 0, opacity: 1, duration: 0.84, ease: IN }, 0.3);
+      tl.fromTo("#f31-bookR", { x: 1000, opacity: 0 }, { x: 0, opacity: 1, duration: 0.84, ease: IN }, 0.3);
+      tl.fromTo("#f31-kd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: IN }, 0.94);   // hai
+      tl.fromTo("#f31-k1", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 0.94);            // hai cuốn sổ
+      tl.fromTo("#f31-kg", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 1.48);            // ghi nhớ
+
+      /* ---- Scene 2 (1.92–5.36): covers open — MEMORY.md on "công việc", USER.md on "bạn" ---- */
+      tl.fromTo("#f31-coverL", { rotationY: 0 }, { rotationY: -180, duration: 0.5, ease: MOVE }, 2.81);
+      tl.fromTo("#f31-coverL", { opacity: 1 }, { opacity: 0, duration: 0.1, ease: "none" }, 3.21);
+      tl.fromTo("#f31-titleL", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 3.29);        // công việc
+      tl.fromTo("#f31-tabL", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 3.35);
+      tl.fromTo(["#f31-L1", "#f31-L2", "#f31-L3", "#f31-L4"], { scaleX: 0 },
+        { scaleX: 1, duration: 0.4, ease: IN, stagger: 0.12 }, 3.55);
+
+      tl.fromTo("#f31-coverR", { rotationY: 0 }, { rotationY: -180, duration: 0.5, ease: MOVE }, 4.88);
+      tl.fromTo("#f31-coverR", { opacity: 1 }, { opacity: 0, duration: 0.1, ease: "none" }, 5.28);
+      tl.fromTo("#f31-titleR", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 5.36);        // bạn
+      tl.fromTo("#f31-tabR", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 5.42);
+      tl.fromTo(["#f31-R1", "#f31-R2", "#f31-R3", "#f31-R4"], { scaleX: 0 },
+        { scaleX: 1, duration: 0.4, ease: IN, stagger: 0.12 }, 5.6);
+
+      /* ---- Scene 3 (5.36–10.8): "phiên mới" chip; camera zooms in; spark reads first lines ---- */
+      tl.to("#f31-kick", { opacity: 0, y: -16, duration: 0.25, ease: MOVE }, 6.05);
+      tl.fromTo("#f31-pill", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.45, ease: IN }, 6.32); // phiên (mới)
+      tl.fromTo("#f31-cam", { scale: 1 }, { scale: 1.12, duration: 1.4, ease: MOVE }, 7.57);                       // Hermes đọc
+      tl.fromTo("#f31-spark", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.25, ease: IN }, 7.95);
+      tl.fromTo("#f31-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 1.12, ease: "none" }, 8.15);
+      // spark rides the trail head: line 1 left → hop → line 1 right (lands on "tiên" @9.27)
+      tl.fromTo("#f31-spark", { x: 192, y: 346 }, { x: 712, y: 346, duration: 0.45, ease: "none" }, 8.15);
+      tl.to("#f31-spark", { x: 832, y: 278, duration: 0.11, ease: "none" }, 8.6);
+      tl.to("#f31-spark", { x: 952, y: 346, duration: 0.11, ease: "none" }, 8.71);
+      tl.to("#f31-spark", { x: 1472, y: 346, duration: 0.45, ease: "none" }, 8.82);
+      tl.fromTo("#f31-L1", { opacity: 0.5 }, { opacity: 1, duration: 0.45, ease: "none" }, 8.15);
+      tl.fromTo("#f31-R1", { opacity: 0.5 }, { opacity: 1, duration: 0.45, ease: "none" }, 8.82);
+      tl.fromTo("#f31-first", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: IN }, 9.13);          // trước tiên
+
+      /* ---- Scene 4 (10.8–14.49): capacity bars fill to the limit; only "quan trọng" lines stay lit ---- */
+      tl.to("#f31-cam", { scale: 1, duration: 0.8, ease: MOVE }, 10.0);
+      tl.to("#f31-spark", { opacity: 0, duration: 0.35, ease: MOVE }, 10.0);
+      tl.to("#f31-trail", { opacity: 0.3, duration: 0.35, ease: MOVE }, 10.0);
+      tl.fromTo(["#f31-trackL", "#f31-trackR"], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: IN }, 10.6);
+      tl.fromTo(["#f31-fillL", "#f31-fillR"], { scaleX: 0 }, { scaleX: 1, duration: 0.42, ease: "power2.out" }, 10.8); // giới hạn
+      tl.fromTo(["#f31-capL", "#f31-capR"], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 10.94);
+      tl.fromTo(["#f31-tickL", "#f31-tickR"], { scaleY: 0 }, { scaleY: 1, duration: 0.3, ease: IN }, 11.2);         // độ dài
+      tl.to("#f31-pill", { opacity: 0.45, duration: 0.4, ease: MOVE }, 10.8);
+
+      tl.to(["#f31-L2", "#f31-L4", "#f31-R2", "#f31-R4"], { opacity: 0.15, duration: 0.45, ease: MOVE }, 12.65);   // chỉ ghi
+      tl.to(["#f31-L3", "#f31-R3"], { opacity: 0.8, duration: 0.45, ease: MOVE }, 12.65);
+      tl.fromTo(["#f31-GL1", "#f31-GR1", "#f31-GL3", "#f31-GR3"], { opacity: 0, scaleX: 0 },
+        { opacity: 1, scaleX: 1, duration: 0.35, ease: IN, stagger: 0.05 }, 13.37);                                   // quan trọng
+      tl.fromTo(["#f31-ML1", "#f31-MR1", "#f31-ML3", "#f31-MR3"], { opacity: 0, scale: 0.3 },
+        { opacity: 1, scale: 1, duration: 0.3, ease: IN, stagger: 0.05 }, 13.45);
+
+      tl.to({}, { duration: 14.49 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["31-hai-cuon-so-ghi-nho"] = tl;
+    })();
+  </script>
+</template>

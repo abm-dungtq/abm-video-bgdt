@@ -1,0 +1,114 @@
+## Fact sheet cho video "Claude – từ cơ bản đến chuyên sâu". Mỗi [F-NN] dẫn tới một dòng nguồn trong capture/sources/INDEX.md.
+
+## ch0 Mở đầu
+
+[F-01] Claude là một họ mô hình ngôn ngữ lớn hiện đại do công ty Anthropic phát triển. — models-overview
+[F-02] Trang hướng dẫn chính thức mô tả Claude là trợ lý được huấn luyện để hữu ích, trung thực và vô hại, với giọng điệu trò chuyện tự nhiên. — get-started-help
+[F-03] Người dùng có thể truy cập Claude qua web tại claude.ai, ứng dụng máy tính cho Mac và Windows, và ứng dụng di động cho iOS và Android. — get-started-help
+[F-04] Theo điều khoản dịch vụ, người dùng phải từ 18 tuổi trở lên mới được dùng Claude. — get-started-help
+
+## ch1 Làm quen Claude
+
+[F-05] Dòng model Claude hiện có các tên bậc Opus, Sonnet, Haiku, và bậc mới nhất là Fable/Mythos, xếp trên cả lớp Opus về năng lực. — claude-fable-5-mythos-5
+[F-06] Anthropic công bố Claude Fable 5 và Claude Mythos 5 ngày 09/06/2026; Fable 5 là bản dùng cho mọi người, Mythos 5 hạn chế cho nhóm được cấp quyền vì có năng lực an ninh mạng rất mạnh. — claude-fable-5-mythos-5
+[F-07] Tên Mythos và Fable khác nhau ở lớp an toàn (safeguards) được gắn thêm, không phải khác nhau về model nền bên dưới. — claude-fable-5-mythos-5
+[F-08] Ngày 22/09/2026, Anthropic giới thiệu Claude Opus 5.5, model đầu tiên trong dòng Claude 5.5, đạt năng lực gần bằng Fable 5.1 trên phần lớn công việc. — claude-opus-5-5
+[F-09] Theo trang giới thiệu Opus 5.5, Claude Sonnet 5.5 và Claude Haiku 5.5 sẽ ra mắt trong vài tuần tới với nhiều cải tiến tương tự về hiệu năng và an toàn. — claude-opus-5-5
+[F-10] Claude Opus 4.5 ra mắt ngày 24/11/2025, được giới thiệu là model mạnh cho lập trình và tác vụ dạng agent tại thời điểm đó. — claude-opus-4-5
+[F-11] Trang tổng quan model khuyên người dùng chưa chắc nên chọn model nào thì bắt đầu với model được đề xuất mặc định, và chỉ chuyển sang Fable khi Opus ở mức nỗ lực cao vẫn chưa đạt yêu cầu. — models-overview
+[F-12] Claude Opus 5.5 có sẵn trên mọi nền tảng đám mây lớn, gồm Amazon Web Services, Google Cloud và Microsoft Azure. — claude-opus-5-5
+[F-13] Claude dùng được trên nhiều bề mặt khác nhau: ứng dụng chat, Claude Code, Claude Cowork, và nền tảng dành cho nhà phát triển. — claude-download
+[F-14] Ứng dụng máy tính (desktop) có nút truy cập nhanh và có tiện ích mở rộng riêng để kết nối Claude với công cụ và file trên máy cục bộ. — claude-download
+
+## ch2 Cơ bản trên claude.ai
+
+[F-15] Cách tốt nhất để trò chuyện với Claude là nói chuyện tự nhiên như với một đồng nghiệp hay bạn bè. — get-started-help
+[F-16] Người dùng có thể hỏi Claude những câu đơn giản hoặc giao các yêu cầu phức tạp nhiều bước như phân tích, viết sáng tạo hay lập trình. — get-started-help
+[F-17] Khi tải file lên một cuộc trò chuyện, mỗi file có thể tới 500MB và một cuộc trò chuyện nhận tối đa 20 file. — upload-files-help
+[F-18] File PDF tải lên Claude giới hạn tối đa 1000 trang, còn ảnh có thể tới 8000x8000 pixel. — upload-files-help
+[F-19] Các định dạng file được hỗ trợ gồm PDF, DOCX, CSV, TXT, HTML, ODT, RTF, EPUB, JSON, XLSX và ảnh JPEG, PNG, GIF, WebP. — upload-files-help
+[F-20] Với PDF từ 100 trang trở xuống, Claude đọc cả chữ và hình ảnh trong file; PDF dài hơn thì Claude chỉ xử lý phần chữ. — upload-files-help
+[F-21] Cách tải file lên là bấm nút dấu cộng và chọn file, hoặc kéo thả file trực tiếp vào khung chat. — upload-files-help
+[F-22] Muốn Claude trả lời tốt hơn, nên giải thích yêu cầu rõ ràng, đơn giản, và cho đủ ngữ cảnh như thể đang hướng dẫn người chưa biết gì về việc đó. — prompting-help
+[F-23] Nên chia yêu cầu phức tạp thành từng bước nhỏ khi đặt câu hỏi cho Claude. — prompting-help
+[F-24] Người dùng có thể sửa và hỏi tiếp bằng cách gửi phản hồi tiếp theo, yêu cầu làm rõ, hoặc đề nghị Claude viết lại câu trả lời. — prompting-help
+
+## ch3 Trung cấp: làm việc có tổ chức
+
+[F-25] Projects là không gian làm việc riêng, cho phép tải tài liệu, đặt ngữ cảnh, và giữ lịch sử trò chuyện tách biệt với Claude. — projects-help
+[F-26] Người dùng gói miễn phí được tạo tối đa 5 Projects. — projects-help
+[F-27] Bản Projects mới đang thử nghiệm coi một dự án như một cuộc hội thoại duy nhất, nơi Claude quản lý nhiều luồng công việc song song trên nền đám mây. — projects-help
+[F-28] Từ ngày 17/09/2026, phiên bản Projects mới trong Claude Code cho phép người dùng mô tả việc cần làm, còn Claude tự chia việc, giao việc, điều phối các luồng song song, rồi ghép kết quả lại. — projects-redesigned
+[F-29] Trong Projects mới, mỗi luồng công việc là một phiên Claude Code trên đám mây, chạy trên nhánh và bản sao riêng của kho mã; nếu hai luồng đụng nhau thì xử lý như xung đột merge bình thường. — projects-redesigned
+[F-30] Projects mới có bộ nhớ dùng chung cho cả dự án: mọi luồng đều thêm vào và lấy từ bộ nhớ chung, giảm nhu cầu giải thích lại từ đầu. — projects-redesigned
+[F-31] Artifact là bất kỳ thứ gì Claude tạo ra mà người dùng muốn đưa cho người khác xem, ví dụ một thiết kế, một bài trình bày, một tài liệu, một bảng điều khiển hay một công cụ tương tác nhỏ. — artifacts-help
+[F-32] Artifacts có trên các gói Free, Pro, Max, Team, Enterprise, và cả trong Claude Code ở mọi gói có Claude Code. — artifacts-help
+[F-33] Claude thường tạo artifact khi nội dung đủ lớn và độc lập, thường trên 15 dòng, và là thứ người dùng có thể muốn chỉnh sửa hay dùng lại bên ngoài cuộc trò chuyện. — artifacts-help
+[F-34] Có ba mẫu artifact đang thử nghiệm trên gói trả phí: Docs để viết tài liệu cùng Claude theo thời gian thực, Slides để dựng bài trình bày từ ghi chú hay nội dung đã có trong chat, và Design để làm hình ảnh, bản phác thảo, trang một trang theo hệ thống thiết kế. — artifacts-help
+[F-35] Claude ghi nhớ vai trò, dự án và ngữ cảnh công việc của người dùng, những người và địa điểm liên quan, cùng phong cách giao tiếp ưa thích. — memory-how-it-works-help
+[F-36] Mỗi Project có một không gian bộ nhớ riêng và một bản tóm tắt riêng, giúp ngữ cảnh trong từng dự án luôn tách biệt và liên quan. — memory-how-it-works-help
+[F-37] Theo mặc định Claude không lưu các chủ đề nhạy cảm vào bộ nhớ trừ khi người dùng tự bật tính năng này lên; khi bật, các chủ đề trước đó không được lưu lại hồi tố. — memory-how-it-works-help
+[F-38] Chat ẩn danh (Incognito) là cuộc trò chuyện tạm thời, không lưu vào lịch sử chat và không lưu vào bộ nhớ của Claude, có sẵn cho mọi người dùng Claude. — incognito-chats-help
+
+## ch4 Trung cấp: kết nối và nghiên cứu
+
+[F-39] Connectors giúp Claude truy cập ứng dụng và dịch vụ khác, lấy dữ liệu của người dùng, và thực hiện hành động trong các dịch vụ đã kết nối. — connectors-help
+[F-40] Ví dụ connector: kết nối Linear để tạo issue, Slack để gửi tin nhắn, hoặc Google Drive để tìm file. — connectors-help
+[F-41] Sau khi kết nối một ứng dụng, Claude có thể tự đưa ứng dụng đó vào cuộc trò chuyện khi thấy phù hợp với yêu cầu. — connectors-help
+[F-42] Người dùng gói miễn phí chỉ được thêm tối đa một connector tùy chỉnh qua remote MCP server. — connectors-help
+[F-43] Research là tính năng để Claude tìm kiếm và phân tích thông tin theo kiểu tác vụ nhiều bước, tự quyết định bước tiếp theo cần tìm gì. — use-research-help
+[F-44] Muốn dùng Research thì phải bật tính năng tìm kiếm web trước. — use-research-help
+[F-45] Research dành cho người dùng các gói trả phí Pro, Max, Team hoặc Enterprise, dùng được trên web, Claude Desktop hoặc Claude Mobile. — use-research-help
+[F-46] Theo bài công bố Research, Claude có thể tìm kiếm trên web và trong Google Workspace của người dùng để trả lời chi tiết trong vài phút. — claude-research-news
+[F-47] Claude in Chrome là tiện ích mở rộng trình duyệt, cho Claude thấy trang đang mở và thực hiện hành động như bấm link, gõ chữ, điều hướng trang, điền form bằng đăng nhập có sẵn của người dùng. — cowork-chrome-side-panel
+[F-48] Từ ngày 12/08/2026, khung Claude in Chrome ở panel bên trở thành một phiên Claude Cowork: hội thoại được lưu vào lịch sử, kỹ năng và connector hoạt động ngay trong trình duyệt, và có thể tiếp tục công việc trên ứng dụng máy tính, di động hay web. — cowork-chrome-side-panel
+[F-49] Rủi ro chính của Claude in Chrome là bị chèn lệnh ẩn trong trang web: kẻ xấu giấu chỉ dẫn trong trang, email hay tài liệu để điều hướng Claude làm việc ngoài ý muốn người dùng. — cowork-chrome-side-panel
+[F-50] Người dùng vẫn cần dùng ứng dụng Claude Desktop để làm việc với file trên máy tính hoặc với ứng dụng khác; Claude in Chrome chưa chạy trên trình duyệt Chromium khác hay trên di động. — cowork-chrome-side-panel
+[F-51] Ứng dụng Claude có trên desktop (Mac, Windows, và bản Linux đang thử nghiệm cho Ubuntu, Debian) và trên di động (iOS, Android). — claude-download
+[F-52] Cuộc trò chuyện, dự án, bộ nhớ và tùy chọn của người dùng được đồng bộ trên mọi thiết bị khi đăng nhập cùng tài khoản. — claude-download
+[F-53] Claude Code chạy được ngay trong ứng dụng desktop: người dùng có thể xem trước server đang chạy, xem thay đổi mã cục bộ và theo dõi trạng thái pull request mà không cần rời ứng dụng. — claude-download
+
+## ch5 Nâng cao: Claude Code và nền tảng
+
+[F-54] Claude Code kết hợp một model biết suy luận về mã nguồn với các công cụ dựng sẵn để thao tác file, tìm kiếm, chạy lệnh và truy cập web. — cc-features-overview
+[F-55] CLAUDE.md là ngữ cảnh cố định mà Claude thấy ở mọi phiên làm việc, thường dùng cho quy ước dự án kiểu luôn làm theo một cách nhất định. — cc-features-overview
+[F-56] Skill là file markdown chứa kiến thức, quy trình hoặc chỉ dẫn tái sử dụng được; người dùng gọi bằng lệnh hoặc Claude tự nạp khi thấy phù hợp. — cc-features-overview
+[F-57] Subagent là các phiên làm việc chạy vòng lặp riêng, trong ngữ cảnh tách biệt, và chỉ trả về bản tóm tắt cho cuộc trò chuyện chính. — cc-features-overview
+[F-58] Hook cho phép chạy script, yêu cầu HTTP, gọi công cụ MCP, prompt hoặc subagent mỗi khi Claude Code đến một sự kiện vòng đời nhất định, đảm bảo việc đó luôn xảy ra dù agent làm gì. — cc-features-overview
+[F-59] Plugin là lớp đóng gói: một plugin gói skill, hook, subagent và MCP server thành một gói cài đặt duy nhất, dùng khi muốn tái sử dụng cùng một thiết lập trên nhiều kho mã hoặc chia sẻ cho người khác. — cc-features-overview
+[F-60] MCP giúp Claude Code kết nối tới hàng trăm công cụ và nguồn dữ liệu bên ngoài; MCP server cho Claude Code quyền truy cập công cụ, cơ sở dữ liệu và API của người dùng. — cc-mcp-docs
+[F-61] Nên kết nối một MCP server khi người dùng thấy mình liên tục sao chép dữ liệu từ công cụ khác vào khung chat, ví dụ hệ thống theo dõi lỗi hay bảng điều khiển giám sát. — cc-mcp-docs
+[F-62] Anthropic giới thiệu Model Context Protocol là chuẩn mở, thống nhất cách kết nối hệ thống AI với nguồn dữ liệu, thay cho các cách tích hợp rời rạc trước đó. — model-context-protocol-news
+[F-63] Agent SDK cho phép nhúng agent của Claude Code vào ứng dụng Python hoặc TypeScript riêng, dùng chung công cụ và cách quản lý ngữ cảnh với Claude Code. — agent-sdk-overview
+[F-64] Theo tài liệu Agent SDK, nhà phát triển có thể gọi trực tiếp API của Claude từ mã nguồn, hoặc dùng Managed Agents là agent được Anthropic vận hành và host sẵn, cấu hình qua API. — agent-sdk-overview
+[F-65] Theo CHANGELOG chính thức, Claude Code hỗ trợ đọc file AGENTS.md thay cho CLAUDE.md khi dự án chưa có CLAUDE.md. — claude-code-changelog
+
+## ch6 Mới nhất, tính đến 25/09/2026
+
+[F-66] Ngày 16/09/2026, Anthropic gộp Claude Cowork và chat thành một ứng dụng Claude duy nhất, triển khai trước cho gói Pro và Max. — cowork-is-now-claude
+[F-67] Cùng đợt gộp Cowork và chat, Anthropic ra mắt Claude Docs và Claude Slides, còn Claude Design giờ hoạt động ngay trong cuộc trò chuyện: viết tài liệu cùng Claude, để Claude dựng bản nháp bài trình bày, sửa trực tiếp, trình chiếu ngay từ Claude, hoặc tải về dạng PowerPoint hay PDF. — cowork-is-now-claude
+[F-68] Người dùng có thể chọn cách Claude báo cáo tiến độ: mặc định Claude hỏi trước khi hành động, hoặc có thể để Claude tự làm và chỉ báo khi cần một quyết định quan trọng. — cowork-is-now-claude
+[F-69] Ngày 23/09/2026, Anthropic ra mắt Claude Marketplace, nơi gom plugin, connector, agent, sản phẩm và đối tác dịch vụ vào một chỗ để khách hàng tìm công cụ mở rộng Claude. — claude-marketplace
+[F-70] Claude Marketplace có hơn 2000 connector và plugin tại thời điểm ra mắt, gồm Atlassian, Google, Microsoft, Notion, Salesforce. — claude-marketplace
+[F-71] Nhà phát triển có thể tạo connector hoặc plugin cho Marketplace bằng Model Context Protocol và Agent Skills, hai chuẩn mở do Anthropic khởi xướng. — claude-marketplace
+[F-72] Ngày 17/09/2026, Projects trong Claude Code được thiết kế lại: từ một thư mục chứa file trở thành một cuộc hội thoại mà Claude tự điều phối nhiều luồng công việc song song. — projects-redesigned
+[F-73] Ngày 22/09/2026, Claude Opus 5.5 ra mắt với chi phí vận hành thấp hơn Opus 5 khoảng 40 phần trăm, đạt năng lực gần bằng Fable 5.1 trên phần lớn công việc. — claude-opus-5-5
+[F-74] Claude Opus 5.5 là model được Anthropic thử nghiệm hành vi tự động toàn diện nhất từ trước tới nay, và đạt kết quả tốt nhất trong các model Claude về mức độ trung thực. — claude-opus-5-5
+[F-75] Ngày 09/06/2026, Anthropic công bố Claude Fable 5 và Claude Mythos 5, đánh dấu lần đầu bậc model Mythos-class được mở rộng ra cho người dùng phổ thông. — claude-fable-5-mythos-5
+[F-76] Từ ngày 12/08/2026, Claude Cowork xuất hiện ngay trong khung Claude in Chrome ở panel bên, cho phép làm việc xuyên nhiều tab và tiếp tục trên ứng dụng desktop, di động hay web. — cowork-chrome-side-panel
+[F-77] Theo CHANGELOG, bản 2.1.275 từng thêm phím tắt gửi ngay (ctrl+enter hoặc ctrl+x ctrl+s) để ngắt lượt hiện tại và gửi luôn mọi tin nhắn đang chờ, nhưng bản mới hơn 2.1.281 đã đổi hành vi này: gửi ngay giờ chuyển các công cụ đang chạy xuống nền thay vì hủy lượt đang xử lý. — claude-code-changelog
+[F-78] Theo CHANGELOG, Claude Code đồng bộ các skill và plugin đã bật trên tài khoản claude.ai sang phiên làm việc trên terminal khi đăng nhập cùng tài khoản. — claude-code-changelog
+[F-79] Theo CHANGELOG, chế độ auto mode trong Claude Code chuyển sang dùng bộ phân loại phía máy chủ làm mặc định khi kết nối trực tiếp tới Anthropic API và tắt telemetry. — claude-code-changelog
+[F-80] Tính đến 20/08/2026 (ngày cập nhật bài viết, không phải ngày ra mắt tính năng), trang hướng dẫn connectors cho thấy connector tương tác có thể hiển thị giao diện trực tiếp như bảng điều khiển, bảng công việc, công cụ thiết kế ngay trong cuộc trò chuyện. — connectors-help
+[F-88] Ngày 23/06/2026, Anthropic ra mắt Claude Tag, cách để cả nhóm cùng làm việc với Claude ngay trong Slack: cấp quyền truy cập kênh, kết nối công cụ và dữ liệu, rồi ai trong kênh cũng có thể gắn thẻ Claude để giao việc. — claude-tag-intro
+[F-89] Quản trị viên tổ chức dùng Claude Tag có thể đặt giới hạn chi tiêu token cho cả tổ chức lẫn từng kênh, và xem nhật ký mọi việc Claude đã làm cùng người đã yêu cầu việc đó. — claude-tag-intro
+
+## ch7 An toàn và tổng kết
+
+[F-81] Anthropic dùng các model phát hiện để gắn cờ nội dung có khả năng gây hại dựa trên Usage Policy. — user-safety-help
+[F-82] Khi model phát hiện gắn cờ nội dung có hại, bộ lọc an toàn có thể chặn câu trả lời tương ứng. — user-safety-help
+[F-83] Anthropic có thể tạm thời áp bộ lọc an toàn tăng cường cho người dùng vi phạm chính sách nhiều lần, và gỡ bỏ sau một thời gian không vi phạm. — user-safety-help
+[F-84] Anthropic thừa nhận các công cụ an toàn này không hoàn hảo, có thể có trường hợp gắn cờ sai hoặc bỏ sót, và mời người dùng phản hồi qua email. — user-safety-help
+[F-85] Chat ẩn danh không được dùng để huấn luyện model, và dữ liệu được giữ 30 ngày theo mặc định trừ khi tổ chức đặt thời gian lưu khác. — incognito-chats-help
+[F-86] Người dùng có thể bật chat ẩn danh bằng cách bấm biểu tượng hình bóng ma ở góc trên bên phải màn hình. — incognito-chats-help
+[F-87] Theo mặc định Claude không tự lưu các chủ đề nhạy cảm vào bộ nhớ trừ khi người dùng bật tính năng đó lên, nên người dùng nên biết điều này trước khi nhập dữ liệu nhạy cảm. — memory-how-it-works-help

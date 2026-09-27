@@ -1,0 +1,290 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f14-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f14-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f14-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f14-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f14-spk { display: block; }
+    .f14-spk svg { display: block; width: 100%; height: 100%; }
+    .f14-card {
+      position: absolute;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f14-kicker {
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: 0.14em;
+      color: var(--muted); text-transform: uppercase; line-height: 1.2; white-space: nowrap;
+    }
+
+    /* Scene 1: prompt bar (left 60%) */
+    #f14-ask-kicker { position: absolute; left: 24px; top: 236px; display: flex; align-items: center; gap: 14px; opacity: 0; }
+    #f14-ask-kicker-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); }
+    #f14-bar {
+      left: 0; top: 300px; width: 980px; height: 150px; border-radius: 32px;
+      border: 2px solid rgba(240,238,230,.20);
+    }
+    #f14-typed {
+      position: absolute; left: 48px; top: 0; height: 150px; width: 780px;
+      display: flex; align-items: center; white-space: pre;
+      font-size: 50px; font-weight: 600; line-height: 1.3; color: var(--ink);
+    }
+    .f14-ch { display: none; }
+    #f14-hot { position: relative; display: inline; color: var(--gold); }
+    #f14-hot-line { position: absolute; left: 0; bottom: -14px; width: 330px; height: 16px; overflow: visible; }
+    #f14-caret { display: inline-block; width: 4px; height: 60px; margin-left: 4px; border-radius: 2px; background: var(--ink); }
+    #f14-send {
+      position: absolute; right: 30px; top: 37px; width: 76px; height: 76px; box-sizing: border-box;
+      border-radius: 50%; border: 3px solid rgba(143,184,168,.7);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f14-send-fill { position: absolute; inset: 0; border-radius: 50%; background: var(--cyan); opacity: 0; }
+    #f14-send svg { position: relative; width: 36px; height: 36px; }
+
+    /* typing indicator where the draft will land */
+    #f14-dots { position: absolute; left: 1330px; top: 395px; display: flex; gap: 22px; }
+    .f14-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--muted); opacity: 0; }
+
+    /* the draft card */
+    #f14-draft { left: 1080px; top: 150px; width: 680px; height: 520px; opacity: 0; overflow: hidden; }
+    #f14-draft-kicker { position: absolute; left: 48px; top: 44px; display: flex; align-items: center; gap: 16px; }
+    #f14-draft-kicker .f14-kicker { font-size: 34px; }
+    #f14-kspark { width: 38px; height: 38px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    .f14-bar-l { position: absolute; left: 48px; height: 18px; border-radius: 9px; background: rgba(240,238,230,.72); }
+    #f14-scan { position: absolute; left: 30px; top: 140px; width: 620px; height: 38px; border-radius: 10px; background: rgba(143,184,168,.16); opacity: 0; }
+
+    /* Scene 2: refinement chips */
+    .f14-chipwrap { position: absolute; top: 580px; width: 600px; text-align: center; }
+    #f14-cw1 { left: 100px; }
+    #f14-cw2 { left: 1060px; }
+    .f14-chip {
+      display: inline-block; box-sizing: border-box; padding: 16px 44px; border-radius: 48px;
+      border: 3px solid rgba(154,150,140,.7); background: var(--surface);
+      font-size: 46px; font-weight: 600; line-height: 1.3; white-space: nowrap; color: var(--ink);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35); opacity: 0;
+    }
+
+    /* Scene 3: kinetic close */
+    #f14-s3 { opacity: 0; }
+    #f14-just { position: absolute; left: 0; top: 214px; width: 1760px; text-align: center; font-size: 50px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+    #f14-want { position: absolute; left: 0; top: 318px; width: 1760px; display: flex; justify-content: center; align-items: center; gap: 36px; }
+    #f14-wspark { width: 64px; height: 64px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); opacity: 0; }
+    #f14-want-text { font-family: "Lora", serif; font-weight: 700; font-size: 132px; line-height: 1.12; letter-spacing: -0.01em; white-space: nowrap; }
+    .f14-w { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="14-cau-hoi-dau-tien" data-width="1920" data-height="1080" data-duration="15.146">
+    <div id="f14-ground" class="clip" data-start="0" data-duration="15.146" data-track-index="0"></div>
+    <div id="f14-stage" class="clip" data-start="0" data-duration="15.146" data-track-index="1">
+
+      <!-- Scenes 1–2 -->
+      <div id="f14-s12" class="f14-layer">
+        <div id="f14-left" class="f14-layer">
+          <div id="f14-ask-kicker"><div id="f14-ask-kicker-dot"></div><div class="f14-kicker">Bạn gõ</div></div>
+          <div id="f14-bar" class="f14-card">
+            <div id="f14-typed"><span id="f14-pre"></span><span id="f14-hot"><span id="f14-hot-chars"></span><svg id="f14-hot-line" viewBox="0 0 330 16"><path id="f14-hot-path" d="M2 8 C 70 13, 150 4, 230 9 S 305 11, 328 6" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg></span><span id="f14-post"></span><span id="f14-caret"></span></div>
+            <div id="f14-send">
+              <div id="f14-send-fill"></div>
+              <svg viewBox="0 0 36 36" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 30 V7 M8 16 L18 6 L28 16"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="f14-dots"><div class="f14-dot"></div><div class="f14-dot"></div><div class="f14-dot"></div></div>
+
+        <div id="f14-draft" class="f14-card">
+          <div id="f14-scan"></div>
+          <div id="f14-draft-kicker"><div id="f14-kspark" class="f14-spk"></div><div class="f14-kicker">Bản nháp</div></div>
+          <div class="f14-bar-l" style="top:150px;width:570px"></div>
+          <div class="f14-bar-l" style="top:212px;width:520px"></div>
+          <div class="f14-bar-l" style="top:274px;width:584px"></div>
+          <div class="f14-bar-l" style="top:336px;width:470px"></div>
+          <div class="f14-bar-l" style="top:398px;width:300px"></div>
+        </div>
+
+        <svg class="f14-svgfull" viewBox="0 0 1760 820" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+          <path id="f14-ar1" d="M400 566 C 404 500, 468 442, 566 426" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f14-ar1h" d="M546 410 L568 426 L547 443" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f14-ar2" d="M1360 566 C 1356 500, 1292 442, 1194 426" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f14-ar2h" d="M1214 410 L1192 426 L1213 443" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f14-cw1" class="f14-chipwrap"><div id="f14-chip1" class="f14-chip">ngắn hơn</div></div>
+        <div id="f14-cw2" class="f14-chipwrap"><div id="f14-chip2" class="f14-chip">trang trọng hơn</div></div>
+      </div>
+
+      <!-- Scene 3 -->
+      <div id="f14-s3" class="f14-layer">
+        <div id="f14-just"><span class="f14-w" id="f14-j1">chỉ</span> <span class="f14-w" id="f14-j2">cần</span> <span class="f14-w" id="f14-j3">nói</span></div>
+        <div id="f14-want">
+          <div id="f14-wspark" class="f14-spk"></div>
+          <div id="f14-want-text"><span class="f14-w" id="f14-w1">điều</span> <span class="f14-w" id="f14-w2">bạn</span> <span class="f14-w" id="f14-w3">muốn</span></div>
+        </div>
+        <svg class="f14-svgfull" viewBox="0 0 1760 820">
+          <path id="f14-under" d="M480 500 C 700 512, 950 490, 1150 502 S 1340 506, 1390 494" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="14-cau-hoi-dau-tien"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f14-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // typed request: each word types inside its own spoken window (audio_meta)
+      var WORDS = [
+        { host: '#f14-pre', text: 'Viết ', s: 1.878, e: 2.019 },
+        { host: '#f14-hot-chars', text: 'email ', s: 2.602, e: 2.864 },
+        { host: '#f14-hot-chars', text: 'cảm ', s: 2.924, e: 3.065 },
+        { host: '#f14-hot-chars', text: 'ơn', s: 3.125, e: 3.205 },
+        { host: '#f14-post', text: ' khách ', s: 3.215, e: 3.386 },
+        { host: '#f14-post', text: 'hàng', s: 3.406, e: 3.607 }
+      ];
+      var typeSteps = [];
+      WORDS.forEach(function (w) {
+        var chars = Array.from(w.text.normalize('NFC'));
+        var host = q(w.host);
+        var step = (w.e - w.s) / chars.length;
+        chars.forEach(function (c, i) {
+          var sp = document.createElement('span');
+          sp.className = 'f14-ch';
+          sp.textContent = c;
+          host.appendChild(sp);
+          typeSteps.push({ el: sp, t: w.s + i * step });
+        });
+      });
+
+      // initial hidden states (before the timeline is built)
+      gsap.set('#f14-s3', { opacity: 0 });
+      gsap.set(qa('.f14-bar-l'), { scaleX: 0, transformOrigin: '0% 50%' });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var word = function (sel, t) {
+        tl.fromTo(sel, { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, t);
+      };
+
+      // ---- Scene 1 (0–9.08): the prompt bar, a live caret, the request types itself
+      tl.fromTo('#f14-bar', { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, 0.05);
+      tl.fromTo('#f14-ask-kicker', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 1.014);
+      // caret blinks while idle, stays solid while typing
+      [0.55, 1.05, 1.55].forEach(function (t) {
+        tl.set('#f14-caret', { opacity: 0 }, t);
+        tl.set('#f14-caret', { opacity: 1 }, t + 0.25);
+      });
+      typeSteps.forEach(function (s) { tl.set(s.el, { display: 'inline' }, s.t); });
+      // "email cảm ơn" is terracotta as it types; the hand-drawn underline lands after "ơn"
+      draw('#f14-hot-path', 3.22, 0.35);
+      // send pressed
+      tl.fromTo('#f14-send', { scale: 1 }, { scale: 0.86, duration: 0.12, ease: 'power2.in', immediateRender: false }, 3.72);
+      tl.to('#f14-send', { scale: 1, duration: 0.25, ease: IN }, 3.87);
+      tl.fromTo('#f14-send-fill', { opacity: 0 }, { opacity: 0.55, duration: 0.2, ease: IN }, 3.78);
+      [4.1, 4.6, 5.1, 5.6, 6.1, 6.6, 7.1, 7.6, 8.1, 8.6].forEach(function (t) {
+        tl.set('#f14-caret', { opacity: 0 }, t);
+        tl.set('#f14-caret', { opacity: 1 }, t + 0.25);
+      });
+      // "chỉ vài giây sau": typing indicator where the draft will land
+      qa('.f14-dot').forEach(function (d, i) {
+        tl.fromTo(d, { opacity: 0, y: 0 }, { opacity: 1, y: -10, duration: 0.3, ease: 'power2.out' }, 4.25 + i * 0.15);
+        tl.to(d, { y: 0, opacity: 0.4, duration: 0.3, ease: 'power2.in' }, 4.55 + i * 0.15);
+        tl.to(d, { y: -10, opacity: 1, duration: 0.3, ease: 'power2.out' }, 5.0 + i * 0.15);
+        tl.to(d, { y: 0, opacity: 0.4, duration: 0.3, ease: 'power2.in' }, 5.3 + i * 0.15);
+        tl.to(d, { opacity: 0, duration: 0.2, ease: 'power2.in' }, 5.95);
+      });
+      // "bản nháp": the draft card slides into the right 40 %
+      tl.fromTo('#f14-draft', { x: 90, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, 6.12);
+      tl.fromTo('#f14-kspark', { scale: 0, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN }, 6.2);
+      qa('.f14-bar-l').forEach(function (el, i) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, duration: 0.2, ease: 'none' }, 6.35 + i * 0.16);
+      });
+      // "bạn đọc lại": a sage reading highlight runs down the lines
+      tl.fromTo('#f14-scan', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: IN }, 7.63);
+      tl.fromTo('#f14-scan', { y: 0 }, { y: 248, duration: 0.9, ease: 'power1.inOut' }, 7.7);
+      tl.to('#f14-scan', { opacity: 0, duration: 0.25, ease: 'power2.in' }, 8.6);
+
+      // ---- Scene 2 (9.08–13.26): the draft moves top-centre, refinement chips rise
+      tl.to('#f14-left', { y: -60, opacity: 0, filter: 'blur(8px)', duration: 0.4, ease: 'power2.in' }, 9.0);
+      tl.to('#f14-draft', { x: -540, y: -120, scale: 0.85, transformOrigin: '50% 0%', duration: 0.6, ease: 'power2.inOut' }, 9.08);
+      // "ngắn hơn" (left) — active chip, arrow back to the draft, the draft shortens
+      tl.fromTo('#f14-chip1', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 9.08);
+      tl.set('#f14-chip1', { borderColor: '#D97757' }, 9.08);
+      draw('#f14-ar1', 9.3, 0.3);
+      draw('#f14-ar1h', 9.6, 0.1);
+      tl.to(qa('.f14-bar-l'), { scaleX: 0.62, duration: 0.3, ease: 'power2.inOut' }, 9.32);
+      // "trang trọng hơn" (right) — becomes the active chip
+      tl.fromTo('#f14-chip2', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 9.8);
+      tl.set('#f14-chip1', { borderColor: 'rgba(154,150,140,.7)' }, 9.8);
+      tl.set('#f14-chip2', { borderColor: '#D97757' }, 9.8);
+      draw('#f14-ar2', 10.0, 0.3);
+      draw('#f14-ar2h', 10.3, 0.1);
+      // the draft's bars redraw once
+      qa('.f14-bar-l').forEach(function (el, i) {
+        tl.fromTo(el, { scaleX: 0 }, { scaleX: 1, duration: 0.2, ease: 'none', immediateRender: false }, 10.19 + i * 0.12);
+      });
+      // quiet hold
+      tl.fromTo('#f14-s12', { y: 0 }, { y: -8, duration: 2.5, ease: 'power1.inOut', immediateRender: false }, 10.75);
+
+      // ---- Scene 3 (13.26–14.65): kinetic close, centred
+      tl.to('#f14-s12', { scale: 1.06, opacity: 0, filter: 'blur(8px)', transformOrigin: '880px 400px', duration: 0.3, ease: 'power2.in' }, 13.26);
+      tl.set('#f14-s3', { opacity: 1 }, 13.26);
+      word('#f14-j1', 13.26);
+      word('#f14-j2', 13.3);
+      word('#f14-j3', 13.34);
+      tl.fromTo('#f14-w1', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 13.262);
+      tl.fromTo('#f14-w2', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 13.443);
+      tl.fromTo('#f14-w3', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 13.624);
+      tl.set('#f14-w3', { color: '#D97757' }, 13.624);
+      tl.fromTo('#f14-wspark', { scale: 0, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN }, 13.62);
+      draw('#f14-under', 13.8, 0.5);
+
+      tl.to({}, { duration: 14.646 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["14-cau-hoi-dau-tien"] = tl;
+    })();
+  </script>
+</template>

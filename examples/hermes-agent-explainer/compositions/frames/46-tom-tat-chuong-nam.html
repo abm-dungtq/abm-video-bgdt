@@ -1,0 +1,230 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f46-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f46-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    #f46-field {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      opacity: 0.4;
+    }
+    #f46-head {
+      position: absolute;
+      left: 380px;
+      top: 24px;
+      width: 1000px;
+      text-align: center;
+      opacity: 0;
+    }
+    #f46-title {
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    .f46-slot {
+      position: absolute;
+      top: 220px;
+      width: 760px;
+      height: 520px;
+      box-sizing: border-box;
+      border: 2px dashed rgba(142, 147, 181, 0.35);
+      border-radius: 18px;
+      opacity: 0;
+    }
+    #f46-slotL { left: 50px; }
+    #f46-slotR { left: 950px; }
+    .f46-card {
+      position: absolute;
+      top: 220px;
+      width: 760px;
+      height: 520px;
+      box-sizing: border-box;
+      padding: 48px 56px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f46-cardL { left: 50px; }
+    #f46-cardR { left: 950px; }
+    .f46-icon {
+      position: absolute;
+      right: 48px;
+      top: 44px;
+      width: 150px;
+      height: 150px;
+      overflow: visible;
+    }
+    .f46-num {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    .f46-term {
+      margin-top: 18px;
+      font-weight: 800;
+      font-size: 110px;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .f46-trail {
+      position: absolute;
+      left: 56px;
+      top: 318px;
+      width: 648px;
+      height: 20px;
+      overflow: visible;
+    }
+    .f46-say {
+      position: absolute;
+      left: 56px;
+      top: 362px;
+      width: 648px;
+      font-weight: 600;
+      font-size: 46px;
+      line-height: 1.25;
+      color: var(--ink);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="46-tom-tat-chuong-nam" data-width="1920" data-height="1080" data-duration="5.375">
+    <div id="f46-ground" class="clip" data-start="0" data-duration="5.375" data-track-index="0"></div>
+    <div id="f46-stage" class="clip" data-start="0" data-duration="5.375" data-track-index="1">
+      <!-- background field (dimmed): dot grid + two faint orbits behind each card -->
+      <svg id="f46-field" viewBox="0 0 1760 820" width="1760" height="820">
+        <defs>
+          <pattern id="f46-dots" x="0" y="0" width="44" height="44" patternUnits="userSpaceOnUse">
+            <circle cx="22" cy="22" r="2" fill="#8e93b5" fill-opacity="0.45" />
+          </pattern>
+        </defs>
+        <rect x="0" y="160" width="1760" height="660" fill="url(#f46-dots)" />
+        <circle cx="430" cy="480" r="330" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="2 14" />
+        <circle cx="1330" cy="480" r="330" fill="none" stroke="#8e93b5" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="2 14" />
+      </svg>
+
+      <!-- recap header -->
+      <div id="f46-head">
+        <div id="f46-title">Tóm lại</div>
+      </div>
+
+      <!-- empty slots waiting for the two terms -->
+      <div id="f46-slotL" class="f46-slot"></div>
+      <div id="f46-slotR" class="f46-slot"></div>
+
+      <!-- left anchor: gateway -->
+      <div id="f46-cardL" class="f46-card">
+        <svg class="f46-icon" viewBox="0 0 150 150" width="150" height="150">
+          <path id="f46-bubble" d="M18 30 Q18 16 32 16 L118 16 Q132 16 132 30 L132 88 Q132 102 118 102 L62 102 L36 128 L40 102 L32 102 Q18 102 18 88 Z"
+            fill="none" stroke="#ffd23f" stroke-width="5" stroke-linejoin="round" />
+          <circle id="f46-dot1" cx="50" cy="59" r="8" fill="#f4f1e8" opacity="0" />
+          <circle id="f46-dot2" cx="75" cy="59" r="8" fill="#f4f1e8" opacity="0" />
+          <circle id="f46-dot3" cx="100" cy="59" r="8" fill="#f4f1e8" opacity="0" />
+        </svg>
+        <div class="f46-num">01</div>
+        <div id="f46-termL" class="f46-term">gateway</div>
+        <svg class="f46-trail" viewBox="0 0 648 20" width="648" height="20">
+          <path id="f46-lineL" d="M0 10 L648 10" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="648" stroke-dashoffset="648" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        </svg>
+        <div id="f46-sayL" class="f46-say">trò chuyện mọi nơi</div>
+      </div>
+
+      <!-- right anchor: cron -->
+      <div id="f46-cardR" class="f46-card">
+        <svg class="f46-icon" viewBox="0 0 150 150" width="150" height="150">
+          <circle id="f46-clock" cx="75" cy="75" r="60" fill="none" stroke="#ffd23f" stroke-width="5" />
+          <line x1="75" y1="21" x2="75" y2="31" stroke="#8e93b5" stroke-width="4" stroke-linecap="round" />
+          <line x1="129" y1="75" x2="119" y2="75" stroke="#8e93b5" stroke-width="4" stroke-linecap="round" />
+          <line x1="75" y1="129" x2="75" y2="119" stroke="#8e93b5" stroke-width="4" stroke-linecap="round" />
+          <line x1="21" y1="75" x2="31" y2="75" stroke="#8e93b5" stroke-width="4" stroke-linecap="round" />
+          <line id="f46-hourhand" x1="75" y1="75" x2="75" y2="46" stroke="#f4f1e8" stroke-width="6" stroke-linecap="round" />
+          <line id="f46-minhand" x1="75" y1="75" x2="75" y2="30" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round" />
+          <circle cx="75" cy="75" r="6" fill="#f4f1e8" />
+        </svg>
+        <div class="f46-num">02</div>
+        <div id="f46-termR" class="f46-term">cron</div>
+        <svg class="f46-trail" viewBox="0 0 648 20" width="648" height="20">
+          <path id="f46-lineR" d="M0 10 L648 10" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="648" stroke-dashoffset="648" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        </svg>
+        <div id="f46-sayR" class="f46-say">tự động theo lịch</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", CYAN = "#3ee6d0", INK = "#f4f1e8";
+      var tl = gsap.timeline({ paused: true });
+
+      // "Tóm lại" (0.29): header lands, the two empty slots appear.
+      tl.fromTo("#f46-head", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.29);
+      tl.fromTo(["#f46-slotL", "#f46-slotR"], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out", stagger: 0.08 }, 0.45);
+
+      // "gateway" (1.19): left anchor pins — enters once, never moves again. Term is the gold focus.
+      tl.fromTo("#f46-cardL", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.19);
+      tl.set("#f46-termL", { color: GOLD }, 1.19);
+      // "trò chuyện mọi nơi" (1.79–2.45): slot lands, courier trail draws under it, chat dots appear.
+      tl.fromTo("#f46-sayL", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.79);
+      tl.fromTo("#f46-lineL", { strokeDashoffset: 648 }, { strokeDashoffset: 0, duration: 0.66, ease: "none" }, 1.79);
+      tl.fromTo(["#f46-dot1", "#f46-dot2", "#f46-dot3"], { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" },
+        { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out", stagger: 0.14 }, 1.93);
+
+      // "cron" (2.87): right anchor pins; gold focus moves right, gateway settles to "ready" cyan.
+      tl.fromTo("#f46-cardR", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 2.87);
+      tl.set("#f46-termR", { color: GOLD }, 2.87);
+      tl.set("#f46-termL", { color: INK }, 2.87);
+      tl.set("#f46-lineL", { attr: { stroke: CYAN }, filter: "none" }, 2.87);
+      tl.set("#f46-bubble", { attr: { stroke: CYAN } }, 2.87);
+      // "tự động theo lịch" (3.33–4.04): slot lands, trail draws, clock hands advance.
+      tl.fromTo("#f46-sayR", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.33);
+      tl.fromTo("#f46-lineR", { strokeDashoffset: 648 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 3.33);
+      tl.fromTo("#f46-minhand", { rotation: 0 }, { rotation: 360, svgOrigin: "75 75", duration: 1.2, ease: "power2.inOut" }, 3.33);
+      tl.fromTo("#f46-hourhand", { rotation: 0 }, { rotation: 30, svgOrigin: "75 75", duration: 1.2, ease: "power2.inOut" }, 3.33);
+
+      // After "lịch." — hold still (no exit; the root transition is the exit).
+      tl.to({}, { duration: 4.775 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["46-tom-tat-chuong-nam"] = tl;
+    })();
+  </script>
+</template>

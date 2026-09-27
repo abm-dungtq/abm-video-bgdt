@@ -1,0 +1,217 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f21-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f21-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f21-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f21-spk { display: inline-block; }
+    .f21-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* pinned anchor (left column, never moves after landing) */
+    #f21-anchor { position: absolute; left: 30px; top: 300px; width: 420px; height: 200px; }
+    #f21-anchor-spark {
+      position: absolute; left: 0; top: 0; width: 56px; height: 56px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f21-anchor-word {
+      position: absolute; left: 0; top: 76px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+
+    /* the checklist: three stacked rows */
+    #f21-list { position: absolute; left: 560px; top: 120px; width: 1120px; height: 510px; }
+    .f21-row {
+      position: absolute; left: 0; width: 1120px; height: 150px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f21-row1 { top: 0; }
+    #f21-row2 { top: 180px; }
+    #f21-row3 { top: 360px; }
+    .f21-ring { position: absolute; left: 40px; top: 39px; width: 72px; height: 72px; overflow: visible; }
+    .f21-label {
+      position: absolute; left: 146px; top: 38px;
+      font-size: 56px; font-weight: 600; line-height: 1.3; white-space: nowrap;
+    }
+    .f21-num {
+      position: absolute; right: 44px; top: 44px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 48px; line-height: 1.2;
+      color: var(--muted);
+    }
+
+    /* scene 2: the forward handoff */
+    #f21-next {
+      position: absolute; left: 560px; top: 676px; height: 60px;
+      display: flex; align-items: center; gap: 16px; opacity: 0;
+    }
+    #f21-next-spark { width: 30px; height: 30px; }
+    #f21-next-kick {
+      font-family: "JetBrains Mono", monospace; font-size: 32px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; line-height: 1.2;
+    }
+    #f21-next-arrow { width: 150px; height: 40px; overflow: visible; margin-left: 10px; }
+    #f21-dest {
+      position: absolute; left: 560px; top: 480px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 128px; line-height: 1.12;
+      letter-spacing: -0.01em; white-space: nowrap;
+    }
+    .f21-w { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="21-tom-tat-chuong-hai" data-width="1920" data-height="1080" data-duration="8.484">
+    <div id="f21-ground" class="clip" data-start="0" data-duration="8.484" data-track-index="0"></div>
+    <div id="f21-stage" class="clip" data-start="0" data-duration="8.484" data-track-index="1">
+
+      <!-- hand-drawn divider between the pinned anchor and the changing region -->
+      <svg class="f21-svgfull" viewBox="0 0 1760 820">
+        <path id="f21-divider" d="M482 90 C 476 250, 488 420, 478 560 S 484 700, 480 740" fill="none" stroke="#F0EEE6" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <!-- pinned anchor -->
+      <div id="f21-anchor">
+        <div id="f21-anchor-spark" class="f21-spk f21-spk-gold"></div>
+        <div id="f21-anchor-word">Tóm lại</div>
+      </div>
+
+      <!-- checklist: rows stack, never swap -->
+      <div id="f21-list">
+        <div id="f21-row1" class="f21-row">
+          <svg class="f21-ring" viewBox="0 0 72 72">
+            <circle id="f21-ring1" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f21-tick1" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f21-label">hỏi tự nhiên</div>
+          <div class="f21-num">1</div>
+        </div>
+        <div id="f21-row2" class="f21-row">
+          <svg class="f21-ring" viewBox="0 0 72 72">
+            <circle id="f21-ring2" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f21-tick2" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f21-label">đủ ngữ cảnh</div>
+          <div class="f21-num">2</div>
+        </div>
+        <div id="f21-row3" class="f21-row">
+          <svg class="f21-ring" viewBox="0 0 72 72">
+            <circle id="f21-ring3" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f21-tick3" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+          <div class="f21-label">hỏi tiếp</div>
+          <div class="f21-num">3</div>
+        </div>
+      </div>
+
+      <!-- scene 2: next chapter teaser -->
+      <div id="f21-next">
+        <span id="f21-next-spark" class="f21-spk f21-spk-gold"></span>
+        <span id="f21-next-kick">Tiếp theo</span>
+        <svg id="f21-next-arrow" viewBox="0 0 150 40">
+          <path id="f21-arrow" d="M4 22 C 40 14, 80 28, 136 19" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f21-arrowhead" d="M116 4 L138 19 L118 36" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+      <div id="f21-dest"><span id="f21-w1" class="f21-w">có</span> <span id="f21-w2" class="f21-w">tổ</span> <span id="f21-w3" class="f21-w">chức</span></div>
+      <svg class="f21-svgfull" viewBox="0 0 1760 820">
+        <path id="f21-under" d="M728 644 C 820 656, 940 636, 1060 648 S 1150 652, 1176 642" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="21-tom-tat-chuong-hai"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var spark = function (color) {
+        return '<svg viewBox="-50 -50 100 100"><g stroke="' + color + '" stroke-width="11" stroke-linecap="round">' +
+          '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+          '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      };
+      qa('.f21-spk-gold').forEach(function (el) { el.innerHTML = spark('#D97757'); });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var pop = function (d) { return { scale: 1, rotation: 0, opacity: 1, duration: d || 0.45, ease: IN }; };
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var rowIn = function (sel, t) {
+        tl.fromTo(sel, { x: 70, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, t);
+      };
+
+      // ---- Scene 1 (0–6.3): anchor pins on "Tóm lại"; checklist rows stack on their cues
+      tl.fromTo('#f21-anchor-spark', popFrom, pop(0.45), 0.31);           // "Tóm"
+      tl.fromTo('#f21-anchor-word', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.31);
+      draw('#f21-divider', 0.5, 0.8);
+
+      rowIn('#f21-row1', 1.25);                                           // "tự"
+      draw('#f21-ring1', 1.3, 0.4);
+      draw('#f21-tick1', 1.45, 0.3);                                      // "nhiên"
+
+      rowIn('#f21-row2', 2.3);                                            // "ngữ"
+      draw('#f21-ring2', 2.35, 0.4);
+      draw('#f21-tick2', 2.48, 0.3);                                      // "cảnh"
+
+      rowIn('#f21-row3', 3.54);                                           // "hỏi"
+      draw('#f21-ring3', 3.59, 0.4);
+      draw('#f21-tick3', 3.7, 0.3);                                       // "tiếp"
+
+      // "Chương tiếp theo" (4.63): teaser kicker; arrow draws under "ta học cách làm việc"
+      tl.fromTo('#f21-next-spark', popFrom, pop(0.4), 4.63);
+      tl.fromTo('#f21-next', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 4.63);
+      draw('#f21-arrow', 5.33, 0.75);
+      draw('#f21-arrowhead', 6.05, 0.15);
+
+      // ---- Scene 2 (6.3–7.88): checklist folds up and dims; "có tổ chức" lands word by word
+      tl.to('#f21-list', { y: -60, scale: 0.62, opacity: 0.35, transformOrigin: '0px 0px', duration: 0.55, ease: 'power2.inOut' }, 6.3);
+      tl.to('#f21-next', { y: -290, duration: 0.55, ease: 'power2.inOut' }, 6.3);
+      tl.fromTo('#f21-w1', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 6.3);   // "có"
+      tl.fromTo('#f21-w2', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 6.52);  // "tổ"
+      tl.fromTo('#f21-w3', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 6.7);   // "chức"
+      draw('#f21-under', 6.9, 0.45);
+
+      tl.to({}, { duration: 7.884 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["21-tom-tat-chuong-hai"] = tl;
+    })();
+  </script>
+</template>

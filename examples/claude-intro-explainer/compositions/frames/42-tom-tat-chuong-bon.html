@@ -1,0 +1,242 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f42-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        radial-gradient(ellipse at 18% 55%, hsla(34, 50%, 38%, 0.10), transparent 45%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f42-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f42- */
+    .f42-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* pinned anchor (left 40%) — lands once, never moves */
+    #f42-anchor { position: absolute; left: 40px; top: 250px; width: 520px; height: 300px; }
+    #f42-anchor-spark {
+      position: absolute; left: 4px; top: 0; width: 64px; height: 64px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f42-anchor-spark svg { display: block; width: 100%; height: 100%; }
+    #f42-anchor-word {
+      position: absolute; left: 0; top: 88px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 112px; line-height: 1.1;
+      letter-spacing: -0.01em; white-space: nowrap;
+    }
+    .f42-aw { display: inline-block; opacity: 0; }
+
+    /* right 60%: the checklist accumulates */
+    #f42-list { position: absolute; left: 700px; top: 110px; width: 980px; height: 560px; }
+    .f42-row {
+      position: absolute; left: 0; width: 980px; height: 160px;
+      opacity: 0;
+    }
+    #f42-row1 { top: 0; }
+    #f42-row2 { top: 200px; }
+    #f42-row3 { top: 400px; }
+    .f42-card {
+      position: absolute; inset: 0; box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    /* "newest" terracotta edge, faded out when the next row arrives */
+    .f42-edge {
+      position: absolute; inset: 0; box-sizing: border-box;
+      border: 2px solid rgba(217,119,87,.85);
+      border-radius: 16px;
+      opacity: 0;
+    }
+    .f42-icon { position: absolute; left: 36px; top: 40px; width: 80px; height: 80px; overflow: visible; }
+    .f42-label {
+      position: absolute; left: 148px; top: 38px; height: 84px;
+      display: flex; align-items: baseline; gap: 24px; white-space: nowrap;
+    }
+    .f42-name { font-size: 58px; font-weight: 600; line-height: 1.3; color: var(--gold); }
+    .f42-verb { font-size: 40px; font-weight: 500; line-height: 1.3; color: var(--muted); }
+    .f42-vw { display: inline-block; opacity: 0; }
+    .f42-check { position: absolute; right: 40px; top: 44px; width: 72px; height: 72px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="42-tom-tat-chuong-bon" data-width="1920" data-height="1080" data-duration="6.663">
+    <div id="f42-ground" class="clip" data-start="0" data-duration="6.663" data-track-index="0"></div>
+    <div id="f42-stage" class="clip" data-start="0" data-duration="6.663" data-track-index="1">
+
+      <!-- hand-drawn divider between the pinned anchor and the checklist -->
+      <svg class="f42-svgfull" viewBox="0 0 1760 820">
+        <path id="f42-divider" d="M624 110 C 618 260, 630 420, 620 560 S 626 660, 622 690" fill="none" stroke="#F0EEE6" stroke-opacity="0.2" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <!-- pinned anchor -->
+      <div id="f42-anchor">
+        <div id="f42-anchor-spark"></div>
+        <div id="f42-anchor-word"><span id="f42-aw1" class="f42-aw">Tóm</span> <span id="f42-aw2" class="f42-aw">lại</span></div>
+        <svg class="f42-svgfull" viewBox="0 0 520 300" style="width:520px;height:300px;">
+          <path id="f42-anchor-under" d="M4 236 C 90 226, 190 244, 290 232 S 380 228, 410 236" fill="none" stroke="#D97757" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+      <!-- checklist: rows accumulate, never swap -->
+      <div id="f42-list">
+        <!-- row 1: Connectors (plug) -->
+        <div id="f42-row1" class="f42-row">
+          <div class="f42-card"></div>
+          <div id="f42-edge1" class="f42-edge"></div>
+          <svg class="f42-icon" viewBox="0 0 80 80">
+            <g id="f42-plug" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M30 14 L30 26 M50 14 L50 26"/>
+              <path d="M20 26 L60 26 L60 40 C 60 52, 50 58, 40 58 C 30 58, 20 52, 20 40 Z"/>
+              <path d="M40 58 C 40 66, 44 70, 52 72"/>
+            </g>
+          </svg>
+          <div class="f42-label">
+            <span id="f42-name1" class="f42-name">Connectors</span>
+            <span class="f42-verb"><span id="f42-v1a" class="f42-vw">nối</span> <span id="f42-v1b" class="f42-vw">công</span> <span id="f42-v1c" class="f42-vw">cụ</span></span>
+          </div>
+          <svg class="f42-check" viewBox="0 0 72 72">
+            <circle id="f42-ring1" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f42-tick1" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+
+        <!-- row 2: Research (magnifier) -->
+        <div id="f42-row2" class="f42-row">
+          <div class="f42-card"></div>
+          <div id="f42-edge2" class="f42-edge"></div>
+          <svg class="f42-icon" viewBox="0 0 80 80">
+            <g fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round">
+              <circle cx="34" cy="34" r="20"/>
+              <path d="M49 49 L66 66"/>
+              <path d="M24 30 C 26 25, 30 22, 35 21" stroke-opacity="0.5"/>
+            </g>
+          </svg>
+          <div class="f42-label">
+            <span id="f42-name2" class="f42-name">Research</span>
+            <span class="f42-verb"><span id="f42-v2a" class="f42-vw">tìm</span> <span id="f42-v2b" class="f42-vw">hiểu</span> <span id="f42-v2c" class="f42-vw">sâu</span></span>
+          </div>
+          <svg class="f42-check" viewBox="0 0 72 72">
+            <circle id="f42-ring2" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f42-tick2" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+
+        <!-- row 3: in the browser (browser window) -->
+        <div id="f42-row3" class="f42-row">
+          <div class="f42-card"></div>
+          <div id="f42-edge3" class="f42-edge"></div>
+          <svg class="f42-icon" viewBox="0 0 80 80">
+            <g fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round">
+              <rect x="8" y="14" width="64" height="52" rx="8"/>
+              <path d="M8 28 L72 28"/>
+            </g>
+            <g fill="#9A968C"><circle cx="17" cy="21" r="2.6"/><circle cx="25" cy="21" r="2.6"/><circle cx="33" cy="21" r="2.6"/></g>
+          </svg>
+          <div class="f42-label">
+            <span class="f42-name" style="font-size:54px;"><span id="f42-n3a" class="f42-vw">trong</span> <span id="f42-n3b" class="f42-vw">trình</span> <span id="f42-n3c" class="f42-vw">duyệt</span></span>
+          </div>
+          <svg class="f42-check" viewBox="0 0 72 72">
+            <circle id="f42-ring3" cx="36" cy="36" r="32" fill="none" stroke="#8FB8A8" stroke-opacity="0.55" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 36 36)"/>
+            <path id="f42-tick3" d="M20 38 C 25 42, 29 47, 32 51 C 38 40, 45 30, 54 22" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="42-tom-tat-chuong-bon"]');
+      var sparkHost = root.querySelector('#f42-anchor-spark');
+      // eight-ray spark drawn in SVG (the fonts have no asterisk glyph)
+      sparkHost.innerHTML = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var word = function (sel, t) {
+        tl.fromTo(sel, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: IN }, t);
+      };
+      var rowIn = function (n, t) {
+        tl.fromTo('#f42-row' + n, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: IN }, t);
+        tl.fromTo('#f42-edge' + n, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: IN }, t + 0.1);
+      };
+      // earlier row settles: name terracotta -> cream, edge fades
+      var settle = function (n, nameSel, t) {
+        tl.to(nameSel, { color: '#F0EEE6', duration: 0.35, ease: 'power2.out' }, t);
+        tl.to('#f42-edge' + n, { opacity: 0, duration: 0.35, ease: 'power2.out' }, t);
+      };
+
+      // ---- anchor lands on "Tóm lại" (0.31 / 0.47) and pins for the whole frame
+      tl.fromTo('#f42-anchor-spark', { scale: 0, rotation: -30, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.4)' }, 0.31);
+      word('#f42-aw1', 0.31);                                   // "Tóm"
+      word('#f42-aw2', 0.47);                                   // "lại"
+      draw('#f42-divider', 0.5, 0.7);
+
+      // ---- row 1: "Connectors" @0.79, "nối công cụ" 1.31 / 1.49 / 1.65
+      rowIn(1, 0.79);
+      tl.fromTo('#f42-plug', { y: -10 }, { y: 0, duration: 0.45, ease: 'back.out(2)' }, 0.95);
+      word('#f42-v1a', 1.31);
+      word('#f42-v1b', 1.49);
+      word('#f42-v1c', 1.65);
+      draw('#f42-ring1', 1.0, 0.4);
+      draw('#f42-tick1', 1.75, 0.3);
+
+      // ---- row 2: "Research" @2.34, "tìm hiểu sâu" 3.04 / 3.20 / 3.40
+      settle(1, '#f42-name1', 2.34);
+      rowIn(2, 2.34);
+      word('#f42-v2a', 3.04);
+      word('#f42-v2b', 3.20);
+      word('#f42-v2c', 3.40);
+      draw('#f42-ring2', 2.55, 0.4);
+      draw('#f42-tick2', 3.5, 0.3);
+
+      // ---- row 3: "trong" @4.82, "trình" @4.96, "duyệt" @5.14
+      settle(2, '#f42-name2', 4.82);
+      rowIn(3, 4.82);
+      word('#f42-n3a', 4.82);
+      word('#f42-n3b', 4.96);
+      word('#f42-n3c', 5.14);
+      draw('#f42-ring3', 5.0, 0.35);
+      draw('#f42-tick3', 5.36, 0.28);
+
+      // ---- lockup: the recap reads whole — the anchor gets its terracotta stroke, then hold
+      draw('#f42-anchor-under', 5.45, 0.4);
+
+      tl.to({}, { duration: 6.063 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["42-tom-tat-chuong-bon"] = tl;
+    })();
+  </script>
+</template>

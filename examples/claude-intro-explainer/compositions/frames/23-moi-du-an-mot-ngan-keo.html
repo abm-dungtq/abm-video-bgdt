@@ -1,0 +1,282 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f23-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f23-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f23- */
+
+    /* shot 1: the cabinet (camera wrapper zooms into the open drawer in shot 2) */
+    #f23-cam { position: absolute; left: 0; top: 0; width: 900px; height: 820px; transform-origin: 440px 405px; }
+    #f23-cab { position: absolute; left: 0; top: 0; width: 900px; height: 820px; overflow: visible; }
+    .f23-line { fill: none; stroke: #F0EEE6; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f23-fill { opacity: 0; }
+    .f23-tag { font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 28px; fill: #9A968C; opacity: 0; }
+
+    /* shot 1: right label column */
+    #f23-col { position: absolute; left: 960px; top: 250px; width: 780px; height: 320px; }
+    #f23-kick {
+      position: absolute; left: 0; top: 0; width: 780px; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      color: var(--muted); line-height: 40px;
+    }
+    #f23-kick span { display: inline-block; opacity: 0; margin-right: 0.5em; }
+    .f23-big {
+      position: absolute; left: 0; top: 70px; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; line-height: 1.08; letter-spacing: -0.01em;
+      opacity: 0;
+    }
+    #f23-ngan { font-size: 120px; color: var(--ink); top: 84px; }
+    #f23-proj { font-size: 150px; color: var(--gold); display: flex; align-items: center; gap: 28px; }
+    #f23-spark1 { width: 44px; height: 44px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f23-conn { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; pointer-events: none; }
+
+    /* shot 2: the open drawer seen from above */
+    #f23-tray-wrap { position: absolute; left: 180px; top: 70px; width: 1400px; height: 720px; }
+    #f23-tray {
+      position: absolute; left: 0; top: 0; width: 1400px; height: 720px; opacity: 0;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.10); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f23-well {
+      position: absolute; left: 36px; top: 36px; width: 1328px; height: 568px;
+      background: #191817; border: 1px solid rgba(240,238,230,.08); border-radius: 12px;
+    }
+    #f23-lip { position: absolute; left: 0; top: 614px; width: 1400px; height: 106px; }
+    #f23-slot {
+      position: absolute; left: 590px; top: 16px; width: 220px; height: 60px; border-radius: 10px;
+      border: 2px solid rgba(154,150,140,.55); text-align: center;
+      font-size: 32px; font-weight: 600; color: var(--muted); line-height: 56px;
+    }
+    #f23-handle-l, #f23-handle-r {
+      position: absolute; top: 38px; width: 200px; height: 16px; border-radius: 8px;
+      background: rgba(240,238,230,.18);
+    }
+    #f23-handle-l { left: 330px; }
+    #f23-handle-r { left: 870px; }
+    #f23-uline { position: absolute; left: 596px; top: 70px; width: 210px; height: 30px; overflow: visible; }
+    #f23-spark2 { position: absolute; left: 822px; top: 8px; width: 40px; height: 40px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    .f23-card {
+      position: absolute; top: 64px; width: 360px; height: 440px; opacity: 0;
+      background: #2F2D2A; border: 1px solid rgba(240,238,230,.12); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f23-c1 { left: 60px; }
+    #f23-c2 { left: 484px; }
+    #f23-c3 { left: 908px; }
+    .f23-ico { position: absolute; left: 60px; top: 40px; width: 240px; height: 260px; overflow: visible; }
+    .f23-clab {
+      position: absolute; left: 0; top: 332px; width: 360px; text-align: center; white-space: nowrap;
+      font-size: 40px; font-weight: 600; line-height: 1.2; color: var(--ink);
+    }
+    .f23-dl { fill: none; stroke: #9A968C; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f23-tick { fill: none; stroke: #8FB8A8; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f23-bub { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="23-moi-du-an-mot-ngan-keo" data-width="1920" data-height="1080" data-duration="12.484">
+    <div id="f23-ground" class="clip" data-start="0" data-duration="12.484" data-track-index="0"></div>
+    <div id="f23-stage" class="clip" data-start="0" data-duration="12.484" data-track-index="1">
+
+      <!-- shot 1: cabinet of drawers, drawn on in cream -->
+      <div id="f23-cam">
+        <svg id="f23-cab" viewBox="0 0 900 820">
+          <g id="f23-fill">
+            <rect x="120" y="110" width="640" height="36" rx="8" fill="#2A2926"/>
+            <rect x="140" y="146" width="600" height="600" fill="#2A2926"/>
+            <rect x="168" y="170" width="544" height="170" rx="10" fill="#33312D"/>
+            <rect x="168" y="550" width="544" height="170" rx="10" fill="#33312D"/>
+            <rect x="168" y="360" width="544" height="170" rx="10" fill="#191817"/>
+          </g>
+          <!-- body lines -->
+          <path class="f23-line f23-body" pathLength="1" d="M128 110 H752 Q760 110 760 118 V138 Q760 146 752 146 H128 Q120 146 120 138 V118 Q120 110 128 110 Z"/>
+          <path class="f23-line f23-body" pathLength="1" d="M140 146 V746 H740 V146"/>
+          <path class="f23-line f23-body" pathLength="1" d="M170 746 V776 H210 V746 M670 746 V776 H710 V746"/>
+          <!-- static drawers: top and bottom -->
+          <g>
+            <path class="f23-line f23-dr" pathLength="1" d="M178 170 H702 Q712 170 712 180 V330 Q712 340 702 340 H178 Q168 340 168 330 V180 Q168 170 178 170 Z"/>
+            <path class="f23-line f23-dr" pathLength="1" d="M379 220 H501 Q510 220 510 229 V231 Q510 240 501 240 H379 Q370 240 370 231 V229 Q370 220 379 220 Z"/>
+            <text class="f23-tag" x="440" y="300" text-anchor="middle">dự án</text>
+          </g>
+          <g>
+            <path class="f23-line f23-dr" pathLength="1" d="M178 550 H702 Q712 550 712 560 V710 Q712 720 702 720 H178 Q168 720 168 710 V560 Q168 550 178 550 Z"/>
+            <path class="f23-line f23-dr" pathLength="1" d="M379 600 H501 Q510 600 510 609 V611 Q510 620 501 620 H379 Q370 620 370 611 V609 Q370 600 379 600 Z"/>
+            <text class="f23-tag" x="440" y="680" text-anchor="middle">dự án</text>
+          </g>
+          <!-- interior of the middle drawer, revealed as it slides out -->
+          <g id="f23-inner">
+            <path d="M168 360 H712 L728 451 H152 Z" fill="#141312" stroke="#F0EEE6" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M250 440 L262 378 L360 384 L352 446 Z" fill="#F0EEE6" opacity="0.85"/>
+            <path d="M380 446 L384 372 L470 374 L468 448 Z" fill="#9A968C" opacity="0.8"/>
+            <path d="M520 440 C520 404 540 392 600 394 C660 396 668 410 666 440 Z" fill="#8FB8A8" opacity="0.7"/>
+          </g>
+          <!-- middle drawer front (slides out toward us) -->
+          <g id="f23-mid">
+            <path d="M178 360 H702 Q712 360 712 370 V520 Q712 530 702 530 H178 Q168 530 168 520 V370 Q168 360 178 360 Z" fill="#33312D"/>
+            <path class="f23-line f23-dr" pathLength="1" d="M178 360 H702 Q712 360 712 370 V520 Q712 530 702 530 H178 Q168 530 168 520 V370 Q168 360 178 360 Z"/>
+            <path class="f23-line f23-dr" pathLength="1" d="M379 410 H501 Q510 410 510 419 V421 Q510 430 501 430 H379 Q370 430 370 421 V419 Q370 410 379 410 Z"/>
+            <text class="f23-tag" x="440" y="490" text-anchor="middle">dự án</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- sage connector from the open drawer to the label -->
+      <svg id="f23-conn" viewBox="0 0 1760 820">
+        <path id="f23-connp" d="M745 540 C 820 544, 850 430, 930 404" fill="none" stroke="#8FB8A8" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+      </svg>
+
+      <!-- right label column -->
+      <div id="f23-col">
+        <div id="f23-kick"><span>KHÔNG</span><span>GIAN</span><span>LÀM</span><span>VIỆC</span></div>
+        <div id="f23-ngan" class="f23-big">ngăn kéo</div>
+        <div id="f23-proj" class="f23-big">
+          <span>Projects</span>
+          <svg id="f23-spark1" viewBox="0 0 44 44"><path d="M22 3 V41 M3 22 H41 M8.6 8.6 L35.4 35.4 M35.4 8.6 L8.6 35.4" stroke="#D97757" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+        </div>
+      </div>
+
+      <!-- shot 2: inside the drawer -->
+      <div id="f23-tray-wrap">
+        <div id="f23-tray">
+          <div id="f23-well">
+            <div id="f23-c1" class="f23-card">
+              <svg class="f23-ico" viewBox="0 0 240 260">
+                <path d="M40 16 H160 L200 56 V240 Q200 248 192 248 H48 Q40 248 40 240 V24 Q40 16 48 16 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M160 16 V56 H200" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/>
+                <path class="f23-dl f23-dl1" pathLength="1" d="M72 96 H168"/>
+                <path class="f23-dl f23-dl1" pathLength="1" d="M72 132 H168"/>
+                <path class="f23-dl f23-dl1" pathLength="1" d="M72 168 H150"/>
+                <path class="f23-dl f23-dl1" pathLength="1" d="M72 204 H128"/>
+              </svg>
+              <div class="f23-clab">tài liệu</div>
+            </div>
+            <div id="f23-c2" class="f23-card">
+              <svg class="f23-ico" viewBox="0 0 240 260">
+                <path d="M30 20 H210 V200 L170 240 H30 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M170 240 V200 H210" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/>
+                <rect x="56" y="54" width="30" height="30" rx="6" fill="none" stroke="#9A968C" stroke-width="4"/>
+                <rect x="56" y="112" width="30" height="30" rx="6" fill="none" stroke="#9A968C" stroke-width="4"/>
+                <rect x="56" y="170" width="30" height="30" rx="6" fill="none" stroke="#9A968C" stroke-width="4"/>
+                <path class="f23-tick" pathLength="1" d="M60 68 L69 78 L90 50"/>
+                <path class="f23-tick" pathLength="1" d="M60 126 L69 136 L90 108"/>
+                <path class="f23-dl f23-dl2" pathLength="1" d="M106 69 H180"/>
+                <path class="f23-dl f23-dl2" pathLength="1" d="M106 127 H170"/>
+                <path class="f23-dl f23-dl2" pathLength="1" d="M106 185 H150"/>
+              </svg>
+              <div class="f23-clab">hướng dẫn</div>
+            </div>
+            <div id="f23-c3" class="f23-card">
+              <svg class="f23-ico" viewBox="0 0 240 260">
+                <g class="f23-bub"><path d="M20 24 H150 Q164 24 164 38 V76 Q164 90 150 90 H56 L34 108 L38 90 H34 Q20 90 20 76 V38 Q20 24 34 24 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/><path d="M44 57 H134" stroke="#9A968C" stroke-width="8" stroke-linecap="round"/></g>
+                <g class="f23-bub"><path d="M80 112 H206 Q220 112 220 126 V164 Q220 178 206 178 H202 L206 196 L184 178 H94 Q80 178 80 164 V126 Q80 112 94 112 Z" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linejoin="round"/><path d="M104 145 H194" stroke="#8FB8A8" stroke-width="8" stroke-linecap="round"/></g>
+                <g class="f23-bub"><path d="M20 196 H120 Q134 196 134 210 V230 Q134 244 120 244 H34 Q20 244 20 230 V210 Q20 196 34 196 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/><path d="M44 220 H108" stroke="#9A968C" stroke-width="8" stroke-linecap="round"/></g>
+              </svg>
+              <div class="f23-clab">trò chuyện</div>
+            </div>
+          </div>
+          <div id="f23-lip">
+            <div id="f23-handle-l"></div>
+            <div id="f23-slot">dự án</div>
+            <div id="f23-handle-r"></div>
+            <svg id="f23-uline" viewBox="0 0 210 30"><path id="f23-ulinep" d="M4 16 C 50 8, 110 22, 206 10" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+            <svg id="f23-spark2" viewBox="0 0 44 44"><path d="M22 3 V41 M3 22 H41 M8.6 8.6 L35.4 35.4 M35.4 8.6 L8.6 35.4" stroke="#D97757" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      gsap.set("#f23-inner", { scaleY: 0, transformOrigin: "50% 0%" });
+      gsap.set("#f23-mid", { transformOrigin: "50% 50%" });
+
+      // Scene 1 — cabinet draws on (0.3–1.5 s)
+      tl.to("#f23-cab .f23-body", { strokeDashoffset: 0, duration: 0.7, ease: "none", stagger: 0.12 }, 0.3);
+      tl.to("#f23-cab .f23-dr", { strokeDashoffset: 0, duration: 0.45, ease: "none", stagger: 0.07 }, 0.75);
+      tl.to("#f23-fill", { opacity: 1, duration: 0.6, ease: "power2.out" }, 1.0);
+
+      // "ngăn kéo" — label lands (2.72), the middle drawer slides out (2.88)
+      tl.fromTo("#f23-ngan", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.72);
+      tl.to("#f23-mid", { y: 96, scale: 1.06, duration: 0.7, ease: "power3.out" }, 2.88);
+      tl.to("#f23-inner", { scaleY: 1, duration: 0.7, ease: "power3.out" }, 2.88);
+      tl.to("#f23-connp", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.0);
+
+      // "Projects" (4.12) — label swaps to terracotta Lora with the spark
+      tl.to("#f23-ngan", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 4.12);
+      tl.fromTo("#f23-proj", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 4.12);
+      tl.fromTo("#f23-spark1", { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 4.3);
+
+      // "không gian làm việc" kicker, word by word on the voice
+      var kw = document.querySelectorAll("#f23-kick span");
+      [4.95, 5.15, 5.37, 5.57].forEach(function (t, i) {
+        tl.fromTo(kw[i], { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, t);
+      });
+
+      // "dự án" (6.35) — every drawer gets its tag
+      tl.fromTo("#f23-cab .f23-tag", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out", stagger: 0.06 }, 6.35);
+
+      // Scene 2 (6.82) — camera pushes into the open drawer
+      tl.to("#f23-cam", { scale: 2.3, opacity: 0, filter: "blur(8px)", duration: 0.6, ease: "power2.in" }, 6.82);
+      tl.to(["#f23-col", "#f23-conn"], { opacity: 0, x: -40, duration: 0.35, ease: "power2.in" }, 6.82);
+      tl.fromTo("#f23-tray", { opacity: 0, scale: 0.6, filter: "blur(8px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.7, ease: "power3.out" }, 7.2);
+
+      // "tài liệu" (8.00)
+      tl.fromTo("#f23-c1", { opacity: 0, y: 70, rotation: 0 }, { opacity: 1, y: 0, rotation: -3, duration: 0.5, ease: "power3.out" }, 8.0);
+      tl.to("#f23-c1 .f23-dl1", { strokeDashoffset: 0, duration: 0.3, ease: "none", stagger: 0.08 }, 8.2);
+
+      // "hướng dẫn" (8.70)
+      tl.fromTo("#f23-c2", { opacity: 0, y: 70, rotation: 0 }, { opacity: 1, y: 0, rotation: 2, duration: 0.5, ease: "power3.out" }, 8.7);
+      tl.to("#f23-c2 .f23-tick", { strokeDashoffset: 0, duration: 0.25, ease: "none", stagger: 0.15 }, 8.95);
+      tl.to("#f23-c2 .f23-dl2", { strokeDashoffset: 0, duration: 0.3, ease: "none", stagger: 0.08 }, 8.95);
+
+      // "trò chuyện" (9.82) — chat bubbles stack in
+      tl.fromTo("#f23-c3", { opacity: 0, y: 70, rotation: 0 }, { opacity: 1, y: 0, rotation: -2, duration: 0.5, ease: "power3.out" }, 9.82);
+      tl.fromTo("#f23-c3 .f23-bub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out", stagger: 0.1 }, 9.95);
+
+      // "của riêng dự án đó" (10.68) — terracotta stroke under the drawer's tag
+      tl.to("#f23-ulinep", { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 10.68);
+      tl.fromTo("#f23-spark2", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 10.84);
+
+      // hold: gentle drift on the tray wrapper
+      tl.fromTo("#f23-tray-wrap", { scale: 1 }, { scale: 1.015, duration: 11.984 - 7.9, ease: "none", immediateRender: false }, 7.9);
+
+      tl.to({}, { duration: 11.984 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["23-moi-du-an-mot-ngan-keo"] = tl;
+    })();
+  </script>
+</template>

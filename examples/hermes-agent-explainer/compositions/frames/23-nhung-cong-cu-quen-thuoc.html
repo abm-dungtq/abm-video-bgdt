@@ -1,0 +1,342 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f23-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f23-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f23- */
+    #f23-field {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: .4;
+      background-image: radial-gradient(rgba(244,241,232,.55) 1.6px, transparent 2.2px);
+      background-size: 64px 64px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 20%, transparent 72%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 20%, transparent 72%);
+    }
+    .f23-kicker {
+      position: absolute; left: 0; top: 0; font-family: "JetBrains Mono", monospace; font-size: 28px;
+      letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    .f23-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+
+    /* ---- Scene 1: the two hands ---- */
+    #f23-hands {
+      position: absolute; left: 530px; top: 40px; width: 700px; height: 440px; overflow: visible;
+      transform-origin: 350px 220px;
+    }
+    .f23-hp { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    #f23-ghost { opacity: 0; }
+    #f23-ghost .f23-hp { stroke: rgba(142,147,181,.55); stroke-width: 3; stroke-dasharray: 3 11; }
+    #f23-goldhands { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f23-goldhands .f23-hp { stroke: #FFD23F; stroke-width: 6; }
+    #f23-title {
+      position: absolute; left: 0; top: 500px; width: 1760px; height: 150px; text-align: center;
+      font-size: 88px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; white-space: nowrap;
+    }
+    .f23-w { display: inline-block; margin: 0 12px; opacity: 0; }
+    #f23-uline { position: absolute; left: 470px; top: 116px; overflow: visible; }
+
+    /* ---- Scenes 2–3: the tool grid ---- */
+    #f23-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 488px; }
+    .f23-slot {
+      position: absolute; width: 540px; height: 272px; border-radius: 18px;
+      border: 2px dashed rgba(142,147,181,.45); opacity: 0;
+    }
+    .f23-card {
+      position: absolute; width: 540px; height: 272px; border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.01) 60%), var(--surface);
+      border: 1px solid rgba(244,241,232,.12); box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      opacity: 0; transform-origin: 50% 50%;
+    }
+    .f23-c1 { left: 30px; top: 200px; } .f23-c2 { left: 610px; top: 200px; } .f23-c3 { left: 1190px; top: 200px; }
+    .f23-c4 { left: 30px; top: 504px; } .f23-c5 { left: 610px; top: 504px; } .f23-c6 { left: 1190px; top: 504px; }
+    .f23-glow {
+      position: absolute; left: -2px; top: -2px; right: -2px; bottom: -2px; border-radius: 19px;
+      border: 2px solid var(--gold); box-shadow: 0 0 28px rgba(255,210,63,.35); opacity: 0;
+    }
+    .f23-ico {
+      position: absolute; left: 36px; top: 34px; width: 104px; height: 104px; border-radius: 16px;
+      background: rgba(244,241,232,.05); border: 1px solid rgba(244,241,232,.12);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .f23-ico svg { width: 64px; height: 64px; overflow: visible; }
+    .f23-ico path { fill: none; stroke: #F4F1E8; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .f23-ico path.f23-accent { stroke: #3EE6D0; }
+    .f23-num {
+      position: absolute; right: 36px; top: 40px; font-family: "JetBrains Mono", monospace; font-size: 28px;
+      letter-spacing: .16em; color: var(--muted);
+    }
+    .f23-row {
+      position: absolute; left: 36px; right: 36px; top: 176px; height: 64px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .f23-title { font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    .f23-chips { margin-left: auto; display: flex; gap: 12px; }
+    .f23-chip {
+      height: 48px; padding: 0 18px; border-radius: 24px; border: 2px solid rgba(142,147,181,.6);
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--ink);
+      display: flex; align-items: center; opacity: 0; white-space: nowrap;
+    }
+    #f23-trails { position: absolute; left: 0; top: 0; overflow: visible; }
+    #f23-trails path {
+      fill: none; stroke: #FFD23F; stroke-width: 4; stroke-linecap: round;
+      filter: drop-shadow(0 0 8px rgba(255,210,63,.55));
+    }
+  </style>
+
+  <div id="root" data-composition-id="23-nhung-cong-cu-quen-thuoc" data-width="1920" data-height="1080" data-duration="12.125">
+    <div id="f23-ground" class="clip" data-start="0" data-duration="12.125" data-track-index="0"></div>
+    <div id="f23-stage" class="clip" data-start="0" data-duration="12.125" data-track-index="1">
+      <div id="f23-field"></div>
+
+      <!-- grid layer (slots, cards, deal trails) -->
+      <div id="f23-cam">
+        <div id="f23-s1" class="f23-slot f23-c1"></div>
+        <div id="f23-s2" class="f23-slot f23-c2"></div>
+        <div id="f23-s3" class="f23-slot f23-c3"></div>
+        <div id="f23-s4" class="f23-slot f23-c4"></div>
+        <div id="f23-s5" class="f23-slot f23-c5"></div>
+        <div id="f23-s6" class="f23-slot f23-c6"></div>
+
+        <div id="f23-card1" class="f23-card f23-c1">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i1a" d="M18 8 H38 L48 18 V56 H18 Z M38 8 V18 H48 M24 30 H42 M24 38 H42 M24 46 H32"/>
+            <path id="f23-i1b" class="f23-accent" d="M40 58 L56 42 L60 46 L44 62 L38 64 Z"/>
+          </svg></div>
+          <div class="f23-num">01</div>
+          <div class="f23-row">
+            <div class="f23-title">File</div>
+            <div class="f23-chips">
+              <div id="f23-chip-doc" class="f23-chip">đọc</div>
+              <div id="f23-chip-ghi" class="f23-chip">ghi</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="f23-card2" class="f23-card f23-c2">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i2a" d="M8 12 H56 V52 H8 Z M8 20 H56"/>
+            <path id="f23-i2b" class="f23-accent" d="M16 30 L24 36 L16 42 M30 44 H42"/>
+          </svg></div>
+          <div class="f23-num">02</div>
+          <div class="f23-row"><div class="f23-title">Terminal</div></div>
+        </div>
+
+        <div id="f23-card3" class="f23-card f23-c3">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i3a" d="M32 10 A22 22 0 1 1 31.99 10 M32 10 C20 20 20 44 32 54 C44 44 44 20 32 10 M10 32 H54 M14 21 H50 M14 43 H50"/>
+          </svg></div>
+          <div class="f23-num">03</div>
+          <div class="f23-row"><div class="f23-title">Duyệt web</div></div>
+        </div>
+
+        <div id="f23-card4" class="f23-card f23-c4">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i4a" d="M8 12 H56 V52 H8 Z M12 48 L26 32 L36 42 L42 36 L52 48"/>
+            <path id="f23-i4b" class="f23-accent" d="M46 16 V28 M40 22 H52"/>
+          </svg></div>
+          <div class="f23-num">04</div>
+          <div class="f23-row"><div class="f23-title">Tạo ảnh</div></div>
+        </div>
+
+        <div id="f23-card5" class="f23-card f23-c5">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i5a" d="M6 8 H16 M6 8 V18 M58 8 H48 M58 8 V18 M6 56 H16 M6 56 V46 M58 56 H48 M58 56 V46 M12 32 C20 20 44 20 52 32 C44 44 20 44 12 32 Z"/>
+            <path id="f23-i5b" class="f23-accent" d="M32 25 A7 7 0 1 1 31.99 25"/>
+          </svg></div>
+          <div class="f23-num">05</div>
+          <div class="f23-row"><div class="f23-title">Đọc ảnh</div></div>
+        </div>
+
+        <div id="f23-card6" class="f23-card f23-c6">
+          <div class="f23-glow"></div>
+          <div class="f23-ico"><svg viewBox="0 0 64 64">
+            <path id="f23-i6a" d="M22 18 L8 32 L22 46 M42 18 L56 32 L42 46"/>
+            <path id="f23-i6b" class="f23-accent" d="M36 14 L28 50"/>
+          </svg></div>
+          <div class="f23-num">06</div>
+          <div class="f23-row">
+            <div class="f23-title">Chạy code</div>
+            <div class="f23-chips"><div id="f23-chip-py" class="f23-chip">Python</div></div>
+          </div>
+        </div>
+
+        <!-- deal trails from the hands to each card -->
+        <svg id="f23-trails" width="1760" height="820" viewBox="0 0 1760 820">
+          <path id="f23-tr1" d="M880 162 C 880 190 300 172 300 200"/>
+          <path id="f23-tr2" d="M880 162 L 880 200"/>
+          <path id="f23-tr3" d="M880 162 C 880 190 1460 172 1460 200"/>
+          <path id="f23-tr4" d="M880 162 C 880 330 300 380 300 504"/>
+          <path id="f23-tr5" d="M880 162 L 880 504"/>
+          <path id="f23-tr6" d="M880 162 C 880 330 1460 380 1460 504"/>
+        </svg>
+      </div>
+
+      <!-- the two open hands (metaphor, then header glyph) -->
+      <svg id="f23-hands" width="700" height="440" viewBox="0 0 700 440">
+        <defs>
+          <path id="f23-hand-o" d="M80 330 L80 252 C62 234 36 206 22 178 C12 158 34 142 52 158 L88 196 L88 92 C88 70 118 70 118 92 L118 160 L122 160 L122 64 C122 42 152 42 152 64 L152 160 L156 160 L156 76 C156 54 186 54 186 76 L186 168 L190 168 L190 108 C190 90 216 90 216 108 L216 240 C216 280 196 300 196 330"/>
+        </defs>
+        <g id="f23-ghost">
+          <g transform="translate(328,70) scale(-1,1) rotate(8 110 300)"><use class="f23-hp" href="#f23-hand-o"/></g>
+          <g transform="translate(372,70) rotate(8 110 300)"><use class="f23-hp" href="#f23-hand-o"/></g>
+        </g>
+        <g id="f23-goldhands">
+          <g id="f23-hl">
+            <g transform="translate(328,70) scale(-1,1) rotate(8 110 300)">
+              <path id="f23-hl-o" class="f23-hp" d="M80 330 L80 252 C62 234 36 206 22 178 C12 158 34 142 52 158 L88 196 L88 92 C88 70 118 70 118 92 L118 160 L122 160 L122 64 C122 42 152 42 152 64 L152 160 L156 160 L156 76 C156 54 186 54 186 76 L186 168 L190 168 L190 108 C190 90 216 90 216 108 L216 240 C216 280 196 300 196 330"/>
+              <path id="f23-hl-c" class="f23-hp" d="M104 250 C132 264 170 258 196 238 M66 332 H210"/>
+            </g>
+          </g>
+          <g id="f23-hr">
+            <g transform="translate(372,70) rotate(8 110 300)">
+              <path id="f23-hr-o" class="f23-hp" d="M80 330 L80 252 C62 234 36 206 22 178 C12 158 34 142 52 158 L88 196 L88 92 C88 70 118 70 118 92 L118 160 L122 160 L122 64 C122 42 152 42 152 64 L152 160 L156 160 L156 76 C156 54 186 54 186 76 L186 168 L190 168 L190 108 C190 90 216 90 216 108 L216 240 C216 280 196 300 196 330"/>
+              <path id="f23-hr-c" class="f23-hp" d="M104 250 C132 264 170 258 196 238 M66 332 H210"/>
+            </g>
+          </g>
+        </g>
+      </svg>
+
+      <div id="f23-title">
+        <span id="f23-w1" class="f23-w">Đôi</span><span id="f23-w2" class="f23-w">tay</span><span id="f23-w3" class="f23-w">của</span><span id="f23-w4" class="f23-w">agent</span>
+        <svg id="f23-uline" width="820" height="30" viewBox="0 0 820 30">
+          <path id="f23-ul" d="M10 18 C 220 6 600 26 810 12" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" style="filter: drop-shadow(0 0 8px rgba(255,210,63,.55))"/>
+        </svg>
+      </div>
+
+      <div id="f23-k1" class="f23-kicker"><b>◆</b>Công cụ</div>
+      <div id="f23-k2" class="f23-kicker"><b>◆</b>Hermes · công cụ</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (id) { return document.getElementById(id); };
+      // dash-prime every path that draws on (initial hidden state before the timeline)
+      var drawIds = ["f23-hl-o","f23-hl-c","f23-hr-o","f23-hr-c","f23-ul",
+        "f23-i1a","f23-i1b","f23-i2a","f23-i2b","f23-i3a","f23-i4a","f23-i4b","f23-i5a","f23-i5b","f23-i6a","f23-i6b",
+        "f23-tr1","f23-tr2","f23-tr3","f23-tr4","f23-tr5","f23-tr6"];
+      var len = {};
+      drawIds.forEach(function (id) {
+        var el = q(id);
+        var L = Math.ceil(el.getTotalLength()) + 2;
+        len[id] = L;
+        gsap.set(el, { strokeDasharray: L + " " + L, strokeDashoffset: L });
+      });
+
+      var tl = gsap.timeline({ paused: true });
+      function draw(id, t, d) {
+        tl.fromTo(q(id), { strokeDashoffset: len[id] }, { strokeDashoffset: 0, duration: d, ease: "none" }, t);
+      }
+
+      /* ---------- Scene 1 (0–2.32): two open hands, "đôi tay của agent" ---------- */
+      tl.fromTo("#f23-ghost", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.05);
+      tl.fromTo("#f23-k1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.31);
+      draw("f23-hl-o", 0.85, 0.75);
+      draw("f23-hr-o", 1.01, 0.75);
+      draw("f23-hl-c", 1.45, 0.35);
+      draw("f23-hr-c", 1.6, 0.35);
+      tl.fromTo("#f23-w1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.85);
+      tl.fromTo("#f23-w2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.01);
+      tl.fromTo("#f23-w3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.29);
+      tl.fromTo("#f23-w4", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.64);
+      draw("f23-ul", 1.64, 0.5);
+
+      /* ---------- Scene 2 (2.32–7.62): hands open into the grid, cards deal in ---------- */
+      // title swaps out (zoom-through style), ghost clears
+      tl.fromTo("#f23-title", { opacity: 1, scale: 1, filter: "blur(0px)" },
+        { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.35, ease: "power2.in" }, 2.32);
+      tl.fromTo("#f23-ghost", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, 2.32);
+      // the hands open outward, then lift to become the header glyph
+      tl.fromTo("#f23-hl", { x: 0, rotation: 0, svgOrigin: "250 400" }, { x: -40, rotation: -10, svgOrigin: "250 400", duration: 0.5, ease: "power2.inOut" }, 2.32);
+      tl.fromTo("#f23-hr", { x: 0, rotation: 0, svgOrigin: "450 400" }, { x: 40, rotation: 10, svgOrigin: "450 400", duration: 0.5, ease: "power2.inOut" }, 2.32);
+      tl.fromTo("#f23-hands", { scale: 1, y: 0 }, { scale: 0.36, y: -175, duration: 0.65, ease: "power2.inOut" }, 2.45);
+      tl.to(["#f23-hl-o","#f23-hl-c","#f23-hr-o","#f23-hr-c"], { stroke: "#F4F1E8", duration: 0.5, ease: "power2.out" }, 2.6);
+      // kicker swap on "Hermes"
+      tl.fromTo("#f23-k1", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "power2.out", immediateRender: false }, 2.64);
+      tl.fromTo("#f23-k2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 2.72);
+      // empty 3x2 grid of slots is established
+      ["#f23-s1","#f23-s2","#f23-s3","#f23-s4","#f23-s5","#f23-s6"].forEach(function (s, i) {
+        tl.fromTo(s, { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 2.8 + i * 0.07);
+      });
+
+      // cards deal in from the hands, each on its cue
+      var deals = [3.62, 5.6, 6.73, 8.35, 8.95, 10.04];
+      var cx = [300, 880, 1460, 300, 880, 1460];
+      var rot = [-4, 0, 4, -3, 0, 3];
+      deals.forEach(function (t, i) {
+        var n = i + 1;
+        var card = "#f23-card" + n;
+        draw("f23-tr" + n, t - 0.05, 0.35);
+        tl.fromTo("#f23-tr" + n, { opacity: 1 }, { opacity: 0, duration: 0.4, ease: "power2.out", immediateRender: false }, t + 0.8);
+        tl.fromTo(card, { opacity: 0, y: -50, x: (880 - cx[i]) * 0.12, scale: 0.9, rotation: rot[i] },
+          { opacity: 1, y: 0, x: 0, scale: 1, rotation: 0, duration: 0.55, ease: "power3.out" }, t);
+        // single gold focus: the newest card
+        tl.fromTo(card + " .f23-glow", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, t + 0.05);
+        if (i < deals.length - 1) {
+          tl.fromTo(card + " .f23-glow", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, deals[i + 1]);
+        }
+      });
+      // icons draw on their spoken word
+      draw("f23-i1a", 3.66, 0.5);          // đọc
+      draw("f23-i1b", 4.24, 0.35);         // ghi (pencil)
+      draw("f23-i2a", 5.64, 0.45);         // terminal
+      draw("f23-i2b", 5.9, 0.3);
+      draw("f23-i3a", 6.95, 0.55);         // web
+      draw("f23-i4a", 8.59, 0.45);         // ảnh
+      draw("f23-i4b", 8.85, 0.25);
+      draw("f23-i5a", 9.15, 0.45);         // ảnh
+      draw("f23-i5b", 9.4, 0.3);
+      draw("f23-i6a", 10.26, 0.4);         // code
+      draw("f23-i6b", 10.5, 0.25);
+      // verb chips
+      tl.fromTo("#f23-chip-doc", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 3.66);
+      tl.fromTo("#f23-chip-ghi", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 4.24);
+      tl.fromTo("#f23-chip-py", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 10.48);
+
+      /* ---------- Scene 3 (7.62–11.63): the last row fills, grid settles ---------- */
+      // focus shifts to the empty bottom row: top row recedes, bottom slots light up
+      tl.to(["#f23-card1","#f23-card2","#f23-card3"], { opacity: 0.45, duration: 0.45, ease: "power2.out" }, 7.73);
+      tl.to(["#f23-s4","#f23-s5","#f23-s6"], { borderColor: "rgba(255,210,63,.7)", duration: 0.45, ease: "power2.out" }, 7.73);
+      tl.fromTo("#f23-cam", { scale: 1 }, { scale: 1.02, duration: 3.6, ease: "power1.inOut" }, 7.73);
+      // the whole grid comes back together and holds
+      tl.to(["#f23-card1","#f23-card2","#f23-card3"], { opacity: 1, duration: 0.5, ease: "power2.out" }, 10.9);
+
+      tl.to({}, { duration: 11.625 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["23-nhung-cong-cu-quen-thuoc"] = tl;
+    })();
+  </script>
+</template>

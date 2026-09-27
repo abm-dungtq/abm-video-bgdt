@@ -1,0 +1,308 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f08-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f08-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f08- */
+    #f08-cam { position: absolute; inset: 0; transform-origin: 880px 410px; }
+    #f08-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f08-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+
+    #f08-kicker {
+      position: absolute; left: 40px; top: 24px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    #f08-kicker b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+
+    #f08-bot {
+      position: absolute; left: 805px; top: 335px; width: 150px; height: 150px; border-radius: 50%;
+      background: rgba(62,230,208,.12); border: 3px solid var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    #f08-word {
+      position: absolute; left: 0; top: 340px; width: 1760px; height: 130px;
+      display: flex; justify-content: center; align-items: center; gap: 30px;
+      font-size: 120px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+      transform-origin: 880px 65px;
+    }
+    #f08-word span { display: block; }
+    #f08-count {
+      position: absolute; left: 730px; top: 395px; width: 300px; height: 130px; overflow: hidden;
+    }
+    .f08-num {
+      position: absolute; left: 0; top: 0; width: 300px; height: 130px;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 110px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em;
+    }
+    .f08-num i { font-style: normal; color: var(--muted); font-size: 64px; margin-right: 6px; }
+
+    .f08-slot { position: absolute; width: 400px; height: 100px; display: flex; justify-content: center; align-items: center; }
+    #f08-slot-think { left: 680px; top: 70px; }
+    #f08-slot-act { left: 970px; top: 360px; }
+    #f08-slot-look { left: 390px; top: 360px; }
+    .f08-node {
+      position: relative; height: 96px; padding: 0 34px; border-radius: 18px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.22);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 18px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f08-hl {
+      position: absolute; left: -3px; top: -3px; right: -3px; bottom: -3px; border-radius: 20px;
+      border: 3px solid var(--gold); box-shadow: 0 0 28px rgba(255,210,63,.45);
+    }
+
+    #f08-orbit { position: absolute; left: 880px; top: 410px; width: 0; height: 0; }
+    #f08-spark { position: absolute; left: -38px; top: -312px; width: 60px; height: 44px; }
+
+    #f08-cardwrap { position: absolute; left: 590px; top: 290px; width: 400px; height: 240px; }
+    #f08-card {
+      position: absolute; inset: 0; border-radius: 18px;
+      background: var(--surface); border: 3px solid var(--gold);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f08-card-k {
+      position: absolute; left: 0; top: 26px; width: 100%; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em; color: var(--muted);
+    }
+    .f08-card-k b { color: var(--gold); font-weight: 400; margin-right: 10px; }
+    .f08-face { position: absolute; inset: 0; }
+    .f08-glyph { position: absolute; left: 140px; top: 80px; width: 120px; height: 120px; }
+
+    #f08-bar {
+      position: absolute; left: 1180px; top: 225px; width: 6px; height: 370px; border-radius: 3px;
+      background: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); transform-origin: 50% 0;
+    }
+    .f08-w {
+      position: absolute; left: 1215px; height: 125px; display: flex; align-items: center;
+      font-size: 110px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+    }
+    #f08-w1 { top: 220px; }
+    #f08-w2 { top: 345px; }
+    #f08-w3 { top: 470px; }
+  </style>
+
+  <div id="root" data-composition-id="08-vong-lap-cua-mot-agent" data-width="1920" data-height="1080" data-duration="16.915">
+    <div id="f08-ground" class="clip" data-start="0" data-duration="16.915" data-track-index="0"></div>
+    <div id="f08-stage" class="clip" data-start="0" data-duration="16.915" data-track-index="1">
+      <div id="f08-cam">
+        <svg id="f08-svg" viewBox="0 0 1760 820" fill="none">
+          <!-- background field: faint concentric orbits -->
+          <g id="f08-field" stroke="#8E93B5" stroke-width="2">
+            <circle cx="880" cy="410" r="380" opacity="0.14"/>
+            <circle cx="880" cy="410" r="470" opacity="0.08"/>
+          </g>
+          <!-- ghost path of the loop -->
+          <circle id="f08-ghost" cx="880" cy="410" r="290" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 14"/>
+          <!-- courier trail: the loop itself, drawn clockwise from the top -->
+          <path id="f08-trail" d="M880 120 A290 290 0 0 1 880 700 A290 290 0 0 1 880 120" pathLength="100"
+                stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          <!-- direction chevrons (clockwise) -->
+          <g id="f08-chev" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(1085.06 204.94) rotate(45)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(1085.06 615.06) rotate(135)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(674.94 615.06) rotate(225)"/>
+            <path d="M-8 -11 L5 0 L-8 11" transform="translate(674.94 204.94) rotate(315)"/>
+          </g>
+        </svg>
+
+        <div id="f08-bot">
+          <svg width="84" height="84" viewBox="0 0 30 30" fill="none" stroke="#3EE6D0" stroke-width="2" stroke-linecap="round">
+            <rect x="5" y="9" width="20" height="15" rx="4"/><line x1="15" y1="4" x2="15" y2="9"/>
+            <circle cx="11" cy="16" r="1.6" fill="#3EE6D0"/><circle cx="19" cy="16" r="1.6" fill="#3EE6D0"/>
+          </svg>
+        </div>
+
+        <div id="f08-word"><span id="f08-wa">vòng</span><span id="f08-wb">lặp</span></div>
+        <div id="f08-count">
+          <div id="f08-n1" class="f08-num"><i>×</i>1</div>
+          <div id="f08-n2" class="f08-num"><i>×</i>2</div>
+        </div>
+
+        <div id="f08-slot-think" class="f08-slot">
+          <div id="f08-node-think" class="f08-node">
+            <div id="f08-hl-think" class="f08-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 32c0-5-6-8-6-15a13 13 0 0 1 26 0c0 7-6 10-6 15z"/><line x1="18" y1="38" x2="30" y2="38"/><line x1="20" y1="44" x2="28" y2="44"/>
+            </svg>
+            <span>suy nghĩ</span>
+          </div>
+        </div>
+        <div id="f08-slot-act" class="f08-slot">
+          <div id="f08-node-act" class="f08-node">
+            <div id="f08-hl-act" class="f08-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M31 7a10 10 0 0 0-9 14L8 35a3.5 3.5 0 0 0 5 5l14-14a10 10 0 0 0 14-9l-6 6-6-2-2-6z"/>
+            </svg>
+            <span>hành động</span>
+          </div>
+        </div>
+        <div id="f08-slot-look" class="f08-slot">
+          <div id="f08-node-look" class="f08-node">
+            <div id="f08-hl-look" class="f08-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 24s8-14 21-14 21 14 21 14-8 14-21 14S3 24 3 24z"/><circle cx="24" cy="24" r="6"/>
+            </svg>
+            <span>quan sát</span>
+          </div>
+        </div>
+
+        <!-- the spark rides the ring: rotate the zero-size orbit around the ring centre -->
+        <div id="f08-orbit">
+          <svg id="f08-spark" viewBox="0 0 60 44" fill="none">
+            <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="38" cy="22" r="10" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+          </svg>
+        </div>
+      </div>
+
+      <div id="f08-kicker"><b>◆</b>AGENT</div>
+
+      <!-- zoom payoff (outside the camera, in screen space) -->
+      <div id="f08-cardwrap">
+        <div id="f08-card">
+          <div id="f08-face-x" class="f08-face">
+            <div class="f08-card-k"><b>◆</b>KẾT QUẢ</div>
+            <svg class="f08-glyph" viewBox="0 0 120 120" fill="none" stroke="#FFD23F" stroke-width="12" stroke-linecap="round">
+              <line x1="30" y1="30" x2="90" y2="90"/><line x1="90" y1="30" x2="30" y2="90"/>
+            </svg>
+          </div>
+          <div id="f08-face-ok" class="f08-face">
+            <div class="f08-card-k"><b>◆</b>KẾT QUẢ</div>
+            <svg class="f08-glyph" viewBox="0 0 120 120" fill="none">
+              <path id="f08-check" d="M22 62 L50 88 L100 32" pathLength="100" stroke="#3EE6D0" stroke-width="12"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div id="f08-bar"></div>
+      <div id="f08-w1" class="f08-w">Tự</div>
+      <div id="f08-w2" class="f08-w">sửa</div>
+      <div id="f08-w3" class="f08-w">sai</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // initial hidden inner states (not clips)
+      gsap.set(["#f08-hl-think", "#f08-hl-act", "#f08-hl-look", "#f08-n2", "#f08-face-ok"], { opacity: 0 });
+
+      /* ---- Scene 1 (0–2.22): kinetic "vòng lặp" ---- */
+      // "Mỗi" @0.31 — the loop's ghost path fades in (the hero's footprint)
+      tl.fromTo("#f08-ghost", { opacity: 0 }, { opacity: 0.35, duration: 0.6, ease: "power3.out" }, 0.3);
+      tl.fromTo("#f08-field", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power3.out" }, 0.3);
+      // "agent" @0.51
+      tl.fromTo("#f08-bot", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.51);
+      tl.fromTo("#f08-kicker", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.51);
+      // the agent glyph swaps out for the word
+      tl.to("#f08-bot", { opacity: 0, scale: 0.6, duration: 0.18, ease: "power2.inOut" }, 1.9);
+      // "vòng" @2.06, "lặp" @2.22
+      tl.fromTo("#f08-wa", { opacity: 0, y: 50, scale: 1.2 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" }, 2.06);
+      tl.fromTo("#f08-wb", { opacity: 0, y: 50, scale: 1.2 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" }, 2.22);
+      // the trail curls out of the word into an open ring
+      tl.fromTo("#f08-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 18, duration: 0.8, ease: "none" }, 2.22);
+
+      /* ---- Scene 2 (2.22–7.93): ring becomes the loop; suy nghĩ, hành động ---- */
+      // the word settles into the ring centre as its label
+      tl.to("#f08-word", { scale: 0.4, y: -72, opacity: 0.7, duration: 0.55, ease: "power2.inOut" }, 2.6);
+      tl.to("#f08-ghost", { opacity: 0.12, duration: 0.5, ease: "power2.inOut" }, 3.0);
+      // "Đầu tiên" @3.34 — the ring closes, direction chevrons appear
+      tl.to("#f08-trail", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 3.34);
+      tl.fromTo("#f08-chev path", { opacity: 0 }, { opacity: 0.8, duration: 0.3, stagger: 0.08, ease: "power3.out" }, 3.6);
+      // "suy" @4.21 — node pops at the top, the spark ignites there, lap counter reads ×1
+      tl.fromTo("#f08-node-think", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 4.21);
+      tl.fromTo("#f08-hl-think", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 4.33);
+      tl.fromTo("#f08-spark", { opacity: 0, scale: 0.3, transformOrigin: "38px 22px" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 4.33);
+      tl.fromTo("#f08-count", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.33);
+      // spark runs top -> right; "hành" @6.75 — node pops with its tool icon
+      tl.to("#f08-hl-think", { opacity: 0, duration: 0.25, ease: "power2.inOut" }, 5.95);
+      tl.fromTo("#f08-orbit", { rotation: 0 }, { rotation: 90, duration: 0.8, ease: "power2.inOut" }, 5.95);
+      tl.fromTo("#f08-node-act", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 6.75);
+      tl.fromTo("#f08-hl-act", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 6.75);
+
+      /* ---- Scene 3 (7.93–11.85): quan sát; the spark laps, counter 1 -> 2 ---- */
+      tl.to("#f08-hl-act", { opacity: 0, duration: 0.25, ease: "power2.inOut" }, 7.7);
+      tl.to("#f08-orbit", { rotation: 270, duration: 1.04, ease: "power2.inOut" }, 7.7);
+      // "quan" @8.74 / "sát" @9.0
+      tl.fromTo("#f08-node-look", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 8.74);
+      tl.fromTo("#f08-hl-look", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 9.0);
+      // "và lặp lại" @10.09–10.57 — one full lap, 270 -> 630, arriving back by "xong" @11.05
+      tl.to("#f08-hl-look", { opacity: 0, duration: 0.2, ease: "power2.inOut" }, 10.09);
+      tl.to("#f08-orbit", { rotation: 630, duration: 0.96, ease: "none" }, 10.09);
+      // passes the top @10.33 -> counter ticks; passes the right @10.57; home @11.05
+      tl.fromTo("#f08-hl-think", { opacity: 1 }, { opacity: 0, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 10.33);
+      tl.to("#f08-n1", { y: -110, opacity: 0, duration: 0.3, ease: "power2.inOut" }, 10.33);
+      tl.fromTo("#f08-n2", { y: 110, opacity: 0 }, { y: 0, opacity: 1, duration: 0.3, ease: "power3.out", immediateRender: false }, 10.33);
+      tl.fromTo("#f08-hl-act", { opacity: 1 }, { opacity: 0, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 10.57);
+      tl.to("#f08-hl-look", { opacity: 1, duration: 0.2, ease: "power3.out" }, 11.05);
+
+      /* ---- Scene 4 (11.85–16.415): zoom to "quan sát", self-correction ---- */
+      // coordinate-target zoom: node (590,410) lands at x≈330 on stage
+      tl.to("#f08-cam", { scale: 1.4, x: -144, duration: 0.75, ease: "power2.inOut" }, 11.85);
+      tl.to(["#f08-word", "#f08-count"], { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 11.85);
+      tl.to("#f08-slot-act", { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 11.85);
+      tl.to("#f08-slot-think", { opacity: 0.15, duration: 0.4, ease: "power2.inOut" }, 11.85);
+      tl.to("#f08-chev", { opacity: 0.3, duration: 0.4, ease: "power2.inOut" }, 11.85);
+      tl.to("#f08-kicker", { opacity: 0.5, duration: 0.4, ease: "power2.inOut" }, 11.85);
+      // the observed result pops in: it went wrong
+      tl.fromTo("#f08-cardwrap", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 12.4);
+      // the spark reroutes: another lap back through suy nghĩ -> hành động -> quan sát
+      tl.to("#f08-hl-look", { opacity: 0, duration: 0.2, ease: "power2.inOut" }, 12.95);
+      tl.to("#f08-orbit", { rotation: 990, duration: 0.85, ease: "power2.inOut" }, 12.95);
+      tl.to("#f08-hl-look", { opacity: 1, duration: 0.2, ease: "power3.out" }, 13.8);
+      // card flips: ✗ -> ✓, landing on "tự" @13.89
+      tl.to("#f08-card", { scaleX: 0, duration: 0.17, ease: "power2.in" }, 13.72);
+      tl.set("#f08-face-x", { opacity: 0 }, 13.89);
+      tl.set("#f08-face-ok", { opacity: 1 }, 13.89);
+      tl.set("#f08-card", { borderColor: "#3EE6D0" }, 13.89);
+      tl.to("#f08-card", { scaleX: 1, duration: 0.25, ease: "power3.out" }, 13.89);
+      tl.to("#f08-check", { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 13.95);
+      // "tự" @13.89, "sửa" @14.09, "sai" @14.33 — per-word rise beside the card on a gold trail
+      tl.fromTo("#f08-bar", { scaleY: 0 }, { scaleY: 1, duration: 0.7, ease: "none" }, 13.89);
+      tl.fromTo("#f08-w1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 13.89);
+      tl.fromTo("#f08-w2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 14.09);
+      tl.fromTo("#f08-w3", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 14.33);
+      // hold still to the end (chapter held beat)
+
+      tl.to({}, { duration: 16.415 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["08-vong-lap-cua-mot-agent"] = tl;
+    })();
+  </script>
+</template>

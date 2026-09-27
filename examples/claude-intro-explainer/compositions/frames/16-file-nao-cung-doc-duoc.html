@@ -1,0 +1,330 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f16-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f16-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f16-spk { display: block; }
+    .f16-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* ---- Scene 1: the format row ---- */
+    #f16-row { position: absolute; left: 50px; top: 200px; width: 1660px; height: 380px; }
+    .f16-slot { position: absolute; top: 0; width: 300px; height: 380px; }
+    .f16-dash {
+      position: absolute; inset: 0; box-sizing: border-box;
+      border: 2px dashed rgba(240,238,230,.18); border-radius: 16px; opacity: 0;
+    }
+    .f16-card {
+      position: absolute; inset: 0; box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f16-ficon { position: absolute; left: 80px; top: 48px; width: 140px; height: 170px; overflow: visible; }
+    .f16-flabel {
+      position: absolute; left: 0; right: 0; top: 262px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 56px; line-height: 1.12;
+      white-space: nowrap;
+    }
+    #f16-row-spark {
+      position: absolute; right: 18px; top: 18px; width: 42px; height: 42px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+
+    /* ---- Scene 2: kinetic words ---- */
+    #f16-kin { position: absolute; left: 0; top: 330px; width: 1760px; height: 200px; }
+    #f16-kin-in {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center; gap: 56px;
+    }
+    .f16-kw {
+      display: inline-block;
+      font-family: "Lora", serif; font-weight: 700; font-size: 120px; line-height: 1.12;
+      letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+    #f16-kin-spark { width: 60px; height: 60px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    /* ---- Scene 3: the PDF split ---- */
+    .f16-half { position: absolute; top: 150px; width: 820px; height: 480px; }
+    #f16-left { left: 0; }
+    #f16-right { left: 940px; }
+    #f16-right-dash {
+      position: absolute; left: 940px; top: 150px; width: 820px; height: 480px; box-sizing: border-box;
+      border: 2px dashed rgba(240,238,230,.16); border-radius: 16px; opacity: 0;
+    }
+    .f16-page { position: absolute; left: 56px; top: 70px; width: 230px; height: 300px; overflow: visible; }
+    .f16-head {
+      position: absolute; left: 340px; top: 44px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 64px; line-height: 1.12;
+      white-space: nowrap;
+    }
+    .f16-head span { display: inline-block; opacity: 0; }
+    #f16-sub {
+      position: absolute; left: 340px; top: 134px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 52px; line-height: 1.12;
+      color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    .f16-chip {
+      position: absolute; left: 340px; width: 420px; height: 92px; box-sizing: border-box;
+      background: #232220; border: 1px solid rgba(240,238,230,.12); border-radius: 46px; opacity: 0;
+    }
+    .f16-chip-a { top: 236px; }
+    .f16-chip-b { top: 350px; }
+    .f16-lit {
+      position: absolute; left: -1px; top: -1px; right: -1px; bottom: -1px;
+      border-radius: 46px; border: 2px solid var(--cyan); opacity: 0;
+    }
+    .f16-lit-gold { border-color: var(--gold); box-shadow: 0 0 22px rgba(217,119,87,.35); }
+    .f16-chip-label {
+      position: absolute; left: 40px; top: 20px;
+      font-size: 38px; font-weight: 600; line-height: 1.3; white-space: nowrap; color: var(--muted);
+    }
+    .f16-tick { position: absolute; right: 30px; top: 22px; width: 48px; height: 48px; overflow: visible; }
+    .f16-strike { position: absolute; left: -16px; top: 0; width: 452px; height: 92px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="16-file-nao-cung-doc-duoc" data-width="1920" data-height="1080" data-duration="17.197">
+    <div id="f16-ground" class="clip" data-start="0" data-duration="17.197" data-track-index="0"></div>
+    <div id="f16-stage" class="clip" data-start="0" data-duration="17.197" data-track-index="1">
+
+      <!-- Scene 1: five format cards assemble into one row -->
+      <div id="f16-row">
+        <div class="f16-slot" style="left:0px">
+          <div class="f16-dash"></div>
+          <div id="f16-c1" class="f16-card">
+            <svg class="f16-ficon" viewBox="0 0 140 170" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8 H96 L128 40 V160 H12 Z M96 8 V40 H128" stroke-opacity="0.55"/>
+              <path class="f16-g1" d="M34 72 H106 M34 94 H106 M34 116 H86 M34 138 H100" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div class="f16-flabel">PDF</div>
+          </div>
+        </div>
+        <div class="f16-slot" style="left:340px">
+          <div class="f16-dash"></div>
+          <div id="f16-c2" class="f16-card">
+            <svg class="f16-ficon" viewBox="0 0 140 170" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8 H96 L128 40 V160 H12 Z M96 8 V40 H128" stroke-opacity="0.55"/>
+              <path class="f16-g2" d="M46 66 H106 M32 86 H106 M32 106 H98 M46 126 H106 M32 146 H78" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div class="f16-flabel">Word</div>
+          </div>
+        </div>
+        <div class="f16-slot" style="left:680px">
+          <div class="f16-dash"></div>
+          <div id="f16-c3" class="f16-card">
+            <svg class="f16-ficon" viewBox="0 0 140 170" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8 H96 L128 40 V160 H12 Z M96 8 V40 H128" stroke-opacity="0.55"/>
+              <path class="f16-g3" d="M30 60 H110 V150 H30 Z M30 90 H110 M30 120 H110 M57 60 V150 M83 60 V150" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div class="f16-flabel">Excel</div>
+          </div>
+        </div>
+        <div class="f16-slot" style="left:1020px">
+          <div class="f16-dash"></div>
+          <div id="f16-c4" class="f16-card">
+            <svg class="f16-ficon" viewBox="0 0 140 170" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8 H96 L128 40 V160 H12 Z M96 8 V40 H128" stroke-opacity="0.55"/>
+              <path class="f16-g4" d="M32 76 H52 M64 76 H84 M96 76 H108 M32 104 H52 M64 104 H84 M96 104 H108 M32 132 H52 M64 132 H84 M96 132 H108" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div class="f16-flabel">CSV</div>
+          </div>
+        </div>
+        <div class="f16-slot" style="left:1360px">
+          <div class="f16-dash"></div>
+          <div id="f16-c5" class="f16-card">
+            <svg class="f16-ficon" viewBox="0 0 140 170" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8 H96 L128 40 V160 H12 Z M96 8 V40 H128" stroke-opacity="0.55"/>
+              <path class="f16-g5" d="M28 62 H112 V146 H28 Z M34 138 L62 100 L82 124 L94 110 L108 138 M103 82 A9 9 0 1 1 85 82 A9 9 0 1 1 103 82" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div class="f16-flabel">hình ảnh</div>
+            <div id="f16-row-spark" class="f16-spk f16-spk-gold"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: kinetic words -->
+      <div id="f16-kin">
+        <div id="f16-kin-in">
+          <span id="f16-kw1" class="f16-kw">văn bản</span>
+          <div id="f16-kin-spark" class="f16-spk f16-spk-gold"></div>
+          <span id="f16-kw2" class="f16-kw">bảng tính</span>
+        </div>
+      </div>
+
+      <!-- Scene 3: split — short PDF vs long PDF -->
+      <div id="f16-right-dash"></div>
+
+      <div id="f16-left" class="f16-half f16-card">
+        <svg class="f16-page" viewBox="0 0 230 300" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="0" y="40" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.5" stroke-width="3"/>
+          <path class="f16-lp-txt" d="M20 72 H160 M20 94 H160 M20 116 H130 M20 238 H160 M20 258 H120" stroke="#F0EEE6" stroke-opacity="0.6" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path class="f16-lp-img" d="M20 136 H160 V218 H20 Z M28 210 L62 168 L88 194 L106 178 L152 210" stroke="#F0EEE6" stroke-opacity="0.6" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f16-lp-txt-on" d="M20 72 H160 M20 94 H160 M20 116 H130 M20 238 H160 M20 258 H120" stroke="#8FB8A8" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f16-lp-img-on" d="M20 136 H160 V218 H20 Z M28 210 L62 168 L88 194 L106 178 L152 210" stroke="#8FB8A8" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div class="f16-head"><span id="f16-lh1">PDF</span> <span id="f16-lh2">ngắn</span></div>
+        <div id="f16-lchip1" class="f16-chip f16-chip-a">
+          <div class="f16-lit"></div>
+          <div class="f16-chip-label">chữ</div>
+          <svg class="f16-tick" viewBox="0 0 48 48"><path id="f16-ltick1" d="M8 26 C 13 31, 17 35, 20 39 C 26 28, 34 17, 42 9" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+        </div>
+        <div id="f16-lchip2" class="f16-chip f16-chip-b">
+          <div class="f16-lit"></div>
+          <div class="f16-chip-label">hình</div>
+          <svg class="f16-tick" viewBox="0 0 48 48"><path id="f16-ltick2" d="M8 26 C 13 31, 17 35, 20 39 C 26 28, 34 17, 42 9" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+        </div>
+      </div>
+
+      <div id="f16-right" class="f16-half f16-card">
+        <svg class="f16-page" viewBox="0 0 230 300" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <g class="f16-pg"><rect x="40" y="0" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.3" stroke-width="3"/></g>
+          <g class="f16-pg"><rect x="30" y="10" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.34" stroke-width="3"/></g>
+          <g class="f16-pg"><rect x="20" y="20" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.38" stroke-width="3"/></g>
+          <g class="f16-pg"><rect x="10" y="30" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.42" stroke-width="3"/></g>
+          <g class="f16-pg">
+            <rect x="0" y="40" width="180" height="240" rx="10" fill="#232220" stroke="#F0EEE6" stroke-opacity="0.5" stroke-width="3"/>
+            <path d="M20 72 H160 M20 94 H160 M20 116 H130 M20 238 H160 M20 258 H120" stroke="#F0EEE6" stroke-opacity="0.6" stroke-width="4"/>
+            <path id="f16-rp-img" d="M20 136 H160 V218 H20 Z M28 210 L62 168 L88 194 L106 178 L152 210" stroke="#F0EEE6" stroke-opacity="0.6" stroke-width="4"/>
+          </g>
+          <path id="f16-rp-txt-on" d="M20 72 H160 M20 94 H160 M20 116 H130 M20 238 H160 M20 258 H120" stroke="#D97757" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div class="f16-head"><span id="f16-rh1">PDF</span> <span id="f16-rh2">dài</span></div>
+        <div id="f16-sub">hơn 100 trang</div>
+        <div id="f16-rchip1" class="f16-chip f16-chip-a">
+          <div class="f16-lit f16-lit-gold"></div>
+          <div id="f16-rchip1-label" class="f16-chip-label">phần chữ</div>
+          <svg class="f16-tick" viewBox="0 0 48 48"><path id="f16-rtick" d="M8 26 C 13 31, 17 35, 20 39 C 26 28, 34 17, 42 9" fill="none" stroke="#D97757" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+        </div>
+        <div id="f16-rchip2" class="f16-chip f16-chip-b">
+          <div class="f16-chip-label">hình</div>
+          <svg class="f16-strike" viewBox="0 0 452 92"><path id="f16-strike" d="M6 48 C 90 36, 170 54, 250 42 S 390 36, 446 40" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="16-file-nao-cung-doc-duoc"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var spark = function (color) {
+        return '<svg viewBox="-50 -50 100 100"><g stroke="' + color + '" stroke-width="11" stroke-linecap="round">' +
+          '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+          '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      };
+      qa('.f16-spk-gold').forEach(function (el) { el.innerHTML = spark('#D97757'); });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var MOVE = 'power2.inOut';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var pop = function (d) { return { scale: 1, rotation: 0, opacity: 1, duration: d || 0.45, ease: IN }; };
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var cardIn = function (sel, t) {
+        tl.fromTo(sel, { y: 46, scale: 0.92, opacity: 0 },
+          { y: 0, scale: 1, opacity: 1, transformOrigin: '50% 60%', duration: 0.5, ease: IN }, t);
+      };
+
+      // ---- Scene 1 (0–4.55): empty slots, then one card per spoken format name
+      tl.fromTo(qa('.f16-dash'), { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.4, stagger: 0.06, ease: IN }, 0.1);
+      cardIn('#f16-c1', 0.85); draw('.f16-g1', 1.0, 0.4);   // "PDF"
+      cardIn('#f16-c2', 1.84); draw('.f16-g2', 1.98, 0.4);  // "Word"
+      cardIn('#f16-c3', 2.52); draw('.f16-g3', 2.66, 0.45); // "Excel"
+      cardIn('#f16-c4', 3.35); draw('.f16-g4', 3.48, 0.4);  // "CSV"
+      cardIn('#f16-c5', 4.37); draw('.f16-g5', 4.5, 0.45);  // "hình ảnh"
+      tl.fromTo('#f16-row-spark', popFrom, pop(0.45), 4.55); // "ảnh" — spark on the last card
+
+      // ---- Scene 2 (4.55–9.28): row shrinks away to the top; kinetic words land
+      tl.to('#f16-row', { y: -130, scale: 0.5, opacity: 0.35, transformOrigin: '50% 0%', duration: 0.7, ease: MOVE }, 5.0);
+      tl.fromTo('#f16-kw1', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 5.98);  // "văn bản"
+      tl.fromTo('#f16-kin-spark', popFrom, pop(0.4), 6.66);                                             // "bảng"
+      tl.fromTo('#f16-kw2', { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 6.66);  // "bảng tính"
+      // held beat: a quiet 2% drift only
+      tl.fromTo('#f16-kin-in', { scale: 1 }, { scale: 1.02, transformOrigin: '50% 50%', duration: 2.1, ease: 'none' }, 7.1);
+
+      // ---- Scene 3 (9.28–16.7): zoom-through to the 50/50 PDF split
+      tl.to('#f16-kin', { scale: 1.18, opacity: 0, transformOrigin: '50% 50%', duration: 0.35, ease: 'power2.in' }, 9.28);
+      tl.to('#f16-row', { y: -170, opacity: 0, duration: 0.35, ease: 'power2.in' }, 9.28);
+      tl.fromTo('#f16-left', { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: IN }, 9.45);   // "Với"
+      tl.fromTo('#f16-right-dash', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: IN }, 9.55);
+      draw('.f16-lp-txt', 9.6, 0.5);
+      draw('.f16-lp-img', 9.8, 0.5);
+      tl.fromTo('#f16-lh1', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 9.61);  // "PDF"
+      tl.fromTo('#f16-lh2', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 10.02); // "ngắn"
+
+      // "chữ" lights sage, then "hình"
+      tl.fromTo('#f16-lchip1', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, 11.54);
+      tl.fromTo('#f16-lchip1 .f16-lit', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 11.6);
+      tl.set('#f16-lchip1 .f16-chip-label', { color: '#F0EEE6' }, 11.6);
+      draw('#f16-lp-txt-on', 11.54, 0.4);
+      draw('#f16-ltick1', 11.7, 0.25);
+      tl.fromTo('#f16-lchip2', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, 11.87);
+      tl.fromTo('#f16-lchip2 .f16-lit', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 11.93);
+      tl.set('#f16-lchip2 .f16-chip-label', { color: '#F0EEE6' }, 11.93);
+      draw('#f16-lp-img-on', 11.87, 0.4);
+      draw('#f16-ltick2', 12.03, 0.25);
+
+      // right card: long PDF — a stack of pages, "hơn 100 trang"
+      tl.fromTo('#f16-right', { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: IN }, 13.05);  // "PDF"
+      tl.fromTo('#f16-rh1', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 13.05);
+      tl.fromTo('#f16-rh2', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 13.53);    // "dài"
+      tl.fromTo(qa('#f16-right .f16-pg'), { y: -24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.35, stagger: 0.07, ease: IN }, 13.53);
+      tl.fromTo('#f16-sub', { y: 36, scale: 0.94, opacity: 0 },
+        { y: 0, scale: 1, opacity: 1, transformOrigin: '0% 50%', duration: 0.5, ease: IN }, 13.89);          // "một trăm trang"
+      tl.set('#f16-sub', { color: '#F0EEE6' }, 14.21);
+
+      // "phần chữ" lights terracotta; the muted "hình" chip is struck through
+      tl.fromTo('#f16-rchip2', { x: 30, opacity: 0 }, { x: 0, opacity: 0.6, duration: 0.4, ease: IN }, 14.93);
+      tl.fromTo('#f16-rchip1', { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: IN }, 15.54);  // "phần"
+      tl.fromTo('#f16-rchip1 .f16-lit', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 15.7);       // "chữ"
+      tl.set('#f16-rchip1-label', { color: '#D97757' }, 15.7);
+      draw('#f16-rtick', 15.8, 0.25);
+      draw('#f16-rp-txt-on', 15.7, 0.4);
+      tl.to('#f16-rp-img', { opacity: 0.25, duration: 0.4, ease: IN }, 15.7);
+      draw('#f16-strike', 15.72, 0.4);
+
+      tl.to({}, { duration: 16.697 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["16-file-nao-cung-doc-duoc"] = tl;
+    })();
+  </script>
+</template>

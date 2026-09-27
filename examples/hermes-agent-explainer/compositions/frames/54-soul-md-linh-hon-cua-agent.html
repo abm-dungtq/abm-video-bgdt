@@ -1,0 +1,397 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f54-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f54-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f54- */
+    #f54-field {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 820px;
+      background-image: radial-gradient(circle, rgba(244,241,232,.16) 2px, transparent 2.5px);
+      background-size: 44px 44px;
+      opacity: .4;
+    }
+    .f54-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* analyze rail */
+    #f54-rail { position: absolute; left: 0; top: 0; width: 1760px; height: 64px; opacity: 0; }
+    .f54-slot {
+      position: absolute; top: 2px; width: 440px; height: 60px;
+      border-radius: 30px; border: 2px solid rgba(244,241,232,.16);
+      background: rgba(20,27,58,.7);
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-size: 30px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+      color: var(--muted);
+    }
+    #f54-slot1 { left: 120px; }
+    #f54-slot2 { left: 660px; }
+    #f54-slot3 { left: 1200px; }
+    .f54-rtrail { filter: drop-shadow(0 0 10px rgba(255,210,63,.5)); }
+
+    /* kicker */
+    #f54-kick {
+      position: absolute; left: 460px; top: 88px; width: 840px; height: 44px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+      opacity: 0;
+    }
+    #f54-kick b { color: var(--gold); font-weight: 400; }
+
+    /* the SOUL.md file card (hero) */
+    #f54-card {
+      position: absolute; left: 460px; top: 150px; width: 840px; height: 480px;
+      transform-origin: 420px 240px;
+      opacity: 0;
+    }
+    #f54-halo {
+      position: absolute; left: -4px; top: -4px; width: 848px; height: 488px;
+      border-radius: 22px; border: 3px solid var(--gold);
+      box-shadow: 0 0 50px rgba(255,210,63,.45), inset 0 0 30px rgba(255,210,63,.12);
+      opacity: 0;
+    }
+    #f54-panel {
+      position: absolute; left: 0; top: 0; width: 840px; height: 480px;
+      border-radius: 18px; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f54-dot { position: absolute; top: 26px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); }
+    #f54-title {
+      position: absolute; left: 70px; top: 76px; height: 120px;
+      display: flex; align-items: center; white-space: nowrap;
+      font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 14px rgba(255,210,63,.55));
+    }
+    #f54-title span:not(.f54-caret), #f54-bodytext span { display: none; }
+    .f54-caret {
+      display: inline-block; width: 10px; border-radius: 3px;
+      background: var(--gold); box-shadow: 0 0 16px rgba(255,210,63,.6);
+      opacity: 0;
+    }
+    #f54-caret1 { height: 100px; margin-left: 10px; }
+    #f54-caret2 { height: 52px; margin-left: 8px; }
+    #f54-divider { position: absolute; left: 70px; top: 222px; width: 700px; height: 2px; background: rgba(244,241,232,.12); }
+    #f54-body { position: absolute; left: 0; top: 0; width: 840px; height: 480px; }
+    #f54-bodyline {
+      position: absolute; left: 70px; top: 250px; height: 66px;
+      display: flex; align-items: center; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 44px; line-height: 1.3;
+    }
+    #f54-bodytext { color: var(--ink); }
+    .f54-stub {
+      position: absolute; left: 70px; width: 560px; height: 12px; border-radius: 6px;
+      background: rgba(244,241,232,.10); overflow: hidden;
+    }
+    #f54-stub1 { top: 350px; }
+    #f54-stub2 { top: 384px; }
+    #f54-stub3 { top: 418px; }
+    .f54-sfill {
+      position: absolute; left: 0; top: 0; width: 560px; height: 12px; border-radius: 6px;
+      background: var(--cyan); transform-origin: 0 50%;
+    }
+
+    /* tone sliders */
+    #f54-sliders { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f54-row { position: absolute; left: 900px; width: 780px; height: 150px; opacity: 0; }
+    #f54-row1 { top: 150px; }
+    #f54-row2 { top: 320px; }
+    #f54-row3 { top: 490px; }
+    .f54-lab {
+      position: absolute; left: 0; top: 0; width: 780px; height: 56px;
+      display: flex; align-items: center;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f54-track {
+      position: absolute; left: 0; top: 86px; width: 780px; height: 10px; border-radius: 5px;
+      background: rgba(244,241,232,.14);
+    }
+    .f54-fill {
+      position: absolute; left: 0; top: 86px; width: 780px; height: 10px; border-radius: 5px;
+      background: var(--gold); transform-origin: 0 50%;
+    }
+    .f54-knob {
+      position: absolute; left: -20px; top: 71px; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--gold); border: 4px solid var(--surface);
+      box-shadow: 0 0 18px rgba(255,210,63,.6);
+    }
+    #f54-strails path { filter: drop-shadow(0 0 10px rgba(255,210,63,.45)); }
+
+    /* scene 3 — personalities */
+    .f54-av { position: absolute; top: 295px; width: 150px; height: 150px; opacity: 0; }
+    #f54-av1 { left: 445px; }
+    #f54-av2 { left: 805px; }
+    #f54-av3 { left: 1165px; }
+    .f54-av svg { width: 150px; height: 150px; overflow: visible; }
+    .f54-atrail { opacity: 0; }
+
+    #f54-kin { position: absolute; left: 0; top: 460px; width: 1760px; height: 260px; }
+    #f54-head {
+      position: absolute; left: 0; top: 10px; width: 1760px; height: 76px;
+      display: flex; justify-content: center; align-items: center; gap: 22px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f54-gold {
+      position: absolute; left: 0; top: 104px; width: 1760px; height: 112px;
+      display: flex; justify-content: center; align-items: center; gap: 30px;
+      font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; white-space: nowrap;
+      color: var(--gold);
+      filter: drop-shadow(0 0 14px rgba(255,210,63,.5));
+    }
+    #f54-head span, #f54-gold span { display: block; opacity: 0; }
+    #f54-gtrail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+  </style>
+
+  <div id="root" data-composition-id="54-soul-md-linh-hon-cua-agent" data-width="1920" data-height="1080" data-duration="14.772">
+    <div id="f54-ground" class="clip" data-start="0" data-duration="14.772" data-track-index="0"></div>
+    <div id="f54-stage" class="clip" data-start="0" data-duration="14.772" data-track-index="1">
+      <div id="f54-field"></div>
+
+      <!-- analyze rail: ① feature · ② why it stands out · ③ what you get -->
+      <div id="f54-rail">
+        <svg class="f54-svg" viewBox="0 0 1760 820">
+          <path id="f54-r12" class="f54-rtrail" d="M562 32 L 658 32" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+          <path id="f54-r23" class="f54-rtrail" d="M1102 32 L 1198 32" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+        <div id="f54-slot1" class="f54-slot"><span>①</span><span>Tính năng</span></div>
+        <div id="f54-slot2" class="f54-slot"><span>②</span><span>Vì sao nổi bật</span></div>
+        <div id="f54-slot3" class="f54-slot"><span>③</span><span>Bạn được gì</span></div>
+      </div>
+
+      <div id="f54-kick"><b>◆</b><span>Điểm 5</span></div>
+
+      <!-- slider connector trails (card → each slider) -->
+      <svg id="f54-strails" class="f54-svg" viewBox="0 0 1760 820">
+        <path id="f54-st1" d="M816 390 C 860 390, 850 178, 890 178" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        <path id="f54-st2" d="M816 390 C 850 390, 850 348, 890 348" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        <path id="f54-st3" d="M816 390 C 860 390, 850 518, 890 518" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+
+      <!-- tone sliders -->
+      <div id="f54-sliders">
+        <div id="f54-row1" class="f54-row">
+          <div class="f54-lab">Giọng điệu</div>
+          <div class="f54-track"></div>
+          <div id="f54-fill1" class="f54-fill"></div>
+          <div id="f54-knob1" class="f54-knob"></div>
+        </div>
+        <div id="f54-row2" class="f54-row">
+          <div class="f54-lab">Phong cách</div>
+          <div class="f54-track"></div>
+          <div id="f54-fill2" class="f54-fill"></div>
+          <div id="f54-knob2" class="f54-knob"></div>
+        </div>
+        <div id="f54-row3" class="f54-row">
+          <div class="f54-lab">Cách giao tiếp</div>
+          <div class="f54-track"></div>
+          <div id="f54-fill3" class="f54-fill"></div>
+          <div id="f54-knob3" class="f54-knob"></div>
+        </div>
+      </div>
+
+      <!-- scene 3: chip → personalities -->
+      <svg class="f54-svg" viewBox="0 0 1760 820">
+        <path id="f54-at1" class="f54-atrail" d="M880 250 C 880 280, 520 266, 520 295" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+        <path id="f54-at2" class="f54-atrail" d="M880 250 L 880 295" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+        <path id="f54-at3" class="f54-atrail" d="M880 250 C 880 280, 1240 266, 1240 295" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div id="f54-av1" class="f54-av">
+        <svg viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="72" fill="#141b3a" stroke="rgba(244,241,232,.2)" stroke-width="3"/>
+          <path d="M66 52 C 54 38, 38 40, 32 48 C 44 48, 54 52, 62 58 M84 52 C 96 38, 112 40, 118 48 C 106 48, 96 52, 88 58" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="75" cy="56" r="11" fill="#ffd23f"/>
+          <path d="M40 90 H96 M40 106 H70 M40 122 H104" fill="none" stroke="#3ee6d0" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div id="f54-av2" class="f54-av">
+        <svg viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="72" fill="#141b3a" stroke="rgba(244,241,232,.2)" stroke-width="3"/>
+          <path d="M66 52 C 54 38, 38 40, 32 48 C 44 48, 54 52, 62 58 M84 52 C 96 38, 112 40, 118 48 C 106 48, 96 52, 88 58" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="75" cy="56" r="11" fill="#ffd23f"/>
+          <path d="M40 90 H62 M40 106 H108 M40 122 H80" fill="none" stroke="#3ee6d0" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div id="f54-av3" class="f54-av">
+        <svg viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="72" fill="#141b3a" stroke="rgba(244,241,232,.2)" stroke-width="3"/>
+          <path d="M66 52 C 54 38, 38 40, 32 48 C 44 48, 54 52, 62 58 M84 52 C 96 38, 112 40, 118 48 C 106 48, 96 52, 88 58" fill="none" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="75" cy="56" r="11" fill="#ffd23f"/>
+          <path d="M40 90 H108 M40 106 H88 M40 122 H52" fill="none" stroke="#3ee6d0" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div id="f54-kin">
+        <div id="f54-head"><span id="f54-h1">Mỗi</span><span id="f54-h2">người</span><span id="f54-h3">một</span><span id="f54-h4">Hermes</span></div>
+        <div id="f54-gold"><span id="f54-g1">cá</span><span id="f54-g2">tính</span><span id="f54-g3">riêng</span></div>
+        <svg class="f54-svg" style="height: 260px;" viewBox="0 0 1760 260">
+          <path id="f54-gtrail" d="M590 236 C 760 250, 1000 250, 1170 234" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- SOUL.md file card (hero) -->
+      <div id="f54-card">
+        <div id="f54-halo"></div>
+        <div id="f54-panel">
+          <div class="f54-dot" style="left: 30px;"></div>
+          <div class="f54-dot" style="left: 56px;"></div>
+          <div class="f54-dot" style="left: 82px;"></div>
+        </div>
+        <div id="f54-title">
+          <span id="f54-t0">S</span><span id="f54-t1">O</span><span id="f54-t2">U</span><span id="f54-t3">L</span><span id="f54-t4">.</span><span id="f54-t5">m</span><span id="f54-t6">d</span>
+          <span id="f54-caret1" class="f54-caret"></span>
+        </div>
+        <div id="f54-body">
+          <div id="f54-divider"></div>
+          <div id="f54-bodyline">
+            <span id="f54-bodytext"><span id="f54-b0">t</span><span id="f54-b1">í</span><span id="f54-b2">n</span><span id="f54-b3">h</span><span id="f54-b4">&nbsp;</span><span id="f54-b5">c</span><span id="f54-b6">á</span><span id="f54-b7">c</span><span id="f54-b8">h</span><span id="f54-b9">:</span></span>
+            <span id="f54-caret2" class="f54-caret"></span>
+          </div>
+          <div id="f54-stub1" class="f54-stub"><div id="f54-sf1" class="f54-sfill"></div></div>
+          <div id="f54-stub2" class="f54-stub"><div id="f54-sf2" class="f54-sfill"></div></div>
+          <div id="f54-stub3" class="f54-stub"><div id="f54-sf3" class="f54-sfill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // initial hidden states (set before the timeline is built)
+      gsap.set(["#f54-r12", "#f54-r23"], { attr: { "stroke-dasharray": 100, "stroke-dashoffset": 100 } });
+      gsap.set(["#f54-st1", "#f54-st2", "#f54-st3"], { attr: { "stroke-dasharray": 400, "stroke-dashoffset": 400 } });
+      gsap.set(["#f54-at1", "#f54-at2", "#f54-at3"], { attr: { "stroke-dasharray": 420, "stroke-dashoffset": 420 } });
+      gsap.set("#f54-gtrail", { attr: { "stroke-dasharray": 620, "stroke-dashoffset": 620 } });
+      gsap.set(["#f54-fill1", "#f54-fill2", "#f54-fill3", "#f54-sf1", "#f54-sf2", "#f54-sf3"], { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+      var ACTIVE = { color: "#ffd23f", borderColor: "#ffd23f" };
+      var DONE = { color: "#8e93b5", borderColor: "rgba(244,241,232,.16)" };
+
+      // ---- Scene 1 (0–4.64 s) [typewriter]: rail ① lights; SOUL.md card types its name, then "tính cách:"
+      tl.fromTo("#f54-rail", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.1);
+      tl.fromTo("#f54-card", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.15);
+      tl.set("#f54-slot1", ACTIVE, 0.33);                       // "Điểm"
+      tl.fromTo("#f54-kick", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.63); // "năm"
+      tl.set("#f54-caret1", { opacity: 1 }, 0.4);
+      [0.8, 1.2].forEach(function (t) {
+        tl.set("#f54-caret1", { opacity: 0 }, t);
+        tl.set("#f54-caret1", { opacity: 1 }, t + 0.2);
+      });
+      // "SOUL.md" types on its cue (1.40)
+      for (var i = 0; i < 7; i++) tl.set("#f54-t" + i, { display: "inline" }, 1.4 + i * 0.08);
+      tl.fromTo("#f54-halo", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power3.out" }, 1.4);
+      tl.to("#f54-panel", { scale: 1.03, duration: 0.2, ease: "power2.out" }, 1.95);
+      tl.to("#f54-panel", { scale: 1, duration: 0.3, ease: "power2.inOut" }, 2.15);
+      [2.3, 2.8, 3.3].forEach(function (t) {
+        tl.set("#f54-caret1", { opacity: 0 }, t);
+        tl.set("#f54-caret1", { opacity: 1 }, t + 0.25);
+      });
+      tl.set("#f54-caret1", { opacity: 0 }, 3.6);
+      // "tính cách:" types on "tính" (3.63) / "cách" (3.83)
+      tl.set("#f54-caret2", { opacity: 1 }, 3.6);
+      [3.63, 3.67, 3.71, 3.75, 3.79, 3.83, 3.87, 3.91, 3.95, 3.99].forEach(function (t, k) {
+        tl.set("#f54-b" + k, { display: "inline" }, t);
+      });
+      for (var b = 4.3; b < 9.4; b += 0.5) {
+        tl.set("#f54-caret2", { opacity: 0 }, b);
+        tl.set("#f54-caret2", { opacity: 1 }, b + 0.25);
+      }
+
+      // ---- Scene 2 (4.64–9.64 s) [metaphor]: rail ②; card slides left, three tone sliders move as named
+      tl.set("#f54-slot1", DONE, 4.64);
+      tl.to("#f54-r12", { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "none" }, 4.64);
+      tl.set("#f54-slot2", ACTIVE, 4.95);
+      tl.to("#f54-kick", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 4.64);
+      tl.to("#f54-card", { x: -400, scale: 0.8, duration: 0.7, ease: "power2.inOut" }, 4.64);
+
+      // slider 1 — "giọng điệu" (5.53)
+      tl.to("#f54-st1", { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, 5.45);
+      tl.fromTo("#f54-row1", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 5.53);
+      tl.fromTo("#f54-knob1", { x: 0 }, { x: 560, duration: 0.6, ease: "power2.inOut" }, 5.65);
+      tl.to("#f54-fill1", { scaleX: 0.718, duration: 0.6, ease: "power2.inOut" }, 5.65);
+      tl.to("#f54-sf1", { scaleX: 0.72, duration: 0.6, ease: "power2.inOut" }, 5.65);
+
+      // slider 2 — "phong cách" (6.33); trail 1 cools to cyan
+      tl.set("#f54-st1", { attr: { stroke: "#3ee6d0" } }, 6.33);
+      tl.set(["#f54-knob1", "#f54-fill1"], { backgroundColor: "#3ee6d0" }, 6.33);
+      tl.set("#f54-knob1", { boxShadow: "0 0 14px rgba(62,230,208,.5)" }, 6.33);
+      tl.to("#f54-st2", { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 6.25);
+      tl.fromTo("#f54-row2", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 6.33);
+      tl.fromTo("#f54-knob2", { x: 0 }, { x: 330, duration: 0.6, ease: "power2.inOut" }, 6.45);
+      tl.to("#f54-fill2", { scaleX: 0.423, duration: 0.6, ease: "power2.inOut" }, 6.45);
+      tl.to("#f54-sf2", { scaleX: 0.42, duration: 0.6, ease: "power2.inOut" }, 6.45);
+
+      // slider 3 — "cách giao tiếp" (giao 7.76); trail 2 cools to cyan
+      tl.set("#f54-st2", { attr: { stroke: "#3ee6d0" } }, 7.76);
+      tl.set(["#f54-knob2", "#f54-fill2"], { backgroundColor: "#3ee6d0" }, 7.76);
+      tl.set("#f54-knob2", { boxShadow: "0 0 14px rgba(62,230,208,.5)" }, 7.76);
+      tl.to("#f54-st3", { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, 7.68);
+      tl.fromTo("#f54-row3", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 7.76);
+      tl.fromTo("#f54-knob3", { x: 0 }, { x: 660, duration: 0.6, ease: "power2.inOut" }, 7.9);
+      tl.to("#f54-fill3", { scaleX: 0.846, duration: 0.6, ease: "power2.inOut" }, 7.9);
+      tl.to("#f54-sf3", { scaleX: 0.85, duration: 0.6, ease: "power2.inOut" }, 7.9);
+
+      // ---- Scene 3 (9.64–14.27 s) [kinetic]: card shrinks to a chip on "SOUL.md" (9.48); rail ③; personalities
+      tl.to(["#f54-sliders", "#f54-strails"], { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 9.48);
+      tl.to("#f54-body", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 9.48);
+      tl.to("#f54-card", { x: 0, y: -230, scale: 0.36, duration: 0.7, ease: "power2.inOut" }, 9.5);
+      tl.set("#f54-slot2", DONE, 9.64);
+      tl.to("#f54-r23", { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "none" }, 9.64);
+      tl.set("#f54-slot3", ACTIVE, 9.95);
+
+      // "mỗi người" — three differently tuned Hermes appear from the chip
+      tl.set(["#f54-at1", "#f54-at2", "#f54-at3"], { opacity: 1 }, 11.1);
+      [["#f54-at1", "#f54-av1", 11.16], ["#f54-at2", "#f54-av2", 11.33], ["#f54-at3", "#f54-av3", 11.5]].forEach(function (a) {
+        tl.to(a[0], { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "none" }, a[2]);
+        tl.fromTo(a[1], { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, a[2] + 0.1);
+      });
+      // headline words on their spoken times: Mỗi 11.16 · người 11.33 · một 11.99 · Hermes 12.15
+      [["#f54-h1", 11.16], ["#f54-h2", 11.33], ["#f54-h3", 11.99], ["#f54-h4", 12.15]].forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, w[1]);
+      });
+      // "cá tính riêng" lands gold: cá 13.01 · tính 13.15 · riêng 13.33 (chip title steps back to ink)
+      tl.set("#f54-title", { color: "#f4f1e8", filter: "none" }, 13.01);
+      tl.set("#f54-halo", { borderColor: "rgba(244,241,232,.35)", boxShadow: "none" }, 13.01);
+      [["#f54-g1", 13.01], ["#f54-g2", 13.15], ["#f54-g3", 13.33]].forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, scale: 0.85, y: 20 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" }, w[1]);
+      });
+      tl.to("#f54-gtrail", { attr: { "stroke-dashoffset": 0 }, duration: 0.5, ease: "none" }, 13.45);
+      // hold — a quiet drift
+      tl.to("#f54-kin", { y: -6, duration: 0.3, ease: "power2.inOut" }, 13.95);
+
+      tl.to({}, { duration: 14.272 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["54-soul-md-linh-hon-cua-agent"] = tl;
+    })();
+  </script>
+</template>

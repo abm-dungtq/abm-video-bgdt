@@ -1,0 +1,354 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f38-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f38-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f38- */
+    .f38-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f38-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* background field (dim) */
+    #f38-field { opacity: 0.4; }
+
+    /* chat fragments on orbit arms */
+    .f38-arm { position: absolute; left: 880px; top: 400px; width: 0; height: 0; }
+    .f38-wrap { position: absolute; left: 240px; top: -32px; width: 200px; height: 64px; }
+    .f38-bub {
+      position: absolute; left: 0; top: 0; width: 200px; height: 64px;
+      border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.18);
+      display: flex; align-items: center; gap: 12px; padding: 0 16px; box-sizing: border-box;
+      opacity: 0;
+    }
+    .f38-bub i { display: block; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); flex: none; }
+    .f38-bub.f38-me i { background: var(--cyan); }
+    .f38-bars { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .f38-bars b { display: block; height: 7px; border-radius: 4px; background: rgba(244,241,232,.45); }
+
+    /* the bust group: core ring → portrait head */
+    #f38-bust { transform-origin: 880px 500px; }
+    #f38-core { position: absolute; left: 770px; top: 290px; width: 220px; height: 220px; transform-origin: 110px 110px; }
+    #f38-coresvg { position: absolute; left: 0; top: 0; width: 220px; height: 220px; overflow: visible; }
+    #f38-corelbl {
+      position: absolute; left: 0; top: 0; width: 220px; height: 220px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 44px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em;
+    }
+    #f38-socket {
+      position: absolute; left: 208px; top: 94px; width: 18px; height: 32px; border-radius: 5px;
+      background: var(--cyan); box-shadow: 0 0 16px rgba(62,230,208,.6);
+    }
+    #f38-pulse {
+      position: absolute; left: 150px; top: 50px; width: 120px; height: 120px; border-radius: 50%;
+      border: 4px solid var(--gold);
+    }
+    .f38-seg { filter: drop-shadow(0 0 6px rgba(244,241,232,.25)); }
+    #f38-label {
+      position: absolute; left: 0; top: 632px; width: 1760px; height: 84px;
+      display: flex; justify-content: center; align-items: center; gap: 20px;
+      font-size: 64px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f38-label span { display: block; }
+    #f38-lb4 { color: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    .f38-trail { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+
+    /* the Honcho plug */
+    #f38-plug { position: absolute; left: 985px; top: 355px; width: 330px; height: 90px; transform-origin: 165px 45px; }
+    #f38-prongs { position: absolute; left: 0; top: 25px; width: 28px; height: 40px; }
+    #f38-plugbody {
+      position: absolute; left: 26px; top: 0; width: 304px; height: 90px; box-sizing: border-box;
+      border-radius: 18px; background: var(--surface); border: 1px solid rgba(244,241,232,.2);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    #f38-pluggold {
+      position: absolute; left: 23px; top: -3px; width: 310px; height: 96px; box-sizing: border-box;
+      border-radius: 20px; border: 3px solid var(--gold); box-shadow: 0 0 28px rgba(255,210,63,.45);
+    }
+    #f38-kick {
+      position: absolute; left: 1050px; top: 38px; height: 50px;
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    #f38-kick span { display: block; }
+    #f38-kd { color: var(--gold); }
+
+    /* terminal */
+    #f38-tkick {
+      position: absolute; left: 700px; top: 186px; height: 44px;
+      display: flex; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    #f38-tkick span { display: block; }
+    #f38-tkd { color: var(--gold); }
+    #f38-term {
+      position: absolute; left: 700px; top: 250px; width: 1040px; height: 360px; box-sizing: border-box;
+      border-radius: 18px; background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      font-family: "JetBrains Mono", monospace; font-size: 30px; line-height: 1.55;
+    }
+    #f38-tbar {
+      position: absolute; left: 0; top: 0; width: 1038px; height: 62px;
+      border-bottom: 1px solid rgba(244,241,232,.08);
+    }
+    #f38-dots { position: absolute; left: 26px; top: 23px; display: flex; gap: 12px; }
+    .f38-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .55; }
+    #f38-ttl {
+      position: absolute; left: 0; top: 0; width: 1038px; height: 62px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: var(--muted); white-space: nowrap;
+    }
+    .f38-ln { position: absolute; left: 40px; height: 47px; white-space: pre; color: var(--ink); }
+    #f38-l1 { top: 92px; }
+    #f38-l2 { top: 150px; }
+    #f38-l3 { top: 197px; color: var(--muted); }
+    #f38-l4 { top: 262px; }
+    .f38-p { color: var(--cyan); }
+    .f38-c { opacity: 0; }
+    .f38-g { color: var(--gold); }
+    #f38-cursor {
+      position: absolute; left: 76px; top: 100px; width: 16px; height: 32px; background: var(--ink); opacity: .85;
+    }
+  </style>
+
+  <div id="root" data-composition-id="38-hieu-ban-sau-hon-voi-honcho" data-width="1920" data-height="1080" data-duration="12.26">
+    <div id="f38-ground" class="clip" data-start="0" data-duration="12.26" data-track-index="0"></div>
+    <div id="f38-stage" class="clip" data-start="0" data-duration="12.26" data-track-index="1">
+
+      <!-- background field (dimmed) -->
+      <svg id="f38-field" class="f38-svg" viewBox="0 0 1760 820" fill="none">
+        <g stroke="#8E93B5" stroke-width="2">
+          <circle cx="880" cy="400" r="240" opacity="0.18"/>
+          <circle cx="880" cy="400" r="460" opacity="0.1"/>
+        </g>
+        <g fill="#8E93B5">
+          <circle cx="210" cy="130" r="3" opacity="0.5"/><circle cx="360" cy="610" r="2.5" opacity="0.4"/>
+          <circle cx="1520" cy="170" r="3" opacity="0.5"/><circle cx="1640" cy="560" r="2.5" opacity="0.4"/>
+          <circle cx="1380" cy="720" r="3" opacity="0.4"/><circle cx="140" cy="420" r="2.5" opacity="0.35"/>
+          <circle cx="560" cy="80" r="2" opacity="0.4"/><circle cx="1230" cy="90" r="2" opacity="0.35"/>
+        </g>
+      </svg>
+
+      <!-- the orbit path of the fragments -->
+      <svg class="f38-svg" viewBox="0 0 1760 820" fill="none">
+        <circle id="f38-orbit" cx="880" cy="400" r="340" stroke="#8E93B5" stroke-width="2.5" stroke-dasharray="6 14" opacity="0"/>
+      </svg>
+
+      <!-- chat fragments -->
+      <div id="f38-a0" class="f38-arm"><div id="f38-w0" class="f38-wrap"><div id="f38-b0" class="f38-bub"><i></i><div class="f38-bars"><b style="width:100%"></b><b style="width:62%"></b></div></div></div></div>
+      <div id="f38-a1" class="f38-arm"><div id="f38-w1" class="f38-wrap"><div id="f38-b1" class="f38-bub f38-me"><i></i><div class="f38-bars"><b style="width:78%"></b><b style="width:100%"></b></div></div></div></div>
+      <div id="f38-a2" class="f38-arm"><div id="f38-w2" class="f38-wrap"><div id="f38-b2" class="f38-bub"><i></i><div class="f38-bars"><b style="width:100%"></b><b style="width:45%"></b></div></div></div></div>
+      <div id="f38-a3" class="f38-arm"><div id="f38-w3" class="f38-wrap"><div id="f38-b3" class="f38-bub f38-me"><i></i><div class="f38-bars"><b style="width:88%"></b><b style="width:70%"></b></div></div></div></div>
+      <div id="f38-a4" class="f38-arm"><div id="f38-w4" class="f38-wrap"><div id="f38-b4" class="f38-bub"><i></i><div class="f38-bars"><b style="width:100%"></b><b style="width:80%"></b></div></div></div></div>
+      <div id="f38-a5" class="f38-arm"><div id="f38-w5" class="f38-wrap"><div id="f38-b5" class="f38-bub f38-me"><i></i><div class="f38-bars"><b style="width:66%"></b><b style="width:94%"></b></div></div></div></div>
+
+      <!-- bust group: Hermes core becomes the portrait's head -->
+      <div id="f38-bust" class="f38-layer">
+        <svg class="f38-svg" viewBox="0 0 1760 820" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <g stroke="#F4F1E8" stroke-width="4">
+            <path id="f38-s0" class="f38-seg" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  d="M796 330 C790 262 840 236 882 236 C928 236 972 266 964 330 M812 300 C850 290 880 272 900 250"/>
+            <path id="f38-s1" class="f38-seg" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  d="M858 408 L856 446 M902 408 L904 446"/>
+            <path id="f38-s2" class="f38-seg" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  d="M856 446 C790 456 730 486 712 600"/>
+            <path id="f38-s3" class="f38-seg" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100"
+                  d="M904 446 C970 456 1030 486 1048 600"/>
+          </g>
+          <path id="f38-s4" pathLength="100" stroke="#8E93B5" stroke-width="2.5" stroke-dasharray="100 100" stroke-dashoffset="100"
+                d="M780 600 L820 520 L880 490 L940 520 L980 600 M820 520 L880 560 L940 520 M880 490 L880 560 L880 600"/>
+          <g fill="#3EE6D0" style="filter: drop-shadow(0 0 8px rgba(62,230,208,.6));">
+            <circle id="f38-n0" cx="880" cy="490" r="8" opacity="0"/>
+            <circle id="f38-n1" cx="820" cy="520" r="7" opacity="0"/>
+            <circle id="f38-n2" cx="940" cy="520" r="7" opacity="0"/>
+            <circle id="f38-n3" cx="880" cy="560" r="7" opacity="0"/>
+            <circle id="f38-n4" cx="780" cy="600" r="6" opacity="0"/>
+            <circle id="f38-n5" cx="980" cy="600" r="6" opacity="0"/>
+          </g>
+          <path id="f38-ul" class="f38-trail" pathLength="100" stroke="#FFD23F" stroke-width="5" stroke-dasharray="100 100" stroke-dashoffset="100"
+                d="M620 738 C760 752 1000 752 1140 734"/>
+        </svg>
+
+        <div id="f38-core">
+          <svg id="f38-coresvg" viewBox="0 0 220 220" fill="none">
+            <circle cx="110" cy="110" r="105" fill="#141B3A" fill-opacity="0.55" stroke="#F4F1E8" stroke-width="4"/>
+            <circle id="f38-cring" cx="110" cy="110" r="105" stroke="#3EE6D0" stroke-width="5" opacity="0"
+                    style="filter: drop-shadow(0 0 14px rgba(62,230,208,.6));"/>
+          </svg>
+          <div id="f38-corelbl">Hermes</div>
+          <div id="f38-socket"></div>
+          <div id="f38-pulse"></div>
+        </div>
+
+        <div id="f38-label"><span id="f38-lb1">chân</span><span id="f38-lb2">dung</span><span id="f38-lb3">về</span><span id="f38-lb4">bạn</span></div>
+      </div>
+
+      <!-- the Honcho plug -->
+      <div id="f38-plug">
+        <svg id="f38-prongs" viewBox="0 0 28 40" fill="none" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round">
+          <line x1="4" y1="8" x2="28" y2="8"/><line x1="4" y1="32" x2="28" y2="32"/>
+        </svg>
+        <div id="f38-plugbody">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="20" cy="14" r="7"/><path d="M6 36c2-8 7-12 14-12s12 4 14 12"/><path d="M31 5 l3 3 M34 12 h4 M9 5 l-3 3 M6 12 h-4"/>
+          </svg>
+          <span>Honcho</span>
+        </div>
+        <div id="f38-pluggold"></div>
+      </div>
+      <div id="f38-kick"><span id="f38-kd">◆</span><span id="f38-k1">suy</span><span id="f38-k2">ngẫm</span></div>
+
+      <!-- trail: portrait → terminal -->
+      <svg class="f38-svg" viewBox="0 0 1760 820" fill="none">
+        <path id="f38-jt" class="f38-trail" pathLength="100" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"
+              stroke-dasharray="100 100" stroke-dashoffset="100" d="M548 470 C610 470 630 380 692 380"/>
+      </svg>
+
+      <!-- terminal -->
+      <div id="f38-tkick"><span id="f38-tkd">◆</span><span id="f38-tk1">xem</span><span id="f38-tk2">lại</span></div>
+      <div id="f38-term">
+        <div id="f38-tbar">
+          <div id="f38-dots"><div class="f38-dot"></div><div class="f38-dot"></div><div class="f38-dot"></div></div>
+          <div id="f38-ttl">hermes</div>
+        </div>
+        <div id="f38-l1" class="f38-ln"><span class="f38-p">$</span> <span id="f38-c0" class="f38-c">h</span><span id="f38-c1" class="f38-c">e</span><span id="f38-c2" class="f38-c">r</span><span id="f38-c3" class="f38-c">m</span><span id="f38-c4" class="f38-c">e</span><span id="f38-c5" class="f38-c">s</span><span id="f38-c6" class="f38-c"> </span><span id="f38-c7" class="f38-c f38-g">j</span><span id="f38-c8" class="f38-c f38-g">o</span><span id="f38-c9" class="f38-c f38-g">u</span><span id="f38-c10" class="f38-c f38-g">r</span><span id="f38-c11" class="f38-c f38-g">n</span><span id="f38-c12" class="f38-c f38-g">e</span><span id="f38-c13" class="f38-c f38-g">y</span></div>
+        <div id="f38-l2" class="f38-ln">journey (learning, memory-graph)</div>
+        <div id="f38-l3" class="f38-ln">  Timeline of learned skills + memories over time</div>
+        <div id="f38-l4" class="f38-ln"><span class="f38-p">$</span></div>
+        <div id="f38-cursor"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var IN = "power3.out", MOVE = "power2.inOut";
+      var R = 340;
+      // final orbit angles (deg) after a 40° drift; chosen to keep clear of the plug and the header
+      var FIN = [45, 100, 150, 200, 225, 320];
+      var DRIFT = 40;
+
+      /* ---- initial hidden states (inner nodes only, never clips) ---- */
+      gsap.set(["#f38-core", "#f38-corelbl", "#f38-socket", "#f38-pulse", "#f38-plug", "#f38-kick",
+                "#f38-label span", "#f38-tkick", "#f38-term", "#f38-l2", "#f38-l3", "#f38-l4"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0–3.75): Hermes core, orbiting chat fragments, Honcho plug docks ---- */
+      tl.fromTo("#f38-core", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN }, 0.31);
+      tl.fromTo("#f38-corelbl", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 0.49);   // Hermes
+      tl.fromTo("#f38-orbit", { opacity: 0 }, { opacity: 0.35, duration: 0.6, ease: IN }, 0.97);               // hiểu
+      for (var i = 0; i < 6; i++) {
+        var base = FIN[i] - DRIFT, t0 = 0.97 + i * 0.13;                                                      // hiểu bạn sâu hơn nữa
+        tl.fromTo("#f38-a" + i, { rotation: base }, { rotation: FIN[i], duration: 4.6 - 0.97, ease: "none" }, 0.97);
+        tl.fromTo("#f38-w" + i, { rotation: -base }, { rotation: -FIN[i], duration: 4.6 - 0.97, ease: "none" }, 0.97);
+        tl.fromTo("#f38-b" + i, { opacity: 0, scale: 0.4 }, { opacity: 0.6, scale: 1, duration: 0.45, ease: IN }, t0);
+      }
+      // gắn @2.81 — a socket lights on the core
+      tl.fromTo("#f38-socket", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 2.81);
+      // Honcho @3.21 — the plug slides in and docks
+      tl.fromTo("#f38-plug", { opacity: 0, x: 380 }, { opacity: 1, x: 0, duration: 0.45, ease: IN }, 3.21);
+      tl.fromTo("#f38-cring", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: IN }, 3.56);
+      tl.fromTo("#f38-pulse", { opacity: 1, scale: 0.4 }, { opacity: 0, scale: 1.8, duration: 0.6, ease: "power2.out" }, 3.56);
+
+      /* ---- Scene 2 (3.75–7.99): plug lifts to a header; fragments flow in and build the portrait ---- */
+      tl.to("#f38-pluggold", { opacity: 0, duration: 0.3, ease: MOVE }, 3.8);
+      tl.to("#f38-plug", { x: -270, y: -335, scale: 0.85, duration: 0.55, ease: MOVE }, 3.8);
+      tl.to("#f38-socket", { opacity: 0, duration: 0.3, ease: MOVE }, 3.8);
+      tl.to("#f38-corelbl", { opacity: 0, duration: 0.3, ease: MOVE }, 3.9);
+      // suy @4.53 / ngẫm @4.65 — reflection kicker; the core ring settles into the portrait's head
+      tl.fromTo("#f38-kick", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: IN }, 4.53);
+      tl.fromTo("#f38-kd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 4.53);
+      tl.fromTo("#f38-k1", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 4.53);
+      tl.fromTo("#f38-k2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 4.65);
+      tl.to("#f38-core", { y: -70, scale: 80 / 105, duration: 0.6, ease: MOVE }, 4.53);
+      tl.to("#f38-cring", { opacity: 0, duration: 0.5, ease: MOVE }, 4.53);
+      // fragments stream inward one by one (sau mỗi cuộc trò chuyện); each arrival draws a stroke
+      var segs = ["#f38-s0", "#f38-s1", "#f38-s2", "#f38-s3", "#f38-s4"];
+      var order = [4, 5, 0, 3, 1, 2]; // nearest-to-farthest feel, alternating sides
+      for (var k = 0; k < 6; k++) {
+        var w = "#f38-w" + order[k], b = "#f38-b" + order[k], ts = 4.65 + k * 0.26, arrive = ts + 0.6;
+        tl.to(w, { x: -R, scale: 0.3, duration: 0.6, ease: "power2.in" }, ts);
+        tl.to(b, { opacity: 0, duration: 0.2, ease: MOVE }, arrive - 0.2);
+        if (k < 5) {
+          tl.fromTo(segs[k], { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, arrive - 0.05);
+        }
+      }
+      tl.to("#f38-orbit", { opacity: 0, duration: 0.4, ease: MOVE }, 6.2);
+      // xây dựng @6.50 — memory nodes light up across the portrait
+      for (var n = 0; n < 6; n++) {
+        tl.fromTo("#f38-n" + n, { opacity: 0, scale: 0.3, transformOrigin: "50% 50%" },
+                  { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 6.5 + n * 0.06);
+      }
+      // chân @6.91 · dung @7.11 · về @7.29 · bạn @7.41
+      tl.fromTo("#f38-lb1", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 6.91);
+      tl.fromTo("#f38-lb2", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 7.11);
+      tl.fromTo("#f38-lb3", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 7.29);
+      tl.fromTo("#f38-lb4", { opacity: 0, y: 36, scale: 1.15 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: IN }, 7.41);
+      tl.fromTo("#f38-ul", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 7.41);
+
+      /* ---- Scene 3 (7.99–11.76): portrait moves left; the journey command runs ---- */
+      tl.to(["#f38-plug", "#f38-kick"], { opacity: 0, duration: 0.35, ease: MOVE }, 7.99);
+      tl.to("#f38-bust", { x: -520, scale: 0.62, duration: 0.65, ease: MOVE }, 7.99);
+      // Bạn @8.25 — terminal rises; xem @8.63 lại @8.81
+      tl.fromTo("#f38-term", { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: IN }, 8.25);
+      tl.fromTo("#f38-tkick", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: IN }, 8.63);
+      tl.fromTo("#f38-tkd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 8.63);
+      tl.fromTo("#f38-tk1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 8.63);
+      tl.fromTo("#f38-tk2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 8.81);
+      // idle cursor blink before typing
+      tl.set("#f38-cursor", { opacity: 0 }, 8.9);
+      tl.set("#f38-cursor", { opacity: 0.85 }, 9.15);
+      // "hermes" typed on "Hermes" @9.34–9.70; " journey" on journey @10.66–10.90
+      var CW = 18, times = [9.34, 9.40, 9.46, 9.52, 9.58, 9.64, 9.72, 10.66, 10.695, 10.73, 10.765, 10.80, 10.835, 10.87];
+      for (var c = 0; c < times.length; c++) {
+        tl.set("#f38-c" + c, { opacity: 1 }, times[c]);
+        tl.set("#f38-cursor", { x: (c + 1) * CW }, times[c]);
+      }
+      tl.fromTo("#f38-jt", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 10.66);
+      // output prints (real help text) and a fresh prompt holds
+      tl.fromTo("#f38-l2", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: IN }, 10.98);
+      tl.fromTo("#f38-l3", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: IN }, 11.08);
+      tl.fromTo("#f38-l4", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: IN }, 11.22);
+      tl.set("#f38-cursor", { x: 0, y: 170 }, 11.22);
+      tl.set("#f38-cursor", { opacity: 0 }, 11.5);
+
+      tl.to({}, { duration: 11.76 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["38-hieu-ban-sau-hon-voi-honcho"] = tl;
+    })();
+  </script>
+</template>

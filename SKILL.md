@@ -109,6 +109,9 @@ A worker writes exactly one file, `compositions/frames/<id>.html`. After each wa
   the skeleton's `@font-face` lines come from `fonts`, using each entry's `faces` for fonts the skill does not ship)
 - `templates/worker-kit/worker-layouts.md.tmpl`: the layout library and the six DNA cards for workers
 - `templates/themes/abm-brand.json`: the optional ABM theme (Navy/orange-gold/Montserrat); fonts ship with their OFL licences
+- [examples/](examples/README.md) and [examples/CATALOG.md](examples/CATALOG.md): two delivered lessons (142 frames with
+  previews, storyboards, scripts) indexed by shot type. Before building a frame, look up a worked example of its shot type;
+  borrow the technique, not the picture
 
 ## Updating the skill
 

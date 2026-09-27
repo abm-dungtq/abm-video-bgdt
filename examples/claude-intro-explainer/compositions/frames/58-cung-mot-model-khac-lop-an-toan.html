@@ -1,0 +1,247 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f58-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f58-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas - (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f58-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f58-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f58-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f58-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f58-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f58-scene { position: absolute; inset: 0; transform-origin: 880px 450px; }
+    .f58-spark { display: block; overflow: visible; }
+    .f58-spark line { stroke: #D97757; stroke-width: 3.4; stroke-linecap: round; }
+
+    /* ---------- Scene 1: one core, two shells ---------- */
+    #f58-k1 {
+      position: absolute; left: 0; top: 96px; width: 1760px; opacity: 0;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+      white-space: nowrap;
+    }
+    #f58-k1 .f58-spark { width: 26px; height: 26px; }
+    .f58-core {
+      position: absolute; left: 740px; top: 310px; width: 280px; height: 280px;
+      box-sizing: border-box; border-radius: 50%; background: #F0EEE6;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      opacity: 0;
+    }
+    .f58-core .f58-spark { width: 56px; height: 56px; }
+    .f58-core-t {
+      font: 600 36px/1.2 "Be Vietnam Pro", sans-serif; color: #1F1E1D; white-space: nowrap;
+    }
+    .f58-shell { position: absolute; top: 230px; width: 440px; height: 440px; overflow: visible; }
+    #f58-shL { left: 210px; }
+    #f58-shR { left: 1110px; }
+    .f58-shell path { fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f58-shL path { stroke: #8FB8A8; stroke-width: 4; }
+    #f58-shR path { stroke: #9A968C; stroke-width: 22; opacity: .85; }
+    .f58-lab {
+      position: absolute; top: 690px; width: 440px; text-align: center; opacity: 0;
+      font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap;
+    }
+    #f58-labL { left: 210px; color: #8FB8A8; }
+    #f58-labR { left: 1110px; color: #F0EEE6; }
+    #f58-key {
+      position: absolute; left: 630px; top: 405px; width: 500px; text-align: center; white-space: nowrap;
+      font: 700 64px/1.12 "Lora", serif;
+    }
+    .f58-w { display: inline-block; opacity: 0; }
+    #f58-key .f58-w { margin: 0 8px; }
+    #f58-key-ul { position: absolute; left: 700px; top: 486px; width: 360px; height: 30px; overflow: visible; }
+    #f58-key-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* ---------- Scene 2: kinetic payoff ---------- */
+    #f58-k2 {
+      position: absolute; left: 0; top: 120px; width: 1760px; opacity: 0;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      font: 400 34px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #9A968C;
+      white-space: nowrap;
+    }
+    #f58-k2 .f58-spark { width: 30px; height: 30px; }
+    #f58-chip {
+      position: absolute; left: 630px; top: 210px; width: 500px; height: 84px; box-sizing: border-box;
+      border-radius: 42px; background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center; gap: 14px; opacity: 0;
+      font: 600 40px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f58-chip .f58-tier { color: #8FB8A8; }
+    #f58-arrow { position: absolute; left: 820px; top: 300px; width: 120px; height: 150px; overflow: visible; }
+    #f58-arrow path { fill: none; stroke: #8FB8A8; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f58-phrase {
+      position: absolute; left: 0; top: 470px; width: 1760px; text-align: center; white-space: nowrap;
+      font: 700 112px/1.1 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f58-phrase .f58-w { margin: 0 18px; }
+    #f58-phrase .f58-hot { color: #D97757; }
+    #f58-pspark {
+      display: inline-block; width: 60px; height: 60px; vertical-align: 52px; margin-left: 4px; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="58-cung-mot-model-khac-lop-an-toan" data-width="1920" data-height="1080" data-duration="11.144">
+    <div id="f58-ground" class="clip" data-start="0" data-duration="11.144" data-track-index="0"></div>
+    <div id="f58-stage" class="clip" data-start="0" data-duration="11.144" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f58-rail">
+        <div id="f58-pill1" class="f58-pill"><span id="f58-b1" class="f58-badge">1</span>Tính năng<svg id="f58-ps1" class="f58-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f58-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f58-pill2" class="f58-pill"><span id="f58-b2" class="f58-badge">2</span>Vì sao nổi bật<svg id="f58-ps2" class="f58-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f58-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f58-pill3" class="f58-pill"><span id="f58-b3" class="f58-badge">3</span>Bạn được gì<svg id="f58-ps3" class="f58-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: one base model, two safety shells -->
+      <div class="f58-scene" id="f58-s1">
+        <div id="f58-k1"><svg class="f58-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>ĐIỂM THÚ VỊ</span></div>
+
+        <svg class="f58-shell" id="f58-shL" viewBox="0 0 440 440"><path pathLength="1" d="M 220 44 C 318 42, 398 124, 396 222 C 394 318, 316 398, 218 396 C 122 395, 43 316, 45 219 C 47 124, 126 47, 232 46"/></svg>
+        <svg class="f58-shell" id="f58-shR" viewBox="0 0 440 440"><path pathLength="1" d="M 220 30 C 326 28, 412 116, 410 222 C 408 326, 324 412, 218 410 C 114 409, 29 324, 31 218 C 33 116, 118 33, 238 32"/></svg>
+
+        <div class="f58-core" id="f58-coreA"><svg class="f58-spark f58-cs" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span class="f58-core-t">model nền</span></div>
+        <div class="f58-core" id="f58-coreB"><svg class="f58-spark f58-cs" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span class="f58-core-t" id="f58-coreB-t">model nền</span></div>
+
+        <div class="f58-lab" id="f58-labL">Fable 5</div>
+        <div class="f58-lab" id="f58-labR">Mythos 5</div>
+
+        <div id="f58-key"><span class="f58-w" id="f58-kw1">lớp</span><span class="f58-w" id="f58-kw2">an</span><span class="f58-w" id="f58-kw3">toàn</span></div>
+        <svg id="f58-key-ul" viewBox="0 0 360 30"><path pathLength="1" d="M 6 16 C 70 8, 150 24, 220 14 S 320 10, 354 18"/></svg>
+      </div>
+
+      <!-- Scene 2: first time, for everyone -->
+      <div class="f58-scene" id="f58-s2">
+        <div id="f58-k2"><svg class="f58-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>LẦN ĐẦU</span></div>
+        <div id="f58-chip"><span>model</span><span class="f58-tier">mạnh nhất</span></div>
+        <svg id="f58-arrow" viewBox="0 0 120 150"><path pathLength="1" d="M 60 6 C 48 40, 74 80, 60 138 M 38 112 L 60 140 L 84 114"/></svg>
+        <div id="f58-phrase"><span class="f58-w" id="f58-pw1">người</span><span class="f58-w" id="f58-pw2">dùng</span><span class="f58-w f58-hot" id="f58-pw3">phổ</span><span class="f58-w f58-hot" id="f58-pw4">thông</span><svg class="f58-spark" id="f58-pspark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="58-cung-mot-model-khac-lop-an-toan"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light listed slots on their cue (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f58-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f58-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f58-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(2, 0.5);
+      lightRail(3, 6.5);
+
+      // ---- Scene 1 (0–6.15): one base model splits into two safety shells ----
+      var s1 = q("#f58-s1");
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.02, duration: 5.3, ease: "none" }, 0.3); // slow push-in
+      tl.fromTo(q("#f58-k1"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.31);
+
+      // "cùng một model nền": the cream core appears (both copies stacked)
+      var cores = [q("#f58-coreA"), q("#f58-coreB")];
+      tl.fromTo(cores, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 1.84);
+      tl.fromTo(qa(".f58-cs"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 2.0);
+      tl.fromTo(qa(".f58-core-t"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.22);
+      // "khác nhau": a small breath on the core
+      tl.to(cores, { scale: 1.05, duration: 0.3, ease: "power2.inOut" }, 3.62);
+      tl.to(cores, { scale: 1, duration: 0.3, ease: "power2.inOut" }, 3.92);
+
+      // "lớp" 4.16: the core duplicates and the copies slide apart
+      tl.to(q("#f58-coreA"), { x: -450, duration: 0.5, ease: "power2.inOut" }, 4.16);
+      tl.to(q("#f58-coreB"), { x: 450, duration: 0.5, ease: "power2.inOut" }, 4.16);
+
+      // "an toàn": hand-drawn shells wrap each copy
+      tl.fromTo(q("#f58-shL path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 4.4);
+      tl.fromTo(q("#f58-shR path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 4.56);
+      tl.fromTo(q("#f58-labL"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 4.7);
+      tl.fromTo(q("#f58-labR"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 4.86);
+
+      // key text between the shells
+      tl.fromTo(q("#f58-kw1"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.2);
+      tl.fromTo(q("#f58-kw2"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.4);
+      tl.fromTo(q("#f58-kw3"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.56);
+      tl.fromTo(q("#f58-key-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 5.1);
+
+      // within-frame scene swap
+      tl.to(s1, { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in" }, 5.85);
+
+      // ---- Scene 2 (6.15–10.64): kinetic payoff ----
+      var s2 = q("#f58-s2");
+      tl.fromTo(s2, { scale: 1 }, { scale: 1.02, duration: 4.4, ease: "none" }, 6.2); // slow drift under the build
+      tl.fromTo(q("#f58-k2"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.49);
+      tl.fromTo(q("#f58-k2 .f58-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 7.49);
+      tl.fromTo(q("#f58-chip"), { opacity: 0, y: 30, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 8.16);
+      tl.fromTo(q("#f58-chip .f58-tier"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 8.5);
+      // "đến tay": the arrow hands it down
+      tl.fromTo(q("#f58-arrow path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 8.86);
+      // "người dùng phổ thông" word by word
+      var pw = [["#f58-pw1", 9.16], ["#f58-pw2", 9.32], ["#f58-pw3", 9.48], ["#f58-pw4", 9.62]];
+      pw.forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f58-pspark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 9.82);
+      // hold
+
+      tl.to({}, { duration: 10.644 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["58-cung-mot-model-khac-lop-an-toan"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,349 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f39-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f39-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f39- */
+    .f39-abs { position: absolute; }
+    .f39-spark line { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
+
+    /* ---------- scene 1: MINH HỌA browser page + side panel ---------- */
+    #f39-s1 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f39-kicker-row {
+      position: absolute; left: 40px; top: 64px; height: 40px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #f39-kicker-spark { width: 24px; height: 24px; display: block; }
+    .f39-minh-hoa-kicker {
+      font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 28px;
+      letter-spacing: .14em; color: var(--muted); line-height: 40px; white-space: nowrap;
+    }
+    #f39-viewport {
+      position: absolute; left: 40px; top: 120px; width: 1680px; height: 680px;
+      overflow: hidden; border-radius: 16px; box-sizing: border-box;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f39-mock { position: absolute; left: 0; top: 0; width: 1680px; height: 680px; }
+
+    /* the web page (left ~65 %) */
+    #f39-page {
+      left: 24px; top: 24px; width: 1060px; height: 632px; border-radius: 12px;
+      background: #262523; overflow: hidden;
+    }
+    .f39-bar { position: absolute; border-radius: 8px; background: rgba(154,150,140,.26); }
+    #f39-img {
+      left: 40px; top: 210px; width: 480px; height: 382px; border-radius: 12px;
+      background: rgba(154,150,140,.12);
+    }
+    #f39-img svg { position: absolute; left: 0; top: 0; width: 480px; height: 382px; }
+    #f39-card {
+      left: 560px; top: 200px; width: 460px; height: 392px; border-radius: 14px;
+      background: #2E2D2A; border: 1px solid rgba(240,238,230,.10); box-sizing: border-box;
+    }
+    .f39-field {
+      position: absolute; left: 40px; width: 380px; border-radius: 10px; box-sizing: border-box;
+      border: 2px solid rgba(154,150,140,.40); background: #232220; overflow: hidden;
+    }
+    #f39-field-1 { top: 60px; height: 64px; }
+    #f39-field-2 { top: 156px; height: 48px; }
+    #f39-field-3 { top: 222px; height: 48px; }
+    .f39-fill {
+      position: absolute; left: 20px; height: 10px; border-radius: 5px; background: var(--ink);
+    }
+    #f39-type { top: 25px; width: 240px; }
+    #f39-caret { position: absolute; left: 20px; top: 16px; width: 3px; height: 30px; background: var(--ink); opacity: 0; }
+    #f39-fill-2 { top: 17px; width: 300px; }
+    #f39-fill-3 { top: 17px; width: 210px; }
+    #f39-btn {
+      left: 40px; top: 300px; width: 200px; height: 60px; border-radius: 30px;
+      background: rgba(154,150,140,.42);
+    }
+    #f39-btn-bar { position: absolute; left: 60px; top: 25px; width: 80px; height: 10px; border-radius: 5px; background: rgba(240,238,230,.75); }
+    #f39-ripple {
+      left: 20px; top: 280px; width: 240px; height: 100px; border-radius: 50px; box-sizing: border-box;
+      border: 3px solid var(--cyan); opacity: 0;
+    }
+    #f39-scan {
+      position: absolute; left: 0; top: 0; width: 1060px; height: 90px; opacity: 0;
+      background: linear-gradient(to bottom, rgba(217,119,87,0) 0%, rgba(217,119,87,.16) 85%, rgba(217,119,87,.9) 97%, rgba(217,119,87,0) 100%);
+    }
+
+    /* the assistant side panel (right ~35 %) */
+    #f39-panel {
+      left: 1108px; top: 24px; width: 548px; height: 632px; border-radius: 12px;
+      background: #33312E; border: 1px solid rgba(240,238,230,.10); box-sizing: border-box;
+    }
+    #f39-panel-head {
+      position: absolute; left: 0; top: 0; width: 546px; height: 88px;
+      border-bottom: 1px solid rgba(240,238,230,.10);
+    }
+    #f39-head-text {
+      position: absolute; left: 76px; top: 22px; height: 44px; line-height: 44px;
+      font-weight: 600; font-size: 34px; color: var(--ink); white-space: nowrap;
+    }
+    .f39-w { display: inline-block; opacity: 0; }
+    #f39-see {
+      position: absolute; left: 24px; top: 116px; height: 64px; padding: 0 24px;
+      border-radius: 16px; background: rgba(154,150,140,.18);
+      font-weight: 600; font-size: 34px; line-height: 64px; color: var(--ink); white-space: nowrap;
+    }
+    .f39-log {
+      position: absolute; left: 24px; width: 498px; height: 64px; border-radius: 12px;
+      background: #3B3935; opacity: 0;
+    }
+    .f39-log-dot { position: absolute; left: 22px; top: 24px; width: 16px; height: 16px; border-radius: 8px; background: var(--cyan); }
+    .f39-log-text {
+      position: absolute; left: 56px; top: 0; line-height: 64px;
+      font-weight: 600; font-size: 32px; color: var(--ink); white-space: nowrap;
+    }
+    #f39-log-1 { top: 212px; }
+    #f39-log-2 { top: 292px; }
+    #f39-log-3 { top: 372px; }
+    #f39-input { left: 24px; top: 552px; width: 498px; height: 56px; border-radius: 28px; background: rgba(154,150,140,.16); }
+
+    /* the spark pointer (mock coordinates) */
+    #f39-ptr { position: absolute; left: 0; top: 0; width: 40px; height: 40px; }
+    #f39-ptr-hop { width: 40px; height: 40px; }
+    #f39-ptr-svg { width: 40px; height: 40px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    /* ---------- scene 2: signed-in session card ---------- */
+    #f39-s2 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f39-login {
+      position: absolute; left: 380px; top: 230px; width: 1000px; height: 360px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f39-avatar {
+      left: 70px; top: 100px; width: 160px; height: 160px; border-radius: 80px;
+      background: #3B3935; overflow: hidden;
+    }
+    #f39-avatar svg { width: 160px; height: 160px; display: block; }
+    #f39-key {
+      position: absolute; left: 290px; top: 64px; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 64px; line-height: 1.12; color: var(--ink);
+    }
+    #f39-underline { position: absolute; left: 284px; top: 144px; width: 560px; height: 28px; overflow: visible; }
+    #f39-underline path { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+    #f39-pass {
+      left: 290px; top: 204px; width: 420px; height: 72px; border-radius: 12px; box-sizing: border-box;
+      border: 2px solid rgba(154,150,140,.40); background: #232220;
+      display: flex; align-items: center; gap: 16px; padding-left: 28px;
+    }
+    .f39-dot { width: 18px; height: 18px; border-radius: 9px; background: var(--ink); opacity: 0; display: block; flex: 0 0 18px; }
+    #f39-check { position: absolute; left: 740px; top: 204px; width: 72px; height: 72px; overflow: visible; }
+    #f39-check circle { fill: rgba(143,184,168,.14); stroke: var(--cyan); stroke-width: 3.5; }
+    #f39-check path { fill: none; stroke: var(--cyan); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+    #f39-s2-spark { position: absolute; left: 356px; top: 206px; width: 48px; height: 48px; }
+    #f39-s2-spark-svg { width: 48px; height: 48px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+  </style>
+
+  <div id="root" data-composition-id="39-claude-trong-trinh-duyet" data-width="1920" data-height="1080" data-duration="11.327">
+    <div id="f39-ground" class="clip" data-start="0" data-duration="11.327" data-track-index="0"></div>
+    <div id="f39-stage" class="clip" data-start="0" data-duration="11.327" data-track-index="1">
+
+      <!-- Scene 1: MINH HỌA page + side panel, the spark is the pointer -->
+      <div id="f39-s1">
+        <div id="f39-kicker-row">
+          <svg id="f39-kicker-spark" class="f39-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+          <div class="f39-minh-hoa-kicker minh-hoa-kicker">MINH HỌA</div>
+        </div>
+
+        <div id="f39-viewport">
+          <div id="f39-mock">
+            <div id="f39-page" class="f39-abs">
+              <div id="f39-content">
+                <div class="f39-bar f39-ln" style="left:40px;top:40px;width:480px;height:40px;background:rgba(154,150,140,.34);"></div>
+                <div class="f39-bar f39-ln" style="left:40px;top:108px;width:900px;height:14px;"></div>
+                <div class="f39-bar f39-ln" style="left:40px;top:136px;width:840px;height:14px;"></div>
+                <div class="f39-bar f39-ln" style="left:40px;top:164px;width:560px;height:14px;"></div>
+                <div id="f39-img" class="f39-abs f39-ln">
+                  <svg viewBox="0 0 480 382"><circle cx="360" cy="100" r="36" fill="rgba(154,150,140,.30)"/><path d="M0 382 L 150 190 L 250 300 L 330 230 L 480 382 Z" fill="rgba(154,150,140,.22)"/></svg>
+                </div>
+                <div id="f39-card" class="f39-abs f39-ln">
+                  <div class="f39-bar" style="left:40px;top:30px;width:160px;height:12px;"></div>
+                  <div id="f39-field-1" class="f39-field">
+                    <div id="f39-type" class="f39-fill"></div>
+                    <div id="f39-caret"></div>
+                  </div>
+                  <div class="f39-bar" style="left:40px;top:138px;width:120px;height:10px;"></div>
+                  <div id="f39-field-2" class="f39-field"><div id="f39-fill-2" class="f39-fill"></div></div>
+                  <div id="f39-field-3" class="f39-field"><div id="f39-fill-3" class="f39-fill"></div></div>
+                  <div id="f39-ripple" class="f39-abs"></div>
+                  <div id="f39-btn" class="f39-abs"><div id="f39-btn-bar"></div></div>
+                </div>
+              </div>
+              <div id="f39-scan"></div>
+            </div>
+
+            <div id="f39-panel" class="f39-abs">
+              <div id="f39-panel-head">
+                <div id="f39-head-text"><span id="f39-h1" class="f39-w">Claude</span> <span id="f39-h2" class="f39-w">in</span> <span id="f39-h3" class="f39-w">Chrome</span></div>
+              </div>
+              <div id="f39-see"><span id="f39-s-1" class="f39-w">nhìn</span> <span id="f39-s-2" class="f39-w">thấy</span> <span id="f39-s-3" class="f39-w">trang</span></div>
+              <div id="f39-log-1" class="f39-log"><div class="f39-log-dot"></div><div class="f39-log-text">bấm</div></div>
+              <div id="f39-log-2" class="f39-log"><div class="f39-log-dot"></div><div class="f39-log-text">gõ</div></div>
+              <div id="f39-log-3" class="f39-log"><div class="f39-log-dot"></div><div class="f39-log-text">điền form</div></div>
+              <div id="f39-input" class="f39-abs"></div>
+            </div>
+
+            <div id="f39-ptr">
+              <div id="f39-ptr-hop">
+                <svg id="f39-ptr-svg" class="f39-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: the existing sign-in, reused -->
+      <div id="f39-s2">
+        <div id="f39-login">
+          <div id="f39-avatar" class="f39-abs">
+            <svg viewBox="0 0 160 160"><circle cx="80" cy="62" r="28" fill="rgba(240,238,230,.55)"/><path d="M26 160 C 30 112, 130 112, 134 160 Z" fill="rgba(240,238,230,.55)"/></svg>
+          </div>
+          <div id="f39-key"><span id="f39-k1" class="f39-w">đăng</span> <span id="f39-k2" class="f39-w">nhập</span> <span id="f39-k3" class="f39-w">có</span> <span id="f39-k4" class="f39-w">sẵn</span></div>
+          <svg id="f39-underline" viewBox="0 0 560 28">
+            <path id="f39-underline-path" d="M4 16 C 90 6, 190 22, 300 12 S 470 8, 552 15" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          </svg>
+          <div id="f39-pass" class="f39-abs">
+            <span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span><span class="f39-dot"></span>
+          </div>
+          <svg id="f39-check" viewBox="0 0 72 72">
+            <circle id="f39-check-ring" cx="36" cy="36" r="32"/>
+            <path id="f39-check-tick" d="M20 37 L 31 48 L 53 25" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          </svg>
+        </div>
+        <div id="f39-s2-spark">
+          <svg id="f39-s2-spark-svg" class="f39-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var R = '[data-composition-id="39-claude-trong-trinh-duyet"] ';
+      function q(s) { return R + s; }
+
+      // pointer targets, top-left of the 40px spark in mock coordinates
+      var HOME = { x: 1130, y: 46 };    // panel header, left of the heading
+      var BTN = { x: 704, y: 534 };     // centre of the button
+      var TXT = { x: 666, y: 298 };     // start of the text field
+      var TXT_END = { x: 906, y: 298 }; // end of the typed line
+      var F2 = { x: 944, y: 380 };      // form bar 2
+      var F3 = { x: 944, y: 446 };      // form bar 3
+
+      // initial states (before the timeline, never tl.set at 0)
+      gsap.set(q('#f39-ptr'), { x: HOME.x, y: HOME.y });
+      gsap.set([q('#f39-ptr-svg'), q('#f39-kicker-spark'), q('#f39-s2-spark-svg')], { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set([q('#f39-type'), q('#f39-fill-2'), q('#f39-fill-3')], { scaleX: 0, transformOrigin: '0% 50%' });
+      gsap.set(q('#f39-ripple'), { transformOrigin: '50% 50%' });
+      gsap.set(q('#f39-mock'), { transformOrigin: '50% 50%' });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0–7.27): the page + side panel
+      tl.fromTo(q('#f39-mock'), { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }, 0);
+      tl.fromTo(q('#f39-kicker-spark'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: 'power3.out' }, 0.1);
+
+      // "Claude in Chrome" (0.29 / 0.65 / 0.81): panel slides in, heading word by word, spark wakes in the panel
+      tl.fromTo(q('#f39-panel'), { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }, 0.29);
+      tl.fromTo(q('#f39-ptr-svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: 'power3.out' }, 0.29);
+      tl.fromTo(q('#f39-h1'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.29);
+      tl.fromTo(q('#f39-h2'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 0.65);
+      tl.fromTo(q('#f39-h3'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' }, 0.81);
+
+      // "tiện ích mở rộng cho trình duyệt" (1.72–2.9): the page content loads in
+      tl.fromTo(q('#f39-content'), { scale: 0.985 }, { scale: 1, duration: 2.4, ease: 'none' }, 1.5);
+      tl.fromTo(q('.f39-ln'), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out', stagger: 0.12 }, 2.26);
+
+      // "nhìn thấy trang" (3.84 / 4.02 / 4.16): scan line sweeps the page, the panel reads it
+      tl.fromTo(q('#f39-scan'), { opacity: 1, y: -90 }, { opacity: 1, y: 632, duration: 0.9, ease: 'power1.inOut', immediateRender: false }, 3.84);
+      tl.to(q('#f39-scan'), { opacity: 0, duration: 0.15, ease: 'none' }, 4.74);
+      tl.fromTo(q('#f39-s-1'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 3.84);
+      tl.fromTo(q('#f39-s-2'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 4.02);
+      tl.fromTo(q('#f39-s-3'), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, 4.16);
+
+      // "rồi bấm" (5.05 → 5.23): the spark leaves the panel and lands on the button
+      tl.to(q('#f39-ptr'), { x: BTN.x, y: BTN.y, duration: 0.2, ease: 'power2.inOut' }, 5.03);
+      tl.to(q('#f39-ptr-hop'), { y: -60, duration: 0.1, ease: 'power2.out' }, 5.03);
+      tl.to(q('#f39-ptr-hop'), { y: 0, duration: 0.1, ease: 'power2.in' }, 5.13);
+      tl.to(q('#f39-btn'), { scale: 0.92, duration: 0.08, ease: 'power2.in' }, 5.23);
+      tl.to(q('#f39-btn'), { scale: 1, backgroundColor: 'rgba(143,184,168,.55)', duration: 0.25, ease: 'power3.out' }, 5.31);
+      tl.fromTo(q('#f39-ripple'), { opacity: 1, scale: 0.8 }, { opacity: 0, scale: 1.2, duration: 0.5, ease: 'power2.out' }, 5.23);
+      tl.fromTo(q('#f39-log-1'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power3.out' }, 5.23);
+
+      // "gõ" (5.79): hop to the text field, a line types on behind the spark
+      tl.to(q('#f39-ptr'), { x: TXT.x, y: TXT.y, duration: 0.22, ease: 'power2.inOut' }, 5.57);
+      tl.to(q('#f39-ptr-hop'), { y: -50, duration: 0.11, ease: 'power2.out' }, 5.57);
+      tl.to(q('#f39-ptr-hop'), { y: 0, duration: 0.11, ease: 'power2.in' }, 5.68);
+      tl.fromTo(q('#f39-caret'), { opacity: 0, x: 0 }, { opacity: 1, x: 240, duration: 0.32, ease: 'none' }, 5.79);
+      tl.to(q('#f39-type'), { scaleX: 1, duration: 0.32, ease: 'none' }, 5.79);
+      tl.to(q('#f39-ptr'), { x: TXT_END.x, y: TXT_END.y, duration: 0.32, ease: 'none' }, 5.79);
+      tl.fromTo(q('#f39-log-2'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power3.out' }, 5.79);
+
+      // "điền form" (6.17 / 6.35): the spark fills both form bars
+      tl.to(q('#f39-ptr'), { x: F2.x, y: F2.y, duration: 0.06, ease: 'power2.inOut' }, 6.11);
+      tl.to(q('#f39-fill-2'), { scaleX: 1, duration: 0.2, ease: 'power2.out' }, 6.17);
+      tl.to(q('#f39-ptr'), { x: F3.x, y: F3.y, duration: 0.16, ease: 'power2.inOut' }, 6.2);
+      tl.to(q('#f39-fill-3'), { scaleX: 1, duration: 0.2, ease: 'power2.out' }, 6.35);
+      tl.fromTo(q('#f39-log-3'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.35, ease: 'power3.out' }, 6.35);
+      tl.to(q('#f39-ptr-svg'), { rotation: 90, duration: 0.5, ease: 'power2.out' }, 6.5);
+
+      // ---- shot change (7.27): the mock clears, a centred sign-in card takes over
+      tl.to(q('#f39-s1'), { opacity: 0, scale: 0.94, filter: 'blur(8px)', duration: 0.35, ease: 'power2.in' }, 7.27);
+      tl.fromTo(q('#f39-s2'), { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out' }, 7.38);
+
+      // ---- Scene 2 (7.27–10.83): "đăng nhập có sẵn"
+      tl.fromTo(q('#f39-s2-spark-svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.35, ease: 'power3.out' }, 7.43);
+      tl.fromTo(q('.f39-dot'), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.2, ease: 'power3.out', stagger: 0.04 }, 7.95);
+      tl.fromTo(q('#f39-k1'), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 8.3);
+      tl.fromTo(q('#f39-k2'), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 8.44);
+      tl.fromTo(q('#f39-k3'), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 8.8);
+      tl.fromTo(q('#f39-k4'), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 9.0);
+      tl.fromTo(q('#f39-check'), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power3.out' }, 9.0);
+      tl.fromTo(q('#f39-check-tick'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.3, ease: 'none' }, 9.1);
+      tl.fromTo(q('#f39-underline-path'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.5, ease: 'none' }, 9.14);
+
+      // hold with a quiet drift
+      tl.fromTo(q('#f39-login'), { scale: 1 }, { scale: 1.015, duration: 1.1, ease: 'none', immediateRender: false }, 9.7);
+
+      tl.to({}, { duration: 10.827 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["39-claude-trong-trinh-duyet"] = tl;
+    })();
+  </script>
+</template>

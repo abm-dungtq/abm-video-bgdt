@@ -1,0 +1,316 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f76-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(43, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f76-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f76- */
+    #f76-view {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    #f76-cam {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 1460px 410px; /* centre of the third slot */
+    }
+    .f76-slot {
+      position: absolute;
+      top: 120px;
+      width: 520px;
+      height: 580px;
+      border-radius: 16px;
+      border: 2px dashed rgba(240,238,230,.14);
+      box-sizing: border-box;
+    }
+    .f76-card {
+      position: absolute;
+      top: 120px;
+      width: 520px;
+      height: 580px;
+      box-sizing: border-box;
+      padding: 44px 44px 48px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      overflow: hidden;
+    }
+    #f76-c1, #f76-s1 { left: 40px; }
+    #f76-c2, #f76-s2 { left: 620px; }
+    #f76-c3, #f76-s3 { left: 1200px; }
+    #f76-c3 { border-color: rgba(229,72,77,.45); }
+    #f76-edge3 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 10px;
+      background: var(--warn);
+      transform-origin: 50% 0%;
+      opacity: 0;
+    }
+    .f76-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 64px;
+    }
+    .f76-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid rgba(240,238,230,.30);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 28px;
+      line-height: 1;
+      color: var(--muted);
+    }
+    .f76-tick {
+      width: 64px;
+      height: 64px;
+      opacity: 0;
+    }
+    .f76-icon {
+      width: 140px;
+      height: 140px;
+      margin-top: 36px;
+    }
+    .f76-icon * {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f76-title {
+      margin-top: auto;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 60px;
+      line-height: 1.12;
+      white-space: nowrap;
+    }
+    .f76-sub {
+      margin-top: 14px;
+      font-weight: 500;
+      font-size: 32px;
+      line-height: 1.35;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f76-w {
+      display: inline-block;
+      opacity: 0;
+    }
+    #f76-warnbadge { opacity: 0; }
+    #f76-warnbadge path.f76-tri { fill: var(--surface); stroke: var(--warn); stroke-width: 4; stroke-dasharray: none; stroke-dashoffset: 0; }
+    #f76-warnbadge .f76-bang { stroke: var(--warn); stroke-width: 5; stroke-dasharray: none; stroke-dashoffset: 0; }
+    #f76-warnbadge .f76-dot { fill: var(--warn); stroke: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+    #f76-spark {
+      position: absolute;
+      left: 278px;   /* card-1 centre (300) minus half the spark */
+      top: 98px;     /* centred on the card's top edge */
+      width: 44px;
+      height: 44px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+  </style>
+
+  <div id="root" data-composition-id="76-ba-thoi-quen-an-toan" data-width="1920" data-height="1080" data-duration="10.763">
+    <div id="f76-ground" class="clip" data-start="0" data-duration="10.763" data-track-index="0"></div>
+    <div id="f76-stage" class="clip" data-start="0" data-duration="10.763" data-track-index="1">
+      <div id="f76-view">
+        <div id="f76-cam">
+          <!-- empty triptych slots -->
+          <div id="f76-s1" class="f76-slot"></div>
+          <div id="f76-s2" class="f76-slot"></div>
+          <div id="f76-s3" class="f76-slot"></div>
+
+          <!-- card 1: kiểm tra lại -->
+          <div id="f76-c1" class="f76-card">
+            <div class="f76-top">
+              <span class="f76-badge">1</span>
+              <svg id="f76-tick1" class="f76-tick" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="29" fill="rgba(143,184,168,.16)" stroke="#8FB8A8" stroke-width="3"></circle>
+                <path class="f76-check" d="M19 33 L28 42 L46 23" pathLength="1" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"></path>
+              </svg>
+            </div>
+            <svg id="f76-icon1" class="f76-icon" viewBox="0 0 120 120">
+              <rect x="14" y="10" width="64" height="86" rx="8" pathLength="1"></rect>
+              <path d="M28 32 H64" pathLength="1"></path>
+              <path d="M28 48 H58" pathLength="1"></path>
+              <path d="M28 64 H46" pathLength="1"></path>
+              <circle cx="78" cy="76" r="20" pathLength="1"></circle>
+              <path d="M92 90 L110 108" pathLength="1"></path>
+            </svg>
+            <div class="f76-title"><span id="f76-t1a" class="f76-w">Kiểm</span> <span id="f76-t1b" class="f76-w">tra</span> <span id="f76-t1c" class="f76-w">lại</span></div>
+            <div class="f76-sub"><span id="f76-u1a" class="f76-w">thông</span> <span id="f76-u1b" class="f76-w">tin</span> <span id="f76-u1c" class="f76-w">quan</span> <span id="f76-u1d" class="f76-w">trọng</span></div>
+          </div>
+
+          <!-- card 2: ẩn danh -->
+          <div id="f76-c2" class="f76-card">
+            <div class="f76-top">
+              <span class="f76-badge">2</span>
+              <svg id="f76-tick2" class="f76-tick" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="29" fill="rgba(143,184,168,.16)" stroke="#8FB8A8" stroke-width="3"></circle>
+                <path class="f76-check" d="M19 33 L28 42 L46 23" pathLength="1" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"></path>
+              </svg>
+            </div>
+            <svg id="f76-icon2" class="f76-icon" viewBox="0 0 120 120">
+              <path d="M10 60 Q60 16 110 60 Q60 104 10 60 Z" pathLength="1"></path>
+              <circle cx="60" cy="60" r="16" pathLength="1"></circle>
+              <path d="M22 102 L98 18" pathLength="1"></path>
+            </svg>
+            <div class="f76-title"><span id="f76-t2a" class="f76-w">Ẩn</span> <span id="f76-t2b" class="f76-w">danh</span></div>
+            <div class="f76-sub"><span id="f76-u2a" class="f76-w">nội</span> <span id="f76-u2b" class="f76-w">dung</span> <span id="f76-u2c" class="f76-w">riêng</span> <span id="f76-u2d" class="f76-w">tư</span></div>
+          </div>
+
+          <!-- card 3: cẩn thận · trang web lạ (warning edge) -->
+          <div id="f76-c3" class="f76-card">
+            <div id="f76-edge3"></div>
+            <div class="f76-top">
+              <span class="f76-badge">3</span>
+              <svg id="f76-tick3" class="f76-tick" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="29" fill="rgba(143,184,168,.16)" stroke="#8FB8A8" stroke-width="3"></circle>
+                <path class="f76-check" d="M19 33 L28 42 L46 23" pathLength="1" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1" stroke-dashoffset="1"></path>
+              </svg>
+            </div>
+            <svg id="f76-icon3" class="f76-icon" viewBox="0 0 120 120">
+              <circle cx="54" cy="58" r="42" pathLength="1"></circle>
+              <path d="M54 16 Q28 58 54 100 Q80 58 54 16" pathLength="1"></path>
+              <path d="M12 58 H96" pathLength="1"></path>
+              <path d="M20 36 H88" pathLength="1"></path>
+              <path d="M20 80 H88" pathLength="1"></path>
+              <g id="f76-warnbadge">
+                <path class="f76-tri" d="M92 66 L116 110 L68 110 Z"></path>
+                <path class="f76-bang" d="M92 80 V94"></path>
+                <circle class="f76-dot" cx="92" cy="102" r="3"></circle>
+              </g>
+            </svg>
+            <div class="f76-title"><span id="f76-t3a" class="f76-w">Cẩn</span> <span id="f76-t3b" class="f76-w">thận</span></div>
+            <div class="f76-sub"><span id="f76-u3a" class="f76-w">trang</span> <span id="f76-u3b" class="f76-w">web</span> <span id="f76-u3c" class="f76-w">lạ</span></div>
+          </div>
+
+          <!-- the spark: marks the habit being spoken -->
+          <svg id="f76-spark" viewBox="0 0 44 44">
+            <g stroke="#D97757" stroke-width="4.5" stroke-linecap="round">
+              <path d="M22 3 V41"></path>
+              <path d="M3 22 H41"></path>
+              <path d="M8.6 8.6 L35.4 35.4"></path>
+              <path d="M35.4 8.6 L8.6 35.4"></path>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var q = function (s) { return document.querySelector(s); };
+      var qa = function (s) { return document.querySelectorAll(s); };
+
+      // word-on-cue helper: each word fades up at its spoken start time
+      function word(id, t) {
+        tl.fromTo(q(id), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, t);
+      }
+      // card assemble: short slide + scale into its slot
+      function land(id, t) {
+        tl.fromTo(q(id), { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, t);
+      }
+      // line-icon draw-on
+      function draw(id, t, dur) {
+        tl.fromTo(qa(id + " > [pathLength]"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: dur, ease: "power2.out", stagger: 0.08 }, t);
+      }
+      // sage tick: ring pops, check draws
+      function tick(id, t) {
+        tl.fromTo(q(id), { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, t);
+        tl.fromTo(q(id + " .f76-check"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, t + 0.12);
+      }
+
+      // ---- Scene 1 (0 – 6.51 s): triptych, cards 1 and 2 tick in ----
+      land("#f76-c1", 0.3);                                   // "Hãy" 0.29
+      tl.fromTo(q("#f76-spark"), { opacity: 0, scale: 0, rotation: -20, transformOrigin: "50% 50%" },
+        { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 0.45);
+      word("#f76-t1a", 0.45); word("#f76-t1b", 0.65); word("#f76-t1c", 0.82);
+      draw("#f76-icon1", 0.5, 0.6);
+      word("#f76-u1a", 1.00); word("#f76-u1b", 1.18); word("#f76-u1c", 1.40); word("#f76-u1d", 1.58);
+      tick("#f76-tick1", 2.3);                                // after "dùng."
+
+      land("#f76-c2", 3.05);                                  // "Dùng chat"
+      tl.to(q("#f76-spark"), { x: 580, rotation: 90, duration: 0.4, ease: "power2.inOut" }, 3.2);
+      word("#f76-t2a", 3.49); word("#f76-t2b", 3.65);
+      draw("#f76-icon2", 3.6, 0.6);
+      word("#f76-u2a", 4.88); word("#f76-u2b", 5.04); word("#f76-u2c", 5.22); word("#f76-u2d", 5.36);
+      tick("#f76-tick2", 5.55);
+
+      // ---- Scene 2 (6.51 – 10.26 s): tight on slot 3, flip-in, zoom-out reveal ----
+      tl.to(q("#f76-cam"), { x: -580, scale: 1.25, duration: 0.4, ease: "power2.inOut" }, 5.95);
+      tl.to([q("#f76-c1"), q("#f76-c2")], { opacity: 0.35, duration: 0.4, ease: "power2.inOut" }, 5.95);
+      tl.to(q("#f76-spark"), { x: 1160, rotation: 180, duration: 0.37, ease: "power2.inOut" }, 5.95);
+      // 2D flip (no CSS 3D): scaleX 0 -> 1
+      tl.fromTo(q("#f76-c3"), { opacity: 0, scaleX: 0, transformOrigin: "50% 50%" },
+        { opacity: 1, scaleX: 1, duration: 0.5, ease: "power3.out" }, 6.32);
+      word("#f76-t3a", 6.32); word("#f76-t3b", 6.50);
+      tl.fromTo(q("#f76-edge3"), { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: 0.4, ease: "power3.out" }, 6.55);
+      draw("#f76-icon3", 6.6, 0.6);
+      tl.fromTo(q("#f76-warnbadge"), { opacity: 0, scale: 0.5, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 6.95);
+
+      // one decelerating zoom-out reveals the finished row
+      tl.to(q("#f76-cam"), { x: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 7.4);
+      tl.to([q("#f76-c1"), q("#f76-c2")], { opacity: 1, duration: 0.6, ease: "power2.out" }, 7.4);
+      word("#f76-u3a", 8.07); word("#f76-u3b", 8.26); word("#f76-u3c", 8.42);
+      tick("#f76-tick3", 8.6);
+      // frame locks and holds to the end
+
+      tl.to({}, { duration: 10.263 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["76-ba-thoi-quen-an-toan"] = tl;
+    })();
+  </script>
+</template>

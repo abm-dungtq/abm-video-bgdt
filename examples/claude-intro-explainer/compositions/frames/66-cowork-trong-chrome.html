@@ -1,0 +1,380 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f66-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f66-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f66- */
+
+    /* ---------- analyze rail (resting position: canvas y 64–108, x from 560) ---------- */
+    #f66-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f66-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600; font-size: 26px; line-height: 42px;
+      text-align: center; white-space: nowrap;
+    }
+    .f66-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f66-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f66-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    /* ---------- shared spark ---------- */
+    .f66-spark line { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
+
+    /* ---------- scene 1: minh hoa browser mock ---------- */
+    #f66-s1 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f66-kicker-row {
+      position: absolute; left: 40px; top: 86px; height: 40px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #f66-kicker-spark { width: 24px; height: 24px; display: block; }
+    .f66-minh-hoa-kicker {
+      font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 28px;
+      letter-spacing: .14em; color: var(--muted); line-height: 40px;
+    }
+    #f66-viewport {
+      position: absolute; left: 40px; top: 136px; width: 1280px; height: 660px;
+      overflow: hidden; border-radius: 16px; box-sizing: border-box;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f66-mock { position: absolute; left: 0; top: 0; width: 1280px; height: 660px; }
+    .f66-abs { position: absolute; }
+    #f66-tabstrip { left: 0; top: 0; width: 1280px; height: 64px; background: #242321; }
+    .f66-tab {
+      top: 20px; width: 196px; height: 44px; border-radius: 12px 12px 0 0;
+      background: #34322F;
+    }
+    #f66-tab-1 { left: 20px; }
+    #f66-tab-2 { left: 232px; }
+    #f66-tab-3 { left: 444px; }
+    .f66-tab-dot { position: absolute; left: 18px; top: 14px; width: 16px; height: 16px; border-radius: 8px; background: rgba(154,150,140,.55); }
+    .f66-tab-bar { position: absolute; left: 44px; top: 18px; width: 110px; height: 8px; border-radius: 4px; background: rgba(154,150,140,.35); }
+    #f66-toolbar { left: 0; top: 64px; width: 1280px; height: 52px; background: #34322F; }
+    .f66-nav { top: 80px; width: 20px; height: 20px; border-radius: 10px; background: rgba(154,150,140,.45); }
+    #f66-address { left: 130px; top: 74px; width: 710px; height: 32px; border-radius: 16px; background: #262523; }
+    #f66-page { left: 20px; top: 132px; width: 836px; height: 508px; border-radius: 12px; background: #262523; }
+    .f66-block { background: rgba(154,150,140,.22); border-radius: 8px; }
+    #f66-panel {
+      left: 876px; top: 132px; width: 384px; height: 508px; border-radius: 12px;
+      background: #33312E; border: 1px solid rgba(240,238,230,.10); box-sizing: border-box;
+    }
+    #f66-panel-head {
+      position: absolute; left: 0; top: 0; width: 382px; height: 72px;
+      border-bottom: 1px solid rgba(240,238,230,.10);
+    }
+    #f66-head-ph { left: 24px; top: 28px; width: 200px; height: 16px; border-radius: 8px; background: rgba(154,150,140,.35); }
+    .f66-head-text {
+      position: absolute; left: 24px; top: 14px; height: 44px; line-height: 44px;
+      font-weight: 600; font-size: 30px; color: var(--ink); white-space: nowrap;
+      opacity: 0;
+    }
+    #f66-head-cowork {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 18px; border-radius: 22px; left: 20px;
+      border: 1px solid rgba(240,238,230,.35); box-sizing: border-box;
+    }
+    #f66-cowork-dot { width: 14px; height: 14px; border-radius: 7px; background: var(--cyan); display: block; }
+    .f66-bubble { position: absolute; border-radius: 14px; background: rgba(154,150,140,.20); }
+    .f66-task {
+      position: absolute; left: 24px; width: 334px; height: 44px; border-radius: 12px;
+      background: #3B3935; opacity: 0;
+    }
+    .f66-task-dot { position: absolute; left: 16px; top: 15px; width: 14px; height: 14px; border-radius: 7px; background: var(--cyan); }
+    .f66-task-bar { position: absolute; left: 44px; top: 18px; height: 8px; border-radius: 4px; background: rgba(154,150,140,.45); }
+    #f66-callout { position: absolute; left: 0; top: 0; width: 1280px; height: 660px; overflow: visible; }
+    #f66-callout-rect { fill: none; stroke: var(--gold); stroke-width: 3; }
+    #f66-hop { position: absolute; left: 100px; top: 24px; width: 36px; height: 36px; }
+    #f66-hop-svg { width: 36px; height: 36px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f66-tab-label {
+      position: absolute; left: 1372px; top: 146px; width: 380px;
+      font-weight: 600; font-size: 34px; line-height: 1.3; color: var(--ink); opacity: 0;
+      white-space: nowrap;
+    }
+    #f66-tab-underline { position: absolute; left: 1368px; top: 194px; width: 280px; height: 24px; overflow: visible; }
+    #f66-tab-underline path { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+
+    /* ---------- scene 2: journey strip ---------- */
+    #f66-s2 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f66-key {
+      position: absolute; left: 0; top: 110px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.1;
+      letter-spacing: -0.01em; color: var(--ink); white-space: nowrap;
+    }
+    .f66-key-word { display: inline-block; opacity: 0; }
+    #f66-strip { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f66-ghost { fill: none; stroke: rgba(154,150,140,.40); stroke-width: 3; stroke-dasharray: 2 14; stroke-linecap: round; }
+    #f66-trail { fill: none; stroke: var(--gold); stroke-width: 4; stroke-linecap: round; }
+    .f66-station {
+      position: absolute; top: 380px; width: 300px; height: 280px; box-sizing: border-box;
+      border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f66-station-1 { left: 150px; }
+    #f66-station-2 { left: 1310px; }
+    .f66-station-icon { position: absolute; left: 0; top: 34px; width: 300px; height: 140px; }
+    .f66-station-icon rect, .f66-station-icon path { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .f66-station-label {
+      position: absolute; left: 0; top: 196px; width: 300px; text-align: center;
+      font-weight: 600; font-size: 36px; line-height: 1.3; color: var(--ink); white-space: nowrap;
+    }
+    #f66-mover { position: absolute; left: 0; top: 0; width: 40px; height: 40px; }
+    #f66-mover-svg { width: 40px; height: 40px; display: block; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+  </style>
+
+  <div id="root" data-composition-id="66-cowork-trong-chrome" data-width="1920" data-height="1080" data-duration="10.234">
+    <div id="f66-ground" class="clip" data-start="0" data-duration="10.234" data-track-index="0"></div>
+    <div id="f66-stage" class="clip" data-start="0" data-duration="10.234" data-track-index="1">
+
+      <!-- analyze rail, resting position from frame 0 -->
+      <!-- RAIL SPEC copied from frame 44, resting geometry x 560–1628, y 64–108 -->
+      <div id="f66-rail">
+        <div id="f66-p1" class="f66-pill"><span id="f66-b1" class="f66-badge">1</span>Tính năng<svg id="f66-ps1" class="f66-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f66-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f66-p2" class="f66-pill"><span id="f66-b2" class="f66-badge">2</span>Vì sao nổi bật<svg id="f66-ps2" class="f66-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f66-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f66-p3" class="f66-pill"><span id="f66-b3" class="f66-badge">3</span>Bạn được gì<svg id="f66-ps3" class="f66-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: MINH HỌA browser mock with side panel -->
+      <div id="f66-s1">
+        <div id="f66-kicker-row">
+          <svg id="f66-kicker-spark" class="f66-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+          <div class="f66-minh-hoa-kicker minh-hoa-kicker">MINH HỌA</div>
+        </div>
+
+        <div id="f66-viewport">
+          <div id="f66-mock">
+            <div id="f66-tabstrip" class="f66-abs"></div>
+            <div id="f66-tab-1" class="f66-abs f66-tab"><div class="f66-tab-dot"></div><div class="f66-tab-bar"></div></div>
+            <div id="f66-tab-2" class="f66-abs f66-tab"><div class="f66-tab-dot"></div><div class="f66-tab-bar"></div></div>
+            <div id="f66-tab-3" class="f66-abs f66-tab"><div class="f66-tab-dot"></div><div class="f66-tab-bar"></div></div>
+            <div id="f66-toolbar" class="f66-abs"></div>
+            <div class="f66-abs f66-nav" style="left:24px;"></div>
+            <div class="f66-abs f66-nav" style="left:56px;"></div>
+            <div class="f66-abs f66-nav" style="left:88px;"></div>
+            <div id="f66-address" class="f66-abs"></div>
+
+            <div id="f66-page" class="f66-abs">
+              <div class="f66-abs f66-block" style="left:40px;top:40px;width:420px;height:36px;"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:96px;width:300px;height:16px;"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:144px;width:756px;height:180px;background:rgba(154,150,140,.14);"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:352px;width:756px;height:14px;"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:382px;width:700px;height:14px;"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:412px;width:560px;height:14px;"></div>
+              <div class="f66-abs f66-block" style="left:40px;top:452px;width:240px;height:14px;"></div>
+            </div>
+
+            <div id="f66-panel" class="f66-abs">
+              <div id="f66-panel-head">
+                <div id="f66-head-ph" class="f66-abs"></div>
+                <div id="f66-head-chrome" class="f66-head-text">Claude in Chrome</div>
+                <div id="f66-head-cowork" class="f66-head-text"><span id="f66-cowork-dot"></span><span>Cowork</span></div>
+              </div>
+              <div class="f66-bubble" style="left:120px;top:100px;width:238px;height:56px;"></div>
+              <div class="f66-bubble" style="left:24px;top:176px;width:280px;height:84px;background:rgba(154,150,140,.13);"></div>
+              <div id="f66-task-1" class="f66-task" style="top:284px;"><div class="f66-task-dot"></div><div class="f66-task-bar" style="width:220px;"></div></div>
+              <div id="f66-task-2" class="f66-task" style="top:340px;"><div class="f66-task-dot"></div><div class="f66-task-bar" style="width:180px;"></div></div>
+              <div id="f66-task-3" class="f66-task" style="top:396px;"><div class="f66-task-dot"></div><div class="f66-task-bar" style="width:250px;"></div></div>
+              <div class="f66-abs f66-block" style="left:24px;top:452px;width:334px;height:36px;border-radius:18px;background:rgba(154,150,140,.16);"></div>
+            </div>
+
+            <svg id="f66-callout" viewBox="0 0 1280 660">
+              <rect id="f66-callout-rect" x="868" y="126" width="400" height="518" rx="14" ry="14" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+            </svg>
+
+            <div id="f66-hop">
+              <svg id="f66-hop-svg" class="f66-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="f66-tab-label">xuyên nhiều tab</div>
+        <svg id="f66-tab-underline" viewBox="0 0 280 24">
+          <path id="f66-tab-underline-path" d="M4 14 C 60 6, 120 20, 180 10 S 250 8, 276 13" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+      <!-- Scene 2: journey strip -->
+      <div id="f66-s2">
+        <div id="f66-key"><span id="f66-key-1" class="f66-key-word">tiếp</span> <span id="f66-key-2" class="f66-key-word">tục</span></div>
+
+        <svg id="f66-strip" viewBox="0 0 1760 820">
+          <path id="f66-ghost" d="M450 520 C 690 330, 1010 710, 1310 520"/>
+          <path id="f66-trail" d="M450 520 C 690 330, 1010 710, 1310 520" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+
+        <div id="f66-station-1" class="f66-station">
+          <svg class="f66-station-icon" viewBox="0 0 300 140">
+            <rect x="72" y="14" width="156" height="98" rx="8" ry="8"/>
+            <path d="M52 124 L 248 124 L 236 112 L 64 112 Z"/>
+          </svg>
+          <div class="f66-station-label">máy tính</div>
+        </div>
+        <div id="f66-station-2" class="f66-station">
+          <svg class="f66-station-icon" viewBox="0 0 300 140">
+            <rect x="114" y="6" width="72" height="128" rx="14" ry="14"/>
+            <path d="M140 20 L 160 20"/>
+          </svg>
+          <div class="f66-station-label">điện thoại</div>
+        </div>
+
+        <div id="f66-mover">
+          <svg id="f66-mover-svg" class="f66-spark" viewBox="0 0 40 40"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.7" y1="8.7" x2="31.3" y2="31.3"/><line x1="31.3" y1="8.7" x2="8.7" y2="31.3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var R = '[data-composition-id="66-cowork-trong-chrome"] ';
+      function q(s) { return R + s; }
+
+      // journey path (same cubic as #f66-trail), sampled at equal arc length
+      var P0 = [450, 520], P1 = [690, 330], P2 = [1010, 710], P3 = [1310, 520];
+      function bez(t) {
+        var u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+        return [a * P0[0] + b * P1[0] + c * P2[0] + d * P3[0], a * P0[1] + b * P1[1] + c * P2[1] + d * P3[1]];
+      }
+      var N = 400, pts = [], cum = [0], i;
+      for (i = 0; i <= N; i++) pts.push(bez(i / N));
+      for (i = 1; i <= N; i++) {
+        var dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1];
+        cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy));
+      }
+      var total = cum[N], K = 32, frames = [], j = 0;
+      for (var k = 1; k <= K; k++) {
+        var target = total * k / K;
+        while (j < N && cum[j] < target) j++;
+        frames.push({ x: pts[j][0] - 20, y: pts[j][1] - 20 });
+      }
+
+      // initial states (before the timeline, never tl.set at 0)
+      gsap.set(q('#f66-mover'), { x: P0[0] - 20, y: P0[1] - 20 });
+      gsap.set(q('#f66-mock'), { transformOrigin: '1068px 386px' });
+      gsap.set(q('.f66-pill-spark'), { scale: 0, transformOrigin: '50% 50%' });
+      gsap.set([q('#f66-hop-svg'), q('#f66-mover-svg'), q('#f66-kicker-spark')], { scale: 0, transformOrigin: '50% 50%' });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- rail slots light on the rail: cues
+      function light(n, t) {
+        tl.fromTo(q('#f66-p' + n),
+          { borderColor: 'rgba(240,238,230,0.12)', color: '#9A968C' },
+          { borderColor: '#D97757', color: '#F0EEE6', duration: 0.3, ease: 'power2.out' }, t);
+        tl.fromTo(q('#f66-b' + n),
+          { borderColor: '#9A968C', color: '#9A968C' },
+          { borderColor: '#D97757', color: '#D97757', duration: 0.3, ease: 'power2.out' }, t);
+        tl.fromTo(q('#f66-ps' + n),
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: 'power3.out' }, t);
+      }
+      light(1, 1.2);
+      light(2, 4.5);
+      light(3, 6.1);
+
+      // ---- Scene 1 (0–5.84): screen mock
+      tl.fromTo(q('#f66-mock'), { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }, 0);
+      tl.fromTo(q('#f66-kicker-spark'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: 'power3.out' }, 0.1);
+
+      // "Claude in Chrome" (1.3): panel header + terracotta callout
+      tl.to(q('#f66-head-ph'), { opacity: 0, duration: 0.2, ease: 'power2.out' }, 1.3);
+      tl.fromTo(q('#f66-head-chrome'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 1.3);
+      tl.fromTo(q('#f66-callout-rect'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.6, ease: 'none' }, 1.3);
+
+      // "Cowork" (2.89): chip swap + zoom 1.2 on the panel
+      tl.to(q('#f66-head-chrome'), { opacity: 0, y: -12, duration: 0.2, ease: 'power2.in' }, 2.89);
+      tl.fromTo(q('#f66-head-cowork'), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, 2.95);
+      tl.to(q('#f66-mock'), { scale: 1.2, x: -40, y: -40, duration: 0.7, ease: 'power2.inOut' }, 2.89);
+      tl.fromTo(q('#f66-task-1'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power3.out' }, 3.1);
+      tl.fromTo(q('#f66-task-2'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power3.out' }, 3.3);
+      tl.fromTo(q('#f66-task-3'), { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.4, ease: 'power3.out' }, 3.5);
+
+      // "Claude làm việc" (3.73): pull back so the tabs are in view
+      tl.to(q('#f66-mock'), { scale: 1, x: 0, y: 0, duration: 0.6, ease: 'power2.inOut' }, 3.8);
+      tl.to(q('#f66-callout-rect'), { opacity: 0.35, duration: 0.4, ease: 'power2.out' }, 3.9);
+
+      // "xuyên nhiều tab" (4.4 / 4.6 / 4.82): the spark hops across the three tabs
+      tl.fromTo(q('#f66-hop-svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.3, ease: 'power3.out' }, 4.4);
+      tl.to(q('#f66-tab-1'), { backgroundColor: '#46433E', duration: 0.2, ease: 'power2.out' }, 4.4);
+      tl.to(q('#f66-hop'), { x: 212, duration: 0.2, ease: 'power2.inOut' }, 4.6);
+      tl.to(q('#f66-hop'), { y: -26, duration: 0.1, ease: 'power2.out' }, 4.6);
+      tl.to(q('#f66-hop'), { y: 0, duration: 0.1, ease: 'power2.in' }, 4.7);
+      tl.to(q('#f66-tab-2'), { backgroundColor: '#46433E', duration: 0.2, ease: 'power2.out' }, 4.78);
+      tl.to(q('#f66-hop'), { x: 424, duration: 0.2, ease: 'power2.inOut' }, 4.82);
+      tl.to(q('#f66-hop'), { y: -26, duration: 0.1, ease: 'power2.out' }, 4.82);
+      tl.to(q('#f66-hop'), { y: 0, duration: 0.1, ease: 'power2.in' }, 4.92);
+      tl.to(q('#f66-tab-3'), { backgroundColor: '#46433E', duration: 0.2, ease: 'power2.out' }, 5.0);
+      tl.fromTo(q('#f66-tab-label'), { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power3.out' }, 4.82);
+      tl.fromTo(q('#f66-tab-underline-path'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.4, ease: 'none' }, 4.95);
+
+      // ---- shot change (5.84): mock recedes, journey strip takes the full width
+      tl.fromTo(q('#f66-s1'), { opacity: 1, scale: 1, filter: 'blur(0px)' }, { opacity: 0, scale: 0.94, filter: 'blur(8px)', duration: 0.4, ease: 'power2.in' }, 5.84);
+      tl.fromTo(q('#f66-s2'), { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'power3.out' }, 5.95);
+
+      // ---- Scene 2 (5.84–9.73): journey
+      tl.fromTo(q('#f66-key-1'), { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 6.89);
+      tl.fromTo(q('#f66-key-2'), { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: 'power3.out' }, 7.03);
+
+      // "máy tính" (7.81)
+      tl.fromTo(q('#f66-station-1'), { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'power3.out' }, 7.81);
+      tl.fromTo(q('#f66-mover-svg'), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.3, ease: 'power3.out' }, 7.81);
+      // spark travels the hand-drawn path, trail draws on behind it
+      tl.to(q('#f66-mover'), { keyframes: frames, easeEach: 'none', ease: 'power1.inOut', duration: 0.7 }, 7.99);
+      tl.fromTo(q('#f66-trail'), { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.7, ease: 'power1.inOut' }, 7.99);
+
+      // "điện thoại" (8.69)
+      tl.fromTo(q('#f66-station-2'), { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: 'power3.out' }, 8.69);
+
+      // hold with a quiet drift
+      tl.to(q('#f66-strip'), { scale: 1.012, duration: 0.8, ease: 'none' }, 8.93);
+
+      tl.to({}, { duration: 9.734 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["66-cowork-trong-chrome"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,344 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f09-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f09-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f09- */
+    #f09-view { position: absolute; inset: 0; overflow: hidden; }
+    #f09-field {
+      position: absolute; left: 0; top: 0; width: 3520px; height: 820px;
+      background-image: radial-gradient(circle, rgba(142,147,181,.55) 1.6px, transparent 2.2px);
+      background-size: 56px 56px;
+    }
+    #f09-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f09-world { position: absolute; left: 0; top: 0; width: 3520px; height: 820px; }
+    #f09-trail { position: absolute; left: 0; top: 0; width: 3520px; height: 820px; overflow: visible; }
+
+    .f09-kicker {
+      position: absolute; font-family: "JetBrains Mono", monospace; font-size: 28px;
+      letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    .f09-kicker b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    #f09-kick1 { left: 0; top: 0; }
+    #f09-kick2 { left: 0; top: 236px; }
+
+    /* composer (pinned above the world) */
+    #f09-box {
+      position: absolute; left: 230px; top: 170px; width: 1300px; height: 150px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.16); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); transform-origin: 50% 0;
+    }
+    #f09-spark { position: absolute; left: 40px; top: 47px; filter: drop-shadow(0 0 10px rgba(255,210,63,.55)); }
+    #f09-text {
+      position: absolute; left: 120px; top: 0; height: 150px; display: flex; align-items: center;
+      font-size: 60px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1; white-space: pre;
+    }
+    .f09-ch { display: none; }
+    #f09-caret { display: inline-block; width: 5px; height: 66px; margin-left: 6px; background: var(--gold); }
+    #f09-send {
+      position: absolute; right: 31px; top: 31px; width: 88px; height: 88px; border-radius: 50%;
+      background: rgba(244,241,232,.10); border: 2px solid rgba(244,241,232,.35);
+    }
+    #f09-send svg { position: absolute; left: 20px; top: 20px; }
+    #f09-tick { opacity: 0; }
+
+    /* the step strip */
+    #f09-strip { position: absolute; left: 0; top: 300px; width: 1760px; height: 150px; transform-origin: 0 0; }
+    #f09-segs { position: absolute; left: 0; top: 0; width: 1760px; height: 150px; overflow: visible; }
+    .f09-chip {
+      position: absolute; top: 0; width: 500px; height: 150px; border-radius: 18px;
+      background: var(--surface); border: 2px solid rgba(244,241,232,.16);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 22px; padding: 0 30px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f09-ico {
+      flex: none; width: 72px; height: 72px; border-radius: 16px; background: rgba(244,241,232,.07);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .f09-chk { flex: none; margin-left: auto; }
+    #f09-c1 { left: 0; }
+    #f09-c2 { left: 630px; }
+    #f09-c3 { left: 1260px; }
+
+    /* scene 3: the person who hands off */
+    #f09-label { position: absolute; left: 0; top: 250px; font-size: 72px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1; white-space: nowrap; }
+    .f09-w { display: inline-block; margin-right: 18px; }
+    .f09-gold { color: var(--gold); }
+    #f09-nostep { position: absolute; left: 760px; top: 268px; font-size: 44px; font-weight: 600; line-height: 1.2; color: var(--muted); white-space: nowrap; }
+    #f09-strike { position: absolute; left: -6px; top: 28px; width: 222px; height: 5px; background: var(--muted); transform-origin: 0 50%; }
+    #f09-me { position: absolute; left: 0; top: 445px; width: 180px; height: 240px; transform-origin: 50% 50%; }
+    #f09-me-ava {
+      position: absolute; left: 5px; top: 0; width: 170px; height: 170px; border-radius: 50%;
+      background: rgba(244,241,232,.08); border: 3px solid rgba(244,241,232,.55);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f09-me-name { position: absolute; left: 0; top: 180px; width: 180px; text-align: center; font-size: 44px; font-weight: 800; line-height: 1.2; }
+
+    /* scene 4: two sources */
+    .f09-page {
+      position: absolute; width: 360px; height: 280px; border-radius: 16px;
+      background: var(--surface); border: 2px solid rgba(244,241,232,.18);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); transform-origin: 50% 50%;
+    }
+    #f09-pa { left: 2460px; top: 440px; }
+    #f09-pb { left: 2960px; top: 150px; }
+    .f09-bar { position: absolute; left: 0; right: 0; top: 0; height: 52px; border-bottom: 1px solid rgba(244,241,232,.12); }
+    .f09-dot { position: absolute; top: 20px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); }
+    .f09-ln { position: absolute; left: 30px; height: 16px; border-radius: 8px; background: rgba(244,241,232,.35); }
+    .f09-badge {
+      position: absolute; right: -34px; top: -34px; width: 92px; height: 92px; border-radius: 50%;
+      background: var(--canvas); display: flex; align-items: center; justify-content: center;
+    }
+    #f09-bxa { border: 3px solid var(--muted); }
+    #f09-bxb { border: 3px solid var(--cyan); box-shadow: 0 0 24px rgba(62,230,208,.45); }
+    .f09-cap { position: absolute; font-size: 36px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    #f09-capa { left: 2460px; top: 742px; color: var(--muted); }
+    #f09-capb { left: 2960px; top: 452px; color: var(--cyan); }
+  </style>
+
+  <div id="root" data-composition-id="09-mot-vi-du-doi-thuong" data-width="1920" data-height="1080" data-duration="13.826">
+    <div id="f09-ground" class="clip" data-start="0" data-duration="13.826" data-track-index="0"></div>
+    <div id="f09-stage" class="clip" data-start="0" data-duration="13.826" data-track-index="1">
+      <div id="f09-view">
+        <div id="f09-field"></div>
+        <div id="f09-cam">
+          <div id="f09-world">
+            <svg id="f09-trail" viewBox="0 0 3520 820" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path id="f09-hand" d="M190 530 L296 530" stroke="#FFD23F" stroke-width="5" style="filter:drop-shadow(0 0 8px rgba(255,210,63,.55))"/>
+              <path id="f09-pathA" d="M1708 530 L2150 530 C2300 530 2320 580 2460 580" stroke="#FFD23F" stroke-width="5" style="filter:drop-shadow(0 0 8px rgba(255,210,63,.55))"/>
+              <path id="f09-pathB" d="M2150 530 C2350 530 2400 300 2600 300 L2960 300" stroke="#FFD23F" stroke-width="5" style="filter:drop-shadow(0 0 10px rgba(255,210,63,.6))"/>
+              <circle id="f09-fork" cx="2150" cy="530" r="10" fill="#FFD23F"/>
+            </svg>
+
+            <div id="f09-kick2" class="f09-kicker"><b>◆</b>Agent tự làm</div>
+
+            <div id="f09-strip">
+              <svg id="f09-segs" viewBox="0 0 1760 150" fill="none" stroke-linecap="round">
+                <path id="f09-s1" d="M502 75 L628 75" stroke="#FFD23F" stroke-width="5"/>
+                <path id="f09-s2" d="M1132 75 L1258 75" stroke="#FFD23F" stroke-width="5"/>
+              </svg>
+              <div id="f09-c1" class="f09-chip">
+                <div class="f09-ico">
+                  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round"><circle cx="19" cy="19" r="11"/><line x1="27" y1="27" x2="38" y2="38"/></svg>
+                </div>
+                <span>tìm kiếm</span>
+                <svg class="f09-chk" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                  <circle id="f09-k1c" cx="28" cy="28" r="24" stroke="#8E93B5"/>
+                  <path id="f09-k1" d="M17 29 L25 37 L40 20" stroke="#3EE6D0"/>
+                </svg>
+              </div>
+              <div id="f09-c2" class="f09-chip">
+                <div class="f09-ico">
+                  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11c-4-3-10-4-16-3v26c6-1 12 0 16 3 4-3 10-4 16-3V8c-6-1-12 0-16 3z"/><line x1="22" y1="11" x2="22" y2="37"/></svg>
+                </div>
+                <span>đọc từng bài</span>
+                <svg class="f09-chk" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                  <circle id="f09-k2c" cx="28" cy="28" r="24" stroke="#8E93B5"/>
+                  <path id="f09-k2" d="M17 29 L25 37 L40 20" stroke="#3EE6D0"/>
+                </svg>
+              </div>
+              <div id="f09-c3" class="f09-chip">
+                <div class="f09-ico">
+                  <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M30 7l7 7-20 20-9 2 2-9z"/><line x1="26" y1="11" x2="33" y2="18"/></svg>
+                </div>
+                <span>viết tóm tắt</span>
+                <svg class="f09-chk" width="56" height="56" viewBox="0 0 56 56" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                  <circle id="f09-k3c" cx="28" cy="28" r="24" stroke="#8E93B5"/>
+                  <path id="f09-k3" d="M17 29 L25 37 L40 20" stroke="#3EE6D0"/>
+                </svg>
+              </div>
+            </div>
+
+            <div id="f09-label"><span id="f09-w1" class="f09-w">chỉ</span><span id="f09-w2" class="f09-w">cần</span><span id="f09-w3" class="f09-w f09-gold">giao</span><span id="f09-w4" class="f09-w f09-gold">việc</span></div>
+            <div id="f09-nostep">từng bước<div id="f09-strike"></div></div>
+            <div id="f09-me">
+              <div id="f09-me-ava">
+                <svg width="96" height="96" viewBox="0 0 70 70" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round"><circle cx="35" cy="25" r="12"/><path d="M13 60c3-12 12-18 22-18s19 6 22 18"/></svg>
+              </div>
+              <div id="f09-me-name">Bạn</div>
+            </div>
+
+            <div id="f09-pa" class="f09-page">
+              <div class="f09-bar"><div class="f09-dot" style="left:22px"></div><div class="f09-dot" style="left:46px"></div><div class="f09-dot" style="left:70px"></div></div>
+              <div class="f09-ln" style="top:88px;width:250px"></div>
+              <div class="f09-ln" style="top:124px;width:300px"></div>
+              <div class="f09-ln" style="top:160px;width:210px"></div>
+              <div class="f09-ln" style="top:196px;width:270px"></div>
+              <div id="f09-bxa" class="f09-badge">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="#8E93B5" stroke-width="5" stroke-linecap="round"><line x1="10" y1="10" x2="34" y2="34"/><line x1="34" y1="10" x2="10" y2="34"/></svg>
+              </div>
+            </div>
+            <div id="f09-capa" class="f09-cap">✗ không mở được</div>
+
+            <div id="f09-pb" class="f09-page">
+              <div class="f09-bar"><div class="f09-dot" style="left:22px"></div><div class="f09-dot" style="left:46px"></div><div class="f09-dot" style="left:70px"></div></div>
+              <div class="f09-ln" style="top:88px;width:250px;background:rgba(244,241,232,.6)"></div>
+              <div class="f09-ln" style="top:124px;width:300px;background:rgba(244,241,232,.6)"></div>
+              <div class="f09-ln" style="top:160px;width:210px;background:rgba(244,241,232,.6)"></div>
+              <div class="f09-ln" style="top:196px;width:270px;background:rgba(244,241,232,.6)"></div>
+              <div id="f09-bxb" class="f09-badge">
+                <svg width="46" height="46" viewBox="0 0 46 46" fill="none" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 24 L19 33 L36 13"/></svg>
+              </div>
+            </div>
+            <div id="f09-capb" class="f09-cap">✓ nguồn khác</div>
+          </div>
+        </div>
+
+        <!-- pinned: kicker + the request composer -->
+        <div id="f09-kick1" class="f09-kicker"><b>◆</b>Ví dụ</div>
+        <div id="f09-box">
+          <svg id="f09-spark" width="56" height="56" viewBox="0 0 56 56" fill="#FFD23F"><path d="M28 4 L33 23 L52 28 L33 33 L28 52 L23 33 L4 28 L23 23 Z"/></svg>
+          <div id="f09-text"><span class="f09-ch" data-t="1.58">T</span><span class="f09-ch" data-t="1.63">ó</span><span class="f09-ch" data-t="1.68">m</span><span class="f09-ch" data-t="1.78"> t</span><span class="f09-ch" data-t="1.83">ắ</span><span class="f09-ch" data-t="1.88">t</span><span class="f09-ch" data-t="1.96"> t</span><span class="f09-ch" data-t="2.02">i</span><span class="f09-ch" data-t="2.08">n</span><span class="f09-ch" data-t="2.14"> t</span><span class="f09-ch" data-t="2.19">ứ</span><span class="f09-ch" data-t="2.24">c</span><span class="f09-ch" data-t="2.53"> A</span><span class="f09-ch" data-t="2.59">I</span><span class="f09-ch" data-t="2.65"> h</span><span class="f09-ch" data-t="2.69">ô</span><span class="f09-ch" data-t="2.73">m</span><span class="f09-ch" data-t="2.79"> n</span><span class="f09-ch" data-t="2.84">a</span><span class="f09-ch" data-t="2.89">y</span><span id="f09-caret"></span></div>
+          <div id="f09-send">
+            <svg id="f09-arrow" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><line x1="24" y1="38" x2="24" y2="10"/><path d="M12 22 L24 10 L36 22"/></svg>
+            <svg id="f09-tick" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#0B1026" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 25 L20 34 L37 15"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var q = function (s) { return document.querySelector(s); };
+
+      // trail paths start undrawn
+      var drawables = ["#f09-hand", "#f09-pathA", "#f09-pathB", "#f09-s1", "#f09-s2", "#f09-k1", "#f09-k2", "#f09-k3"];
+      var len = {};
+      var fallback = { "#f09-hand": 110, "#f09-pathA": 780, "#f09-pathB": 900, "#f09-s1": 130, "#f09-s2": 130, "#f09-k1": 40, "#f09-k2": 40, "#f09-k3": 40 };
+      drawables.forEach(function (id) {
+        var el = q(id);
+        var L = 0;
+        try { L = el.getTotalLength(); } catch (e) { L = 0; }
+        if (!(L > 0)) L = fallback[id];
+        L = Math.ceil(L) + 2;
+        len[id] = L;
+        gsap.set(el, { strokeDasharray: L, strokeDashoffset: L });
+      });
+      function draw(id, at, dur) {
+        tl.fromTo(id, { strokeDashoffset: len[id] }, { strokeDashoffset: 0, duration: dur, ease: "none" }, at);
+      }
+
+      /* ---- Scene 1 (0–3.43): the request types into the composer ---- */
+      tl.fromTo("#f09-field", { opacity: 0 }, { opacity: 0.4, duration: 0.8, ease: "power3.out" }, 0);
+      tl.fromTo("#f09-box", { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, 0.1);
+      tl.fromTo("#f09-spark", { scale: 0.3, rotation: -45 }, { scale: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 0.25);
+      tl.fromTo("#f09-kick1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 0.31);
+      // character-by-character typing on the spoken words
+      document.querySelectorAll("#f09-text .f09-ch").forEach(function (ch) {
+        tl.set(ch, { display: "inline" }, parseFloat(ch.getAttribute("data-t")));
+      });
+      // caret: blinks while idle, solid while typing
+      var blinks = [0.55, 0.95, 1.35];
+      tl.set("#f09-caret", { opacity: 1 }, 0);
+      blinks.forEach(function (t) {
+        tl.set("#f09-caret", { opacity: 0 }, t);
+        tl.set("#f09-caret", { opacity: 1 }, t + 0.2);
+      });
+      // submit: press dip, button fills, tick replaces arrow
+      tl.fromTo("#f09-send", { scale: 1 }, { scale: 0.86, duration: 0.1, ease: "power2.inOut" }, 3.05);
+      tl.fromTo("#f09-send", { scale: 0.86 }, { scale: 1, duration: 0.3, ease: "power3.out", immediateRender: false }, 3.15);
+      tl.set("#f09-send", { backgroundColor: "#3EE6D0", borderColor: "#3EE6D0" }, 3.12);
+      tl.set("#f09-arrow", { opacity: 0 }, 3.12);
+      tl.set("#f09-tick", { opacity: 1 }, 3.12);
+      tl.set("#f09-caret", { opacity: 0 }, 3.12);
+
+      /* ---- Scene 2 (3.43–7.06): box shrinks to a header, step chips assemble ---- */
+      tl.fromTo("#f09-box", { y: 0, scale: 1 }, { y: -150, scale: 0.62, duration: 0.6, ease: "power2.inOut", immediateRender: false }, 3.43);
+      tl.fromTo("#f09-kick2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.61);
+      // "tìm" 4.29 / "kiếm" 4.45
+      tl.fromTo("#f09-c1", { opacity: 0, x: -40, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 4.29);
+      tl.set("#f09-c1", { borderColor: "#FFD23F" }, 4.45);
+      tl.set("#f09-c1", { borderColor: "rgba(62,230,208,.55)" }, 4.85);
+      tl.set("#f09-k1c", { attr: { stroke: "#3EE6D0" } }, 4.85);
+      draw("#f09-k1", 4.85, 0.25);
+      draw("#f09-s1", 4.66, 0.38);
+      // "đọc" 5.05
+      tl.fromTo("#f09-c2", { opacity: 0, x: -40, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 5.05);
+      tl.set("#f09-c2", { borderColor: "#FFD23F" }, 5.05);
+      tl.set("#f09-c2", { borderColor: "rgba(62,230,208,.55)" }, 5.75);
+      tl.set("#f09-k2c", { attr: { stroke: "#3EE6D0" } }, 5.75);
+      draw("#f09-k2", 5.75, 0.25);
+      draw("#f09-s2", 5.64, 0.46);
+      // "viết" 6.12
+      tl.fromTo("#f09-c3", { opacity: 0, x: -40, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 6.12);
+      tl.set("#f09-c3", { borderColor: "#FFD23F" }, 6.12);
+      tl.set("#f09-c3", { borderColor: "rgba(62,230,208,.55)" }, 6.85);
+      tl.set("#f09-k3c", { attr: { stroke: "#3EE6D0" } }, 6.85);
+      draw("#f09-k3", 6.85, 0.25);
+
+      /* ---- Scene 3 (7.06–9.92): "bạn" hands off, then steps back ---- */
+      tl.fromTo("#f09-strip", { x: 0, y: 0, scale: 1 }, { x: 300, y: 170, scale: 0.8, duration: 0.6, ease: "power2.inOut" }, 7.06);
+      tl.fromTo("#f09-kick2", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.inOut", immediateRender: false }, 7.06);
+      tl.fromTo("#f09-me", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 7.42);
+      tl.fromTo("#f09-w1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.54);
+      tl.fromTo("#f09-w2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.68);
+      tl.fromTo("#f09-w3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.87);
+      tl.fromTo("#f09-w4", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.09);
+      draw("#f09-hand", 7.87, 0.35);
+      // "không cần chỉ từng bước" — the person steps back, step-by-step is struck out
+      tl.to("#f09-me", { x: 8, y: 10, scale: 0.9, opacity: 0.6, duration: 0.6, ease: "power2.inOut" }, 8.71);
+      tl.fromTo("#f09-nostep", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 9.26);
+      tl.fromTo("#f09-strike", { scaleX: 0 }, { scaleX: 1, duration: 0.25, ease: "none" }, 9.42);
+
+      /* ---- Scene 4 (9.92–13.33): pan along the trail; a dead page, then another source ---- */
+      tl.fromTo("#f09-world", { x: 0 }, { x: -1760, duration: 1.1, ease: "power2.inOut" }, 9.92);
+      tl.fromTo("#f09-field", { x: 0 }, { x: -880, duration: 1.1, ease: "power2.inOut" }, 9.92);
+      draw("#f09-pathA", 10.0, 0.47);
+      tl.fromTo("#f09-fork", { opacity: 0, scale: 0 }, { opacity: 0.35, scale: 1, duration: 0.3, ease: "power3.out", svgOrigin: "2150 530" }, 10.2);
+      // "trang web" 10.47
+      tl.fromTo("#f09-pa", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 10.47);
+      // "không mở được" 10.83 / 10.99 / 11.15
+      tl.fromTo("#f09-capa", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 10.83);
+      tl.fromTo("#f09-bxa", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 10.99);
+      tl.to("#f09-pa", { opacity: 0.45, duration: 0.4, ease: "power2.inOut" }, 11.15);
+      tl.set("#f09-pathA", { attr: { stroke: "#8E93B5" }, filter: "none" }, 11.2);
+      // "thử" 12.00 — the trail bends to a second source
+      tl.set("#f09-fork", { opacity: 1 }, 12.0);
+      draw("#f09-pathB", 12.0, 0.4);
+      // "nguồn" 12.14
+      tl.fromTo("#f09-pb", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 12.14);
+      // "khác" 12.38 — ✓
+      tl.set("#f09-pb", { borderColor: "#3EE6D0" }, 12.38);
+      tl.fromTo("#f09-bxb", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 12.38);
+      tl.fromTo("#f09-capb", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.38);
+      // hold with a gentle drift
+      tl.fromTo("#f09-cam", { scale: 1 }, { scale: 1.015, duration: 0.6, ease: "none" }, 12.72);
+
+      tl.to({}, { duration: 13.326 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["09-mot-vi-du-doi-thuong"] = tl;
+    })();
+  </script>
+</template>

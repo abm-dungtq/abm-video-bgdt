@@ -1,0 +1,381 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f27-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f27-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f27- */
+
+    /* ---------- Shot 1: screen, 70 viewport (left) / 30 rail (right) ---------- */
+    #f27-s1 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    #f27-viewport {
+      position: absolute;
+      left: 0;
+      top: 60px;
+      width: 1240px;
+      height: 697.5px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f27-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      transform-origin: 620px 348.75px;
+      opacity: 0;
+    }
+    #f27-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #f27-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      overflow: visible;
+    }
+    .f27-draw {
+      fill: none;
+      stroke: var(--gold);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    /* rail (30 %) */
+    #f27-kicker {
+      position: absolute;
+      left: 1310px;
+      top: 110px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f27-kicker svg { width: 28px; height: 28px; display: block; }
+    .f27-row {
+      position: absolute;
+      left: 1310px;
+      width: 450px;
+    }
+    #f27-row1 { top: 210px; }
+    #f27-row2 { top: 360px; }
+    #f27-row3 { top: 510px; }
+    .f27-num {
+      display: block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      opacity: 0;
+    }
+    .f27-label {
+      display: block;
+      margin-top: 6px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f27-w {
+      display: inline-block;
+      opacity: 0;
+    }
+
+    /* ---------- Shot 2: stat, centred ---------- */
+    #f27-s2 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    #f27-doc {
+      position: absolute;
+      left: 380px;
+      top: 170px;
+      width: 380px;
+      height: 480px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f27-bars {
+      position: absolute;
+      left: 44px;
+      top: 42px;
+      width: 292px;
+    }
+    .f27-bar {
+      height: 7px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      background: rgba(240,238,230,.78);
+      transform-origin: 0 50%;
+      opacity: 0;
+    }
+    #f27-bracket {
+      position: absolute;
+      left: 784px;
+      top: 200px;
+      width: 60px;
+      height: 420px;
+      overflow: visible;
+    }
+    .f27-draw-cream {
+      fill: none;
+      stroke: rgba(240,238,230,.55);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f27-stat {
+      position: absolute;
+      left: 900px;
+      top: 200px;
+      width: 560px;
+    }
+    #f27-khoang {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f27-khoang svg { width: 30px; height: 30px; display: block; }
+    #f27-numrow {
+      display: flex;
+      align-items: baseline;
+      gap: 28px;
+      margin-top: 8px;
+      white-space: nowrap;
+    }
+    #f27-fifteen {
+      display: inline-block;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 260px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+      opacity: 0;
+    }
+    #f27-dong {
+      display: inline-block;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 72px;
+      line-height: 1.2;
+      color: var(--ink);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="27-artifact-ngay-ben-canh-cuoc-tro-chuyen" data-width="1920" data-height="1080" data-duration="11.585">
+    <div id="f27-ground" class="clip" data-start="0" data-duration="11.585" data-track-index="0"></div>
+    <div id="f27-stage" class="clip" data-start="0" data-duration="11.585" data-track-index="1">
+
+      <!-- Shot 1: screenshot viewport (70) + label rail (30) -->
+      <div id="f27-s1">
+        <div id="f27-viewport">
+          <div id="f27-wrap">
+            <img id="f27-shot" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg id="f27-callout" viewBox="0 0 1240 697.5">
+              <rect id="f27-rect-panel" class="f27-draw" x="396" y="10" width="832" height="676" rx="10" ry="10" pathLength="1" stroke-width="2.6"></rect>
+              <rect id="f27-rect-tools" class="f27-draw" x="399" y="44" width="109" height="31" rx="8" ry="8" pathLength="1" stroke-width="2.2"></rect>
+              <rect id="f27-rect-share" class="f27-draw" x="1123" y="9" width="64" height="28" rx="8" ry="8" pathLength="1" stroke-width="2.2"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <div id="f27-kicker">
+          <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+          <span>artifact</span>
+        </div>
+        <div id="f27-row1" class="f27-row">
+          <span id="f27-n1" class="f27-num">01</span>
+          <span id="f27-l1" class="f27-label"><span id="f27-khung" class="f27-w">khung</span> <span id="f27-ben" class="f27-w">bên</span> <span id="f27-canh" class="f27-w">cạnh</span></span>
+        </div>
+        <div id="f27-row2" class="f27-row">
+          <span id="f27-n2" class="f27-num">02</span>
+          <span id="f27-l2" class="f27-label"><span id="f27-chinh" class="f27-w">chỉnh</span> <span id="f27-sua" class="f27-w">sửa</span></span>
+        </div>
+        <div id="f27-row3" class="f27-row">
+          <span id="f27-n3" class="f27-num">03</span>
+          <span id="f27-l3" class="f27-label"><span id="f27-chia" class="f27-w">chia</span> <span id="f27-se" class="f27-w">sẻ</span></span>
+        </div>
+      </div>
+
+      <!-- Shot 2: line bars stack, then "15" -->
+      <div id="f27-s2">
+        <div id="f27-doc">
+          <div id="f27-bars">
+            <div class="f27-bar" style="width:100%"></div>
+            <div class="f27-bar" style="width:86%"></div>
+            <div class="f27-bar" style="width:94%"></div>
+            <div class="f27-bar" style="width:70%"></div>
+            <div class="f27-bar" style="width:98%"></div>
+            <div class="f27-bar" style="width:82%"></div>
+            <div class="f27-bar" style="width:90%"></div>
+            <div class="f27-bar" style="width:62%"></div>
+            <div class="f27-bar" style="width:96%"></div>
+            <div class="f27-bar" style="width:84%"></div>
+            <div class="f27-bar" style="width:92%"></div>
+            <div class="f27-bar" style="width:74%"></div>
+            <div class="f27-bar" style="width:100%"></div>
+            <div class="f27-bar" style="width:88%"></div>
+            <div class="f27-bar" style="width:56%"></div>
+          </div>
+        </div>
+        <svg id="f27-bracket" viewBox="0 0 60 420">
+          <path id="f27-brk" class="f27-draw-cream" pathLength="1" stroke-width="3.5" d="M6 8 C 24 10, 30 18, 30 40 L 31 188 C 31 204, 40 208, 52 211 C 40 214, 30 220, 30 236 L 29 382 C 29 404, 22 410, 6 412"></path>
+        </svg>
+        <div id="f27-stat">
+          <div id="f27-khoang">
+            <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+            <span>khoảng</span>
+          </div>
+          <div id="f27-numrow">
+            <span id="f27-fifteen">0</span>
+            <span id="f27-dong">dòng</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // shot 2 container starts hidden (before the timeline is built)
+      gsap.set("#f27-s2", { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Shot 1 — screen (0–7.85 s) ===== */
+      // reveal the screenshot wrapper, full view
+      tl.fromTo("#f27-wrap", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0);
+      // gentle drift while the context is spoken
+      tl.fromTo("#f27-wrap", { scale: 1 }, { scale: 1.01, duration: 2.7, ease: "none", immediateRender: false }, 0.6);
+      // "artifact" @2.66 — rail kicker
+      tl.fromTo("#f27-kicker", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 2.66);
+      // "khung" @3.38 — rectangle frames the whole artifact panel; label lands word by word
+      tl.fromTo("#f27-rect-panel", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 3.38);
+      tl.fromTo("#f27-n1", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.38);
+      tl.fromTo("#f27-khung", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.38);
+      tl.fromTo("#f27-ben", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.56);
+      tl.fromTo("#f27-canh", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.74);
+
+      // "chỉnh" @5.16 — pan + zoom to 1.3x onto the panel's top strip
+      tl.fromTo("#f27-wrap", { x: 0, y: 0, scale: 1.01 }, { x: -225, y: 104, scale: 1.3, duration: 0.65, ease: "power2.inOut", immediateRender: false }, 5.16);
+      tl.fromTo("#f27-rect-panel", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, 5.16);
+      tl.to("#f27-l1", { color: "#9A968C", duration: 0.3, ease: "power2.out" }, 5.16);
+      tl.fromTo("#f27-n2", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 5.16);
+      tl.fromTo("#f27-chinh", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.16);
+      // "sửa" @5.36 — rectangle frames the edit toolbar
+      tl.fromTo("#f27-sua", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.36);
+      tl.fromTo("#f27-rect-tools", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 5.36);
+
+      // "chia" @6.11, "sẻ" @6.27 — rectangle frames the Share button
+      tl.to("#f27-l2", { color: "#9A968C", duration: 0.3, ease: "power2.out" }, 6.11);
+      tl.fromTo("#f27-n3", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 6.11);
+      tl.fromTo("#f27-chia", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.11);
+      tl.fromTo("#f27-se", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.27);
+      tl.fromTo("#f27-rect-share", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 6.27);
+
+      // crop-zoom hold: slow tightening on the top strip (scale stays <= 1.4)
+      tl.fromTo("#f27-wrap", { x: -225, y: 104, scale: 1.3 }, { x: -235, y: 125, scale: 1.36, duration: 1.2, ease: "none", immediateRender: false }, 6.4);
+
+      /* ===== Shot 2 — stat (7.85–11.085 s) ===== */
+      // zoom-through (inverse) out of the screen shot, shrinking so nothing leaves the safe area
+      tl.fromTo("#f27-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 7.62);
+      tl.fromTo("#f27-s2", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out", immediateRender: false }, 7.85);
+      // "artifact" @7.91 — the empty page card arrives
+      tl.fromTo("#f27-doc", { opacity: 0, y: 30, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "power3.out" }, 7.91);
+      // "nội dung dài hơn" @8.73–9.48 — thin cream line bars stack up, one per line
+      tl.fromTo(".f27-bar", { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.24, ease: "power3.out", stagger: 0.06 }, 8.73);
+      // "khoảng" @9.56 — muted kicker
+      tl.fromTo("#f27-khoang", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.56);
+      // "mười lăm" @9.78 — 15 counts up in Lora terracotta
+      tl.fromTo("#f27-fifteen", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 9.78);
+      tl.fromTo("#f27-fifteen", { textContent: 0 }, { textContent: 15, snap: { textContent: 1 }, duration: 0.3, ease: "power2.out" }, 9.78);
+      // bracket gathers the stack as the count lands
+      tl.fromTo("#f27-brk", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 9.9);
+      // "dòng" @10.06 — label
+      tl.fromTo("#f27-dong", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 10.06);
+      // quiet hold drift
+      tl.fromTo("#f27-s2", { scale: 1 }, { scale: 1.015, duration: 0.9, ease: "none", immediateRender: false }, 10.18);
+
+      tl.to({}, { duration: 11.085 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["27-artifact-ngay-ben-canh-cuoc-tro-chuyen"] = tl;
+    })();
+  </script>
+</template>

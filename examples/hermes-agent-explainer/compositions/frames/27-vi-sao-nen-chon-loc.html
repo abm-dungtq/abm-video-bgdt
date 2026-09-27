@@ -1,0 +1,221 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f27-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f27-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f27- */
+
+    /* background field (dimmed ~40%) */
+    #f27-fwrap { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: hidden; }
+    #f27-field {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: .4;
+      transform-origin: 880px 410px;
+      background-image: radial-gradient(rgba(244,241,232,.55) 1.6px, transparent 2.2px);
+      background-size: 64px 64px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 20%, transparent 72%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 20%, transparent 72%);
+    }
+
+    /* ---- Scene 1: kinetic ---- */
+    #f27-q {
+      position: absolute; left: 0; top: 230px; width: 1760px; text-align: center;
+      font-size: 96px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em;
+      white-space: nowrap; transform-origin: 880px 50%;
+    }
+    .f27-qw { display: inline-block; opacity: 0; }
+    #f27-rule {
+      position: absolute; left: 0; top: 420px; width: 1760px; text-align: center;
+      font-size: 76px; font-weight: 800; line-height: 1.15; letter-spacing: -.015em;
+      white-space: nowrap; transform-origin: 880px 50%;
+    }
+    .f27-w { display: inline-block; opacity: 0; }
+    #f27-gold { display: inline-block; position: relative; color: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.45)); }
+    #f27-uline { position: absolute; left: 0; top: 92px; width: 100%; height: 30px; overflow: visible; }
+
+    /* ---- Scene 2: stat ---- */
+    #f27-count {
+      position: absolute; left: 30px; top: 250px; width: 300px; text-align: center; opacity: 0;
+    }
+    #f27-num {
+      font-size: 200px; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: var(--gold);
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.45));
+    }
+    .f27-kicker {
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; margin-top: 18px;
+    }
+    .f27-kicker b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+
+    #f27-grid { position: absolute; left: 340px; top: 262px; width: 820px; height: 372px; }
+    .f27-chip {
+      position: absolute; width: 260px; height: 78px; border-radius: 14px;
+      background: var(--surface); border: 2px solid rgba(244,241,232,.14);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--ink);
+      white-space: nowrap; opacity: 0;
+    }
+
+    #f27-trail { position: absolute; left: 1160px; top: 380px; overflow: visible; }
+
+    .f27-meter { position: absolute; top: 200px; width: 200px; height: 520px; }
+    #f27-m1 { left: 1290px; }
+    #f27-m2 { left: 1540px; }
+    .f27-track {
+      position: absolute; left: 25px; top: 0; width: 150px; height: 430px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); overflow: hidden;
+    }
+    .f27-fill {
+      position: absolute; left: 10px; right: 10px; bottom: 10px; height: 370px; border-radius: 10px;
+      background: linear-gradient(180deg, #7ff3e4, var(--cyan));
+      box-shadow: 0 0 30px rgba(62,230,208,.35);
+      transform-origin: 50% 100%;
+    }
+    .f27-label {
+      position: absolute; left: -20px; top: 452px; width: 240px; text-align: center;
+      font-size: 36px; font-weight: 600; line-height: 1.2; white-space: nowrap; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="27-vi-sao-nen-chon-loc" data-width="1920" data-height="1080" data-duration="8.409">
+    <div id="f27-ground" class="clip" data-start="0" data-duration="8.409" data-track-index="0"></div>
+    <div id="f27-stage" class="clip" data-start="0" data-duration="8.409" data-track-index="1">
+      <div id="f27-fwrap"><div id="f27-field"></div></div>
+
+      <!-- Scene 1 -->
+      <div id="f27-q"><span class="f27-qw">Vì</span> <span class="f27-qw">sao</span> <span class="f27-qw">phải</span> <span class="f27-qw">chọn</span> <span class="f27-qw">lọc?</span></div>
+      <div id="f27-rule"><span class="f27-w">Chỉ</span> <span class="f27-w">làm</span> <span class="f27-w">được</span> <span class="f27-w">những</span> <span class="f27-w">gì</span> <span class="f27-w">bạn</span> <span id="f27-gold"><span class="f27-w">cho</span> <span class="f27-w">phép</span><svg id="f27-uline" viewBox="0 0 300 30" preserveAspectRatio="none"><path id="f27-upath" d="M4 16 C 80 6, 200 26, 296 12" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="320" stroke-dashoffset="320"/></svg></span></div>
+
+      <!-- Scene 2 -->
+      <div id="f27-count">
+        <div id="f27-num">12</div>
+        <div class="f27-kicker"><b>◆</b>công cụ</div>
+      </div>
+      <div id="f27-grid">
+        <div class="f27-chip f27-keep" style="left:0;top:0">file</div>
+        <div class="f27-chip f27-keep" style="left:280px;top:0">terminal</div>
+        <div class="f27-chip f27-keep" style="left:560px;top:0">web</div>
+        <div class="f27-chip f27-drop" style="left:0;top:98px">browser</div>
+        <div class="f27-chip f27-keep" style="left:280px;top:98px">memory</div>
+        <div class="f27-chip f27-keep" style="left:560px;top:98px">skills</div>
+        <div class="f27-chip f27-drop" style="left:0;top:196px">vision</div>
+        <div class="f27-chip f27-drop" style="left:280px;top:196px">image_gen</div>
+        <div class="f27-chip f27-drop" style="left:560px;top:196px">todo</div>
+        <div class="f27-chip f27-drop" style="left:0;top:294px">tts</div>
+        <div class="f27-chip f27-drop" style="left:280px;top:294px">delegation</div>
+        <div class="f27-chip f27-drop" style="left:560px;top:294px">code_execution</div>
+      </div>
+      <svg id="f27-trail" width="120" height="140" viewBox="0 0 120 140">
+        <path id="f27-tpath" d="M4 66 C 40 20, 80 110, 116 60" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="150" stroke-dashoffset="150"/>
+      </svg>
+      <div id="f27-m1" class="f27-meter">
+        <div class="f27-track"><div class="f27-fill"></div></div>
+        <div class="f27-label">An toàn</div>
+      </div>
+      <div id="f27-m2" class="f27-meter">
+        <div class="f27-track"><div class="f27-fill"></div></div>
+        <div class="f27-label">Tập trung</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var S = "#f27-stage ";
+      var qw = document.querySelectorAll(S + ".f27-qw");
+      var rw = document.querySelectorAll(S + ".f27-w");
+      var chips = document.querySelectorAll(S + ".f27-chip");
+      var drops = document.querySelectorAll(S + ".f27-drop");
+      var keeps = document.querySelectorAll(S + ".f27-keep");
+      var fills = document.querySelectorAll(S + ".f27-fill");
+      var labels = document.querySelectorAll(S + ".f27-label");
+
+      gsap.set(fills, { scaleY: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // slow push on the background field under the whole frame
+      tl.fromTo("#f27-field", { scale: 1 }, { scale: 1.05, duration: 7.909, ease: "none" }, 0);
+
+      // Scene 1 — question lands word by word (Vì 0.31 · sao 0.41 · phải 0.57 · chọn 0.71 · lọc 0.87)
+      var qT = [0.31, 0.411, 0.571, 0.712, 0.872];
+      qT.forEach(function (t, i) {
+        tl.fromTo(qw[i], { opacity: 0, y: 40, filter: "blur(8px)" },
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, t);
+      });
+      // on "Vì agent" (1.675) the question steps back to make room for the rule
+      tl.fromTo("#f27-q", { y: 0, scale: 1, opacity: 1 },
+        { y: -110, scale: 0.62, opacity: 0.55, duration: 0.55, ease: "power2.inOut" }, 1.675);
+
+      // the rule builds per word (chỉ 2.257 … cho 3.442 · phép 3.602)
+      var rT = [2.257, 2.438, 2.679, 2.88, 3.06, 3.281, 3.442, 3.602];
+      rT.forEach(function (t, i) {
+        tl.fromTo(rw[i], { opacity: 0, y: 36, scale: 0.9 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power3.out" }, t);
+      });
+      // courier trail underline under "cho phép"
+      tl.fromTo("#f27-upath", { strokeDashoffset: 320 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 3.442);
+
+      // Scene 2 (3.6+) — shot change: question clears, rule becomes the header
+      tl.fromTo("#f27-q", { opacity: 0.55 }, { opacity: 0, duration: 0.3, ease: "power2.inOut", immediateRender: false }, 3.75);
+      tl.fromTo("#f27-rule", { y: 0, scale: 1 }, { y: -365, scale: 0.55, duration: 0.6, ease: "power2.inOut" }, 3.75);
+
+      // counter + twelve tool chips arrive
+      tl.fromTo("#f27-count", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.85);
+      tl.fromTo(chips, { opacity: 0, scale: 0.85 },
+        { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out", stagger: 0.03 }, 3.85);
+
+      // "Ít công cụ hơn" (4.443) — seven chips fall away, counter ticks 12 → 5
+      tl.fromTo(drops, { opacity: 1, scale: 1 },
+        { opacity: 0.16, scale: 0.9, duration: 0.4, ease: "power2.inOut", stagger: 0.05, immediateRender: false }, 4.443);
+      tl.fromTo("#f27-num", { textContent: 12 },
+        { textContent: 5, snap: { textContent: 1 }, duration: 0.5, ease: "none" }, 4.443);
+      tl.to(keeps, { borderColor: "rgba(62,230,208,.9)", boxShadow: "0 0 24px rgba(62,230,208,.3)", duration: 0.3, ease: "power2.out" }, 4.95);
+
+      // gold trail hands off to the meters
+      tl.fromTo("#f27-tpath", { strokeDashoffset: 150 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.1);
+
+      // meter 1 on "an toàn" (an 5.405 · toàn 5.546)
+      tl.fromTo(labels[0], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.405);
+      tl.to(fills[0], { scaleY: 0.9, duration: 0.6, ease: "power3.out" }, 5.405);
+
+      // meter 2 on "tập trung" (tập 6.588 · trung 6.748)
+      tl.fromTo(labels[1], { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.588);
+      tl.to(fills[1], { scaleY: 0.9, duration: 0.6, ease: "power3.out" }, 6.588);
+
+      tl.to({}, { duration: 7.909 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["27-vi-sao-nen-chon-loc"] = tl;
+    })();
+  </script>
+</template>

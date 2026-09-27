@@ -1,0 +1,362 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f17-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f17-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    #f17-view { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: hidden; }
+    .f17-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f17-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* ---------- shot 1: triptych ---------- */
+    #f17-cam1 { transform-origin: 880px 410px; }
+    .f17-col { position: absolute; top: 0; width: 520px; height: 820px; }
+    #f17-col1 { left: 40px; }
+    #f17-col2 { left: 620px; }
+    #f17-col3 { left: 1200px; }
+    .f17-icon { position: absolute; left: 150px; top: 110px; width: 220px; height: 150px; }
+    .f17-icon svg { display: block; width: 220px; height: 150px; overflow: visible; }
+    .f17-num {
+      position: absolute; left: 0; top: 285px; width: 520px; height: 210px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 200px; line-height: 1.05;
+      letter-spacing: -0.02em; text-align: center; white-space: nowrap;
+      font-variant-numeric: tabular-nums lining-nums;
+      transform-origin: 50% 100%;
+      opacity: 0;
+    }
+    .f17-under { position: absolute; left: 60px; top: 500px; width: 400px; height: 30px; overflow: visible; }
+    .f17-lab {
+      position: absolute; left: 0; top: 548px; width: 520px; height: 60px;
+      font-size: 44px; font-weight: 600; line-height: 60px; text-align: center; white-space: nowrap;
+      opacity: 0;
+    }
+    .f17-spark {
+      position: absolute; width: 44px; height: 44px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    .f17-spark svg { display: block; width: 100%; height: 100%; }
+    #f17-sp1 { left: 402px; top: 300px; }
+    #f17-sp2 { left: 440px; top: 300px; }
+    #f17-sp3 { left: 496px; top: 300px; }
+
+    /* ---------- shot 2: pixel zoom ---------- */
+    #f17-s2 { opacity: 0; }
+    #f17-cam2 { transform-origin: 480px 410px; }
+    #f17-square {
+      position: absolute; left: 180px; top: 110px; width: 600px; height: 600px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.14);
+      border-radius: 6px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f17-square svg { position: absolute; left: 0; top: 0; width: 598px; height: 598px; }
+    #f17-tile { position: absolute; left: 425px; top: 355px; width: 110px; height: 110px; opacity: 0; }
+    #f17-tile svg { display: block; width: 110px; height: 110px; overflow: visible; }
+    #f17-up { position: absolute; left: 518px; top: 338px; width: 34px; height: 34px; opacity: 0; }
+    #f17-up svg { display: block; width: 34px; height: 34px; }
+    .f17-dimlab {
+      position: absolute; height: 40px; width: 140px;
+      font-size: 30px; font-weight: 600; line-height: 40px; text-align: center; color: var(--muted);
+    }
+    #f17-dimtop { left: 410px; top: 14px; }
+    #f17-dimside-rot { position: absolute; left: 16px; top: 390px; width: 140px; height: 40px; transform: rotate(-90deg); }
+    #f17-dimside { left: 0; top: 0; }
+    .f17-dimlab span { display: block; opacity: 0; }
+
+    #f17-readout { position: absolute; left: 880px; top: 230px; width: 860px; height: 400px; }
+    #f17-row { position: absolute; left: 0; top: 60px; width: 860px; height: 150px; display: flex; align-items: baseline; }
+    .f17-big {
+      font-family: "Lora", serif; font-weight: 700; font-size: 124px; line-height: 1.1;
+      letter-spacing: -0.02em; white-space: nowrap;
+      font-variant-numeric: tabular-nums lining-nums;
+      opacity: 0;
+    }
+    #f17-n1 { width: 350px; text-align: right; }
+    #f17-x { width: 120px; text-align: center; color: var(--muted); font-size: 96px; }
+    #f17-n2 { width: 350px; text-align: left; }
+    #f17-bigunder { position: absolute; left: 30px; top: 215px; width: 780px; height: 30px; overflow: visible; }
+    #f17-px {
+      position: absolute; left: 0; top: 260px; width: 860px; height: 60px;
+      font-size: 44px; font-weight: 600; line-height: 60px; text-align: center; color: var(--muted);
+      white-space: nowrap; opacity: 0;
+    }
+    #f17-sp4 { left: 30px; top: 0; }
+  </style>
+
+  <div id="root" data-composition-id="17-nhung-con-so-can-biet" data-width="1920" data-height="1080" data-duration="14.987">
+    <div id="f17-ground" class="clip" data-start="0" data-duration="14.987" data-track-index="0"></div>
+    <div id="f17-stage" class="clip" data-start="0" data-duration="14.987" data-track-index="1">
+      <div id="f17-view">
+
+        <!-- ===== shot 1: triptych of limits ===== -->
+        <div id="f17-s1" class="f17-layer">
+          <div id="f17-cam1" class="f17-layer">
+            <svg class="f17-svgfull" viewBox="0 0 1760 820">
+              <line id="f17-div1" x1="590" y1="150" x2="590" y2="620" stroke="#F0EEE6" stroke-opacity="0.14" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+              <line id="f17-div2" x1="1170" y1="150" x2="1170" y2="620" stroke="#F0EEE6" stroke-opacity="0.14" stroke-width="2" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+
+            <!-- column 1: files per chat -->
+            <div id="f17-col1" class="f17-col">
+              <div class="f17-icon">
+                <svg viewBox="0 0 220 150">
+                  <g id="f17-bubble" opacity="0">
+                    <path d="M62 22 H158 Q176 22 176 40 V92 Q176 110 158 110 H100 L74 132 L78 110 H62 Q44 110 44 92 V40 Q44 22 62 22 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M70 52 H150 M70 78 H128" stroke="#9A968C" stroke-width="4" stroke-linecap="round"/>
+                  </g>
+                  <g id="f17-docL" opacity="0">
+                    <path d="M4 56 H30 L42 68 V112 H4 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="3.5" stroke-linejoin="round"/>
+                    <path d="M12 80 H34 M12 94 H30" stroke="#9A968C" stroke-width="3" stroke-linecap="round"/>
+                  </g>
+                  <g id="f17-docR" opacity="0">
+                    <path d="M178 46 H204 L216 58 V102 H178 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="3.5" stroke-linejoin="round"/>
+                    <path d="M186 70 H208 M186 84 H204" stroke="#9A968C" stroke-width="3" stroke-linecap="round"/>
+                  </g>
+                </svg>
+              </div>
+              <div id="f17-num1" class="f17-num">0</div>
+              <svg class="f17-under" viewBox="0 0 400 30">
+                <path id="f17-u1" d="M120 16 C 160 10, 220 22, 280 13" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+              </svg>
+              <div id="f17-lab1" class="f17-lab">file</div>
+              <div id="f17-sp1" class="f17-spark"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-18" x2="0" y2="18"/><line x1="-18" y1="0" x2="18" y2="0"/><line x1="-12.7" y1="-12.7" x2="12.7" y2="12.7"/><line x1="-12.7" y1="12.7" x2="12.7" y2="-12.7"/></g></svg></div>
+            </div>
+
+            <!-- column 2: size per file -->
+            <div id="f17-col2" class="f17-col">
+              <div class="f17-icon">
+                <svg viewBox="0 0 220 150">
+                  <g id="f17-weight" opacity="0">
+                    <path d="M92 40 Q92 18 110 18 Q128 18 128 40" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M70 40 H150 L172 132 H48 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M84 104 H136" stroke="#9A968C" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M92 80 H128" stroke="#9A968C" stroke-width="4" stroke-linecap="round"/>
+                  </g>
+                </svg>
+              </div>
+              <div id="f17-num2" class="f17-num">0</div>
+              <svg class="f17-under" viewBox="0 0 400 30">
+                <path id="f17-u2" d="M80 14 C 150 22, 240 8, 320 16" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+              </svg>
+              <div id="f17-lab2" class="f17-lab">MB</div>
+              <div id="f17-sp2" class="f17-spark"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-18" x2="0" y2="18"/><line x1="-18" y1="0" x2="18" y2="0"/><line x1="-12.7" y1="-12.7" x2="12.7" y2="12.7"/><line x1="-12.7" y1="12.7" x2="12.7" y2="-12.7"/></g></svg></div>
+            </div>
+
+            <!-- column 3: pages per PDF -->
+            <div id="f17-col3" class="f17-col">
+              <div class="f17-icon">
+                <svg viewBox="0 0 220 150">
+                  <g id="f17-pgback" opacity="0">
+                    <path d="M92 8 H146 L168 30 V122 H92 Z" fill="#2A2926" stroke="#9A968C" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M80 16 H134 L156 38 V130 H80 Z" fill="#2A2926" stroke="#9A968C" stroke-width="3" stroke-linejoin="round"/>
+                  </g>
+                  <g id="f17-pg" opacity="0">
+                    <path d="M66 24 H120 L142 46 V140 H66 Z" fill="#2A2926" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M120 24 V46 H142" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M80 72 H128 M80 92 H128 M80 112 H112" stroke="#9A968C" stroke-width="4" stroke-linecap="round"/>
+                  </g>
+                </svg>
+              </div>
+              <div id="f17-num3" class="f17-num">0</div>
+              <svg class="f17-under" viewBox="0 0 400 30">
+                <path id="f17-u3" d="M50 16 C 140 8, 250 22, 350 12" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+              </svg>
+              <div id="f17-lab3" class="f17-lab">trang PDF</div>
+              <div id="f17-sp3" class="f17-spark"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-18" x2="0" y2="18"/><line x1="-18" y1="0" x2="18" y2="0"/><line x1="-12.7" y1="-12.7" x2="12.7" y2="12.7"/><line x1="-12.7" y1="12.7" x2="12.7" y2="-12.7"/></g></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== shot 2: one photo tile inside a huge pixel square ===== -->
+        <div id="f17-s2" class="f17-layer">
+          <div id="f17-cam2" class="f17-layer">
+            <div id="f17-square">
+              <svg viewBox="0 0 598 598">
+                <g stroke="#F0EEE6" stroke-opacity="0.07" stroke-width="1">
+                  <path d="M59.8 0 V598 M119.6 0 V598 M179.4 0 V598 M239.2 0 V598 M299 0 V598 M358.8 0 V598 M418.6 0 V598 M478.4 0 V598 M538.2 0 V598"/>
+                  <path d="M0 59.8 H598 M0 119.6 H598 M0 179.4 H598 M0 239.2 H598 M0 299 H598 M0 358.8 H598 M0 418.6 H598 M0 478.4 H598 M0 538.2 H598"/>
+                </g>
+              </svg>
+            </div>
+            <div id="f17-tile">
+              <svg viewBox="0 0 110 110">
+                <rect x="1" y="1" width="108" height="108" rx="6" fill="#1F1E1D" stroke="#F0EEE6" stroke-width="2"/>
+                <circle cx="76" cy="34" r="11" fill="none" stroke="#F0EEE6" stroke-width="2"/>
+                <path d="M8 92 C 24 66, 38 58, 52 72 C 62 82, 70 70, 80 62 C 90 56, 98 66, 104 76" fill="none" stroke="#F0EEE6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div id="f17-up">
+              <svg viewBox="0 0 34 34">
+                <circle cx="17" cy="17" r="15" fill="#2A2926" stroke="#8FB8A8" stroke-width="2"/>
+                <path d="M17 25 V10 M11 15 L17 9 L23 15" fill="none" stroke="#8FB8A8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <svg class="f17-svgfull" viewBox="0 0 1760 820">
+              <g fill="none" stroke="#F0EEE6" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round">
+                <path id="f17-dimT" d="M180 70 H780 M180 58 V82 M780 58 V82" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+                <path id="f17-dimS" d="M130 110 V710 M118 110 H142 M118 710 H142" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+              </g>
+            </svg>
+            <div id="f17-dimtop" class="f17-dimlab"><span id="f17-dimtopt">8000</span></div>
+            <div id="f17-dimside-rot"><div id="f17-dimside" class="f17-dimlab"><span id="f17-dimsidet">8000</span></div></div>
+          </div>
+
+          <div id="f17-readout">
+            <div id="f17-sp4" class="f17-spark"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-18" x2="0" y2="18"/><line x1="-18" y1="0" x2="18" y2="0"/><line x1="-12.7" y1="-12.7" x2="12.7" y2="12.7"/><line x1="-12.7" y1="12.7" x2="12.7" y2="-12.7"/></g></svg></div>
+            <div id="f17-row">
+              <span id="f17-n1" class="f17-big">0</span><span id="f17-x" class="f17-big">×</span><span id="f17-n2" class="f17-big">0</span>
+            </div>
+            <svg id="f17-bigunder" viewBox="0 0 780 30">
+              <path id="f17-u4" d="M40 16 C 240 8, 520 24, 740 12" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            </svg>
+            <div id="f17-px">điểm ảnh</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var CREAM = "#F0EEE6", GOLD = "#D97757", MUTED = "#9A968C";
+      var q = function (id) { return document.getElementById(id); };
+
+      // initial (pre-timeline) states
+      gsap.set("#f17-cam1", { x: 170, scale: 1.12 });
+      gsap.set("#f17-cam2", { x: 400, scale: 5 });
+      gsap.set(["#f17-num1", "#f17-num2", "#f17-num3"], { color: MUTED });
+      gsap.set(["#f17-n1", "#f17-n2"], { color: GOLD });
+
+      var tl = gsap.timeline({ paused: true });
+
+      function spark(id, t) {
+        tl.fromTo(id, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, t);
+      }
+      function count(id, n, t, d) {
+        tl.fromTo(id, { textContent: 0 }, { textContent: n, snap: { textContent: 1 }, duration: d, ease: "power2.out" }, t);
+      }
+
+      // ---------- shot 1: triptych (0 – ~10.4 s) ----------
+      // "Mỗi" 0.31: frame lines + the first slot
+      tl.fromTo("#f17-div1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, 0.2);
+      tl.fromTo("#f17-div2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, 0.3);
+      tl.fromTo("#f17-num1", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.31);
+      // "trò chuyện" 0.67: chat bubble
+      tl.fromTo("#f17-bubble", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.67);
+
+      // "hai mươi" 1.48: 20 counts up, grows, terracotta
+      tl.set("#f17-num1", { color: GOLD }, 1.48);
+      count("#f17-num1", 20, 1.48, 0.6);
+      tl.fromTo("#f17-num1", { scale: 0.62 }, { immediateRender: false, scale: 1, duration: 0.6, ease: "power2.out" }, 1.48);
+      spark("#f17-sp1", 1.64);
+      tl.fromTo("#f17-u1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 1.7);
+      // "file" 1.80: label + files leave the chat
+      tl.fromTo("#f17-lab1", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.8);
+      tl.fromTo("#f17-docL", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 1.8);
+      tl.fromTo("#f17-docR", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 1.9);
+
+      // camera push to column 2
+      tl.to("#f17-cam1", { x: 0, duration: 1.2, ease: "power2.inOut" }, 3.65);
+      // "nặng" 4.54: weight glyph
+      tl.fromTo("#f17-weight", { opacity: 0, y: -26 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.54);
+      // "năm trăm" 5.08: 500, column 1 returns to cream
+      tl.to("#f17-num1", { color: CREAM, duration: 0.3, ease: "power2.out" }, 5.08);
+      tl.to("#f17-sp1", { opacity: 0, duration: 0.3, ease: "power2.out" }, 5.08);
+      tl.to("#f17-u1", { opacity: 0.25, duration: 0.3, ease: "power2.out" }, 5.08);
+      tl.set("#f17-num2", { color: GOLD }, 5.08);
+      tl.fromTo("#f17-num2", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.08);
+      count("#f17-num2", 500, 5.08, 0.8);
+      tl.fromTo("#f17-num2", { scale: 0.62 }, { immediateRender: false, scale: 1, duration: 0.8, ease: "power2.out" }, 5.08);
+      spark("#f17-sp2", 5.28);
+      tl.fromTo("#f17-u2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 5.4);
+      // "megabyte" 5.52
+      tl.fromTo("#f17-lab2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.52);
+
+      // camera push to column 3
+      tl.to("#f17-cam1", { x: -170, duration: 1.2, ease: "power2.inOut" }, 7.2);
+      // "PDF" 7.99: page; "dài" 8.94: the stack behind it
+      tl.fromTo("#f17-pg", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.99);
+      tl.fromTo("#f17-pgback", { opacity: 0, x: -16, y: 12 }, { opacity: 1, x: 0, y: 0, duration: 0.5, ease: "power3.out" }, 8.94);
+      // "một nghìn" 9.43: 1000
+      tl.to("#f17-num2", { color: CREAM, duration: 0.3, ease: "power2.out" }, 9.43);
+      tl.to("#f17-sp2", { opacity: 0, duration: 0.3, ease: "power2.out" }, 9.43);
+      tl.to("#f17-u2", { opacity: 0.25, duration: 0.3, ease: "power2.out" }, 9.43);
+      tl.set("#f17-num3", { color: GOLD }, 9.43);
+      tl.fromTo("#f17-num3", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 9.43);
+      count("#f17-num3", 1000, 9.43, 0.5);
+      tl.fromTo("#f17-num3", { scale: 0.62 }, { immediateRender: false, scale: 1, duration: 0.5, ease: "power2.out" }, 9.43);
+      spark("#f17-sp3", 9.59);
+      // "trang" 9.79
+      tl.fromTo("#f17-lab3", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.79);
+      tl.fromTo("#f17-u3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 9.79);
+      // pull back so all three read together
+      tl.to("#f17-cam1", { x: 0, scale: 1, duration: 0.55, ease: "power2.inOut" }, 9.85);
+
+      // zoom-through swap into shot 2
+      tl.to("#f17-s1", { scale: 1.18, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power2.in" }, 10.35);
+      tl.fromTo("#f17-s2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 10.42);
+
+      // ---------- shot 2: pixel zoom-out (~10.4 – 14.49 s) ----------
+      // "Ảnh" 10.67: photo tile; "tải lên" 10.80: upload badge
+      tl.fromTo("#f17-tile", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 10.67);
+      tl.fromTo("#f17-up", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 10.8);
+      // one decelerating zoom-out reveals the huge square
+      tl.to("#f17-cam2", { x: 0, scale: 1, duration: 1.45, ease: "power3.out" }, 10.95);
+
+      // "tám nghìn" 12.32: top edge + first 8000
+      tl.fromTo("#f17-dimT", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 12.32);
+      tl.fromTo("#f17-dimtopt", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.52);
+      tl.fromTo("#f17-n1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.32);
+      count("#f17-n1", 8000, 12.32, 0.5);
+      spark("#f17-sp4", 12.32);
+      // "nhân" 12.72
+      tl.fromTo("#f17-x", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 12.72);
+      // "tám nghìn" 13.00: side edge + second 8000
+      tl.fromTo("#f17-dimS", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 13.0);
+      tl.fromTo("#f17-dimsidet", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power3.out" }, 13.25);
+      tl.fromTo("#f17-n2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 13.0);
+      count("#f17-n2", 8000, 13.0, 0.45);
+      // "điểm ảnh" 13.45
+      tl.fromTo("#f17-px", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 13.45);
+      tl.fromTo("#f17-u4", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 13.5);
+      // quiet settle (≤ 2 % drift)
+      tl.fromTo("#f17-readout", { scale: 1 }, { scale: 1.015, duration: 1.0, ease: "none" }, 13.48);
+
+      tl.to({}, { duration: 14.487 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["17-nhung-con-so-can-biet"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,275 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f20-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(28, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f20-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f20- */
+    #f20-view { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: hidden; }
+    #f20-world { position: absolute; left: 0; top: 0; width: 3400px; height: 820px; }
+    .f20-svgw { position: absolute; left: 0; top: 0; width: 3400px; height: 820px; overflow: visible; }
+    .f20-spk { position: absolute; left: 0; top: 0; width: 40px; height: 40px; }
+    .f20-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* station 1: the draft */
+    #f20-draft {
+      position: absolute; left: 640px; top: 150px; width: 480px; height: 310px;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.10); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f20-bar { position: absolute; left: 44px; height: 18px; border-radius: 9px; background: rgba(154,150,140,.38); }
+    #f20-draft-kick {
+      position: absolute; left: 44px; top: 36px; font-family: "JetBrains Mono", monospace;
+      font-size: 28px; letter-spacing: 0.14em; color: var(--muted); line-height: 36px;
+    }
+    #f20-draft-label {
+      position: absolute; left: 640px; top: 500px; width: 480px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 64px; line-height: 1.12; opacity: 0;
+    }
+    #f20-tag {
+      position: absolute; left: 1010px; top: 110px; height: 60px; padding: 0 26px;
+      border-radius: 30px; border: 2px solid rgba(154,150,140,.7); background: #1F1E1D;
+      font-size: 32px; font-weight: 600; color: var(--muted); line-height: 56px; white-space: nowrap;
+      opacity: 0;
+    }
+
+    /* station 2: the fanned feedback moves */
+    .f20-card {
+      position: absolute; top: 230px; width: 360px; height: 340px;
+      background: var(--surface); border: 2px solid rgba(240,238,230,.12); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f20-c1 { left: 1900px; }
+    #f20-c2 { left: 2320px; }
+    #f20-c3 { left: 2740px; }
+    .f20-card svg { position: absolute; left: 132px; top: 64px; width: 96px; height: 96px; overflow: visible; }
+    .f20-card-lab {
+      position: absolute; left: 0; top: 206px; width: 360px; text-align: center;
+      font-size: 48px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f20-num {
+      position: absolute; left: 24px; top: 20px; width: 40px; height: 40px; border-radius: 20px;
+      border: 1.5px solid rgba(154,150,140,.8); color: var(--muted);
+      font-size: 28px; font-weight: 600; line-height: 38px; text-align: center;
+    }
+
+    /* shot 2: the loop ring */
+    #f20-ring { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; opacity: 0; }
+    #f20-ringsvg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f20-node-lab {
+      position: absolute; font-family: "Lora", serif; font-weight: 700; font-size: 52px;
+      line-height: 1.12; white-space: nowrap; opacity: 0;
+    }
+    #f20-n1 { left: 580px; top: 58px; width: 600px; text-align: center; }
+    #f20-n2 { left: 1160px; top: 596px; width: 520px; text-align: left; }
+    #f20-n3 { left: 80px; top: 596px; width: 520px; text-align: right; color: var(--gold); }
+    #f20-kick {
+      position: absolute; left: 580px; top: 356px; width: 600px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      color: var(--muted); line-height: 36px; opacity: 0;
+    }
+    #f20-center {
+      position: absolute; left: 580px; top: 404px; width: 600px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 58px; line-height: 1.12; white-space: nowrap;
+    }
+    #f20-center span { display: inline-block; opacity: 0; }
+    #f20-arm { position: absolute; left: 880px; top: 440px; width: 0; height: 0; }
+    #f20-arm .f20-spk { left: -21px; top: -301px; width: 42px; height: 42px; }
+  </style>
+
+  <div id="root" data-composition-id="20-sua-va-hoi-tiep" data-width="1920" data-height="1080" data-duration="13.444">
+    <div id="f20-ground" class="clip" data-start="0" data-duration="13.444" data-track-index="0"></div>
+    <div id="f20-stage" class="clip" data-start="0" data-duration="13.444" data-track-index="1">
+
+      <!-- shot 1: wide canvas panned by one camera -->
+      <div id="f20-view">
+        <div id="f20-world">
+          <svg class="f20-svgw" viewBox="0 0 3400 820">
+            <path id="f20-path" d="M1150 330 C 1320 240, 1470 440, 1630 340 S 1830 270, 1880 350" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <path id="f20-path-head" d="M-18 -13 L2 0 L-18 13" transform="translate(1880 350) rotate(58)" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+          </svg>
+
+          <div id="f20-draft">
+            <div id="f20-draft-kick">LẦN 1</div>
+            <div class="f20-bar" style="top:108px;width:380px;"></div>
+            <div class="f20-bar" style="top:148px;width:320px;"></div>
+            <div class="f20-bar" style="top:188px;width:360px;"></div>
+            <div class="f20-bar" style="top:228px;width:210px;"></div>
+          </div>
+          <div id="f20-tag">chưa ưng ý?</div>
+          <div id="f20-draft-label">Bản nháp</div>
+
+          <div id="f20-c1" class="f20-card">
+            <div class="f20-num">1</div>
+            <svg viewBox="0 0 96 96"><path d="M16 14 H80 Q88 14 88 22 V60 Q88 68 80 68 H44 L26 84 L30 68 H16 Q8 68 8 60 V22 Q8 14 16 14 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/><path d="M26 34 H70 M26 50 H56" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/></svg>
+            <div class="f20-card-lab">Phản hồi</div>
+          </div>
+          <div id="f20-c2" class="f20-card">
+            <div class="f20-num">2</div>
+            <svg viewBox="0 0 96 96"><circle cx="40" cy="40" r="28" fill="none" stroke="#F0EEE6" stroke-width="5"/><path d="M61 61 L86 86" stroke="#F0EEE6" stroke-width="7" stroke-linecap="round"/></svg>
+            <div class="f20-card-lab">Làm rõ</div>
+          </div>
+          <div id="f20-c3" class="f20-card">
+            <div class="f20-num">3</div>
+            <svg viewBox="0 0 96 96"><path d="M64 12 L84 32 L36 80 L12 86 L18 62 Z" fill="none" stroke="#F0EEE6" stroke-width="5" stroke-linejoin="round"/><path d="M54 22 L74 42" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round"/></svg>
+            <div class="f20-card-lab">Viết lại</div>
+          </div>
+
+          <div id="f20-spark1" class="f20-spk"></div>
+        </div>
+      </div>
+
+      <!-- shot 2: the loop -->
+      <div id="f20-ring">
+        <svg id="f20-ringsvg" viewBox="0 0 1760 820">
+          <path id="f20-circle" d="M880 160 C 1045 158, 1163 282, 1160 442 C 1157 598, 1036 722, 878 720 C 720 718, 598 596, 601 438 C 604 282, 722 162, 884 161" fill="none" stroke="rgba(240,238,230,.45)" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <g fill="none" stroke="rgba(240,238,230,.6)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path id="f20-ah1" d="M-12 -11 L2 0 L-12 11" transform="translate(1122 300) rotate(60)" opacity="0"/>
+            <path id="f20-ah2" d="M-12 -11 L2 0 L-12 11" transform="translate(880 720) rotate(180)" opacity="0"/>
+            <path id="f20-ah3" d="M-12 -11 L2 0 L-12 11" transform="translate(638 300) rotate(-60)" opacity="0"/>
+          </g>
+          <circle id="f20-d1" cx="880" cy="160" r="16" fill="#F0EEE6" opacity="0"/>
+          <circle id="f20-d2" cx="1122" cy="580" r="16" fill="#F0EEE6" opacity="0"/>
+          <circle id="f20-d3h" cx="638" cy="580" r="16" fill="#1F1E1D" stroke="#9A968C" stroke-width="3" opacity="0"/>
+          <circle id="f20-d3" cx="638" cy="580" r="22" fill="#D97757" opacity="0"/>
+        </svg>
+        <div id="f20-n1" class="f20-node-lab">Bản nháp</div>
+        <div id="f20-n2" class="f20-node-lab">Phản hồi</div>
+        <div id="f20-n3" class="f20-node-lab">Tốt hơn</div>
+        <div id="f20-kick">MỖI LƯỢT</div>
+        <div id="f20-center"><span id="f20-w1">cuộc</span> <span id="f20-w2">trò</span> <span id="f20-w3">chuyện</span></div>
+        <div id="f20-arm"><div id="f20-spark2" class="f20-spk"></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="20-sua-va-hoi-tiep"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f20-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      var path = q('#f20-path');
+      var spark1 = q('#f20-spark1');
+      var TOTAL = path.getTotalLength();
+      var ride = { p: 0 };
+      function placeSpark() {
+        var pt = path.getPointAtLength(TOTAL * ride.p);
+        gsap.set(spark1, { x: pt.x - 20, y: pt.y - 20 });
+      }
+
+      // initial states (before the timeline is built)
+      gsap.set('#f20-world', { transformOrigin: '0 0', x: 0 });
+      gsap.set(spark1, { x: 1130, y: 310, scale: 0, opacity: 0, transformOrigin: '50% 50%' });
+      gsap.set('#f20-arm', { transformOrigin: '0px 0px', rotation: 0 });
+      gsap.set('#f20-spark2', { scale: 0, opacity: 0, transformOrigin: '50% 50%' });
+      gsap.set('#f20-ring', { transformOrigin: '880px 440px' });
+      gsap.set('#f20-d3', { svgOrigin: '638 580' });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var MOVE = 'power2.inOut';
+
+      // ---- Scene 1: journey across the strip ----
+      // station 1: the draft ("Câu trả lời đầu tiên")
+      tl.fromTo('#f20-draft', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.0);
+      tl.fromTo('#f20-draft-label', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.31);
+      // slow drift while holding on station 1
+      tl.fromTo('#f20-world', { x: 0 }, { x: -30, duration: 2.3, ease: 'none' }, 0.2);
+      // "chưa ưng ý?"
+      tl.fromTo('#f20-tag', { scale: 0.6, rotation: 0, opacity: 0 }, { scale: 1, rotation: -5, opacity: 1, duration: 0.45, ease: IN }, 1.23);
+
+      // pan along the hand-drawn path to the fanned stop (after "Không sao cả")
+      tl.to('#f20-world', { x: -1620, duration: 1.0, ease: MOVE }, 2.55);
+      tl.to(path, { strokeDashoffset: 0, duration: 0.95, ease: 'none' }, 2.55);
+      tl.fromTo(spark1, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: IN }, 2.5);
+      tl.fromTo(ride, { p: 0 }, { p: 1, duration: 0.95, ease: 'none', onUpdate: placeSpark }, 2.55);
+      tl.fromTo('#f20-path-head', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 3.45);
+
+      // fanned stop: each move reveals on its cue; the spark hops to the active card
+      var cards = [
+        { id: '#f20-c1', t: 3.60, rot: -6, dy: 22, sx: 2060 },
+        { id: '#f20-c2', t: 4.45, rot: 0, dy: 0, sx: 2480 },
+        { id: '#f20-c3', t: 5.88, rot: 6, dy: 22, sx: 2900 }
+      ];
+      cards.forEach(function (c, i) {
+        tl.fromTo(c.id, { y: c.dy + 60, rotation: 0, opacity: 0, scale: 0.9 },
+          { y: c.dy, rotation: c.rot, opacity: 1, scale: 1, duration: 0.55, ease: IN }, c.t);
+        tl.fromTo(c.id, { borderColor: 'rgba(240,238,230,0.12)' }, { borderColor: 'rgba(217,119,87,1)', duration: 0.3, ease: 'none' }, c.t + 0.1);
+        if (i > 0) {
+          tl.to(cards[i - 1].id, { borderColor: 'rgba(240,238,230,0.12)', duration: 0.3, ease: 'none' }, c.t + 0.1);
+        }
+        tl.to(spark1, { x: c.sx, y: 150 + c.dy, rotation: 20 * (i + 1), duration: 0.45, ease: MOVE }, i === 0 ? c.t : c.t - 0.05);
+      });
+      // quiet hold drift
+      tl.to('#f20-world', { x: -1650, duration: 1.4, ease: 'none' }, 5.94);
+
+      // ---- Scene 2: the loop ring (zoom-through swap) ----
+      tl.to('#f20-view', { scale: 1.12, opacity: 0, filter: 'blur(8px)', duration: 0.4, ease: 'power2.in', transformOrigin: '50% 50%' }, 7.34);
+      tl.fromTo('#f20-ring', { scale: 0.86, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: IN }, 7.44);
+      tl.to('#f20-circle', { strokeDashoffset: 0, duration: 0.7, ease: 'none' }, 7.5);
+      tl.fromTo('#f20-d1', { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'none' }, 7.5);
+      tl.fromTo('#f20-n1', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 7.5);
+      tl.fromTo('#f20-kick', { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 7.55);
+      tl.fromTo('#f20-d2', { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'none' }, 7.7);
+      tl.fromTo('#f20-n2', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 7.7);
+      tl.fromTo('#f20-d3h', { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'none' }, 7.9);
+      tl.fromTo(['#f20-ah1', '#f20-ah2', '#f20-ah3'], { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'none', stagger: 0.1 }, 7.95);
+
+      // the spark runs round the loop, reaching "Tốt hơn" on its cue
+      tl.fromTo('#f20-spark2', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: IN }, 7.55);
+      tl.fromTo('#f20-arm', { rotation: 0 }, { rotation: 240, duration: 0.77, ease: MOVE }, 7.55);
+      tl.fromTo('#f20-d3', { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.4, ease: IN }, 8.32);
+      tl.fromTo('#f20-n3', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 8.32);
+      tl.to('#f20-arm', { rotation: 600, duration: 12.944 - 8.4, ease: 'none' }, 8.4);
+
+      // centre label lands word by word ("cuộc trò chuyện")
+      tl.fromTo('#f20-w1', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 10.01);
+      tl.fromTo('#f20-w2', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 10.19);
+      tl.fromTo('#f20-w3', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 10.35);
+
+      tl.to({}, { duration: 12.944 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["20-sua-va-hoi-tiep"] = tl;
+    })();
+  </script>
+</template>

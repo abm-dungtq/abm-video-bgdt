@@ -1,0 +1,449 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f67-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f67-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f67-spark { display: block; overflow: visible; }
+    .f67-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f67-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f67-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f67-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f67-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f67-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f67-scene { position: absolute; inset: 0; transform-origin: 880px 440px; }
+    .f67-w { display: inline-block; opacity: 0; }
+
+    /* ---------- Scene 1: chat viewport + inline interactive card ---------- */
+    #f67-view {
+      position: absolute; left: 380px; top: 96px; width: 1000px; height: 712px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    #f67-view-bar {
+      position: absolute; left: 0; top: 0; right: 0; height: 56px; display: flex; align-items: center;
+      gap: 12px; padding: 0 24px; border-bottom: 1px solid rgba(240,238,230,.08); box-sizing: border-box;
+      background: #2A2926; z-index: 2;
+    }
+    .f67-dot { width: 14px; height: 14px; border-radius: 50%; background: #9A968C; opacity: .55; }
+    #f67-view-title { margin-left: 18px; width: 200px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.12); }
+    #f67-thread { position: absolute; left: 0; top: 56px; width: 1000px; height: 656px; transform-origin: 0 0; }
+    .f67-bub { position: absolute; border-radius: 22px; background: rgba(240,238,230,.10); opacity: 0; }
+    .f67-ln { position: absolute; height: 18px; border-radius: 9px; background: rgba(240,238,230,.16); opacity: 0; transform-origin: 0 50%; }
+    #f67-u1 { left: 560px; top: 36px; width: 380px; height: 64px; }
+    #f67-u1 i, #f67-u2 i { position: absolute; left: 28px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.18); top: 25px; }
+    #f67-u2 { left: 660px; top: 598px; width: 280px; height: 56px; }
+    #f67-a1 { left: 60px; top: 136px; width: 640px; }
+    #f67-a2 { left: 60px; top: 170px; width: 580px; }
+    #f67-a3 { left: 60px; top: 204px; width: 360px; }
+
+    #f67-card {
+      position: absolute; left: 60px; top: 250px; width: 700px; height: 330px; box-sizing: border-box;
+      background: #34322E; border-radius: 16px; border: 2px solid #D97757;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      transform-origin: 50% 0; opacity: 0;
+    }
+    #f67-card-h { position: absolute; left: 28px; top: 30px; width: 180px; height: 16px; border-radius: 8px; background: rgba(240,238,230,.22); }
+    #f67-card-h2 { position: absolute; left: 28px; top: 58px; width: 110px; height: 12px; border-radius: 6px; background: rgba(240,238,230,.12); }
+    #f67-tog { position: absolute; left: 606px; top: 22px; width: 64px; height: 34px; border-radius: 17px; background: #4A4843; }
+    #f67-knob { position: absolute; left: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: #F0EEE6; }
+    .f67-bar { position: absolute; bottom: 36px; width: 44px; border-radius: 6px 6px 2px 2px; background: rgba(240,238,230,.55); transform-origin: 50% 100%; }
+    .f67-bar.f67-hot { background: #8FB8A8; }
+    #f67-axis { position: absolute; left: 28px; bottom: 34px; width: 450px; height: 2px; background: rgba(240,238,230,.18); }
+    .f67-kpi { position: absolute; left: 510px; width: 160px; height: 90px; border-radius: 12px; background: rgba(240,238,230,.06); border: 1px solid rgba(240,238,230,.08); box-sizing: border-box; opacity: 0; }
+    .f67-kpi b { position: absolute; left: 18px; top: 20px; width: 90px; height: 22px; border-radius: 6px; background: rgba(240,238,230,.34); }
+    .f67-kpi i { position: absolute; left: 18px; top: 56px; width: 60px; height: 10px; border-radius: 5px; background: rgba(240,238,230,.14); }
+    #f67-k1 { top: 96px; }
+    #f67-k2 { top: 204px; }
+    #f67-cursor { position: absolute; left: 0; top: 0; width: 36px; height: 44px; overflow: visible; opacity: 0; }
+
+    #f67-key { position: absolute; left: 1200px; top: 180px; width: 540px; }
+    .f67-kl { font: 700 88px/1.1 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap; }
+    .f67-kl .f67-w { margin-right: 22px; }
+    #f67-ul { position: absolute; left: -6px; top: 196px; width: 420px; height: 36px; overflow: visible; }
+    #f67-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f67-where {
+      position: absolute; left: 0; top: 262px; display: flex; align-items: center; gap: 12px;
+      font: 500 34px/1.4 "Be Vietnam Pro", sans-serif; color: #9A968C; white-space: nowrap;
+    }
+    #f67-where-ic { width: 40px; height: 36px; overflow: visible; opacity: 0; flex: none; }
+    #f67-where-ic path { fill: none; stroke: #8FB8A8; stroke-width: 3; stroke-linejoin: round; }
+
+    /* ---------- Scene 2: triptych of inline cards ---------- */
+    .f67-tc {
+      position: absolute; top: 140px; width: 520px; height: 420px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 2px solid rgba(240,238,230,.12);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    #f67-c1 { left: 40px; }
+    #f67-c2 { left: 620px; }
+    #f67-c3 { left: 1200px; }
+    .f67-tc-h { position: absolute; left: 30px; top: 28px; width: 150px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.20); }
+    .f67-tc-d { position: absolute; right: 30px; top: 24px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(240,238,230,.22); box-sizing: border-box; }
+    .f67-tlab {
+      position: absolute; top: 590px; width: 520px; text-align: center;
+      font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap;
+    }
+    .f67-tlab .f67-w { margin: 0 6px; }
+    #f67-l1 { left: 40px; }
+    #f67-l2 { left: 620px; }
+    #f67-l3 { left: 1200px; }
+    /* card 1 bars */
+    .f67-cb { position: absolute; bottom: 60px; width: 52px; border-radius: 8px 8px 2px 2px; background: rgba(240,238,230,.50); transform-origin: 50% 100%; }
+    .f67-cb.f67-hot { background: #8FB8A8; }
+    #f67-c1-axis { position: absolute; left: 36px; right: 36px; bottom: 58px; height: 2px; background: rgba(240,238,230,.18); }
+    /* card 2 columns */
+    .f67-col { position: absolute; top: 76px; width: 136px; height: 316px; border-radius: 12px; background: rgba(240,238,230,.05); }
+    .f67-col-h { position: absolute; left: 16px; top: 16px; width: 70px; height: 12px; border-radius: 6px; background: rgba(240,238,230,.22); }
+    .f67-task { position: absolute; width: 112px; height: 58px; border-radius: 10px; background: #3A3834; border: 1px solid rgba(240,238,230,.10); box-sizing: border-box; opacity: 0; }
+    .f67-task i { position: absolute; left: 12px; top: 14px; width: 70px; height: 10px; border-radius: 5px; background: rgba(240,238,230,.28); }
+    .f67-task b { position: absolute; left: 12px; top: 34px; width: 44px; height: 8px; border-radius: 4px; background: rgba(240,238,230,.14); }
+    #f67-mv { border-color: #8FB8A8; }
+    /* card 3 design tool */
+    #f67-c3-svg { position: absolute; left: 0; top: 0; width: 520px; height: 420px; overflow: visible; }
+    .f67-tool { fill: rgba(240,238,230,.10); }
+    .f67-shp { fill: none; stroke: #F0EEE6; stroke-width: 4; stroke-linejoin: round; opacity: 0; }
+    #f67-sel rect { fill: none; stroke: #8FB8A8; stroke-width: 2; stroke-dasharray: 8 6; }
+    #f67-sel .f67-hd { fill: #1F1E1D; stroke: #8FB8A8; stroke-width: 2; stroke-dasharray: none; }
+
+    /* ---------- Scene 3: chat bubble becomes a workspace ---------- */
+    #f67-bub3 {
+      position: absolute; left: 740px; top: 350px; width: 280px; height: 120px; box-sizing: border-box;
+      border-radius: 28px; background: #2A2926; border: 2px solid rgba(240,238,230,.16); opacity: 0;
+    }
+    #f67-bub3 .f67-ln { opacity: 1; }
+    #f67-bub3-tail { position: absolute; left: 40px; top: 114px; width: 40px; height: 30px; overflow: visible; }
+    #f67-bub3-tail path { fill: #2A2926; stroke: rgba(240,238,230,.16); stroke-width: 2; }
+    #f67-ws {
+      position: absolute; left: 220px; top: 250px; width: 1320px; height: 320px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06); opacity: 0;
+    }
+    #f67-ws-bar {
+      position: absolute; left: 0; top: 0; right: 0; height: 64px; box-sizing: border-box;
+      border-bottom: 1px solid rgba(240,238,230,.08); display: flex; align-items: center; gap: 18px; padding: 0 28px;
+    }
+    .f67-mini { width: 40px; height: 40px; border-radius: 10px; background: rgba(240,238,230,.06); overflow: visible; opacity: 0; }
+    .f67-mini * { fill: none; stroke: #9A968C; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    #f67-type {
+      position: absolute; left: 0; right: 0; top: 108px; display: flex; justify-content: center; align-items: center;
+      font: 700 96px/1.1 "Lora", serif; letter-spacing: -0.01em; white-space: pre;
+    }
+    .f67-c { visibility: hidden; border-right: 5px solid transparent; margin-right: -5px; }
+    #f67-type-spark { width: 44px; height: 44px; margin-left: 22px; flex: none; opacity: 0; }
+    #f67-ul3 { position: absolute; left: 0; top: 0; width: 1320px; height: 320px; overflow: visible; }
+    #f67-ul3 path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  </style>
+
+  <div id="root" data-composition-id="67-connector-co-giao-dien-rieng" data-width="1920" data-height="1080" data-duration="11.901">
+    <div id="f67-ground" class="clip" data-start="0" data-duration="11.901" data-track-index="0"></div>
+    <div id="f67-stage" class="clip" data-start="0" data-duration="11.901" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f67-rail">
+        <div id="f67-pill1" class="f67-pill"><span id="f67-b1" class="f67-badge">1</span>Tính năng<svg id="f67-ps1" class="f67-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f67-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f67-pill2" class="f67-pill"><span id="f67-b2" class="f67-badge">2</span>Vì sao nổi bật<svg id="f67-ps2" class="f67-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f67-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f67-pill3" class="f67-pill"><span id="f67-b3" class="f67-badge">3</span>Bạn được gì<svg id="f67-ps3" class="f67-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: zoom into a chat thread where an interactive card renders inline -->
+      <div class="f67-scene" id="f67-s1">
+        <div id="f67-view">
+          <div id="f67-view-bar"><span class="f67-dot"></span><span class="f67-dot"></span><span class="f67-dot"></span><span id="f67-view-title"></span></div>
+          <div id="f67-thread">
+            <div class="f67-bub" id="f67-u1"><i style="width:240px"></i></div>
+            <div class="f67-ln" id="f67-a1"></div>
+            <div class="f67-ln" id="f67-a2"></div>
+            <div class="f67-ln" id="f67-a3"></div>
+            <div id="f67-card">
+              <div id="f67-card-h"></div>
+              <div id="f67-card-h2"></div>
+              <div id="f67-tog"><div id="f67-knob"></div></div>
+              <div id="f67-axis"></div>
+              <div class="f67-bar" style="left:28px;height:90px"></div>
+              <div class="f67-bar" style="left:94px;height:140px"></div>
+              <div class="f67-bar" style="left:160px;height:110px"></div>
+              <div class="f67-bar" style="left:226px;height:180px"></div>
+              <div class="f67-bar" style="left:292px;height:150px"></div>
+              <div class="f67-bar f67-hot" id="f67-hotbar" style="left:358px;height:200px"></div>
+              <div class="f67-bar" style="left:424px;height:165px"></div>
+              <div class="f67-kpi" id="f67-k1"><b></b><i></i></div>
+              <div class="f67-kpi" id="f67-k2"><b></b><i></i></div>
+            </div>
+            <div class="f67-bub" id="f67-u2"><i style="width:160px"></i></div>
+            <svg id="f67-cursor" viewBox="0 0 36 44"><path d="M4 2 L4 36 L13 28 L19 41 L25 38 L19 26 L31 26 Z" fill="#F0EEE6" stroke="#1F1E1D" stroke-width="2.5" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div id="f67-key">
+          <div class="f67-kl"><span class="f67-w" id="f67-k-w1">giao</span><span class="f67-w" id="f67-k-w2">diện</span></div>
+          <div class="f67-kl"><span class="f67-w" id="f67-k-w3">tương</span><span class="f67-w" id="f67-k-w4">tác</span></div>
+          <svg id="f67-ul" viewBox="0 0 420 36"><path pathLength="1" d="M6 20 C 80 11, 160 27, 240 17 S 360 11, 412 19"/></svg>
+          <div id="f67-where">
+            <svg id="f67-where-ic" viewBox="0 0 40 36"><path d="M6 4 H34 A4 4 0 0 1 38 8 V22 A4 4 0 0 1 34 26 H16 L8 33 V26 H6 A4 4 0 0 1 2 22 V8 A4 4 0 0 1 6 4 Z"/></svg>
+            <span><span class="f67-w" id="f67-wh1">trong</span> <span class="f67-w" id="f67-wh2">cuộc</span> <span class="f67-w" id="f67-wh3">trò</span> <span class="f67-w" id="f67-wh4">chuyện</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: three inline card sketches -->
+      <div class="f67-scene" id="f67-s2">
+        <div class="f67-tc" id="f67-c1">
+          <div class="f67-tc-h"></div><div class="f67-tc-d"></div>
+          <div id="f67-c1-axis"></div>
+          <div class="f67-cb" style="left:44px;height:120px"></div>
+          <div class="f67-cb" style="left:118px;height:190px"></div>
+          <div class="f67-cb" style="left:192px;height:150px"></div>
+          <div class="f67-cb" style="left:266px;height:240px"></div>
+          <div class="f67-cb" style="left:340px;height:200px"></div>
+          <div class="f67-cb f67-hot" style="left:414px;height:280px"></div>
+        </div>
+        <div class="f67-tc" id="f67-c2">
+          <div class="f67-tc-h"></div><div class="f67-tc-d"></div>
+          <div class="f67-col" style="left:26px"><div class="f67-col-h"></div></div>
+          <div class="f67-col" style="left:192px"><div class="f67-col-h"></div></div>
+          <div class="f67-col" style="left:358px"><div class="f67-col-h"></div></div>
+          <div class="f67-task" style="left:38px;top:126px"><i></i><b></b></div>
+          <div class="f67-task" id="f67-mv" style="left:38px;top:196px"><i></i><b></b></div>
+          <div class="f67-task" style="left:204px;top:126px"><i></i><b></b></div>
+          <div class="f67-task" style="left:370px;top:126px"><i></i><b></b></div>
+          <div class="f67-task" style="left:370px;top:196px"><i></i><b></b></div>
+        </div>
+        <div class="f67-tc" id="f67-c3">
+          <div class="f67-tc-h"></div><div class="f67-tc-d"></div>
+          <svg id="f67-c3-svg" viewBox="0 0 520 420">
+            <rect class="f67-tool" x="28" y="80" width="44" height="300" rx="12"/>
+            <rect class="f67-tool" x="38" y="96" width="24" height="24" rx="6"/>
+            <rect class="f67-tool" x="38" y="136" width="24" height="24" rx="6"/>
+            <rect class="f67-tool" x="38" y="176" width="24" height="24" rx="6"/>
+            <circle class="f67-shp" id="f67-sh1" cx="180" cy="190" r="64"/>
+            <path class="f67-shp" id="f67-sh2" d="M360 108 L440 244 L280 244 Z"/>
+            <rect class="f67-shp" id="f67-sh3" x="230" y="278" width="170" height="96" rx="18"/>
+            <g id="f67-sel">
+              <rect x="106" y="116" width="148" height="148"/>
+              <rect class="f67-hd" x="100" y="110" width="12" height="12"/>
+              <rect class="f67-hd" x="248" y="110" width="12" height="12"/>
+              <rect class="f67-hd" x="100" y="258" width="12" height="12"/>
+              <rect class="f67-hd" x="248" y="258" width="12" height="12"/>
+            </g>
+          </svg>
+        </div>
+        <div class="f67-tlab" id="f67-l1"><span class="f67-w" id="f67-l1a">bảng</span><span class="f67-w" id="f67-l1b">điều</span><span class="f67-w" id="f67-l1c">khiển</span></div>
+        <div class="f67-tlab" id="f67-l2"><span class="f67-w" id="f67-l2a">bảng</span><span class="f67-w" id="f67-l2b">công</span><span class="f67-w" id="f67-l2c">việc</span></div>
+        <div class="f67-tlab" id="f67-l3"><span class="f67-w" id="f67-l3a">công</span><span class="f67-w" id="f67-l3b">cụ</span><span class="f67-w" id="f67-l3c">thiết</span><span class="f67-w" id="f67-l3d">kế</span></div>
+      </div>
+
+      <!-- Scene 3: the chat bubble becomes a workspace; typewriter line -->
+      <div class="f67-scene" id="f67-s3">
+        <div id="f67-bub3">
+          <div class="f67-ln" style="left:30px;top:30px;width:200px"></div>
+          <div class="f67-ln" style="left:30px;top:66px;width:130px"></div>
+          <svg id="f67-bub3-tail" viewBox="0 0 40 30"><path d="M0 0 L14 26 L30 0"/></svg>
+        </div>
+        <div id="f67-ws">
+          <div id="f67-ws-bar">
+            <svg class="f67-mini" viewBox="0 0 40 40"><path d="M11 30 V20 M17 30 V13 M23 30 V17 M29 30 V10"/></svg>
+            <svg class="f67-mini" viewBox="0 0 40 40"><rect x="9" y="10" width="6" height="20" rx="2"/><rect x="17" y="10" width="6" height="14" rx="2"/><rect x="25" y="10" width="6" height="17" rx="2"/></svg>
+            <svg class="f67-mini" viewBox="0 0 40 40"><circle cx="15" cy="16" r="6"/><path d="M26 11 L32 22 L20 22 Z"/><rect x="13" y="25" width="16" height="7" rx="2"/></svg>
+          </div>
+          <div id="f67-type"><span id="f67-type-txt"></span><svg class="f67-spark" id="f67-type-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg></div>
+          <svg id="f67-ul3" viewBox="0 0 1320 320"><path pathLength="1" d="M752 240 C 812 232, 882 246, 950 235 S 1022 231, 1066 237"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="67-connector-co-giao-dien-rieng"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // typewriter characters, timed to the spoken words (audio_meta)
+      var words = [["nơi ", 9.72, 9.86], ["làm ", 9.86, 10.04], ["việc ", 10.04, 10.24], ["thật ", 10.24, 10.40], ["sự", 10.40, 10.52]];
+      var txt = q("#f67-type-txt");
+      var chars = [];
+      words.forEach(function (w) {
+        var s = w[0], step = (w[2] - w[1]) / s.length;
+        for (var i = 0; i < s.length; i++) {
+          var c = document.createElement("span");
+          c.className = "f67-c";
+          c.textContent = s[i];
+          txt.appendChild(c);
+          chars.push([c, w[1] + i * step]);
+        }
+      });
+
+      // initial states (before the timeline)
+      gsap.set(q("#f67-cursor"), { x: 860, y: 520 });
+      gsap.set(qa("#f67-card .f67-bar"), { scaleY: 0 });
+      gsap.set(qa("#f67-c1 .f67-cb"), { scaleY: 0 });
+      gsap.set(q("#f67-sel"), { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light listed slots (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f67-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f67-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f67-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 1.6);
+      lightRail(3, 9.6);
+
+      // ---- Scene 1 (0–4.6): zoom into the chat thread ----
+      var view = q("#f67-view");
+      tl.fromTo(view, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0);
+      tl.fromTo(q("#f67-u1"), { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.31);
+      ["#f67-a1", "#f67-a2", "#f67-a3"].forEach(function (id, i) {
+        tl.fromTo(q(id), { opacity: 0, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.35, ease: "power3.out" }, 0.6 + i * 0.14);
+      });
+      // viewport slides left to open room for the key text
+      tl.fromTo(view, { x: 0 }, { x: -260, duration: 0.6, ease: "power2.inOut", immediateRender: false }, 0.85);
+      // the interactive card unfolds inline ("hiện")
+      tl.fromTo(q("#f67-card"), { opacity: 0, scaleY: 0.06 }, { opacity: 1, scaleY: 1, duration: 0.5, ease: "power3.out" }, 1.13);
+      // camera push-in onto the card
+      tl.fromTo(q("#f67-thread"), { x: 0, y: 0, scale: 1 }, { x: -33, y: -212, scale: 1.3, duration: 1.4, ease: "power2.inOut" }, 1.3);
+      qa("#f67-card .f67-bar").forEach(function (b, i) {
+        tl.fromTo(b, { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, 1.5 + i * 0.09);
+      });
+      tl.fromTo(q("#f67-k1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.9);
+      tl.fromTo(q("#f67-k2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.05);
+      // key text on "giao diện tương tác"
+      [["#f67-k-w1", 1.33], ["#f67-k-w2", 1.53], ["#f67-k-w3", 1.78], ["#f67-k-w4", 2.02]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f67-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 2.05);
+      // interaction: cursor reaches the toggle and clicks it
+      var cur = q("#f67-cursor");
+      tl.fromTo(cur, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 2.4);
+      tl.to(cur, { x: 692, y: 285, duration: 0.45, ease: "power2.inOut" }, 2.4);
+      tl.to(cur, { scale: 0.85, duration: 0.08, ease: "power2.out" }, 2.88);
+      tl.to(cur, { scale: 1, duration: 0.12, ease: "power2.out" }, 2.96);
+      tl.fromTo(q("#f67-knob"), { x: 0 }, { x: 30, duration: 0.2, ease: "power2.out" }, 2.9);
+      tl.fromTo(q("#f67-tog"), { backgroundColor: "#4A4843" }, { backgroundColor: "#8FB8A8", duration: 0.2, ease: "none" }, 2.9);
+      tl.fromTo(q("#f67-hotbar"), { scaleY: 1 }, { scaleY: 1.2, duration: 0.35, ease: "power3.out", immediateRender: false }, 3.0);
+      // "trong cuộc trò chuyện"
+      tl.fromTo(q("#f67-where-ic"), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 2.72);
+      [["#f67-wh1", 2.72], ["#f67-wh2", 2.9], ["#f67-wh3", 3.06], ["#f67-wh4", 3.22]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f67-u2"), { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.45);
+      tl.fromTo(q("#f67-key"), { scale: 1 }, { scale: 1.015, duration: 0.8, ease: "none" }, 3.5);
+      // zoom-through out of scene 1
+      tl.to(q("#f67-s1"), { opacity: 0, scale: 1.03, duration: 0.25, ease: "power2.in" }, 4.35);
+
+      // ---- Scene 2 (4.6–8): triptych deals in on each spoken name ----
+      function deal(id, t, rot) {
+        tl.fromTo(q(id), { opacity: 0, y: 90, rotation: rot }, { opacity: 1, y: 0, rotation: 0, duration: 0.55, ease: "power3.out" }, t);
+      }
+      function word(id, t) {
+        tl.fromTo(q(id), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, t);
+      }
+      function active(id, on, off) {
+        tl.fromTo(q(id), { borderColor: "rgba(240,238,230,0.12)" }, { borderColor: "#D97757", duration: 0.25, ease: "none", immediateRender: false }, on);
+        if (off) tl.fromTo(q(id), { borderColor: "#D97757" }, { borderColor: "rgba(240,238,230,0.12)", duration: 0.25, ease: "none", immediateRender: false }, off);
+      }
+      // card 1: dashboard (bars)
+      deal("#f67-c1", 4.6, -5);
+      active("#f67-c1", 4.6, 5.82);
+      word("#f67-l1a", 4.6); word("#f67-l1b", 4.86); word("#f67-l1c", 5.04);
+      qa("#f67-c1 .f67-cb").forEach(function (b, i) {
+        tl.fromTo(b, { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, 4.86 + i * 0.07);
+      });
+      // card 2: task board (columns)
+      deal("#f67-c2", 5.82, 4);
+      active("#f67-c2", 5.82, 6.76);
+      word("#f67-l2a", 5.82); word("#f67-l2b", 6.02); word("#f67-l2c", 6.18);
+      qa("#f67-c2 .f67-task").forEach(function (tk, i) {
+        tl.fromTo(tk, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 6.02 + i * 0.06);
+      });
+      tl.to(q("#f67-mv"), { x: 166, y: -0, duration: 0.5, ease: "power2.inOut" }, 6.4);
+      // card 3: design tool (shapes)
+      deal("#f67-c3", 6.76, -4);
+      active("#f67-c3", 6.76, null);
+      word("#f67-l3a", 6.76); word("#f67-l3b", 6.91); word("#f67-l3c", 7.03); word("#f67-l3d", 7.18);
+      [["#f67-sh1", 6.95], ["#f67-sh2", 7.05], ["#f67-sh3", 7.15]].forEach(function (s) {
+        tl.fromTo(q(s[0]), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", transformOrigin: "50% 50%" }, s[1]);
+      });
+      tl.fromTo(q("#f67-sel"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none", immediateRender: false }, 7.3);
+      tl.fromTo(q("#f67-s2"), { scale: 1 }, { scale: 1.02, duration: 3.0, ease: "none" }, 4.6);
+      tl.to(q("#f67-s2"), { opacity: 0, scale: 0.94, duration: 0.25, ease: "power2.in" }, 7.75);
+
+      // ---- Scene 3 (8–11.4): the conversation becomes a workspace ----
+      var bub = q("#f67-bub3");
+      tl.fromTo(bub, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 8.07);
+      tl.to(bub, { opacity: 0, scale: 1.8, duration: 0.3, ease: "power2.in" }, 9.37);
+      tl.fromTo(q("#f67-ws"), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 9.37);
+      qa("#f67-ws .f67-mini").forEach(function (m, i) {
+        tl.fromTo(m, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 9.5 + i * 0.07);
+      });
+      // typewriter with a moving cursor (right border of the latest character)
+      chars.forEach(function (c, i) {
+        tl.set(c[0], { visibility: "visible", borderRightColor: "#F0EEE6" }, c[1]);
+        if (i > 0) tl.set(chars[i - 1][0], { borderRightColor: "rgba(240,238,230,0)" }, c[1]);
+      });
+      tl.set(chars[chars.length - 1][0], { borderRightColor: "rgba(240,238,230,0)" }, 10.62);
+      tl.fromTo(q("#f67-type-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 10.58);
+      tl.fromTo(q("#f67-ul3 path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.3);
+      tl.fromTo(q("#f67-ws"), { scale: 1 }, { scale: 1.01, duration: 0.6, ease: "none", immediateRender: false }, 10.8);
+
+      tl.to({}, { duration: 11.401 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["67-connector-co-giao-dien-rieng"] = tl;
+    })();
+  </script>
+</template>

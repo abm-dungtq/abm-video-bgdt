@@ -1,0 +1,244 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f72-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f72-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- shared ---------- */
+    .f72-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f72-spark-g { stroke: #D97757; stroke-linecap: round; }
+    /* ---------- Scene 1: stat ---------- */
+    #f72-kicker {
+      position: absolute; left: 0; top: 130px; width: 1760px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); opacity: 0;
+    }
+    .f72-kstar { display: inline-block; width: 26px; height: 26px; margin-right: 14px; vertical-align: -3px; }
+    #f72-num {
+      position: absolute; left: 0; top: 200px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 220px; line-height: 1.0;
+      letter-spacing: -0.02em; color: var(--ink); opacity: 0;
+    }
+    #f72-numlabel {
+      position: absolute; left: 0; top: 432px; width: 1760px; text-align: center;
+      font-weight: 600; font-size: 44px; line-height: 1.2; color: var(--ink); opacity: 0;
+    }
+    #f72-under { position: absolute; left: 640px; top: 494px; width: 480px; height: 40px; overflow: visible; }
+    #f72-chip-row { position: absolute; left: 0; top: 590px; width: 1760px; height: 76px; text-align: center; }
+    #f72-chip {
+      display: inline-block; height: 76px; padding: 0 34px; border-radius: 38px; box-sizing: border-box;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.14);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      line-height: 74px; white-space: nowrap; opacity: 0;
+    }
+    #f72-chip-num { font-family: "Lora", serif; font-weight: 700; font-size: 44px; color: var(--ink); margin-right: 12px; }
+    #f72-chip-txt { font-weight: 600; font-size: 32px; color: var(--muted); margin-right: 22px; }
+    .f72-cdot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin-left: 10px; vertical-align: 2px; opacity: 0; }
+    /* ---------- Scenes 2–3: grid under a camera ---------- */
+    #f72-view { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: hidden; }
+    #f72-world { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f72-col { position: absolute; top: 107px; width: 540px; height: 596px; }
+    .f72-track { position: absolute; left: 0; top: 0; width: 540px; height: 6px; border-radius: 3px; background: rgba(240,238,230,.10); opacity: 0; }
+    .f72-bar { position: absolute; left: 0; top: 0; width: 540px; height: 6px; border-radius: 3px; }
+    .f72-head {
+      position: absolute; left: 0; top: 22px; width: 540px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 46px; line-height: 1.12;
+      color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    .f72-card {
+      position: absolute; left: 0; width: 540px; height: 88px; box-sizing: border-box; border-radius: 16px;
+      background: rgba(42,41,38,.55); border: 1px solid rgba(240,238,230,.07); opacity: 0;
+    }
+    .f72-lit {
+      position: absolute; inset: -1px; border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35); opacity: 0;
+    }
+    .f72-ring { position: absolute; inset: -1px; border-radius: 16px; border: 2px solid var(--gold); opacity: 0; }
+    .f72-dot { position: absolute; left: 25px; top: 37px; width: 14px; height: 14px; border-radius: 50%; opacity: 0; }
+    .f72-txt {
+      position: absolute; left: 64px; top: 0; width: 460px; height: 86px;
+      font-weight: 600; font-size: 34px; line-height: 86px; color: var(--ink); white-space: nowrap;
+    }
+    .f72-w { display: inline-block; opacity: 0; }
+    .f72-sep { color: var(--muted); }
+    #f72-spark { position: absolute; left: 0; top: 0; width: 36px; height: 36px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+  </style>
+
+  <div id="root" data-composition-id="72-muoi-tinh-nang-trong-mot-khung" data-width="1920" data-height="1080" data-duration="17.527">
+    <div id="f72-ground" class="clip" data-start="0" data-duration="17.527" data-track-index="0"></div>
+    <div id="f72-stage" class="clip" data-start="0" data-duration="17.527" data-track-index="1">
+
+      <!-- Scene 1: the count -->
+      <div id="f72-s1" class="f72-layer">
+        <div id="f72-kicker"><svg class="f72-kstar" viewBox="-22 -22 44 44"><g class="f72-spark-g" stroke-width="4.5"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>Nhìn lại</div>
+        <div id="f72-num">0</div>
+        <div id="f72-numlabel">tính năng mới</div>
+        <svg id="f72-under" viewBox="0 0 480 40"><path id="f72-under-path" d="M8 24 C 90 12, 180 30, 262 20 S 400 12, 472 22" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="520" stroke-dashoffset="520"/></svg>
+        <div id="f72-chip-row"><div id="f72-chip"><span id="f72-chip-num">3</span><span id="f72-chip-txt">nhóm</span><span id="f72-cd1" class="f72-cdot" style="background:#9A968C"></span><span id="f72-cd2" class="f72-cdot" style="background:#8FB8A8"></span><span id="f72-cd3" class="f72-cdot" style="background:#F0EEE6"></span></div></div>
+      </div>
+
+      <!-- Scenes 2–3: ten-card grid in three groups -->
+      <div id="f72-view">
+        <div id="f72-world">
+          <div class="f72-col" style="left:0px">
+            <div id="f72-t1" class="f72-track"></div>
+            <div id="f72-b1" class="f72-bar" style="background:#9A968C"></div>
+            <div id="f72-h1" class="f72-head">Ứng dụng</div>
+            <div id="f72-c0" class="f72-card" style="top:100px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#9A968C"></div><div class="f72-txt"><span id="f72-w0a" class="f72-w">Cowork</span></div></div>
+            <div id="f72-c1" class="f72-card" style="top:202px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#9A968C"></div><div class="f72-txt"><span id="f72-w1a" class="f72-w">Docs</span><span id="f72-w1b" class="f72-w"><span class="f72-sep">&nbsp;·&nbsp;</span>Slides</span><span id="f72-w1c" class="f72-w"><span class="f72-sep">&nbsp;·&nbsp;</span>Design</span></div></div>
+            <div id="f72-c2" class="f72-card" style="top:304px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#9A968C"></div><div class="f72-txt"><span id="f72-w2a" class="f72-w">Chrome</span></div></div>
+            <div id="f72-c3" class="f72-card" style="top:406px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#9A968C"></div><div class="f72-txt"><span id="f72-w3a" class="f72-w">Connector</span></div></div>
+            <div id="f72-c4" class="f72-card" style="top:508px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#9A968C"></div><div class="f72-txt"><span id="f72-w4a" class="f72-w">Claude</span><span id="f72-w4b" class="f72-w">&nbsp;Tag</span></div></div>
+          </div>
+          <div class="f72-col" style="left:610px">
+            <div id="f72-t2" class="f72-track"></div>
+            <div id="f72-b2" class="f72-bar" style="background:#8FB8A8"></div>
+            <div id="f72-h2" class="f72-head">Claude Code</div>
+            <div id="f72-c5" class="f72-card" style="top:100px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#8FB8A8"></div><div class="f72-txt"><span id="f72-w5a" class="f72-w">Projects</span><span id="f72-w5b" class="f72-w">&nbsp;mới</span></div></div>
+            <div id="f72-c6" class="f72-card" style="top:202px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#8FB8A8"></div><div class="f72-txt"><span id="f72-w6a" class="f72-w">Đồng bộ</span><span id="f72-w6b" class="f72-w">&nbsp;skill</span></div></div>
+          </div>
+          <div class="f72-col" style="left:1220px">
+            <div id="f72-t3" class="f72-track"></div>
+            <div id="f72-b3" class="f72-bar" style="background:#F0EEE6"></div>
+            <div id="f72-h3" class="f72-head">Nền tảng</div>
+            <div id="f72-c7" class="f72-card" style="top:100px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#F0EEE6"></div><div class="f72-txt"><span id="f72-w7a" class="f72-w">Fable</span><span id="f72-w7b" class="f72-w">&nbsp;5</span></div></div>
+            <div id="f72-c8" class="f72-card" style="top:202px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#F0EEE6"></div><div class="f72-txt"><span id="f72-w8a" class="f72-w">Opus</span><span id="f72-w8b" class="f72-w">&nbsp;5.5</span></div></div>
+            <div id="f72-c9" class="f72-card" style="top:304px"><div class="f72-lit"></div><div class="f72-ring"></div><div class="f72-dot" style="background:#F0EEE6"></div><div class="f72-txt"><span id="f72-w9a" class="f72-w">Marketplace</span></div></div>
+          </div>
+          <svg id="f72-spark" viewBox="-22 -22 44 44"><g class="f72-spark-g" stroke-width="4.5"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 17.027;
+      var q = function (s) { return document.querySelector(s); };
+      var qa = function (s) { return document.querySelectorAll(s); };
+
+      /* grid geometry (world coords, must match the inline styles above) */
+      var COLX = [0, 610, 1220], GRID_TOP = 107, CARD_TOP = 100, STEP = 102;
+      var CARDS = [ [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 1], [2, 0], [2, 1], [2, 2] ];
+      function sparkAt(i) {
+        var c = CARDS[i];
+        return { x: COLX[c[0]] + 14, y: GRID_TOP + CARD_TOP + c[1] * STEP + 26 };
+      }
+      /* camera: map world point (cx, cy) to the stage centre (880, 410) at scale s */
+      function cam(s, cx, cy) { return { scale: s, x: 880 - cx * s, y: 410 - cy * s }; }
+      var CAM_START = cam(1.27, 575, 405);
+      var CAM_PUSH = cam(1.30, 575, 405);
+      var CAM_FULL = cam(1.0, 880, 410);
+
+      /* initial state before the timeline is built */
+      gsap.set("#f72-world", { transformOrigin: "0 0", scale: CAM_START.scale, x: CAM_START.x, y: CAM_START.y });
+      var p0 = sparkAt(0);
+      gsap.set("#f72-spark", { x: p0.x, y: p0.y, transformOrigin: "50% 50%" });
+      gsap.set(".f72-bar", { transformOrigin: "0 50%", scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0 – 3.56): the count ---------- */
+      tl.fromTo("#f72-kicker", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.43);
+      tl.fromTo("#f72-num", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.4);
+      tl.fromTo("#f72-num", { textContent: 0 }, { textContent: 10, snap: { textContent: 1 }, duration: 0.5, ease: "power2.out" }, 0.77);
+      tl.fromTo("#f72-numlabel", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.95);
+      tl.to("#f72-under-path", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 1.28);
+      tl.fromTo("#f72-chip", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.66);
+      tl.fromTo(["#f72-cd1", "#f72-cd2", "#f72-cd3"], { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out", stagger: 0.12 }, 1.8);
+      /* slow push underneath, then a zoom-through into the grid */
+      tl.fromTo("#f72-s1", { scale: 1, opacity: 1, filter: "blur(0px)" }, { scale: 1.04, duration: 3.1, ease: "none" }, 0.4);
+      tl.to("#f72-s1", { scale: 1.16, opacity: 0, filter: "blur(8px)", duration: 0.4, ease: "power2.in" }, 3.5);
+
+      /* ---------- Scene 2 (3.56 – 11.29): pushed in on the left two columns ---------- */
+      /* the skeleton grid assembles slot by slot (blank slots: no word before it is spoken) */
+      tl.fromTo([".f72-track"], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out", stagger: 0.08 }, 3.56);
+      var order = ["#f72-c0", "#f72-c5", "#f72-c1", "#f72-c6", "#f72-c2", "#f72-c7", "#f72-c3", "#f72-c8", "#f72-c4", "#f72-c9"];
+      tl.fromTo(order, { opacity: 0, y: 26, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out", stagger: 0.05 }, 3.6);
+      tl.to("#f72-world", { scale: CAM_PUSH.scale, x: CAM_PUSH.x, y: CAM_PUSH.y, duration: 7.7, ease: "none" }, 3.6);
+
+      function header(n, t) {
+        tl.to("#f72-b" + n, { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, t);
+        tl.fromTo("#f72-h" + n, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, t);
+      }
+      function word(id, t) {
+        tl.fromTo(id, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, t);
+      }
+      /* light card i at t: lit surface + terracotta ring; the previous card hands its focus over */
+      var prev = -1;
+      function light(i, t) {
+        var card = "#f72-c" + i;
+        tl.fromTo(card + " .f72-lit", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo(card + " .f72-ring", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, t);
+        var p = sparkAt(i);
+        if (prev < 0) {
+          tl.fromTo("#f72-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, t);
+        } else {
+          var pc = "#f72-c" + prev;
+          tl.to(pc + " .f72-ring", { opacity: 0, duration: 0.3, ease: "power2.out" }, t);
+          tl.fromTo(pc + " .f72-dot", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t + 0.1);
+          tl.to("#f72-spark", { x: p.x, y: p.y, rotation: 90 * (i), duration: 0.32, ease: "power2.inOut" }, t - 0.12);
+        }
+        prev = i;
+      }
+
+      header(1, 3.99);                                   /* "ứng dụng" */
+      light(0, 4.43); word("#f72-w0a", 4.43);            /* Cowork */
+      light(1, 5.11); word("#f72-w1a", 5.11);            /* Docs */
+      word("#f72-w1b", 5.45);                            /* Slides */
+      word("#f72-w1c", 5.91);                            /* Design */
+      light(2, 6.43); word("#f72-w2a", 6.43);            /* Chrome */
+      light(3, 7.18); word("#f72-w3a", 7.18);            /* connector */
+      light(4, 7.82); word("#f72-w4a", 7.82);            /* Claude */
+      word("#f72-w4b", 8.02);                            /* Tag */
+      header(2, 9.02);                                   /* "Claude Code" */
+      light(5, 9.85); word("#f72-w5a", 9.85);            /* Projects */
+      word("#f72-w5b", 10.27);                           /* mới */
+      light(6, 10.99); word("#f72-w6a", 10.99);          /* đồng bộ */
+      word("#f72-w6b", 11.29);                           /* skill */
+
+      /* ---------- Scene 3 (11.29 – end): one decelerating zoom-out to the whole grid ---------- */
+      tl.to("#f72-world", { scale: CAM_FULL.scale, x: CAM_FULL.x, y: CAM_FULL.y, duration: 1.55, ease: "power3.out" }, 11.4);
+      header(3, 12.38);                                  /* "nền tảng" */
+      light(7, 12.98); word("#f72-w7a", 12.98);          /* Fable */
+      word("#f72-w7b", 13.38);                           /* 5 */
+      light(8, 13.94); word("#f72-w8a", 13.94);          /* Opus */
+      word("#f72-w8b", 14.4);                            /* 5.5 */
+      light(9, 15.64); word("#f72-w9a", 15.64);          /* Marketplace — then the frame locks */
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["72-muoi-tinh-nang-trong-mot-khung"] = tl;
+    })();
+  </script>
+</template>

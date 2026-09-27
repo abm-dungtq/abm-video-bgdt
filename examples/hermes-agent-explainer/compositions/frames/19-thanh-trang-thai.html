@@ -1,0 +1,426 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f19-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f19-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f19- */
+    .f19-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; }
+
+    /* ---------- camera viewport (keeps the zoom inside the safe area) ---------- */
+    #f19-view {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+    #f19-world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 0 0;
+    }
+
+    /* ---------- chat window ---------- */
+    #f19-win {
+      position: absolute;
+      left: 130px;
+      top: 20px;
+      width: 1500px;
+      height: 780px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+    .f19-titlebar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 26px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      background: rgba(11,16,38,.45);
+    }
+    .f19-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .6; }
+    .f19-wtitle { margin-left: 16px; font-size: 28px; color: var(--muted); }
+    #f19-user {
+      position: absolute;
+      right: 60px;
+      top: 110px;
+      padding: 18px 30px;
+      border-radius: 18px 18px 4px 18px;
+      background: rgba(62,230,208,.12);
+      border: 1px solid rgba(62,230,208,.35);
+      font-size: 34px;
+      font-weight: 500;
+    }
+    #f19-reply {
+      position: absolute;
+      left: 60px;
+      top: 230px;
+      width: 900px;
+    }
+    .f19-who { font-size: 28px; color: var(--muted); margin-bottom: 22px; }
+    .f19-who b { color: var(--cyan); font-weight: 400; margin-right: 10px; }
+    .f19-line {
+      height: 22px;
+      border-radius: 11px;
+      background: rgba(142,147,181,.28);
+      margin-bottom: 22px;
+      transform-origin: 0 50%;
+    }
+    #f19-prompt {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      top: 560px;
+      height: 80px;
+      box-sizing: border-box;
+      padding: 0 26px;
+      display: flex;
+      align-items: center;
+      border: 1px solid rgba(244,241,232,.14);
+      border-radius: 14px;
+      font-size: 32px;
+      color: var(--muted);
+    }
+    #f19-prompt .f19-caret { color: var(--cyan); margin-right: 18px; }
+
+    /* status bar (world scale — text grows under the zoom) */
+    #f19-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 690px;
+      height: 70px;
+      box-sizing: border-box;
+      padding: 0 30px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      background: rgba(11,16,38,.75);
+      border-top: 1px solid rgba(244,241,232,.12);
+      font-size: 28px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #f19-bar-hl {
+      position: absolute;
+      inset: 0;
+      border: 2px solid var(--cyan);
+      box-shadow: inset 0 0 24px rgba(62,230,208,.25);
+      opacity: 0;
+    }
+    .f19-seg { position: relative; display: flex; align-items: center; gap: 12px; height: 50px; }
+    #f19-seg-model { width: 330px; }
+    #f19-seg-tok { width: 260px; }
+    #f19-seg-ctx { width: 380px; }
+    #f19-seg-cost { width: 260px; }
+    #f19-model-hl {
+      position: absolute;
+      left: -14px;
+      right: -14px;
+      top: 0;
+      bottom: 0;
+      border-radius: 10px;
+      background: rgba(255,210,63,.16);
+      border: 2px solid var(--gold);
+      box-shadow: 0 0 18px rgba(255,210,63,.45);
+      opacity: 0;
+    }
+    .f19-sdot { position: relative; width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); }
+    #f19-model-txt { position: relative; }
+    .f19-mini {
+      width: 200px;
+      height: 14px;
+      border-radius: 7px;
+      background: rgba(142,147,181,.25);
+      overflow: hidden;
+    }
+    .f19-mini i { display: block; width: 40%; height: 100%; background: var(--muted); }
+
+    /* ---------- Scene 2: readout strip ---------- */
+    #f19-s2 {
+      position: absolute;
+      left: 80px;
+      top: 90px;
+      width: 1600px;
+      height: 620px;
+      opacity: 0;
+    }
+    #f19-kicker {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #f19-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+    #f19-kicker em { font-style: normal; opacity: .75; margin-left: 18px; }
+    #f19-strip {
+      position: absolute;
+      left: 0;
+      top: 80px;
+      width: 1600px;
+      height: 440px;
+      box-sizing: border-box;
+      display: flex;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+    .f19-cell {
+      position: relative;
+      box-sizing: border-box;
+      height: 100%;
+      padding: 56px 40px 0;
+      border-right: 1px solid rgba(244,241,232,.10);
+    }
+    .f19-cell:last-child { border-right: 0; }
+    #f19-c-model { width: 300px; }
+    #f19-c-tok { width: 440px; }
+    #f19-c-ctx { width: 460px; }
+    #f19-c-cost { width: 400px; padding-left: 30px; padding-right: 30px; }
+    .f19-lab {
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f19-cellhl {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,210,63,.10), transparent 70%);
+      opacity: 0;
+    }
+    .f19-val {
+      position: relative;
+      margin-top: 70px;
+      font-size: 104px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+    }
+    #f19-mval {
+      position: relative;
+      margin-top: 90px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 36px;
+      font-weight: 600;
+    }
+    #f19-mval .f19-sdot { width: 22px; height: 22px; box-shadow: 0 0 14px rgba(62,230,208,.6); }
+    #f19-cbar {
+      position: relative;
+      margin-top: 70px;
+      width: 380px;
+      height: 34px;
+      border-radius: 17px;
+      background: rgba(142,147,181,.22);
+      overflow: hidden;
+    }
+    #f19-cfill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 380px;
+      height: 34px;
+      border-radius: 17px;
+      background: var(--gold);
+      transform-origin: 0 50%;
+    }
+    #f19-cpct {
+      position: relative;
+      margin-top: 28px;
+      font-size: 96px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+    #f19-trail { position: absolute; left: 0; top: 548px; overflow: visible; }
+  </style>
+
+  <div id="root" data-composition-id="19-thanh-trang-thai" data-width="1920" data-height="1080" data-duration="8.643">
+    <div id="f19-ground" class="clip" data-start="0" data-duration="8.643" data-track-index="0"></div>
+    <div id="f19-stage" class="clip" data-start="0" data-duration="8.643" data-track-index="1">
+
+      <!-- Scene 1: chat window + camera -->
+      <div id="f19-view">
+        <div id="f19-world">
+          <div id="f19-win">
+            <div class="f19-titlebar"><span class="f19-dot"></span><span class="f19-dot"></span><span class="f19-dot"></span><span class="f19-wtitle f19-mono">hermes</span></div>
+            <div id="f19-user">Xin chào, Hermes!</div>
+            <div id="f19-reply">
+              <div class="f19-who f19-mono"><b>◆</b>hermes</div>
+              <div class="f19-line" style="width: 860px"></div>
+              <div class="f19-line" style="width: 780px"></div>
+              <div class="f19-line" style="width: 520px"></div>
+            </div>
+            <div id="f19-prompt" class="f19-mono"><span class="f19-caret">&gt;</span></div>
+            <div id="f19-bar" class="f19-mono">
+              <div id="f19-bar-hl"></div>
+              <div id="f19-seg-model" class="f19-seg"><div id="f19-model-hl"></div><span class="f19-sdot"></span><span id="f19-model-txt">mô hình</span></div>
+              <div id="f19-seg-tok" class="f19-seg">token</div>
+              <div id="f19-seg-ctx" class="f19-seg"><span class="f19-mini"><i></i></span>ngữ cảnh</div>
+              <div id="f19-seg-cost" class="f19-seg">$ chi phí</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: readout strip -->
+      <div id="f19-s2">
+        <div id="f19-kicker" class="f19-mono"><b>◆</b>Thanh trạng thái<em>· ví dụ minh hoạ</em></div>
+        <div id="f19-strip">
+          <div id="f19-c-model" class="f19-cell">
+            <div class="f19-lab f19-mono">Mô hình</div>
+            <div id="f19-mval"><span class="f19-sdot"></span><span>đang dùng</span></div>
+          </div>
+          <div id="f19-c-tok" class="f19-cell">
+            <div id="f19-hl-tok" class="f19-cellhl"></div>
+            <div class="f19-lab f19-mono">Token</div>
+            <div id="f19-tok" class="f19-val">0</div>
+          </div>
+          <div id="f19-c-ctx" class="f19-cell">
+            <div id="f19-hl-ctx" class="f19-cellhl"></div>
+            <div class="f19-lab f19-mono">Ngữ cảnh</div>
+            <div id="f19-cbar"><div id="f19-cfill"></div></div>
+            <div id="f19-cpct"><span id="f19-pct">0</span><span>%</span></div>
+          </div>
+          <div id="f19-c-cost" class="f19-cell">
+            <div id="f19-hl-cost" class="f19-cellhl"></div>
+            <div class="f19-lab f19-mono">Chi phí ước tính</div>
+            <div id="f19-cost" class="f19-val">$0.00</div>
+          </div>
+        </div>
+        <svg id="f19-trail" width="1600" height="40" viewBox="0 0 1600 40">
+          <path id="f19-trail-path" d="M 20 20 L 1580 20" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="1560" stroke-dashoffset="1560" style="filter: drop-shadow(0 0 8px rgba(255,210,63,.55))"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var D = 8.143;
+
+      // camera: world scale about origin 0 0; a stage point P lands at C (880, 410) via x = C - S·P
+      var PX = 640, PY = 745;
+      function camX(S) { return 880 - S * PX; }
+      function camY(S) { return 410 - S * PY; }
+
+      // initial states (never tl.set at 0)
+      gsap.set("#f19-world", { scale: 1, x: 0, y: 0 });
+      gsap.set("#f19-cfill", { scaleX: 0 });
+
+      // ---------- Scene 1 (0–3.94): chat establishes, zoom to the bar, model lights ----------
+      tl.fromTo("#f19-win", { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#f19-user", { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.35);
+      tl.fromTo("#f19-reply .f19-who", { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "power2.out" }, 0.65);
+      tl.fromTo("#f19-reply .f19-line", { scaleX: 0 }, { scaleX: 1, duration: 0.35, stagger: 0.12, ease: "power3.out" }, 0.75);
+
+      // "thanh trạng thái" @1.40 — bar outlines, camera zooms onto it
+      tl.fromTo("#f19-bar-hl", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 1.4);
+      tl.to("#f19-world", { scale: 2, x: camX(2), y: camY(2), duration: 0.95, ease: "power2.inOut" }, 1.4);
+
+      // "mô hình" @2.605 — the model segment lights first
+      tl.fromTo("#f19-model-hl", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 2.6);
+      tl.set("#f19-model-txt", { color: "#FFD23F" }, 2.6);
+      tl.set("#f19-seg-model .f19-sdot", { backgroundColor: "#FFD23F" }, 2.6);
+
+      // ---------- Scene 2 (3.94–8.14): bar becomes the readout strip ----------
+      // zoom-through: the chat world pushes past and dims to a background (~35%)
+      tl.to("#f19-world", { scale: 2.6, x: camX(2.6), y: camY(2.6), opacity: 0.35, filter: "blur(10px)", duration: 0.45, ease: "power2.in" }, 3.87);
+      tl.fromTo("#f19-s2", { opacity: 0, scale: 0.9, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: "power3.out" }, 3.97);
+
+      // "token" @4.573 — counter ticks up, cell goes gold
+      var tok = { v: 0 };
+      var tokEl = document.getElementById("f19-tok");
+      tl.set("#f19-tok", { color: "#FFD23F" }, 4.57);
+      tl.fromTo("#f19-hl-tok", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 4.57);
+      tl.fromTo(tok, { v: 0 }, {
+        v: 25600, duration: 0.75, ease: "power2.out",
+        onUpdate: function () { tokEl.textContent = Math.round(tok.v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+      }, 4.57);
+      tl.to("#f19-trail-path", { strokeDashoffset: 840, duration: 0.5, ease: "none" }, 4.57);
+
+      // "mức đầy của ngữ cảnh" @5.376 — context bar fills to 40%
+      var pct = { v: 0 };
+      var pctEl = document.getElementById("f19-pct");
+      tl.set("#f19-tok", { color: "#F4F1E8" }, 5.37);
+      tl.to("#f19-hl-tok", { opacity: 0, duration: 0.3, ease: "power2.out" }, 5.37);
+      tl.fromTo("#f19-hl-ctx", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 5.37);
+      tl.set("#f19-cpct", { color: "#FFD23F" }, 5.37);
+      tl.to("#f19-cfill", { scaleX: 0.4, duration: 0.9, ease: "power2.out" }, 5.37);
+      tl.fromTo(pct, { v: 0 }, {
+        v: 40, duration: 0.9, ease: "power2.out",
+        onUpdate: function () { pctEl.textContent = Math.round(pct.v); }
+      }, 5.37);
+      tl.to("#f19-trail-path", { strokeDashoffset: 380, duration: 0.6, ease: "none" }, 5.37);
+
+      // "chi phí" @6.72 — cost counts up
+      var cost = { v: 0 };
+      var costEl = document.getElementById("f19-cost");
+      tl.set("#f19-cpct", { color: "#F4F1E8" }, 6.72);
+      tl.set("#f19-cfill", { backgroundColor: "#3EE6D0" }, 6.72);
+      tl.to("#f19-hl-ctx", { opacity: 0, duration: 0.3, ease: "power2.out" }, 6.72);
+      tl.fromTo("#f19-hl-cost", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 6.72);
+      tl.set("#f19-cost", { color: "#FFD23F" }, 6.72);
+      tl.fromTo(cost, { v: 0 }, {
+        v: 4, duration: 0.6, ease: "power2.out",
+        onUpdate: function () { costEl.textContent = "$0.0" + Math.round(cost.v); }
+      }, 6.72);
+      tl.to("#f19-trail-path", { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 6.72);
+
+      // hold: a quiet 1% drift on the strip
+      tl.to("#f19-strip", { scale: 1.01, duration: D - 7.4, ease: "power1.inOut" }, 7.4);
+
+      tl.to({}, { duration: D }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["19-thanh-trang-thai"] = tl;
+    })();
+  </script>
+</template>

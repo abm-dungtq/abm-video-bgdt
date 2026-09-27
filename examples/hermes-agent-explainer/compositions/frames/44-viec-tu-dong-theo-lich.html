@@ -1,0 +1,482 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f44-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f44-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f44- */
+
+    /* kickers (stacked, one per shot) */
+    .f44-kicker {
+      position: absolute;
+      left: 0;
+      top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f44-diamond {
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    /* alarm clock (hero) */
+    #f44-clock {
+      position: absolute;
+      left: 290px;
+      top: 130px;
+      width: 560px;
+      height: 600px;
+      transform-origin: 50% 50%;
+    }
+    #f44-clocksvg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 560px;
+      height: 600px;
+      overflow: visible;
+    }
+    .f44-draw {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f44-ghost { opacity: 0; }
+    #f44-ticks line { opacity: 0; }
+    #f44-bodyfill { opacity: 0; }
+    #f44-hands { opacity: 0; }
+    #f44-hammer { opacity: 0; }
+    .f44-wave { opacity: 0; }
+    #f44-arc30, #f44-arc2h {
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.45));
+    }
+
+    /* hand-off: trail + spark + task card */
+    #f44-handoff {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+    }
+    #f44-trailsvg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f44-trail {
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    #f44-spark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+    }
+    #f44-spark-in {
+      position: absolute;
+      left: -50px;
+      top: -35px;
+      width: 100px;
+      height: 70px;
+      opacity: 0;
+    }
+    #f44-spark-in svg {
+      width: 100px;
+      height: 70px;
+      overflow: visible;
+    }
+    #f44-card {
+      position: absolute;
+      left: 1050px;
+      top: 470px;
+      width: 440px;
+      padding: 28px 34px 30px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+    }
+    #f44-card-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      color: var(--cyan);
+      line-height: 1.2;
+    }
+    #f44-card-title {
+      margin-top: 14px;
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+    #f44-card-sub {
+      margin-top: 8px;
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+
+    /* speech bubble */
+    #f44-bubble {
+      position: absolute;
+      left: 700px;
+      top: 250px;
+      width: 900px;
+      padding: 40px 56px 48px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 36px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      transform-origin: 0% 0%;
+      opacity: 0;
+    }
+    #f44-bubble-tail {
+      position: absolute;
+      left: -17px;
+      top: 150px;
+      width: 34px;
+      height: 34px;
+      background: var(--surface);
+      border-left: 1px solid rgba(244, 241, 232, 0.12);
+      border-bottom: 1px solid rgba(244, 241, 232, 0.12);
+      transform: rotate(45deg);
+    }
+    #f44-bubble-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      line-height: 1.2;
+      opacity: 0;
+    }
+    .f44-line {
+      margin-top: 18px;
+      min-height: 84px;
+      font-size: 76px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      white-space: pre;
+      color: var(--ink);
+    }
+    #f44-line2 { margin-top: 6px; color: var(--gold); }
+    .f44-ch { display: none; }
+    .f44-cursor {
+      display: inline-block;
+      width: 6px;
+      height: 70px;
+      margin-left: 6px;
+      vertical-align: -8px;
+      background: var(--gold);
+      opacity: 0;
+    }
+
+    /* shorthand chips */
+    .f44-chip {
+      position: absolute;
+      top: 440px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding: 26px 44px 28px 32px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.14);
+      border-radius: 70px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      white-space: nowrap;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f44-chip1 { left: 660px; }
+    #f44-chip2 { left: 1270px; }
+    .f44-chip svg { width: 54px; height: 54px; overflow: visible; }
+    .f44-num { color: var(--gold); }
+    #f44-chiplink {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+  </style>
+
+  <div id="root" data-composition-id="44-viec-tu-dong-theo-lich" data-width="1920" data-height="1080" data-duration="12.52">
+    <div id="f44-ground" class="clip" data-start="0" data-duration="12.52" data-track-index="0"></div>
+    <div id="f44-stage" class="clip" data-start="0" data-duration="12.52" data-track-index="1">
+
+      <!-- kickers -->
+      <div id="f44-k1" class="f44-kicker"><span class="f44-diamond"></span><span>Theo lịch</span></div>
+      <div id="f44-k2" class="f44-kicker"><span class="f44-diamond"></span><span>Nói bằng lời thường</span></div>
+      <div id="f44-k3" class="f44-kicker"><span class="f44-diamond"></span><span>Ngắn gọn hơn</span></div>
+
+      <!-- trail + spark + task card -->
+      <div id="f44-handoff">
+        <svg id="f44-trailsvg" viewBox="0 0 1760 820">
+          <path id="f44-trail" class="f44-draw" pathLength="1" d="M790 420 C950 260, 1110 260, 1270 420" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+        <div id="f44-card">
+          <div id="f44-card-label"><span class="f44-diamond"></span><span>HERMES</span></div>
+          <div id="f44-card-title">Làm việc</div>
+          <div id="f44-card-sub">theo lịch</div>
+        </div>
+        <div id="f44-spark">
+          <div id="f44-spark-in">
+            <svg viewBox="-50 -35 100 70">
+              <path d="M-6 -6 C-20 -30, -38 -28, -46 -12" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round"/>
+              <path d="M-6 -1 C-22 -14, -36 -10, -42 1" fill="none" stroke="#F4F1E8" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="0" cy="0" r="12" fill="#FFD23F" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.75));"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- alarm clock -->
+      <div id="f44-clock">
+        <svg id="f44-clocksvg" viewBox="0 0 560 600">
+          <circle id="f44-ghost" cx="280" cy="340" r="170" fill="none" stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 14"/>
+          <!-- sound waves -->
+          <g id="f44-waves-l" class="f44-wave">
+            <path d="M120 150 A70 70 0 0 1 160 110" fill="none" stroke="#FFD23F" stroke-width="6" stroke-linecap="round"/>
+            <path d="M92 140 A100 100 0 0 1 150 82" fill="none" stroke="#FFD23F" stroke-width="6" stroke-linecap="round"/>
+          </g>
+          <g id="f44-waves-r" class="f44-wave">
+            <path d="M440 150 A70 70 0 0 0 400 110" fill="none" stroke="#FFD23F" stroke-width="6" stroke-linecap="round"/>
+            <path d="M468 140 A100 100 0 0 0 410 82" fill="none" stroke="#FFD23F" stroke-width="6" stroke-linecap="round"/>
+          </g>
+          <!-- hammer -->
+          <g id="f44-hammer">
+            <line x1="280" y1="172" x2="280" y2="96" stroke="#F4F1E8" stroke-width="7" stroke-linecap="round"/>
+            <circle cx="280" cy="88" r="13" fill="#F4F1E8"/>
+          </g>
+          <!-- bells -->
+          <path id="f44-bell-l" class="f44-draw" pathLength="1" transform="translate(185 180) rotate(-40)" d="M-50 0 A50 50 0 0 1 50 0 Z" fill="#141B3A" stroke="#F4F1E8" stroke-width="7" stroke-linejoin="round"/>
+          <path id="f44-bell-r" class="f44-draw" pathLength="1" transform="translate(375 180) rotate(40)" d="M-50 0 A50 50 0 0 1 50 0 Z" fill="#141B3A" stroke="#F4F1E8" stroke-width="7" stroke-linejoin="round"/>
+          <!-- legs -->
+          <path id="f44-leg-l" class="f44-draw" pathLength="1" d="M178 470 L142 540" fill="none" stroke="#F4F1E8" stroke-width="12" stroke-linecap="round"/>
+          <path id="f44-leg-r" class="f44-draw" pathLength="1" d="M382 470 L418 540" fill="none" stroke="#F4F1E8" stroke-width="12" stroke-linecap="round"/>
+          <!-- body -->
+          <circle id="f44-bodyfill" cx="280" cy="340" r="170" fill="#141B3A"/>
+          <circle id="f44-body" class="f44-draw" pathLength="1" cx="280" cy="340" r="170" fill="none" stroke="#F4F1E8" stroke-width="8" transform="rotate(-90 280 340)"/>
+          <g id="f44-ticks"><line class="f44-tick" x1="280.0" y1="220.0" x2="280.0" y2="188.0" stroke="#FFD23F" stroke-width="8" stroke-linecap="round"/><line class="f44-tick" x1="347.0" y1="224.0" x2="356.0" y2="208.4" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="396.0" y1="273.0" x2="411.6" y2="264.0" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="400.0" y1="340.0" x2="432.0" y2="340.0" stroke="#FFD23F" stroke-width="8" stroke-linecap="round"/><line class="f44-tick" x1="396.0" y1="407.0" x2="411.6" y2="416.0" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="347.0" y1="456.0" x2="356.0" y2="471.6" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="280.0" y1="460.0" x2="280.0" y2="492.0" stroke="#FFD23F" stroke-width="8" stroke-linecap="round"/><line class="f44-tick" x1="213.0" y1="456.0" x2="204.0" y2="471.6" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="164.0" y1="407.0" x2="148.4" y2="416.0" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="160.0" y1="340.0" x2="128.0" y2="340.0" stroke="#FFD23F" stroke-width="8" stroke-linecap="round"/><line class="f44-tick" x1="164.0" y1="273.0" x2="148.4" y2="264.0" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/><line class="f44-tick" x1="213.0" y1="224.0" x2="204.0" y2="208.4" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round"/></g>
+          <!-- schedule arcs -->
+          <path id="f44-arc30" class="f44-draw" pathLength="1" d="M280 150 A190 190 0 0 1 280 530" fill="none" stroke="#FFD23F" stroke-width="7" stroke-linecap="round"/>
+          <path id="f44-arc2h" class="f44-draw" pathLength="1" d="M86.8 288.2 A200 200 0 0 1 228.2 146.8" fill="none" stroke="#3EE6D0" stroke-width="7" stroke-linecap="round"/>
+          <!-- hands -->
+          <g id="f44-hands">
+            <g id="f44-hour"><line x1="280" y1="340" x2="280" y2="255" stroke="#F4F1E8" stroke-width="12" stroke-linecap="round"/></g>
+            <g id="f44-minute"><line x1="280" y1="340" x2="280" y2="215" stroke="#FFD23F" stroke-width="7" stroke-linecap="round"/></g>
+            <circle cx="280" cy="340" r="12" fill="#FFD23F"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- speech bubble -->
+      <div id="f44-bubble">
+        <div id="f44-bubble-tail"></div>
+        <div id="f44-bubble-label"><span class="f44-diamond"></span><span>VÍ DỤ</span></div>
+        <div id="f44-line1" class="f44-line"><span id="f44-cur1" class="f44-cursor"></span></div>
+        <div id="f44-line2" class="f44-line"><span id="f44-cur2" class="f44-cursor"></span></div>
+      </div>
+
+      <!-- shorthand chips + link -->
+      <svg id="f44-chiplink" viewBox="0 0 1760 820">
+        <path id="f44-link" class="f44-draw" pathLength="1" d="M920 580 C1020 690, 1390 690, 1490 580" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.5));"/>
+      </svg>
+      <div id="f44-chip1" class="f44-chip">
+        <svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="#3EE6D0" stroke-width="5"/><path d="M27 14 L27 27 L36 33" fill="none" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>sau <span id="f44-n30" class="f44-num">0</span> phút</span>
+      </div>
+      <div id="f44-chip2" class="f44-chip">
+        <svg viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="none" stroke="#3EE6D0" stroke-width="5"/><path d="M17 27 A10 10 0 1 1 27 37" fill="none" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round"/><path d="M13 22 L17 28 L23 24" fill="none" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>mỗi <span class="f44-num">2</span> giờ</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var q = function (s) { return document.querySelector(s); };
+      var tickEls = document.querySelectorAll("#f44-ticks line");
+
+      // ---- build typed characters (word times from audio_meta.json) ----
+      var lines = [
+        { el: q("#f44-line1"), cur: q("#f44-cur1"), words: [["mỗi", 6.349, 6.51], ["sáng", 6.55, 6.71], ["thứ", 6.73, 6.791], ["hai", 6.871, 7.072]] },
+        { el: q("#f44-line2"), cur: q("#f44-cur2"), words: [["lúc", 7.112, 7.232], ["chín", 7.252, 7.413], ["giờ", 7.453, 7.553]] }
+      ];
+      var typeEvents = [];
+      lines.forEach(function (ln) {
+        ln.words.forEach(function (w, wi) {
+          var chars = Array.from(w[0]);
+          if (wi > 0) {
+            var sp = document.createElement("span");
+            sp.className = "f44-ch";
+            sp.textContent = " ";
+            ln.el.insertBefore(sp, ln.cur);
+            typeEvents.push([sp, w[1]]);
+          }
+          var step = (w[2] - w[1]) / chars.length;
+          chars.forEach(function (c, ci) {
+            var s = document.createElement("span");
+            s.className = "f44-ch";
+            s.textContent = c;
+            ln.el.insertBefore(s, ln.cur);
+            typeEvents.push([s, w[1] + ci * step]);
+          });
+        });
+      });
+
+      // ---- initial states ----
+      gsap.set("#f44-spark", { x: 790, y: 420 });
+      gsap.set("#f44-hour", { rotation: 240, svgOrigin: "280 340" });
+      gsap.set("#f44-minute", { rotation: 0, svgOrigin: "280 340" });
+      gsap.set("#f44-hammer", { rotation: 0, svgOrigin: "280 172" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ===== Scene 1 (0–3.64): metaphor — the alarm clock rings and hands off =====
+      // "Hermes" 0.31 — the courier spark + a ghost dial
+      tl.fromTo("#f44-spark-in", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.3);
+      tl.fromTo("#f44-ghost", { opacity: 0 }, { opacity: 0.45, duration: 0.6, ease: "power3.out" }, 0.3);
+      // "theo" 1.62 — kicker
+      tl.fromTo("#f44-k1", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 1.6);
+      // "lịch" 1.8 — the schedule dial ticks in
+      tl.fromTo(tickEls, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out", stagger: 0.06 }, 1.78);
+      // "đồng hồ" 3.04 — the clock draws on
+      tl.fromTo("#f44-body", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.42, ease: "none" }, 3.02);
+      tl.fromTo("#f44-bodyfill", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power3.out" }, 3.02);
+      tl.fromTo(["#f44-bell-l", "#f44-bell-r"], { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 3.1);
+      tl.fromTo(["#f44-leg-l", "#f44-leg-r"], { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 3.15);
+      tl.fromTo("#f44-hands", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power3.out" }, 3.2);
+      tl.fromTo("#f44-hammer", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power3.out" }, 3.2);
+      // "báo thức" 3.44 — it rings (finite hammer strikes + body shake + sound waves)
+      tl.to("#f44-hammer", { keyframes: [
+        { rotation: -32, duration: 0.07 }, { rotation: 32, duration: 0.09 },
+        { rotation: -32, duration: 0.09 }, { rotation: 32, duration: 0.09 },
+        { rotation: -24, duration: 0.09 }, { rotation: 0, duration: 0.09 }
+      ], ease: "power1.inOut" }, 3.42);
+      tl.to("#f44-clocksvg", { keyframes: [
+        { rotation: -4, duration: 0.07 }, { rotation: 4, duration: 0.09 },
+        { rotation: -4, duration: 0.09 }, { rotation: 3, duration: 0.09 },
+        { rotation: -2, duration: 0.09 }, { rotation: 0, duration: 0.09 }
+      ], ease: "power1.inOut" }, 3.42);
+      tl.fromTo(["#f44-waves-l", "#f44-waves-r"], { opacity: 0, scale: 0.6, transformOrigin: "50% 100%" }, { opacity: 1, scale: 1, duration: 0.22, ease: "power3.out" }, 3.44);
+      tl.to(["#f44-waves-l", "#f44-waves-r"], { opacity: 0, duration: 0.35, ease: "power2.inOut" }, 3.95);
+      // "thức" 3.64 — spark flies the courier trail; the task card drops into it
+      tl.fromTo("#f44-trail", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 3.64);
+      tl.to("#f44-spark", { x: 1270, duration: 0.6, ease: "none" }, 3.64);
+      tl.to("#f44-spark", { y: 300, duration: 0.3, ease: "power1.out" }, 3.64);
+      tl.to("#f44-spark", { y: 420, duration: 0.3, ease: "power1.in" }, 3.94);
+      tl.fromTo("#f44-card", { opacity: 0, y: -70 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.9);
+
+      // ===== Scene 2 (3.64–8.48): typewriter — plain words in a speech bubble =====
+      // "Bạn … nói" — clock steps left, hand-off clears, bubble takes the right
+      tl.to("#f44-clock", { x: -250, scale: 0.78, duration: 0.6, ease: "power2.inOut" }, 4.45);
+      tl.to("#f44-handoff", { opacity: 0, x: 40, duration: 0.4, ease: "power2.inOut" }, 4.6);
+      tl.to("#f44-k1", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 4.6);
+      tl.fromTo("#f44-k2", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 4.72);
+      tl.fromTo("#f44-bubble", { opacity: 0, scale: 0.92, y: 24 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.8);
+      // "ví dụ" 5.99
+      tl.fromTo("#f44-bubble-label", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 5.97);
+      // waiting cursor blinks, then solid while typing
+      [[5.1, 1], [5.45, 0], [5.8, 1], [6.1, 0], [6.3, 1], [7.1, 0]].forEach(function (b) {
+        tl.set("#f44-cur1", { opacity: b[1] }, b[0]);
+      });
+      [[7.1, 1], [7.85, 0], [8.2, 1]].forEach(function (b) {
+        tl.set("#f44-cur2", { opacity: b[1] }, b[0]);
+      });
+      // typed on as spoken: "mỗi sáng thứ hai" / "lúc chín giờ"
+      typeEvents.forEach(function (ev) {
+        tl.set(ev[0], { display: "inline" }, ev[1]);
+      });
+      // "chín giờ" 7.25 — the clock turns to nine
+      tl.to("#f44-minute", { rotation: 360, duration: 0.65, ease: "power2.inOut" }, 7.25);
+      tl.to("#f44-hour", { rotation: 270, duration: 0.65, ease: "power2.inOut" }, 7.25);
+
+      // ===== Scene 3 (8.48–12.02): cards — shorthand chips drop in =====
+      // "ngắn gọn" 8.49 — bubble lifts, new kicker
+      tl.to("#f44-k2", { opacity: 0, duration: 0.3, ease: "power2.inOut" }, 8.4);
+      tl.fromTo("#f44-k3", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 8.49);
+      tl.to("#f44-bubble", { y: -170, scale: 0.8, duration: 0.6, ease: "power2.inOut" }, 8.5);
+      tl.to("#f44-cur2", { opacity: 0, duration: 0.2 }, 8.6);
+      // "sau" 9.54 — chip 1 drops; "ba mươi" counts to 30; minute hand sweeps half a turn
+      tl.fromTo("#f44-chip1", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.44);
+      tl.fromTo("#f44-n30", { textContent: 0 }, { textContent: 30, snap: { textContent: 1 }, duration: 0.35, ease: "none" }, 9.74);
+      tl.fromTo("#f44-arc30", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 9.54);
+      tl.to("#f44-minute", { rotation: 540, duration: 0.6, ease: "none" }, 9.54);
+      tl.to("#f44-hour", { rotation: 285, duration: 0.6, ease: "none" }, 9.54);
+      // "hay mỗi" — the courier trail links the chips
+      tl.fromTo("#f44-link", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 10.56);
+      // "giờ" 11.02 — chip 2 drops; hour hand steps two hours
+      tl.fromTo("#f44-chip2", { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 10.9);
+      tl.fromTo("#f44-arc2h", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 11.02);
+      tl.to("#f44-hour", { rotation: 345, duration: 0.7, ease: "power2.inOut" }, 11.02);
+      tl.to("#f44-minute", { rotation: 1260, duration: 0.7, ease: "power2.inOut" }, 11.02);
+
+      tl.to({}, { duration: 12.02 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["44-viec-tu-dong-theo-lich"] = tl;
+    })();
+  </script>
+</template>

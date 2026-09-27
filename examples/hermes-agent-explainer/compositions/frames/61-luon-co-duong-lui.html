@@ -1,0 +1,407 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f61-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(314, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f61-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f61- */
+
+    /* one camera: the world wrapper */
+    #f61-world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 0 0;
+    }
+    #f61-field {
+      position: absolute;
+      left: -600px;
+      top: -400px;
+      width: 2960px;
+      height: 1620px;
+      opacity: 0.4;
+      background-image: radial-gradient(circle, rgba(244,241,232,.22) 1.6px, transparent 2px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 25%, transparent 70%);
+      mask-image: radial-gradient(ellipse at 50% 50%, #000 25%, transparent 70%);
+    }
+
+    /* project folder card (hero) + its snapshot copy */
+    .f61-card {
+      position: absolute;
+      left: 980px;
+      top: 150px;
+      width: 520px;
+      height: 400px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 2px solid rgba(244,241,232,.14);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f61-tab {
+      position: absolute;
+      left: 24px;
+      top: -32px;
+      width: 170px;
+      height: 34px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 2px solid rgba(244,241,232,.14);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+    }
+    .f61-head {
+      position: absolute;
+      left: 36px;
+      top: 26px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .f61-name {
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f61-row {
+      position: absolute;
+      left: 36px;
+      width: 448px;
+      height: 70px;
+    }
+    .f61-r1 { top: 110px; }
+    .f61-r2 { top: 200px; }
+    .f61-r3 { top: 290px; }
+    .f61-doc {
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 46px;
+      height: 58px;
+    }
+    .f61-fbar, .f61-tbar {
+      position: absolute;
+      left: 72px;
+      height: 14px;
+      border-radius: 7px;
+      background: rgba(244,241,232,.55);
+    }
+    .f61-b1 { top: 16px; }
+    .f61-b2 { top: 44px; background: rgba(142,147,181,.55); }
+
+    #f61-folder { opacity: 0; }
+    #f61-thumb { opacity: 0; transform-origin: 0 0; }
+
+    /* edit tags above the folder */
+    .f61-tag {
+      position: absolute;
+      top: 88px;
+      height: 50px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      border-radius: 25px;
+      background: var(--surface);
+      border: 2px solid rgba(244,241,232,.14);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      line-height: 46px;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f61-tag1 { left: 1240px; }
+    #f61-tag2 { left: 1380px; color: var(--muted); }
+
+    /* viewfinder brackets on the snapshot */
+    #f61-brackets {
+      position: absolute;
+      left: 950px;
+      top: 100px;
+      width: 580px;
+      height: 480px;
+      overflow: visible;
+      transform-origin: 50% 50%;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+
+    /* warn badge */
+    #f61-badge {
+      position: absolute;
+      left: 1372px;
+      top: 176px;
+      height: 52px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      border-radius: 26px;
+      background: rgba(255,107,107,.16);
+      border: 2px solid var(--warn);
+      color: var(--warn);
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 48px;
+      white-space: nowrap;
+      transform-origin: 50% 50%;
+      opacity: 0;
+    }
+
+    /* the courier trail between snapshot and folder */
+    #f61-trail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+
+    /* snapshot labels */
+    .f61-label {
+      position: absolute;
+      left: 90px;
+      width: 360px;
+      text-align: center;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f61-kicker {
+      top: 470px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+    .f61-dia {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 14px;
+      vertical-align: 4px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+    #f61-restored {
+      top: 522px;
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--cyan);
+    }
+    #f61-restored svg { width: 30px; height: 30px; vertical-align: -4px; margin-right: 10px; }
+
+    #f61-ring {
+      position: absolute;
+      left: 128px;
+      top: 238px;
+      width: 284px;
+      height: 224px;
+      box-sizing: border-box;
+      border: 3px solid var(--cyan);
+      border-radius: 20px;
+      box-shadow: 0 0 28px rgba(62,230,208,.45);
+      transform-origin: 50% 50%;
+      opacity: 0;
+    }
+
+    /* /rollback chip */
+    #f61-chip {
+      position: absolute;
+      left: 536px;
+      top: 404px;
+      height: 68px;
+      padding: 0 30px;
+      box-sizing: border-box;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 2px solid rgba(244,241,232,.2);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 36px;
+      line-height: 64px;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f61-chip b { font-weight: 400; color: var(--cyan); }
+
+    /* rewind spark riding the trail */
+    #f61-spark {
+      position: absolute;
+      left: 944px;
+      top: 314px;
+      width: 72px;
+      height: 72px;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+
+    /* camera flash */
+    #f61-flash {
+      position: absolute;
+      inset: 0;
+      background: var(--ink);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="61-luon-co-duong-lui" data-width="1920" data-height="1080" data-duration="8.178">
+    <div id="f61-ground" class="clip" data-start="0" data-duration="8.178" data-track-index="0"></div>
+    <div id="f61-stage" class="clip" data-start="0" data-duration="8.178" data-track-index="1">
+      <div id="f61-world" data-layout-allow-overflow>
+        <div id="f61-field"></div>
+
+        <!-- courier trail + rewind stroke -->
+        <svg id="f61-trail" viewBox="0 0 1760 820">
+          <path id="f61-trail-path" d="M400 350 L980 350" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f61-rew-path" d="M980 350 L400 350" fill="none" stroke="#ffd23f" stroke-width="8" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+
+        <!-- snapshot copy (peels off the folder, parks at the left) -->
+        <div id="f61-thumb" class="f61-card">
+          <div class="f61-tab"></div>
+          <div class="f61-head">
+            <svg width="52" height="42" viewBox="0 0 52 42"><path d="M3 8 Q3 4 7 4 L19 4 L24 10 L45 10 Q49 10 49 14 L49 36 Q49 39 45 39 L7 39 Q3 39 3 36 Z" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="f61-row f61-r1"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-tbar f61-b1" style="width:300px"></div><div class="f61-tbar f61-b2" style="width:190px"></div></div>
+          <div class="f61-row f61-r2"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-tbar f61-b1" style="width:250px"></div><div class="f61-tbar f61-b2" style="width:320px"></div></div>
+          <div class="f61-row f61-r3"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-tbar f61-b1" style="width:340px"></div><div class="f61-tbar f61-b2" style="width:220px"></div></div>
+        </div>
+        <div id="f61-ring"></div>
+        <div id="f61-kicker" class="f61-label"><span class="f61-dia"></span>bản chụp</div>
+        <div id="f61-restored" class="f61-label"><svg viewBox="0 0 30 30"><path d="M5 16 L12 23 L25 8" fill="none" stroke="#3ee6d0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>khôi phục</div>
+
+        <!-- the project folder (hero) -->
+        <div id="f61-folder" class="f61-card">
+          <div id="f61-ftab" class="f61-tab"></div>
+          <div class="f61-head">
+            <svg width="52" height="42" viewBox="0 0 52 42"><path d="M3 8 Q3 4 7 4 L19 4 L24 10 L45 10 Q49 10 49 14 L49 36 Q49 39 45 39 L7 39 Q3 39 3 36 Z" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linejoin="round"/></svg>
+            <span class="f61-name">dự án</span>
+          </div>
+          <div id="f61-r1" class="f61-row f61-r1"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-fbar f61-b1" style="width:300px"></div><div class="f61-fbar f61-b2" style="width:190px"></div></div>
+          <div id="f61-r2" class="f61-row f61-r2"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-fbar f61-b1" style="width:250px"></div><div class="f61-fbar f61-b2" style="width:320px"></div></div>
+          <div id="f61-r3" class="f61-row f61-r3"><svg class="f61-doc" viewBox="0 0 46 58"><path d="M4 4 L30 4 L42 16 L42 54 L4 54 Z" fill="none" stroke="#8e93b5" stroke-width="3" stroke-linejoin="round"/></svg><div class="f61-fbar f61-b1" style="width:340px"></div><div class="f61-fbar f61-b2" style="width:220px"></div></div>
+        </div>
+
+        <div id="f61-tag1" class="f61-tag">sửa</div>
+        <div id="f61-tag2" class="f61-tag">xóa</div>
+        <div id="f61-badge">Lỗi</div>
+
+        <svg id="f61-brackets" viewBox="0 0 580 480">
+          <path d="M4 64 L4 4 L64 4 M516 4 L576 4 L576 64 M576 416 L576 476 L516 476 M64 476 L4 476 L4 416" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+
+        <div id="f61-chip"><b>/</b>rollback</div>
+
+        <svg id="f61-spark" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="34" fill="#ffd23f"/>
+          <path d="M34 22 L18 36 L34 50 Z M54 22 L38 36 L54 50 Z" fill="#0b1026"/>
+        </svg>
+      </div>
+
+      <div id="f61-flash"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var WARN = "#ff6b6b";
+      var EDGE = "rgba(244,241,232,.14)";
+      var BAR = "rgba(244,241,232,.55)";
+      var BAR2 = "rgba(142,147,181,.55)";
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–2.96): the folder appears, camera pushes onto it
+      tl.fromTo("#f61-folder", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0);
+      // camera leg 1: slow push onto the folder (centre 1240,350 → stage centre 880,410 at scale 1.35)
+      tl.fromTo("#f61-world", { scale: 1, x: 0, y: 0 }, { scale: 1.35, x: -794, y: -62.5, duration: 2.6, ease: "power2.inOut" }, 0.1);
+      // "sửa" 0.61, "xóa" 0.97
+      tl.fromTo("#f61-tag1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.61);
+      tl.fromTo("#f61-tag2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.97);
+      // "chụp" 2.78: camera flash + viewfinder brackets snap on
+      tl.fromTo("#f61-flash", { opacity: 0 }, { opacity: 0.8, duration: 0.06, ease: "none" }, 2.78);
+      tl.to("#f61-flash", { opacity: 0, duration: 0.4, ease: "power2.out" }, 2.84);
+      tl.fromTo("#f61-brackets", { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 0.22, ease: "power3.out" }, 2.78);
+      tl.to("#f61-brackets", { opacity: 0, duration: 0.3, ease: "power2.out" }, 3.4);
+
+      // "lại" 2.96: the snapshot peels off and parks at the left; camera pulls back (leg 2)
+      tl.fromTo("#f61-thumb", { opacity: 0, x: 0, y: 0, scale: 1 }, { opacity: 1, x: -840, y: 100, scale: 0.5, duration: 0.75, ease: "power3.out" }, 2.96);
+      tl.to("#f61-world", { scale: 1, x: 0, y: 0, duration: 0.74, ease: "power2.inOut" }, 2.96);
+      // "dự án" 3.12–3.41: label + courier trail connects snapshot to project
+      tl.fromTo("#f61-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.28);
+      tl.fromTo("#f61-trail-path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 3.3);
+
+      // Scene 2 (2.96–7.68): "có gì sai" — camera leans in, the folder glitches
+      tl.to("#f61-world", { scale: 1.12, x: -240, y: 18, duration: 0.6, ease: "power3.out" }, 4.07);
+      tl.to("#f61-r1", { keyframes: [{ x: -10, duration: 0.06 }, { x: 8, duration: 0.06 }, { x: -4, duration: 0.07 }, { x: 0, duration: 0.08 }], ease: "none" }, 4.19);
+      tl.to("#f61-r2", { keyframes: [{ x: 14, duration: 0.07 }, { x: -12, duration: 0.06 }, { x: 22, duration: 0.08 }, { x: 18, duration: 0.2 }], ease: "none" }, 4.25);
+      tl.to("#f61-r3", { keyframes: [{ x: -8, duration: 0.06 }, { x: 10, duration: 0.07 }, { x: -6, duration: 0.07 }, { x: -12, duration: 0.2 }], ease: "none" }, 4.3);
+      tl.to("#f61-folder", { keyframes: [{ rotation: -1.2, duration: 0.08 }, { rotation: 1, duration: 0.08 }, { rotation: -0.6, duration: 0.08 }, { rotation: 0, duration: 0.1 }], ease: "none" }, 4.29);
+      tl.set("#f61-folder, #f61-ftab", { borderColor: WARN }, 4.29);
+      tl.set("#f61-folder .f61-fbar", { backgroundColor: WARN }, 4.29);
+      tl.fromTo("#f61-badge", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 4.45);
+
+      // "rollback" 6.05: the slash-command chip
+      tl.fromTo("#f61-chip", { opacity: 0, y: 20, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, 6.05);
+
+      // "quay" 6.6: rewind travels back along the trail, camera follows it (leg 3)
+      tl.to("#f61-trail-path", { opacity: 0.3, duration: 0.3, ease: "power2.out" }, 6.6);
+      tl.fromTo("#f61-rew-path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.inOut" }, 6.6);
+      tl.fromTo("#f61-spark", { opacity: 0, x: 0 }, { opacity: 1, x: 0, duration: 0.08, ease: "none" }, 6.6);
+      tl.to("#f61-spark", { x: -580, duration: 0.4, ease: "power2.inOut" }, 6.68);
+      tl.to("#f61-world", { scale: 1.2, x: 376, y: -10, duration: 0.6, ease: "power2.inOut" }, 6.6);
+      // "lại" 6.76: the snapshot lights up
+      tl.fromTo("#f61-ring", { opacity: 0, scale: 1.15 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 6.76);
+      // spark lands (7.08): project restored
+      tl.to("#f61-spark", { opacity: 0, scale: 1.3, duration: 0.25, ease: "power2.out" }, 7.08);
+      tl.set("#f61-folder, #f61-ftab", { borderColor: EDGE }, 7.08);
+      tl.set("#f61-folder .f61-b1", { backgroundColor: BAR }, 7.08);
+      tl.set("#f61-folder .f61-b2", { backgroundColor: BAR2 }, 7.08);
+      tl.to("#f61-r2, #f61-r3", { x: 0, duration: 0.25, ease: "power3.out" }, 7.08);
+      tl.to("#f61-badge", { opacity: 0, duration: 0.2, ease: "power2.out" }, 7.08);
+      tl.fromTo("#f61-restored", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 7.08);
+      // hold: near-imperceptible camera drift
+      tl.to("#f61-world", { scale: 1.21, x: 372, duration: 0.47, ease: "none" }, 7.2);
+
+      tl.to({}, { duration: 7.678 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["61-luon-co-duong-lui"] = tl;
+    })();
+  </script>
+</template>

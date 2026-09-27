@@ -1,0 +1,545 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f29-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f29-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f29- */
+
+    /* ---------- shot 1: the notebook ---------- */
+    #f29-shot1 { position: absolute; inset: 0; }
+    #f29-book {
+      position: absolute;
+      left: 150px;
+      top: 50px;
+      width: 640px;
+      height: 720px;
+    }
+    #f29-page {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden;
+    }
+    .f29-rule {
+      position: absolute;
+      left: 70px;
+      right: 40px;
+      height: 2px;
+      background: rgba(240,238,230,.09);
+    }
+    #f29-margin {
+      position: absolute;
+      left: 104px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(240,238,230,.14);
+    }
+    .f29-ring {
+      position: absolute;
+      left: 26px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 3px solid rgba(240,238,230,.35);
+      background: var(--canvas);
+    }
+    #f29-phead {
+      position: absolute;
+      left: 140px;
+      top: 60px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.1;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f29-phead-line {
+      position: absolute;
+      left: 140px;
+      top: 140px;
+      width: 260px;
+      height: 16px;
+      overflow: visible;
+    }
+    #f29-phead-line path {
+      fill: none;
+      stroke: rgba(240,238,230,.45);
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+    .f29-row {
+      position: absolute;
+      left: 140px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      white-space: nowrap;
+    }
+    .f29-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--ink);
+      opacity: 0.8;
+      flex: none;
+    }
+    .f29-txt {
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 56px;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+    .f29-ch { display: inline-block; opacity: 0; }
+    #f29-pen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+      opacity: 0;
+    }
+    #f29-pen svg, #f29-cspark svg { width: 100%; height: 100%; display: block; }
+
+    /* cover sits on top of the page and folds away to the left */
+    #f29-cover {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(160deg, #37332E, #2B2825);
+      border: 1px solid rgba(240,238,230,.14);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.08);
+      transform-origin: 0% 50%;
+    }
+    #f29-spine {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 64px;
+      border-radius: 16px 0 0 16px;
+      background: rgba(0,0,0,.22);
+      border-right: 2px solid rgba(240,238,230,.10);
+    }
+    #f29-cframe {
+      position: absolute;
+      left: 120px;
+      right: 56px;
+      top: 220px;
+      height: 240px;
+      border: 2px solid rgba(240,238,230,.22);
+      border-radius: 12px;
+    }
+    #f29-cspark {
+      position: absolute;
+      left: 322px;
+      top: 150px;
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+      opacity: 0;
+    }
+    #f29-ctitle {
+      position: absolute;
+      left: 64px;
+      right: 0;
+      top: 278px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 104px;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f29-cw { display: inline-block; opacity: 0; }
+
+    /* right column label */
+    #f29-label {
+      position: absolute;
+      left: 1000px;
+      top: 250px;
+      white-space: nowrap;
+    }
+    #f29-kick {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f29-lab {
+      margin-top: 18px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 84px;
+      line-height: 1.12;
+      color: var(--ink);
+    }
+    .f29-lw { display: inline-block; opacity: 0; }
+    #f29-arrow {
+      position: absolute;
+      left: 800px;
+      top: 330px;
+      width: 190px;
+      height: 120px;
+      overflow: visible;
+    }
+    #f29-arrow path {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ---------- shot 2: the prompt bar ---------- */
+    #f29-shot2 { position: absolute; inset: 0; opacity: 0; }
+    #f29-chip {
+      position: absolute;
+      left: 230px;
+      top: 190px;
+      height: 72px;
+      padding: 0 30px 0 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-radius: 36px;
+      background: var(--surface);
+      border: 2px solid var(--cyan);
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f29-chip svg { width: 36px; height: 36px; display: block; }
+    #f29-link {
+      position: absolute;
+      left: 280px;
+      top: 262px;
+      width: 20px;
+      height: 110px;
+      overflow: visible;
+    }
+    #f29-link path {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+    #f29-bar {
+      position: absolute;
+      left: 230px;
+      top: 372px;
+      width: 1300px;
+      height: 156px;
+      border-radius: 78px;
+      background: var(--surface);
+      border: 2px solid rgba(240,238,230,.16);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f29-bar-ok {
+      position: absolute;
+      inset: -2px;
+      border-radius: 78px;
+      border: 2px solid var(--cyan);
+      opacity: 0;
+    }
+    #f29-line {
+      position: absolute;
+      left: 76px;
+      top: 0;
+      height: 156px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+    #f29-typed {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 500;
+      font-size: 60px;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+    .f29-tc { display: none; }
+    #f29-strike {
+      position: absolute;
+      left: -10px;
+      top: 50%;
+      width: calc(100% + 20px);
+      height: 30px;
+      margin-top: -12px;
+      overflow: visible;
+    }
+    #f29-strike path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #f29-caret {
+      width: 5px;
+      height: 70px;
+      margin-left: 6px;
+      border-radius: 3px;
+      background: var(--ink);
+      flex: none;
+    }
+    #f29-check {
+      position: absolute;
+      left: 1172px;
+      top: 36px;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(143,184,168,.16);
+      border: 2px solid var(--cyan);
+      opacity: 0;
+    }
+    #f29-check svg { position: absolute; left: 18px; top: 18px; width: 48px; height: 48px; overflow: visible; }
+    #f29-check path {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+
+  <div id="root" data-composition-id="29-claude-biet-ghi-nho" data-width="1920" data-height="1080" data-duration="10.389">
+    <div id="f29-ground" class="clip" data-start="0" data-duration="10.389" data-track-index="0"></div>
+    <div id="f29-stage" class="clip" data-start="0" data-duration="10.389" data-track-index="1">
+
+      <!-- shot 1: notebook (60/40) -->
+      <div id="f29-shot1">
+        <div id="f29-book">
+          <div id="f29-page">
+            <div id="f29-margin"></div>
+            <div class="f29-rule" style="top:170px"></div>
+            <div class="f29-rule" style="top:310px"></div>
+            <div class="f29-rule" style="top:450px"></div>
+            <div class="f29-rule" style="top:590px"></div>
+            <div class="f29-ring" style="top:110px"></div>
+            <div class="f29-ring" style="top:250px"></div>
+            <div class="f29-ring" style="top:390px"></div>
+            <div class="f29-ring" style="top:530px"></div>
+            <div class="f29-ring" style="top:670px"></div>
+            <div id="f29-phead">bộ nhớ</div>
+            <svg id="f29-phead-line" viewBox="0 0 260 16"><path pathLength="1" d="M2 9 C 60 4, 130 13, 190 7 S 245 6, 258 9"/></svg>
+            <div class="f29-row" id="f29-row1" style="top:220px"><div class="f29-dot" id="f29-dot1"></div><div class="f29-txt" id="f29-t1"></div></div>
+            <div class="f29-row" id="f29-row2" style="top:360px"><div class="f29-dot" id="f29-dot2"></div><div class="f29-txt" id="f29-t2"></div></div>
+            <div class="f29-row" id="f29-row3" style="top:500px"><div class="f29-dot" id="f29-dot3"></div><div class="f29-txt" id="f29-t3"></div></div>
+            <div id="f29-pen"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="5" stroke-linecap="round"><line x1="0" y1="-19" x2="0" y2="19"/><line x1="-19" y1="0" x2="19" y2="0"/><line x1="-13.4" y1="-13.4" x2="13.4" y2="13.4"/><line x1="-13.4" y1="13.4" x2="13.4" y2="-13.4"/></g></svg></div>
+          </div>
+          <div id="f29-cover">
+            <div id="f29-spine"></div>
+            <div id="f29-cframe"></div>
+            <div id="f29-cspark"><svg viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="5" stroke-linecap="round"><line x1="0" y1="-19" x2="0" y2="19"/><line x1="-19" y1="0" x2="19" y2="0"/><line x1="-13.4" y1="-13.4" x2="13.4" y2="13.4"/><line x1="-13.4" y1="13.4" x2="13.4" y2="-13.4"/></g></svg></div>
+            <div id="f29-ctitle"><span class="f29-cw" id="f29-cw1">bộ</span> <span class="f29-cw" id="f29-cw2">nhớ</span></div>
+          </div>
+        </div>
+
+        <svg id="f29-arrow" viewBox="0 0 190 120"><path pathLength="1" d="M186 30 C 140 18, 90 30, 60 62 S 22 104, 10 110 M10 110 L 34 108 M10 110 L 16 88"/></svg>
+        <div id="f29-label">
+          <div id="f29-kick">Claude nhớ</div>
+          <div id="f29-lab"><span class="f29-lw" id="f29-lw1">sổ</span> <span class="f29-lw" id="f29-lw2">tay</span> <span class="f29-lw" id="f29-lw3">về</span> <span class="f29-lw" id="f29-lw4">bạn</span></div>
+        </div>
+      </div>
+
+      <!-- shot 2: prompt bar (centered) -->
+      <div id="f29-shot2">
+        <div id="f29-chip">
+          <svg viewBox="0 0 36 36"><rect x="7" y="4" width="23" height="28" rx="3" fill="none" stroke="#8FB8A8" stroke-width="3"/><line x1="13" y1="4" x2="13" y2="32" stroke="#8FB8A8" stroke-width="3"/><line x1="17" y1="13" x2="26" y2="13" stroke="#8FB8A8" stroke-width="2.5" stroke-linecap="round"/><line x1="17" y1="19" x2="26" y2="19" stroke="#8FB8A8" stroke-width="2.5" stroke-linecap="round"/></svg>
+          <span>bộ nhớ</span>
+        </div>
+        <svg id="f29-link" viewBox="0 0 20 110"><path pathLength="1" d="M10 2 L 10 108"/></svg>
+        <div id="f29-bar">
+          <div id="f29-bar-ok"></div>
+          <div id="f29-line">
+            <div id="f29-typed">
+              <svg id="f29-strike" viewBox="0 0 100 30" preserveAspectRatio="none"><path pathLength="1" d="M1 18 C 20 12, 40 20, 60 14 S 88 12, 99 15"/></svg>
+            </div>
+            <div id="f29-caret"></div>
+          </div>
+          <div id="f29-check"><svg viewBox="0 0 48 48"><path pathLength="1" d="M6 25 L 19 37 L 42 11"/></svg></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="29-claude-biet-ghi-nho"]');
+      function q(sel) { return root.querySelector(sel); }
+
+      // notebook lines: split each word into characters for a write-on
+      var lines = [
+        { el: q("#f29-t1"), text: "vai trò", t: 3.96 },
+        { el: q("#f29-t2"), text: "dự án", t: 4.71 },
+        { el: q("#f29-t3"), text: "phong cách", t: 5.63 }
+      ];
+      lines.forEach(function (ln) {
+        Array.from(ln.text).forEach(function (c) {
+          var s = document.createElement("span");
+          s.className = "f29-ch";
+          s.textContent = c === " " ? " " : c;
+          ln.el.appendChild(s);
+        });
+      });
+
+      // prompt text, typed word by word on the spoken times
+      var typed = q("#f29-typed");
+      var strike = q("#f29-strike");
+      var words = [
+        { w: "nhắc", t: 8.38 },
+        { w: " lại", t: 8.57 },
+        { w: " mỗi", t: 8.77 },
+        { w: " lần", t: 8.93 }
+      ];
+      var tchars = [];
+      words.forEach(function (wd) {
+        Array.from(wd.w).forEach(function (c, i) {
+          var s = document.createElement("span");
+          s.className = "f29-tc";
+          s.textContent = c === " " ? " " : c;
+          typed.insertBefore(s, strike);
+          tchars.push({ el: s, t: wd.t + i * 0.035 });
+        });
+      });
+
+      // initial states (before the timeline is built)
+      gsap.set(q("#f29-arrow path"), { strokeDasharray: "1 2", strokeDashoffset: 1 });
+      gsap.set(q("#f29-phead-line path"), { strokeDasharray: "1 2", strokeDashoffset: 1 });
+      gsap.set(q("#f29-link path"), { strokeDasharray: "1 2", strokeDashoffset: 1 });
+      gsap.set(q("#f29-strike path"), { strokeDasharray: "1 2", strokeDashoffset: 1 });
+      gsap.set(q("#f29-check path"), { strokeDasharray: "1 2", strokeDashoffset: 1 });
+      gsap.set(".f29-dot", { scale: 0 });
+      gsap.set(q("#f29-pen"), { x: 0, y: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1: notebook (0 - 6.7) ----
+      tl.fromTo(q("#f29-book"), { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 0.1);
+      tl.fromTo(q("#f29-cframe"), { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power3.out" }, 0.35);
+      // slow camera push on the notebook through the whole scene
+      tl.fromTo(q("#f29-shot1"), { scale: 1 }, { scale: 1.025, duration: 6.0, ease: "none", transformOrigin: "30% 50%" }, 0.7);
+
+      // "bộ nhớ" lands on the cover with the spark
+      tl.fromTo(q("#f29-cw1"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.11);
+      tl.fromTo(q("#f29-cw2"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.25);
+      tl.fromTo(q("#f29-cspark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 1.11);
+      tl.fromTo(q("#f29-kick"), { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 3.8);
+
+      // "sổ tay": the cover folds open to the left, label lands on the right
+      tl.fromTo(q("#f29-cover"), { scaleX: 1, opacity: 1 }, { scaleX: 0, opacity: 0.4, duration: 0.6, ease: "power2.inOut" }, 2.32);
+      tl.fromTo(q("#f29-lw1"), { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.32);
+      tl.fromTo(q("#f29-lw2"), { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.54);
+      tl.fromTo(q("#f29-lw3"), { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.72);
+      tl.fromTo(q("#f29-lw4"), { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.86);
+      tl.to(q("#f29-phead-line path"), { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.75);
+      tl.to(q("#f29-arrow path"), { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 3.0);
+
+      // lines write themselves; newest terracotta, older ones cream
+      var penX = [330, 260, 420];
+      lines.forEach(function (ln, i) {
+        var chs = ln.el.querySelectorAll(".f29-ch");
+        var dot = q("#f29-dot" + (i + 1));
+        tl.to(dot, { scale: 1, duration: 0.3, ease: "power3.out" }, ln.t);
+        tl.set(ln.el, { color: "#D97757" }, ln.t);
+        chs.forEach(function (c, k) {
+          tl.fromTo(c, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.18, ease: "power3.out" }, ln.t + k * 0.04);
+        });
+        if (i > 0) tl.set(lines[i - 1].el, { color: "#F0EEE6" }, ln.t);
+      });
+      // the spark rides along as the pen
+      tl.fromTo(q("#f29-pen"), { opacity: 0, scale: 0, rotation: -20, x: 140 + penX[0], y: 238 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 3.96);
+      tl.to(q("#f29-pen"), { x: 140 + penX[1], y: 378, rotation: 45, duration: 0.35, ease: "power2.inOut" }, 4.71);
+      tl.to(q("#f29-pen"), { x: 140 + penX[2], y: 518, rotation: 90, duration: 0.35, ease: "power2.inOut" }, 5.63);
+
+      // ---- cut: zoom-through from notebook to prompt bar (after "thích" 6.62) ----
+      tl.to(q("#f29-shot1"), { opacity: 0, filter: "blur(10px)", duration: 0.4, ease: "power2.inOut" }, 6.7);
+      tl.fromTo(q("#f29-shot2"), { opacity: 0, scale: 1.08, filter: "blur(10px)" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.5, ease: "power3.out", immediateRender: false }, 6.8);
+
+      // ---- Scene 2: prompt bar ----
+      // "Nhờ vậy": memory chip links to the bar
+      tl.fromTo(q("#f29-chip"), { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.22);
+      tl.to(q("#f29-link path"), { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 7.4);
+
+      // blinking caret (deterministic toggles) while the bar is empty
+      var caret = q("#f29-caret");
+      var bt;
+      for (bt = 7.2; bt < 8.35; bt += 0.5) {
+        tl.set(caret, { opacity: 0 }, bt);
+        tl.set(caret, { opacity: 1 }, bt + 0.25);
+      }
+      tl.set(caret, { opacity: 1 }, 8.37);
+
+      // type "nhắc lại mỗi lần" on the spoken words
+      tchars.forEach(function (tc) {
+        tl.set(tc.el, { display: "inline-block" }, tc.t);
+      });
+      // strike it through with the hand-drawn stroke
+      tl.to(q("#f29-strike path"), { strokeDashoffset: 0, duration: 0.22, ease: "none" }, 9.08);
+      tl.to(strike, { opacity: 0, duration: 0.1, ease: "none" }, 9.34);
+      // caret backspaces it away
+      for (var k = tchars.length - 1, n = 0; k >= 0; k--, n++) {
+        tl.set(tchars[k].el, { display: "none" }, 9.38 + n * 0.014);
+      }
+      // bar clean: sage check
+      tl.fromTo(q("#f29-check"), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out" }, 9.62);
+      tl.to(q("#f29-check path"), { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 9.66);
+      tl.fromTo(q("#f29-bar-ok"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power3.out" }, 9.64);
+      tl.set(caret, { opacity: 0 }, 9.72);
+
+      tl.to({}, { duration: 9.889 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["29-claude-biet-ghi-nho"] = tl;
+    })();
+  </script>
+</template>

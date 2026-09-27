@@ -1,0 +1,345 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f55-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f55-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f55- */
+
+    /* analyze rail */
+    #f55-rail {
+      position: absolute; left: 331px; top: 0; width: 1098px; height: 60px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12); border-radius: 30px;
+      display: flex; overflow: hidden;
+    }
+    .f55-slot {
+      width: 366px; height: 60px; display: flex; align-items: center; justify-content: center; gap: 14px;
+      font-size: 28px; font-weight: 600; color: var(--muted); line-height: 1.1;
+    }
+    .f55-num {
+      width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(142,147,181,.6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: var(--muted);
+    }
+    #f55-railbar {
+      position: absolute; left: 40px; bottom: 5px; width: 286px; height: 4px; border-radius: 2px;
+      background: var(--gold); transform-origin: left center;
+      filter: drop-shadow(0 0 8px rgba(255,210,63,.55));
+    }
+
+    /* camera viewport (clips the push) */
+    #f55-cam {
+      position: absolute; left: 0; top: 100px; width: 1760px; height: 720px; overflow: hidden;
+    }
+    #f55-world {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 720px;
+      transform-origin: 880px 360px;
+    }
+
+    /* folder tree */
+    #f55-tree { position: absolute; left: 0; top: 0; width: 520px; height: 720px; }
+    #f55-tree-svg { position: absolute; left: 0; top: 0; width: 520px; height: 720px; overflow: visible; }
+    .f55-trail {
+      fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      filter: drop-shadow(0 0 8px rgba(255,210,63,.55));
+    }
+    .f55-node { position: absolute; height: 44px; display: flex; align-items: center; gap: 16px; opacity: 0; }
+    .f55-node svg { width: 56px; height: 44px; flex: none; }
+    .f55-node-label { opacity: 0; font-size: 30px; font-weight: 600; color: var(--ink); white-space: nowrap; line-height: 1.1; }
+
+    /* placeholder slots + cards */
+    .f55-slotph {
+      position: absolute; width: 600px; height: 180px; border-radius: 16px;
+      border: 2px dashed rgba(244,241,232,.18); opacity: 0;
+    }
+    .f55-card {
+      position: absolute; width: 600px; height: 180px; border-radius: 16px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); opacity: 0;
+    }
+    .f55-card-hd {
+      position: absolute; left: 28px; right: 24px; top: 26px; height: 46px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .f55-card-hd svg { width: 30px; height: 36px; flex: none; }
+    .f55-fname { font-family: "JetBrains Mono", monospace; font-size: 32px; color: var(--ink); line-height: 1.2; }
+    .f55-chip {
+      margin-left: auto; height: 44px; padding: 0 16px; border-radius: 22px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(62,230,208,.12); border: 1px solid var(--cyan);
+      color: var(--cyan); font-size: 28px; font-weight: 600; line-height: 1;
+      transform-origin: right center; opacity: 0;
+    }
+    .f55-chip svg { width: 22px; height: 22px; }
+    .f55-bar {
+      position: absolute; left: 28px; height: 10px; border-radius: 5px;
+      background: rgba(244,241,232,.28); transform-origin: left center;
+    }
+    .f55-ok {
+      position: absolute; right: 28px; top: 104px; width: 44px; height: 44px; opacity: 0;
+    }
+    .f55-flagbox {
+      position: absolute; left: 16px; top: 106px; width: 300px; height: 34px; border-radius: 8px;
+      border: 2px dashed var(--gold); opacity: 0;
+    }
+    .f55-hl { position: absolute; left: -2px; top: -2px; width: 600px; height: 180px; border-radius: 16px; border: 2px solid var(--gold); opacity: 0; }
+    .f55-badge {
+      position: absolute; right: 24px; top: 101px; height: 48px; padding: 0 18px; border-radius: 24px;
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,210,63,.12); border: 2px solid var(--gold);
+      color: var(--gold); font-size: 28px; font-weight: 600; line-height: 1;
+      transform-origin: right center; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(255,210,63,.45));
+    }
+    .f55-badge svg { width: 26px; height: 26px; }
+
+    /* merge curves + tag */
+    #f55-merge-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 720px; overflow: visible; }
+    #f55-tag {
+      position: absolute; right: 0; top: 330px; height: 60px; padding: 0 22px; border-radius: 30px;
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 2px solid var(--gold);
+      font-size: 32px; font-weight: 600; color: var(--ink); white-space: nowrap; line-height: 1;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); transform-origin: left center; opacity: 0;
+    }
+    #f55-tag svg { width: 30px; height: 30px; flex: none; }
+
+    /* scan beam */
+    #f55-beam {
+      position: absolute; left: 500px; top: 0; width: 760px; height: 6px; border-radius: 3px;
+      background: var(--cyan); box-shadow: 0 0 18px rgba(62,230,208,.8); opacity: 0;
+    }
+    #f55-beam-glow {
+      position: absolute; left: 0; bottom: 6px; width: 760px; height: 70px;
+      background: linear-gradient(to bottom, rgba(62,230,208,0), rgba(62,230,208,.18));
+    }
+
+    /* HUD brackets (in the camera viewport, not scaled) */
+    .f55-brk { position: absolute; width: 56px; height: 56px; border-color: var(--cyan); border-style: solid; border-width: 0; opacity: 0; }
+    #f55-brk-tl { left: 446px; top: 4px; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 10px; }
+    #f55-brk-tr { left: 1258px; top: 4px; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 10px; }
+    #f55-brk-bl { left: 446px; top: 660px; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 10px; }
+    #f55-brk-br { left: 1258px; top: 660px; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 10px; }
+  </style>
+
+  <div id="root" data-composition-id="55-tep-ngu-canh-cho-du-an" data-width="1920" data-height="1080" data-duration="13.384">
+    <div id="f55-ground" class="clip" data-start="0" data-duration="13.384" data-track-index="0"></div>
+    <div id="f55-stage" class="clip" data-start="0" data-duration="13.384" data-track-index="1">
+
+      <!-- analyze rail -->
+      <div id="f55-rail">
+        <div class="f55-slot" id="f55-slot1"><span class="f55-num" id="f55-num1">1</span><span id="f55-txt1">Tính năng</span></div>
+        <div class="f55-slot" id="f55-slot2"><span class="f55-num" id="f55-num2">2</span><span id="f55-txt2">Vì sao nổi bật</span></div>
+        <div class="f55-slot" id="f55-slot3"><span class="f55-num" id="f55-num3">3</span><span id="f55-txt3">Bạn được gì</span></div>
+        <div id="f55-railbar"></div>
+      </div>
+
+      <div id="f55-cam">
+        <div id="f55-world" data-layout-allow-overflow>
+
+          <!-- folder tree: repo root down to the working folder -->
+          <div id="f55-tree">
+            <svg id="f55-tree-svg" viewBox="0 0 520 720">
+              <path id="f55-trail1" class="f55-trail" pathLength="1" d="M40 156 V360 H70"></path>
+              <path id="f55-trail2" class="f55-trail" pathLength="1" d="M100 386 V590 H130"></path>
+            </svg>
+            <div class="f55-node" id="f55-node0" style="left:12px;top:108px;">
+              <svg viewBox="0 0 56 44"><path d="M3 8 Q3 4 7 4 H20 L25 10 H49 Q53 10 53 14 V38 Q53 41 49 41 H7 Q3 41 3 38 Z" fill="#141b3a" stroke="#f4f1e8" stroke-width="3" stroke-linejoin="round"></path></svg>
+              <span class="f55-node-label" id="f55-lab0">gốc dự án</span>
+            </div>
+            <div class="f55-node" id="f55-node1" style="left:72px;top:338px;">
+              <svg viewBox="0 0 56 44"><path d="M3 8 Q3 4 7 4 H20 L25 10 H49 Q53 10 53 14 V38 Q53 41 49 41 H7 Q3 41 3 38 Z" fill="#141b3a" stroke="#f4f1e8" stroke-width="3" stroke-linejoin="round"></path></svg>
+              <span class="f55-node-label" id="f55-lab1">thư mục con</span>
+            </div>
+            <div class="f55-node" id="f55-node2" style="left:132px;top:568px;">
+              <svg viewBox="0 0 56 44"><path d="M3 8 Q3 4 7 4 H20 L25 10 H49 Q53 10 53 14 V38 Q53 41 49 41 H7 Q3 41 3 38 Z" fill="#141b3a" stroke="#3ee6d0" stroke-width="3" stroke-linejoin="round"></path></svg>
+              <span class="f55-node-label" id="f55-lab2">thư mục làm việc</span>
+            </div>
+          </div>
+
+          <!-- merge curves: rules from every level flow into one understanding -->
+          <svg id="f55-merge-svg" viewBox="0 0 1760 720">
+            <path id="f55-merge0" class="f55-trail" pathLength="1" d="M1120 130 C1250 130 1250 360 1350 360"></path>
+            <path id="f55-merge1" class="f55-trail" pathLength="1" d="M1180 360 H1350"></path>
+            <path id="f55-merge2" class="f55-trail" pathLength="1" d="M1240 590 C1310 590 1300 360 1350 360"></path>
+          </svg>
+
+          <!-- empty slots -->
+          <div class="f55-slotph" id="f55-ph0" style="left:520px;top:40px;"></div>
+          <div class="f55-slotph" id="f55-ph1" style="left:580px;top:270px;"></div>
+          <div class="f55-slotph" id="f55-ph2" style="left:640px;top:500px;"></div>
+
+          <!-- AGENTS.md cards -->
+          <div class="f55-card" id="f55-card0" style="left:520px;top:40px;">
+            <div class="f55-card-hd">
+              <svg viewBox="0 0 30 36"><path d="M3 3 H19 L27 11 V33 H3 Z" fill="none" stroke="#8e93b5" stroke-width="2.5" stroke-linejoin="round"></path><path d="M19 3 V11 H27" fill="none" stroke="#8e93b5" stroke-width="2.5" stroke-linejoin="round"></path></svg>
+              <span class="f55-fname">AGENTS.md</span>
+              <span class="f55-chip" id="f55-chip0"><svg viewBox="0 0 22 22"><path d="M4 11.5 L9 16 L18 6" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>quy tắc</span>
+            </div>
+            <i class="f55-bar" id="f55-b00" style="top:96px;width:470px;"></i>
+            <i class="f55-bar" id="f55-b01" style="top:122px;width:360px;"></i>
+            <i class="f55-bar" id="f55-b02" style="top:148px;width:410px;"></i>
+            <svg class="f55-ok" id="f55-ok0" viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" fill="rgba(62,230,208,.12)" stroke="#3ee6d0" stroke-width="3"></circle><path d="M13 22.5 L19.5 29 L31 15" fill="none" stroke="#3ee6d0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+
+          <div class="f55-card" id="f55-card1" style="left:580px;top:270px;">
+            <div class="f55-card-hd">
+              <svg viewBox="0 0 30 36"><path d="M3 3 H19 L27 11 V33 H3 Z" fill="none" stroke="#8e93b5" stroke-width="2.5" stroke-linejoin="round"></path><path d="M19 3 V11 H27" fill="none" stroke="#8e93b5" stroke-width="2.5" stroke-linejoin="round"></path></svg>
+              <span class="f55-fname">AGENTS.md</span>
+              <span class="f55-chip" id="f55-chip1"><svg viewBox="0 0 22 22"><path d="M4 11.5 L9 16 L18 6" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>quy tắc</span>
+            </div>
+            <i class="f55-bar" id="f55-b10" style="top:96px;width:420px;"></i>
+            <div class="f55-flagbox" id="f55-flag"></div>
+            <div class="f55-hl" id="f55-hl1"></div>
+            <i class="f55-bar" id="f55-b11" style="top:122px;width:272px;"></i>
+            <i class="f55-bar" id="f55-b12" style="top:148px;width:380px;"></i>
+            <div class="f55-badge" id="f55-badge"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="#ffd23f" stroke-width="3"></circle><path d="M5.8 20.2 L20.2 5.8" stroke="#ffd23f" stroke-width="3" stroke-linecap="round"></path></svg>đã chặn</div>
+          </div>
+
+          <div class="f55-card" id="f55-card2" style="left:640px;top:500px;">
+            <div class="f55-card-hd">
+              <svg viewBox="0 0 30 36"><path d="M3 3 H19 L27 11 V33 H3 Z" fill="none" stroke="#3ee6d0" stroke-width="2.5" stroke-linejoin="round"></path><path d="M19 3 V11 H27" fill="none" stroke="#3ee6d0" stroke-width="2.5" stroke-linejoin="round"></path></svg>
+              <span class="f55-fname">AGENTS.md</span>
+              <span class="f55-chip" id="f55-chip2"><svg viewBox="0 0 22 22"><path d="M4 11.5 L9 16 L18 6" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>quy tắc</span>
+            </div>
+            <i class="f55-bar" id="f55-b20" style="top:96px;width:440px;"></i>
+            <i class="f55-bar" id="f55-b21" style="top:122px;width:330px;"></i>
+            <i class="f55-bar" id="f55-b22" style="top:148px;width:400px;"></i>
+            <svg class="f55-ok" id="f55-ok2" viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" fill="rgba(62,230,208,.12)" stroke="#3ee6d0" stroke-width="3"></circle><path d="M13 22.5 L19.5 29 L31 15" fill="none" stroke="#3ee6d0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+
+          <!-- tag -->
+          <div id="f55-tag"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="rgba(62,230,208,.12)" stroke="#3ee6d0" stroke-width="2.5"></circle><path d="M8.5 15.5 L13 20 L21.5 10.5" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>không cần nhắc lại</div>
+
+          <!-- scan beam -->
+          <div id="f55-beam"><div id="f55-beam-glow"></div></div>
+        </div>
+
+        <!-- HUD brackets -->
+        <div class="f55-brk" id="f55-brk-tl"></div>
+        <div class="f55-brk" id="f55-brk-tr"></div>
+        <div class="f55-brk" id="f55-brk-bl"></div>
+        <div class="f55-brk" id="f55-brk-br"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", CANVAS = "#0b1026", INK = "#f4f1e8";
+      var bars = ["#f55-b00","#f55-b01","#f55-b02","#f55-b10","#f55-b11","#f55-b12","#f55-b20","#f55-b21","#f55-b22"];
+      gsap.set(bars.join(","), { scaleX: 0 });
+      gsap.set("#f55-railbar", { scaleX: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0–3.94): rail 1, folder tree draws, AGENTS.md cards stack ---------- */
+      tl.set("#f55-num1", { backgroundColor: GOLD, borderColor: GOLD, color: CANVAS }, 0.2);
+      tl.set("#f55-txt1", { color: GOLD }, 0.2);
+      tl.fromTo("#f55-railbar", { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power3.out" }, 0.2);
+
+      // tree: root first, the trail carries down to the working folder
+      tl.fromTo("#f55-node0", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.3);
+      tl.fromTo(["#f55-ph0", "#f55-ph1", "#f55-ph2"], { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.15 }, 0.45);
+      tl.fromTo("#f55-trail1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 0.63);
+      tl.fromTo("#f55-node1", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.2);
+      tl.fromTo("#f55-trail2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 1.4);
+      tl.fromTo("#f55-node2", { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.85);
+
+      // "AGENTS.md" @2.15 — cards drop into their slots, root to working folder
+      tl.fromTo("#f55-card0", { opacity: 0, y: -28 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.15);
+      tl.fromTo("#f55-card1", { opacity: 0, y: -28 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.42);
+      tl.fromTo("#f55-card2", { opacity: 0, y: -28 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.69);
+
+      // "trong thư mục dự án" @3.28 — file contents fill in
+      tl.fromTo(["#f55-b00","#f55-b01","#f55-b02"], { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out", stagger: 0.06 }, 3.28);
+      tl.fromTo(["#f55-b10","#f55-b11","#f55-b12"], { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out", stagger: 0.06 }, 3.44);
+      tl.fromTo(["#f55-b20","#f55-b21","#f55-b22"], { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out", stagger: 0.06 }, 3.6);
+
+      // "thư mục dự án" @3.46 — the levels get their names
+      tl.fromTo(["#f55-lab0", "#f55-lab1", "#f55-lab2"], { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out", stagger: 0.12 }, 3.46);
+
+      /* ---------- Scene 2 (3.94–8.37): rail 2, rule chips, "không cần nhắc lại" ---------- */
+      tl.set("#f55-num1", { backgroundColor: "rgba(0,0,0,0)", borderColor: INK, color: INK }, 3.94);
+      tl.set("#f55-txt1", { color: INK }, 3.94);
+      tl.set("#f55-num2", { backgroundColor: GOLD, borderColor: GOLD, color: CANVAS }, 3.94);
+      tl.set("#f55-txt2", { color: GOLD }, 3.94);
+      tl.to("#f55-railbar", { x: 366, duration: 0.5, ease: "power2.inOut" }, 3.94);
+
+      // "hiểu" 5.26 · "quy" 5.44 · "tắc" 5.60
+      tl.fromTo("#f55-chip0", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 5.26);
+      tl.fromTo("#f55-chip1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 5.44);
+      tl.fromTo("#f55-chip2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 5.6);
+
+      // "của từng dự án" — the rules from every level flow together
+      tl.fromTo(["#f55-merge0", "#f55-merge1", "#f55-merge2"], { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.8, ease: "none", stagger: 0.08 }, 5.9);
+      // "không" @6.85
+      tl.fromTo("#f55-tag", { opacity: 0, scale: 0.8, x: -16 }, { opacity: 1, scale: 1, x: 0, duration: 0.45, ease: "power3.out" }, 6.85);
+
+      /* ---------- Scene 3 (8.37–12.88): rail 3, push onto the stack, scan + block ---------- */
+      tl.set("#f55-num2", { backgroundColor: "rgba(0,0,0,0)", borderColor: INK, color: INK }, 8.37);
+      tl.set("#f55-txt2", { color: INK }, 8.37);
+      tl.set("#f55-num3", { backgroundColor: GOLD, borderColor: GOLD, color: CANVAS }, 8.37);
+      tl.set("#f55-txt3", { color: GOLD }, 8.37);
+      tl.to("#f55-railbar", { x: 732, duration: 0.5, ease: "power2.inOut" }, 8.37);
+
+      tl.to(["#f55-tree", "#f55-merge-svg", "#f55-tag"], { opacity: 0.22, duration: 0.5, ease: "power2.inOut" }, 8.4);
+      tl.fromTo("#f55-world", { scale: 1 }, { scale: 1.15, duration: 1.3, ease: "power2.inOut" }, 8.4);
+      tl.to("#f55-world", { scale: 1.17, duration: 3.1, ease: "none" }, 9.7);
+
+      // "mọi tệp ngữ cảnh" @9.86 — scan frame locks onto the stack
+      tl.fromTo(["#f55-brk-tl", "#f55-brk-tr", "#f55-brk-bl", "#f55-brk-br"], { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out", stagger: 0.05 }, 9.86);
+
+      // "quét" @10.78 — beam sweeps top to bottom
+      tl.fromTo("#f55-beam", { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 10.72);
+      tl.fromTo("#f55-beam", { y: 20 }, { y: 700, duration: 1.17, ease: "none" }, 10.78);
+
+      // beam passes root card — clean
+      tl.fromTo("#f55-ok0", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 11.02);
+      // "nội" @11.40 — one line flags gold
+      tl.set("#f55-b11", { backgroundColor: GOLD }, 11.4);
+      tl.fromTo("#f55-flag", { opacity: 0, scale: 1.1 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 11.4);
+      // "dung" @11.58 — the whole file is marked
+      tl.fromTo("#f55-hl1", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 11.58);
+      // "độc" @11.76 — blocked
+      tl.fromTo("#f55-badge", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 11.76);
+      // beam passes working-folder card — clean
+      tl.fromTo("#f55-ok2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 11.82);
+      // "hại" @11.90 — the blocked line is held out (not injected)
+      tl.to("#f55-b11", { opacity: 0.35, duration: 0.35, ease: "power2.inOut" }, 11.9);
+
+      tl.to({}, { duration: 12.884 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["55-tep-ngu-canh-cho-du-an"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,334 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f55-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f55-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f55- */
+
+    /* warm radial behind the numeral (background, dimmed) */
+    #f55-glow {
+      position: absolute;
+      left: 380px;
+      top: 20px;
+      width: 1000px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 45%, hsla(40, 55%, 42%, 0.34), hsla(40, 55%, 42%, 0.10) 45%, transparent 70%);
+      opacity: 0.4;
+    }
+
+    /* camera group: drifts slowly during the hold */
+    #f55-cam {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* faint spark present before the voice starts */
+    #f55-ghost {
+      position: absolute;
+      left: 810px;
+      top: 250px;
+      width: 140px;
+      height: 140px;
+      opacity: 0.12;
+    }
+    #f55-ghost svg { width: 100%; height: 100%; display: block; }
+
+    /* kicker: spark + CHƯƠNG + 6 */
+    #f55-kicker {
+      position: absolute;
+      left: 0;
+      top: 96px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    #f55-kmain {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: 0;
+    }
+    #f55-kmain svg { width: 28px; height: 28px; display: block; }
+    #f55-kdigit { display: inline-block; opacity: 0; }
+
+    /* numeral box: terracotta trail (behind, offset echo) + cream Lora "6" on top */
+    #f55-num {
+      position: absolute;
+      left: 730px;
+      top: 150px;
+      width: 300px;
+      height: 320px;
+    }
+    #f55-trailwrap {
+      position: absolute;
+      left: 14px;
+      top: 10px;
+      width: 300px;
+      height: 320px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f55-trail {
+      width: 300px;
+      height: 320px;
+      display: block;
+      overflow: visible;
+    }
+    #f55-trail path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f55-digit {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 300px;
+      height: 320px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 320px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+
+    /* display title "Mới nhất" with the spark at its right edge */
+    #f55-title {
+      position: absolute;
+      left: 0;
+      top: 494px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f55-tline {
+      display: inline-block;
+      position: relative;
+    }
+    .f55-w {
+      display: inline-block;
+      opacity: 0;
+      margin: 0 12px;
+    }
+    #f55-spark {
+      position: absolute;
+      right: -58px;
+      top: 6px;
+      width: 44px;
+      height: 44px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f55-spark svg { width: 100%; height: 100%; display: block; }
+
+    /* date line: "tính đến" (body, muted) + the dated stamp chip */
+    #f55-dateline {
+      position: absolute;
+      left: 0;
+      top: 640px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+    }
+    #f55-lead {
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 500;
+      font-size: 36px;
+      line-height: 1.4;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f55-stamp {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding: 12px 34px 12px 26px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 2px solid rgba(240,238,230,.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    /* terracotta ring that "inks" the stamp once the year is complete */
+    #f55-ink {
+      position: absolute;
+      inset: -2px;
+      border-radius: 16px;
+      border: 3px solid var(--gold);
+      opacity: 0;
+    }
+    #f55-cal { width: 52px; height: 56px; display: block; flex: none; }
+    #f55-date {
+      display: flex;
+      align-items: baseline;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 72px;
+      line-height: 1.1;
+      letter-spacing: 0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f55-d { display: inline-block; opacity: 0; }
+    .f55-sl { color: var(--muted); margin: 0 4px; }
+  </style>
+
+  <div id="root" data-composition-id="55-moi-nhat-tinh-den-25-09-2026" data-width="1920" data-height="1080" data-duration="6.438">
+    <div id="f55-ground" class="clip" data-start="0" data-duration="6.438" data-track-index="0"></div>
+    <div id="f55-stage" class="clip" data-start="0" data-duration="6.438" data-track-index="1">
+      <div id="f55-glow"></div>
+
+      <div id="f55-cam">
+        <!-- faint spark: the only thing on screen before the voice -->
+        <div id="f55-ghost">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M22 22 L78 78 M78 22 L22 78" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div id="f55-kicker">
+          <span id="f55-kmain">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/>
+            </svg>
+            <span>Chương</span>
+            <span id="f55-kdigit">6</span>
+          </span>
+        </div>
+
+        <div id="f55-num">
+          <div id="f55-trailwrap">
+            <svg id="f55-trail" viewBox="0 0 300 320" aria-hidden="true">
+              <path pathLength="1" d="M-150 180 C -100 130, -30 150, 30 112 C 90 74, 160 52, 212 50 C 150 42, 94 92, 82 180 C 72 250, 102 292, 152 292 C 202 292, 228 256, 226 214 C 224 170, 192 146, 152 146 C 116 146, 90 166, 80 196"/>
+            </svg>
+          </div>
+          <div id="f55-digit">6</div>
+        </div>
+
+        <div id="f55-title"><span id="f55-tline"><span class="f55-w" id="f55-w1">Mới</span><span class="f55-w" id="f55-w2">nhất</span><span id="f55-spark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></span></span></div>
+
+        <div id="f55-dateline">
+          <span id="f55-lead">tính đến</span>
+          <div id="f55-stamp">
+            <svg id="f55-cal" viewBox="0 0 52 56" aria-hidden="true">
+              <rect x="3" y="8" width="46" height="45" rx="7" fill="none" stroke="#9A968C" stroke-width="3"/>
+              <path d="M3 21 L49 21" stroke="#9A968C" stroke-width="3"/>
+              <path d="M15 3 L15 13 M37 3 L37 13" stroke="#9A968C" stroke-width="3.5" stroke-linecap="round"/>
+              <rect x="30" y="32" width="11" height="11" rx="2" fill="#F0EEE6"/>
+            </svg>
+            <span id="f55-date"><span class="f55-d" id="f55-dd">25</span><span class="f55-d f55-sl" id="f55-s1">/</span><span class="f55-d" id="f55-mm">09</span><span class="f55-d f55-sl" id="f55-s2">/</span><span class="f55-d" id="f55-y1">2</span><span class="f55-d" id="f55-y2">0</span><span class="f55-d" id="f55-y3">2</span><span class="f55-d" id="f55-y4">6</span></span>
+            <span id="f55-ink"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // calm micro drift under the whole card
+      tl.fromTo("#f55-cam", { scale: 1.0 }, { scale: 1.012, duration: 5.938, ease: "none" }, 0);
+
+      // pre-voice: faint spark turns slowly, then hands off as the numeral is written
+      tl.fromTo("#f55-ghost", { rotation: 0 }, { rotation: 18, duration: 1.04, ease: "none" }, 0);
+      tl.fromTo("#f55-ghost", { opacity: 0.12, scale: 1 }, { opacity: 0, scale: 1.3, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 1.04);
+
+      // "Chương" (0.86): muted mono kicker fades in
+      tl.fromTo("#f55-kmain", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.86);
+
+      // "sáu" (1.041): kicker digit appears and the terracotta stroke writes the "6"
+      tl.fromTo("#f55-kdigit", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 1.04);
+      tl.fromTo("#f55-trail path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.75, ease: "none" }, 1.04);
+      tl.fromTo("#f55-glow", { opacity: 0.4, scale: 0.94 }, { opacity: 0.85, scale: 1, duration: 0.8, ease: "power2.inOut", immediateRender: false }, 1.04);
+      // cream Lora numeral settles over its terracotta echo as the stroke finishes
+      tl.fromTo("#f55-digit", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 1.45);
+
+      // "mới" 2.005 · "nhất" 2.145: the display title slides up; the spark pops at its right edge
+      tl.fromTo("#f55-w1", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.0);
+      tl.fromTo("#f55-w2", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.15);
+      tl.fromTo("#f55-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "back.out(1.8)" }, 2.2);
+
+      // "tính đến" (2.687): the date lead slides up
+      tl.fromTo("#f55-lead", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.69);
+
+      // "hai mươi lăm" (3.21): the stamp chip presses down carrying "25"
+      tl.fromTo("#f55-stamp", { opacity: 0, scale: 1.18, rotation: -9 }, { opacity: 1, scale: 1, rotation: -3, duration: 0.4, ease: "power3.out" }, 3.21);
+      tl.fromTo("#f55-dd", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.21);
+
+      // "tháng chín" (3.611 / 3.752): "/09"
+      tl.fromTo("#f55-s1", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 3.61);
+      tl.fromTo("#f55-mm", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.75);
+
+      // "năm" (3.973): "/" · then the year digit by digit as it is read
+      tl.fromTo("#f55-s2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 3.97);
+      tl.fromTo("#f55-y1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 4.11); // "hai nghìn"
+      tl.fromTo("#f55-y2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 4.39); // "không trăm"
+      tl.fromTo("#f55-y3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 4.70); // "hai mươi"
+      tl.fromTo("#f55-y4", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 4.92); // "sáu"
+
+      // year complete: the stamp is inked terracotta with one small settle, then hold
+      tl.fromTo("#f55-ink", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 5.05);
+      tl.fromTo("#f55-date", { scale: 1.06 }, { scale: 1, duration: 0.4, ease: "power3.out", immediateRender: false }, 5.05);
+
+      // hold still to the end
+      tl.to({}, { duration: 5.938 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["55-moi-nhat-tinh-den-25-09-2026"] = tl;
+    })();
+  </script>
+</template>

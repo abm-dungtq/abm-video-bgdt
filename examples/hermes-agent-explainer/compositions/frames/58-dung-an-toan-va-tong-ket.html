@@ -1,0 +1,302 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f58-ground {
+      position: absolute;
+      inset: 0;
+      background: var(--canvas);
+    }
+    /* hue shift +12°: ch6's glow (H 302) hands over to ch7 (H 314) */
+    #f58-ground .f58-glow {
+      position: absolute;
+      inset: 0;
+    }
+    #f58-glow-prev {
+      background: radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%);
+    }
+    #f58-glow-ch {
+      background: radial-gradient(ellipse at 70% 30%, hsla(314, 70%, 45%, 0.28), transparent 60%);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f58-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f58- */
+    #f58-cam {
+      position: absolute;
+      inset: 0;
+      transform-origin: 50% 50%;
+    }
+    /* numeral group: 360×560 box, 1:1 with the SVG viewBox */
+    #f58-numeral {
+      position: absolute;
+      left: 250px;
+      top: 130px;
+      width: 360px;
+      height: 560px;
+      transform-origin: 180px 280px;
+    }
+    #f58-bloom {
+      position: absolute;
+      left: -180px;
+      top: -70px;
+      width: 720px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 210, 63, 0.22), rgba(255, 210, 63, 0.06) 55%, transparent 100%);
+    }
+    #f58-ring-spin {
+      position: absolute;
+      left: -150px;
+      top: -50px;
+      width: 660px;
+      height: 660px;
+    }
+    #f58-decor {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 660px;
+      height: 660px;
+      overflow: visible;
+    }
+    #f58-glyph {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 560px;
+      overflow: visible;
+    }
+    #f58-trace {
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    /* title block beside the numeral */
+    #f58-title-group {
+      position: absolute;
+      left: 800px;
+      top: 190px;
+    }
+    #f58-kicker {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+    .f58-diamond {
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+    /* chapter 7 is the only chapter carrying the warn colour */
+    #f58-warn-dot {
+      display: block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 12px rgba(255, 107, 107, 0.6);
+    }
+    .f58-mask {
+      overflow: hidden;
+      padding: 10px 8px 14px 0;
+      display: flex;
+      gap: 30px;
+    }
+    #f58-mask1 {
+      margin-top: 14px;
+    }
+    .f58-word {
+      display: block;
+      font-size: 112px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      color: var(--ink);
+    }
+    /* courier-trail underline beneath "an toàn" */
+    #f58-under {
+      position: absolute;
+      left: 0;
+      top: 336px;
+      width: 520px;
+      height: 60px;
+      overflow: visible;
+    }
+    #f58-under-path {
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.5));
+    }
+  </style>
+
+  <div id="root" data-composition-id="58-dung-an-toan-va-tong-ket" data-width="1920" data-height="1080" data-duration="3.861">
+    <div id="f58-ground" class="clip" data-start="0" data-duration="3.861" data-track-index="0">
+      <div id="f58-glow-prev" class="f58-glow"></div>
+      <div id="f58-glow-ch" class="f58-glow"></div>
+    </div>
+    <div id="f58-stage" class="clip" data-start="0" data-duration="3.861" data-track-index="1">
+      <div id="f58-cam">
+        <div id="f58-numeral">
+          <div id="f58-bloom"></div>
+          <div id="f58-ring-spin">
+            <svg id="f58-decor" viewBox="0 0 660 660" width="660" height="660">
+              <circle cx="330" cy="330" r="318" fill="none" stroke="rgba(244,241,232,0.10)" stroke-width="2" stroke-dasharray="2 12"></circle>
+              <circle cx="330" cy="330" r="262" fill="none" stroke="rgba(142,147,181,0.10)" stroke-width="1.5"></circle>
+              <circle id="f58-warn-arc" cx="330" cy="330" r="262" fill="none" stroke="#FF6B6B" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round" transform="rotate(-90 330 330)"></circle>
+            </svg>
+          </div>
+          <svg id="f58-glyph" viewBox="0 0 360 560" width="360" height="560">
+            <path id="f58-ghost" fill="none" stroke="rgba(255,210,63,0.16)" stroke-width="54" stroke-linejoin="round" stroke-linecap="round"></path>
+            <path id="f58-trace" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"></path>
+            <g id="f58-spark">
+              <circle cx="0" cy="0" r="16" fill="rgba(255,210,63,0.22)"></circle>
+              <path d="M -3 -3 C -10 -16, -22 -17, -30 -10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <path d="M -3 3 C -10 16, -22 17, -30 10" fill="none" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"></path>
+              <circle cx="0" cy="0" r="7" fill="#FFD23F"></circle>
+            </g>
+          </svg>
+        </div>
+
+        <div id="f58-title-group">
+          <div id="f58-kicker"><span class="f58-diamond"></span><span>Chương 7</span><span id="f58-warn-dot"></span></div>
+          <div id="f58-mask1" class="f58-mask">
+            <span id="f58-w1" class="f58-word">Dùng</span>
+            <span id="f58-w2" class="f58-word">Hermes</span>
+          </div>
+          <div id="f58-mask2" class="f58-mask">
+            <span id="f58-w3" class="f58-word">an</span>
+            <span id="f58-w4" class="f58-word">toàn</span>
+          </div>
+          <svg id="f58-under" viewBox="0 0 520 60" width="520" height="60">
+            <path id="f58-under-path" d="M 0 30 C 120 48, 260 12, 500 28" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var DUR = 3.361;
+
+      // numeral "7" written as one stroke (viewBox units = px): top bar, then the long diagonal down.
+      var PTS = [
+        [40, 72], [120, 70], [200, 69], [322, 72], [300, 128], [272, 196],
+        [244, 268], [218, 342], [196, 414], [178, 474], [166, 528]
+      ];
+
+      var cum = [0];
+      var d = "M " + PTS[0][0] + " " + PTS[0][1];
+      for (var i = 1; i < PTS.length; i++) {
+        var dx = PTS[i][0] - PTS[i - 1][0];
+        var dy = PTS[i][1] - PTS[i - 1][1];
+        cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy));
+        d += " L " + PTS[i][0] + " " + PTS[i][1];
+      }
+      var LEN = cum[cum.length - 1];
+
+      var trace = document.getElementById("f58-trace");
+      var ghost = document.getElementById("f58-ghost");
+      var spark = document.getElementById("f58-spark");
+      trace.setAttribute("d", d);
+      ghost.setAttribute("d", d);
+      trace.setAttribute("stroke-dasharray", LEN + " " + LEN);
+      trace.setAttribute("stroke-dashoffset", LEN);
+
+      // courier spark rides the head of the numeral trail (pure function of progress → seek-safe)
+      var travel = { p: 0 };
+      function renderSpark() {
+        var dist = Math.max(0, Math.min(1, travel.p)) * LEN;
+        var k = 1;
+        while (k < cum.length - 1 && cum[k] < dist) k++;
+        var p0 = PTS[k - 1], p1 = PTS[k];
+        var seg = cum[k] - cum[k - 1];
+        var t = seg > 0 ? (dist - cum[k - 1]) / seg : 0;
+        var x = p0[0] + (p1[0] - p0[0]) * t;
+        var y = p0[1] + (p1[1] - p0[1]) * t;
+        var ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180 / Math.PI;
+        spark.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ")");
+      }
+      renderSpark();
+
+      // coral arc on the inner ring: warn enters the palette for chapter 7 only
+      var ALEN = 1647; // ≥ 2π·262
+      var arc = document.getElementById("f58-warn-arc");
+      arc.setAttribute("stroke-dasharray", ALEN + " " + ALEN);
+      arc.setAttribute("stroke-dashoffset", ALEN);
+
+      // underline trail: fixed length bound (≥ true curve length) keeps it deterministic
+      var ULEN = 560;
+      var under = document.getElementById("f58-under-path");
+      under.setAttribute("stroke-dasharray", ULEN + " " + ULEN);
+      under.setAttribute("stroke-dashoffset", ULEN);
+
+      gsap.set([spark, ghost, "#f58-kicker", "#f58-bloom", "#f58-warn-dot"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–1.32 s) — "Chương bảy": hue shifts +12°, coral enters, the trail writes a large "7"
+      tl.fromTo("#f58-glow-prev", { opacity: 1 }, { opacity: 0, duration: 1.25, ease: "power2.inOut" }, 0);
+      tl.fromTo("#f58-glow-ch", { opacity: 0 }, { opacity: 1, duration: 1.25, ease: "power2.inOut" }, 0);
+      tl.fromTo("#f58-decor", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 0.05);
+      tl.fromTo("#f58-ring-spin", { rotation: 0 }, { rotation: -24, duration: DUR - 0.05, ease: "none" }, 0.05);
+      tl.fromTo(arc, { attr: { "stroke-dashoffset": ALEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 1.15, ease: "power2.inOut" }, 0.15);
+      tl.fromTo(trace, { attr: { "stroke-dashoffset": LEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.95, ease: "none" }, 0.1);
+      tl.fromTo(travel, { p: 0 }, { p: 1, duration: 0.95, ease: "none", onUpdate: renderSpark }, 0.1);
+      tl.fromTo(spark, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 0.1);
+      // "Chương" @ 0.861 — the chapter kicker, its coral dot marking the new colour
+      tl.fromTo("#f58-kicker", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.86);
+      tl.fromTo("#f58-warn-dot", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 0.95);
+      // "bảy" @ 1.002 — the written 7 gains body and blooms as the trail lands
+      tl.fromTo(ghost, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.0);
+      tl.fromTo("#f58-bloom", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 1.0);
+      tl.to(spark, { opacity: 0, duration: 0.2, ease: "power2.inOut" }, 1.1);
+
+      // Scene 2 (1.32–3.36 s) — numeral settles left, "Dùng Hermes" then "an toàn" slide up on cue
+      tl.fromTo("#f58-numeral", { x: 260, scale: 1.1 }, { x: 0, scale: 0.92, duration: 0.55, ease: "power2.inOut" }, 1.32);
+      // audio_meta: "dùng" 1.609, "Hermes" 1.811
+      tl.fromTo("#f58-w1", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 1.6);
+      tl.fromTo("#f58-w2", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 1.8);
+      // cues: "an" @ 2.2, "toàn" @ 2.34
+      tl.fromTo("#f58-w3", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 2.2);
+      tl.fromTo("#f58-w4", { yPercent: 105, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 2.34);
+      // the courier trail underlines "an toàn"
+      tl.fromTo(under, { attr: { "stroke-dashoffset": ULEN } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.45, ease: "none" }, 2.5);
+
+      // hold: a quiet ~1% drift only
+      tl.fromTo("#f58-cam", { scale: 1 }, { scale: 1.01, duration: DUR - 2.95, ease: "none" }, 2.95);
+
+      tl.to({}, { duration: DUR }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["58-dung-an-toan-va-tong-ket"] = tl;
+    })();
+  </script>
+</template>

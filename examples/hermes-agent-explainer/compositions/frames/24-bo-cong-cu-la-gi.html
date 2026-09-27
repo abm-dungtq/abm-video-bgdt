@@ -1,0 +1,371 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f24-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(266, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f24-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- frame-specific ---------- */
+    .f24-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; }
+    .f24-kicker {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1760px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 40px;
+      opacity: 0;
+    }
+    .f24-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+
+    /* group rings (scene 1) */
+    .f24-ring {
+      position: absolute;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      border: 3px dashed rgba(142,147,181,.55);
+      opacity: 0;
+    }
+
+    /* tool chips */
+    #f24-chips { position: absolute; inset: 0; z-index: 1; }
+    .f24-chip {
+      position: absolute;
+      left: 0; top: 0;
+      width: 88px; height: 88px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.22);
+      box-shadow: 0 14px 34px rgba(0,0,0,.4);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      opacity: 0;
+    }
+    .f24-chip svg { width: 52px; height: 52px; }
+
+    /* hero word */
+    #f24-word {
+      position: absolute;
+      left: 0; top: 280px;
+      width: 1760px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 190px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 22px rgba(255,210,63,.45));
+      z-index: 3;
+      opacity: 0;
+    }
+    #f24-shock {
+      position: absolute;
+      left: 730px; top: 240px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      border: 4px solid var(--gold);
+      opacity: 0;
+      z-index: 2;
+    }
+
+    /* toolboxes */
+    #f24-row { position: absolute; inset: 0; z-index: 2; }
+    .f24-box {
+      position: absolute;
+      top: 230px;
+      width: 440px; height: 380px;
+    }
+    #f24-boxA { left: 80px; }
+    #f24-boxB { left: 660px; }
+    #f24-boxC { left: 1240px; }
+    .f24-box-in { position: absolute; inset: 0; }
+    .f24-box svg { position: absolute; inset: 0; width: 440px; height: 380px; overflow: visible; }
+    .f24-draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .f24-fill { opacity: 0; }
+    .f24-lid { opacity: 0; }
+    .f24-glyph { opacity: 0; color: var(--ink); }
+
+    .f24-label {
+      position: absolute;
+      top: 640px;
+      width: 440px;
+      text-align: center;
+      font-size: 50px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    .f24-label span { display: inline-block; margin: 0 8px; opacity: 0; }
+    #f24-labelA { left: 80px; }
+    #f24-labelB { left: 660px; }
+    #f24-labelC { left: 1240px; }
+
+    #f24-trail { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; z-index: 2; }
+    #f24-trail .f24-seg { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f24-trail .f24-node { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="24-bo-cong-cu-la-gi" data-width="1920" data-height="1080" data-duration="13.92">
+    <div id="f24-ground" class="clip" data-start="0" data-duration="13.92" data-track-index="0"></div>
+    <div id="f24-stage" class="clip" data-start="0" data-duration="13.92" data-track-index="1">
+
+      <div id="f24-k1" class="f24-kicker"><b>◆</b>Gom thành từng nhóm</div>
+      <div id="f24-k2" class="f24-kicker"><b>◆</b>Hộp đồ nghề</div>
+      <div id="f24-k3" class="f24-kicker"><b>◆</b>Mỗi hộp · một việc</div>
+
+      <div id="f24-ringA" class="f24-ring" style="left:290px; top:270px;"></div>
+      <div id="f24-ringB" class="f24-ring" style="left:730px; top:270px;"></div>
+      <div id="f24-ringC" class="f24-ring" style="left:1170px; top:270px;"></div>
+
+      <div id="f24-chips">
+        <!-- group A: lập trình -->
+        <div id="f24-cA1" class="f24-chip">&lt;/&gt;</div>
+        <div id="f24-cA2" class="f24-chip">&gt;_</div>
+        <div id="f24-cA3" class="f24-chip">{ }</div>
+        <!-- group B: tìm kiếm -->
+        <div id="f24-cB1" class="f24-chip"><svg viewBox="0 0 52 52"><circle cx="22" cy="22" r="13" fill="none" stroke="#f4f1e8" stroke-width="4"/><path d="M32 32 L44 44" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round"/></svg></div>
+        <div id="f24-cB2" class="f24-chip"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="18" fill="none" stroke="#f4f1e8" stroke-width="3.5"/><ellipse cx="26" cy="26" rx="8" ry="18" fill="none" stroke="#f4f1e8" stroke-width="3"/><path d="M8 26 H44" stroke="#f4f1e8" stroke-width="3"/></svg></div>
+        <div id="f24-cB3" class="f24-chip" style="font-size:28px;">URL</div>
+        <!-- group C: chỉ để đọc -->
+        <div id="f24-cC1" class="f24-chip"><svg viewBox="0 0 52 52"><path d="M13 6 H32 L41 15 V46 H13 Z" fill="none" stroke="#f4f1e8" stroke-width="3.5" stroke-linejoin="round"/><path d="M19 24 H35 M19 31 H35 M19 38 H29" stroke="#f4f1e8" stroke-width="3"/></svg></div>
+        <div id="f24-cC2" class="f24-chip"><svg viewBox="0 0 52 52"><path d="M5 26 Q26 8 47 26 Q26 44 5 26 Z" fill="none" stroke="#f4f1e8" stroke-width="3.5"/><circle cx="26" cy="26" r="7" fill="#f4f1e8"/></svg></div>
+        <div id="f24-cC3" class="f24-chip">.md</div>
+      </div>
+
+      <div id="f24-shock"></div>
+      <div id="f24-word">toolset</div>
+
+      <div id="f24-row">
+        <div id="f24-boxA" class="f24-box"><div id="f24-boxA-in" class="f24-box-in">
+          <svg viewBox="0 0 440 380">
+            <rect id="f24-fillA" class="f24-fill" x="10" y="96" width="420" height="260" rx="14" fill="#141b3a"/>
+            <rect id="f24-bodyA" class="f24-draw" x="10" y="96" width="420" height="260" rx="14" fill="none" stroke="#f4f1e8" stroke-width="4" pathLength="1"/>
+            <path id="f24-rimA" class="f24-draw" d="M10 132 H430" stroke="#8e93b5" stroke-width="2" fill="none" pathLength="1"/>
+            <g id="f24-glyphA" class="f24-glyph">
+              <text x="220" y="268" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="96" fill="currentColor">&lt;/&gt;</text>
+            </g>
+            <g id="f24-lidA" class="f24-lid">
+              <path d="M170 40 V20 Q170 12 178 12 H262 Q270 12 270 20 V40" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="6" y="40" width="428" height="56" rx="10" fill="#1b2350" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="200" y="82" width="40" height="24" rx="5" fill="#8e93b5"/>
+            </g>
+          </svg>
+        </div></div>
+        <div id="f24-boxB" class="f24-box"><div id="f24-boxB-in" class="f24-box-in">
+          <svg viewBox="0 0 440 380">
+            <rect id="f24-fillB" class="f24-fill" x="10" y="96" width="420" height="260" rx="14" fill="#141b3a"/>
+            <rect id="f24-bodyB" class="f24-draw" x="10" y="96" width="420" height="260" rx="14" fill="none" stroke="#f4f1e8" stroke-width="4" pathLength="1"/>
+            <path id="f24-rimB" class="f24-draw" d="M10 132 H430" stroke="#8e93b5" stroke-width="2" fill="none" pathLength="1"/>
+            <g id="f24-glyphB" class="f24-glyph">
+              <circle cx="205" cy="228" r="44" fill="none" stroke="currentColor" stroke-width="11"/>
+              <path d="M237 260 L276 299" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+            </g>
+            <g id="f24-lidB" class="f24-lid">
+              <path d="M170 40 V20 Q170 12 178 12 H262 Q270 12 270 20 V40" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="6" y="40" width="428" height="56" rx="10" fill="#1b2350" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="200" y="82" width="40" height="24" rx="5" fill="#8e93b5"/>
+            </g>
+          </svg>
+        </div></div>
+        <div id="f24-boxC" class="f24-box"><div id="f24-boxC-in" class="f24-box-in">
+          <svg viewBox="0 0 440 380">
+            <rect id="f24-fillC" class="f24-fill" x="10" y="96" width="420" height="260" rx="14" fill="#141b3a"/>
+            <rect id="f24-bodyC" class="f24-draw" x="10" y="96" width="420" height="260" rx="14" fill="none" stroke="#f4f1e8" stroke-width="4" pathLength="1"/>
+            <path id="f24-rimC" class="f24-draw" d="M10 132 H430" stroke="#8e93b5" stroke-width="2" fill="none" pathLength="1"/>
+            <g id="f24-glyphC" class="f24-glyph">
+              <path d="M128 240 Q220 164 312 240 Q220 316 128 240 Z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/>
+              <circle cx="220" cy="240" r="26" fill="currentColor"/>
+            </g>
+            <g id="f24-lidC" class="f24-lid">
+              <path d="M170 40 V20 Q170 12 178 12 H262 Q270 12 270 20 V40" fill="none" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="6" y="40" width="428" height="56" rx="10" fill="#1b2350" stroke="#f4f1e8" stroke-width="4"/>
+              <rect x="200" y="82" width="40" height="24" rx="5" fill="#8e93b5"/>
+            </g>
+          </svg>
+        </div></div>
+
+        <div id="f24-labelA" class="f24-label"><span id="f24-wA1">Lập</span><span id="f24-wA2">trình</span></div>
+        <div id="f24-labelB" class="f24-label"><span id="f24-wB1">Tìm</span><span id="f24-wB2">kiếm</span></div>
+        <div id="f24-labelC" class="f24-label"><span id="f24-wC1">Chỉ</span><span id="f24-wC2">để</span><span id="f24-wC3">đọc</span></div>
+      </div>
+
+      <svg id="f24-trail" viewBox="0 0 1760 820">
+        <path id="f24-seg1" class="f24-seg" d="M80 760 H300" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" fill="none" pathLength="1"/>
+        <path id="f24-seg2" class="f24-seg" d="M300 760 H880" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" fill="none" pathLength="1"/>
+        <path id="f24-seg3" class="f24-seg" d="M880 760 H1460 L1680 760" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" fill="none" pathLength="1"/>
+        <circle id="f24-nodeA" class="f24-node" cx="300" cy="760" r="11" fill="#ffd23f"/>
+        <circle id="f24-nodeB" class="f24-node" cx="880" cy="760" r="11" fill="#ffd23f"/>
+        <circle id="f24-nodeC" class="f24-node" cx="1460" cy="760" r="11" fill="#ffd23f"/>
+      </svg>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var GOLD = "#ffd23f", INK = "#f4f1e8";
+      var GLOW = "drop-shadow(0 0 16px rgba(255,210,63,.6))";
+      var NOGLOW = "drop-shadow(0 0 0px rgba(255,210,63,0))";
+      function q(id) { return document.getElementById(id); }
+      function P(cx, cy) { return { x: cx - 44, y: cy - 44 }; } // chip centre -> top-left
+
+      // chip paths (centres, stage coords)
+      var chips = [
+        // id, scatter, cluster, edge (after slam), hover/wait
+        { id: "f24-cA1", s: P(520, 300),  c: P(380, 380),  e: P(560, 150),  w: P(770, 210) },
+        { id: "f24-cA2", s: P(1180, 600), c: P(500, 380),  e: P(880, 130),  w: P(880, 190) },
+        { id: "f24-cA3", s: P(760, 640),  c: P(440, 490),  e: P(1200, 150), w: P(990, 210) },
+        { id: "f24-cB1", s: P(300, 520),  c: P(820, 380),  e: P(70, 300),   w: P(160, 130) },
+        { id: "f24-cB2", s: P(980, 230),  c: P(940, 380),  e: P(90, 480),   w: P(280, 110) },
+        { id: "f24-cB3", s: P(1440, 420), c: P(880, 490),  e: P(70, 660),   w: P(400, 130) },
+        { id: "f24-cC1", s: P(640, 470),  c: P(1260, 380), e: P(1690, 300), w: P(1360, 130) },
+        { id: "f24-cC2", s: P(1320, 250), c: P(1380, 380), e: P(1670, 480), w: P(1480, 110) },
+        { id: "f24-cC3", s: P(1060, 420), c: P(1320, 490), e: P(1690, 660), w: P(1600, 130) }
+      ];
+      // initial state (before the timeline is built)
+      chips.forEach(function (c) { gsap.set(q(c.id), { x: c.s.x, y: c.s.y }); });
+      gsap.set(q("f24-boxA"), { x: 580, scale: 1.2, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---------- Scene 1 (0–2.98): kinetic ----------
+      chips.forEach(function (c, i) {
+        tl.fromTo(q(c.id), { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 0.31 + i * 0.05);
+        tl.to(q(c.id), { x: c.c.x, y: c.c.y, duration: 0.6, ease: "power2.inOut" }, 0.99 + (i % 3) * 0.04); // gom
+      });
+      tl.fromTo(q("f24-k1"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.99);
+      ["f24-ringA", "f24-ringB", "f24-ringC"].forEach(function (r, i) {
+        tl.fromTo(q(r), { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 1.55 + i * 0.06); // nhóm
+        tl.to(q(r), { opacity: 0, scale: 1.4, duration: 0.4, ease: "power2.out" }, 2.98);
+      });
+      // "toolset" slams on its cue; the groups blast to the edges
+      tl.fromTo(q("f24-word"), { opacity: 0, scale: 1.9 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out" }, 2.98);
+      tl.fromTo(q("f24-shock"), { opacity: 0.85, scale: 0.4 }, { opacity: 0, scale: 2.5, duration: 0.7, ease: "power2.out" }, 2.98);
+      chips.forEach(function (c) {
+        tl.to(q(c.id), { x: c.e.x, y: c.e.y, scale: 0.8, duration: 0.55, ease: "power3.out" }, 2.98);
+      });
+
+      // ---------- Scene 2 (2.98–6.56): toolset -> toolbox ----------
+      // tools drift in from the edges
+      chips.forEach(function (c, i) {
+        tl.to(q(c.id), { x: c.w.x, y: c.w.y, scale: 1, duration: 1.4, ease: "power2.inOut" }, 4.06 + i * 0.08);
+      });
+      // word morphs into the box outline on "hộp"
+      tl.to(q("f24-word"), { opacity: 0, scale: 0.3, y: 70, duration: 0.45, ease: "power2.in" }, 5.76);
+      tl.fromTo(q("f24-fillA"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 5.9);
+      tl.fromTo(q("f24-bodyA"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.76);
+      tl.fromTo(q("f24-rimA"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.94);
+      tl.to(q("f24-k1"), { opacity: 0, duration: 0.25, ease: "power2.out" }, 5.8);
+      tl.fromTo(q("f24-k2"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 6.08); // nghề
+      // group A drops in, lid snaps shut
+      [0, 1, 2].forEach(function (i) {
+        var c = chips[i];
+        tl.to(q(c.id), { y: c.w.y + 230, scale: 0.6, opacity: 0, duration: 0.3, ease: "power2.in" }, 6.08 + i * 0.05);
+      });
+      tl.fromTo(q("f24-lidA"), { opacity: 0, y: -120 }, { opacity: 1, y: 0, duration: 0.16, ease: "power3.in" }, 6.38);
+      tl.fromTo(q("f24-boxA-in"), { y: 8 }, { y: 0, duration: 0.3, ease: "power3.out" }, 6.54);
+
+      // ---------- Scene 3 (6.56–8.57): two more boxes fill and shut ----------
+      tl.to(q("f24-boxA"), { x: 0, scale: 1, duration: 0.6, ease: "power2.inOut" }, 6.92); // Mỗi
+      tl.fromTo(q("f24-bodyB"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 7.08);
+      tl.fromTo(q("f24-rimB"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 7.25);
+      tl.fromTo(q("f24-fillB"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 7.2);
+      tl.fromTo(q("f24-bodyC"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 7.25);
+      tl.fromTo(q("f24-rimC"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 7.41);
+      tl.fromTo(q("f24-fillC"), { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 7.37);
+      // group B -> box B (centre 880)
+      [3, 4, 5].forEach(function (i, k) {
+        var c = chips[i];
+        var hx = 880 + (k - 1) * 110 - 44, hy = 230 - 44;
+        tl.to(q(c.id), { x: hx, y: hy, duration: 0.42, ease: "power2.inOut" }, 7.25 + k * 0.05);
+        tl.to(q(c.id), { y: hy + 240, scale: 0.6, opacity: 0, duration: 0.25, ease: "power2.in" }, 7.72 + k * 0.04);
+      });
+      tl.fromTo(q("f24-lidB"), { opacity: 0, y: -120 }, { opacity: 1, y: 0, duration: 0.16, ease: "power3.in" }, 7.85);
+      tl.fromTo(q("f24-boxB-in"), { y: 8 }, { y: 0, duration: 0.3, ease: "power3.out" }, 8.01); // một
+      // group C -> box C (centre 1460)
+      [6, 7, 8].forEach(function (i, k) {
+        var c = chips[i];
+        var hx = 1460 + (k - 1) * 110 - 44, hy = 230 - 44;
+        tl.to(q(c.id), { x: hx, y: hy, duration: 0.42, ease: "power2.inOut" }, 7.6 + k * 0.05);
+        tl.to(q(c.id), { y: hy + 240, scale: 0.6, opacity: 0, duration: 0.25, ease: "power2.in" }, 8.08 + k * 0.04);
+      });
+      tl.fromTo(q("f24-lidC"), { opacity: 0, y: -120 }, { opacity: 1, y: 0, duration: 0.16, ease: "power3.in" }, 8.27);
+      tl.fromTo(q("f24-boxC-in"), { y: 8 }, { y: 0, duration: 0.3, ease: "power3.out" }, 8.43); // công
+      tl.to(q("f24-k2"), { opacity: 0, duration: 0.25, ease: "power2.out" }, 8.3);
+
+      // ---------- Scene 4 (8.57–13.42): labels land on cue ----------
+      tl.fromTo(q("f24-k3"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 8.57); // việc
+      tl.fromTo(q("f24-row"), { scale: 1 }, { scale: 1.015, duration: 4.85, ease: "none", transformOrigin: "50% 50%" }, 8.57);
+
+      function wordIn(id, t) {
+        tl.fromTo(q(id), { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t);
+      }
+      function glyphOn(g, t) {
+        tl.fromTo(q(g), { opacity: 0, scale: 0.6, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, t);
+        tl.set(q(g), { color: GOLD, filter: GLOW }, t);
+      }
+      function glyphOff(g, t) { tl.set(q(g), { color: INK, filter: NOGLOW }, t); }
+      function seg(id, t, d) { tl.fromTo(q(id), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: "none" }, t); }
+      function node(id, t) { tl.fromTo(q(id), { opacity: 0, scale: 0, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t); }
+
+      // lập trình
+      glyphOn("f24-glyphA", 10.18);
+      wordIn("f24-wA1", 10.18);
+      wordIn("f24-wA2", 10.32);
+      seg("f24-seg1", 10.18, 0.3);
+      node("f24-nodeA", 10.45);
+      // tìm kiếm
+      glyphOff("f24-glyphA", 11.21);
+      glyphOn("f24-glyphB", 11.21);
+      wordIn("f24-wB1", 11.21);
+      wordIn("f24-wB2", 11.39);
+      seg("f24-seg2", 11.21, 0.4);
+      node("f24-nodeB", 11.58);
+      // chỉ để đọc
+      glyphOff("f24-glyphB", 12.26);
+      glyphOn("f24-glyphC", 12.26);
+      wordIn("f24-wC1", 12.26);
+      wordIn("f24-wC2", 12.44);
+      wordIn("f24-wC3", 12.56);
+      seg("f24-seg3", 12.26, 0.5);
+      node("f24-nodeC", 12.56);
+
+      tl.to({}, { duration: 13.42 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["24-bo-cong-cu-la-gi"] = tl;
+    })();
+  </script>
+</template>

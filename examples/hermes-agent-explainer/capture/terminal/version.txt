@@ -1,0 +1,6 @@
+Hermes Agent v0.21.3 (2026.9.14) · upstream fff10484
+Install directory: C:\Users\ABM\AppData\Local\hermes\hermes-agent
+Install method: git
+Python: 3.11.16
+OpenAI SDK: 2.24.0
+Update available: 7831 commits behind — run 'hermes update'

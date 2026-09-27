@@ -1,0 +1,212 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f01-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(22, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f01-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f01- */
+
+    /* warm centred glow behind the title (background layer, dimmed) */
+    #f01-glow {
+      position: absolute;
+      left: 360px;
+      top: 110px;
+      width: 1200px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 50%, hsla(22, 55%, 42%, 0.34), hsla(22, 55%, 42%, 0.10) 45%, transparent 70%);
+      opacity: 0.45;
+    }
+
+    /* camera group: everything that drifts together during the hold */
+    #f01-cam {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* faint centre spark present from t=0 */
+    #f01-ghost {
+      position: absolute;
+      left: 810px;
+      top: 358px;
+      width: 140px;
+      height: 140px;
+      opacity: 0.12;
+    }
+    #f01-ghost svg { width: 100%; height: 100%; display: block; }
+
+    /* kicker "✳ BÀI HỌC" */
+    #f01-kicker {
+      position: absolute;
+      left: 0;
+      top: 196px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f01-kicker svg { width: 28px; height: 28px; display: block; }
+
+    /* hero row: [spacer][Claude][spark] so the word sits on the optical centre */
+    #f01-row {
+      position: absolute;
+      left: 0;
+      top: 280px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .f01-side {
+      width: 84px;
+      height: 84px;
+      flex: 0 0 84px;
+      margin-top: 34px;
+    }
+    #f01-word {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 256px;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+      padding: 0 10px;
+    }
+    .f01-ch {
+      display: inline-block;
+      opacity: 0;
+    }
+    #f01-spark {
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f01-spark svg { width: 100%; height: 100%; display: block; }
+
+    /* hand-drawn terracotta underline */
+    #f01-underline {
+      position: absolute;
+      left: 500px;
+      top: 572px;
+      width: 760px;
+      height: 44px;
+      overflow: visible;
+    }
+    #f01-underline path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+  </style>
+
+  <div id="root" data-composition-id="01-claude-tu-co-ban-den-chuyen-sau" data-width="1920" data-height="1080" data-duration="4.8">
+    <div id="f01-ground" class="clip" data-start="0" data-duration="4.8" data-track-index="0"></div>
+    <div id="f01-stage" class="clip" data-start="0" data-duration="4.8" data-track-index="1">
+      <div id="f01-glow"></div>
+
+      <div id="f01-cam">
+        <!-- faint ✳ at centre: the only thing on screen before the title -->
+        <div id="f01-ghost">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M22 22 L78 78 M78 22 L22 78" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div id="f01-kicker">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/>
+          </svg>
+          <span>Bài học</span>
+        </div>
+
+        <div id="f01-row">
+          <div class="f01-side"></div>
+          <div id="f01-word"><span class="f01-ch">C</span><span class="f01-ch">l</span><span class="f01-ch">a</span><span class="f01-ch">u</span><span class="f01-ch">d</span><span class="f01-ch">e</span></div>
+          <div id="f01-spark" class="f01-side">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M50 4 L50 96 M4 50 L96 50 M24 24 L76 76 M76 24 L24 76" stroke="#D97757" stroke-width="10" stroke-linecap="round" fill="none"/>
+            </svg>
+          </div>
+        </div>
+
+        <svg id="f01-underline" viewBox="0 0 760 44" aria-hidden="true">
+          <path pathLength="1" d="M10 28 C 120 18, 230 34, 352 24 S 560 12, 660 22 C 700 26, 730 20, 750 16"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // continuous micro camera drift under the whole card (1% push, calm hold)
+      tl.fromTo("#f01-cam", { scale: 1.0 }, { scale: 1.012, duration: 4.3, ease: "none" }, 0);
+
+      // t=0 → "Claude": faint centre spark turns slowly (the one live element before the title)
+      tl.fromTo("#f01-ghost", { rotation: 0 }, { rotation: 22, duration: 2.31, ease: "none" }, 0);
+      // "Chào" (0.881): the faint spark brightens a touch as the voice begins
+      tl.fromTo("#f01-ghost", { opacity: 0.12 }, { opacity: 0.24, duration: 0.6, ease: "power2.inOut" }, 0.88);
+
+      // "bài học" (1.827): muted mono kicker fades in upper-centre
+      tl.fromTo("#f01-kicker", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.83);
+
+      // "Claude" (2.311): the one move — slide-up crossfade of the word, ghost spark hands off
+      tl.fromTo("#f01-ghost", { opacity: 0.24, scale: 1 }, { opacity: 0, scale: 1.3, duration: 0.45, ease: "power2.inOut", immediateRender: false }, 2.31);
+      tl.fromTo(".f01-ch", { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.035 }, 2.31);
+      tl.fromTo("#f01-glow", { opacity: 0.45, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.9, ease: "power2.inOut" }, 2.31);
+
+      // ✳ pops beside the word with a 20° twist
+      tl.fromTo("#f01-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: "power3.out" }, 2.5);
+
+      // terracotta underline draws on under the word
+      tl.fromTo("#f01-underline path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.75, ease: "none" }, 2.55);
+
+      // hold still to the end (camera drift above keeps it alive)
+      tl.to({}, { duration: 4.3 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["01-claude-tu-co-ban-den-chuyen-sau"] = tl;
+    })();
+  </script>
+</template>

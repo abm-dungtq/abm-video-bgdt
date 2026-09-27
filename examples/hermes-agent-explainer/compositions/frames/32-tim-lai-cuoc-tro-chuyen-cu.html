@@ -1,0 +1,327 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f32-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f32-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f32- */
+    .f32-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+
+    /* ---------- Scene 1: kinetic ---------- */
+    .f32-head {
+      position: absolute; left: 0; top: 200px; width: 1760px; height: 130px;
+      display: flex; justify-content: center; align-items: center; gap: 30px;
+      font-size: 104px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; white-space: nowrap;
+      transform-origin: 880px 65px;
+    }
+    .f32-head span { display: block; }
+    #f32-hA2 { color: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.45)); }
+    #f32-headB { opacity: 0; }
+    #f32-uline { position: absolute; left: 0; top: 340px; width: 1760px; height: 40px; overflow: visible; opacity: 0; }
+    #f32-uline path { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f32-days {
+      position: absolute; left: 0; top: 470px; width: 1760px; height: 150px;
+      display: flex; justify-content: center; align-items: center; gap: 26px;
+    }
+    .f32-day {
+      width: 112px; height: 124px; border-radius: 16px; background: var(--surface);
+      border: 1px solid rgba(244,241,232,.16); box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      position: relative; opacity: 0;
+    }
+    .f32-day::before {
+      content: ""; position: absolute; left: 0; top: 0; right: 0; height: 26px;
+      border-radius: 16px 16px 0 0; background: rgba(142,147,181,.35);
+    }
+    .f32-day i {
+      position: absolute; left: 24px; right: 24px; height: 8px; border-radius: 4px;
+      background: rgba(244,241,232,.18);
+    }
+    .f32-day i:nth-child(1) { top: 50px; }
+    .f32-day i:nth-child(2) { top: 72px; right: 44px; }
+    .f32-day i:nth-child(3) { top: 94px; right: 34px; }
+
+    /* ---------- Scene 2/3: world (camera) ---------- */
+    #f32-world { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f32-laptop { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; opacity: 0; }
+    #f32-termwrap {
+      position: absolute; left: 570px; top: 160px; width: 1360px; height: 700px;
+      transform: scale(0.455882); transform-origin: 0 0;
+    }
+    #f32-term {
+      position: absolute; left: 0; top: 0; width: 1360px; height: 700px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); overflow: hidden; opacity: 0;
+    }
+    #f32-thead {
+      position: absolute; left: 0; top: 0; width: 1360px; height: 72px;
+      border-bottom: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; padding: 0 28px; box-sizing: border-box; gap: 12px;
+    }
+    .f32-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .7; }
+    #f32-ttl {
+      margin-left: 22px; font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted);
+      white-space: nowrap;
+    }
+    #f32-chip {
+      margin-left: auto; height: 46px; padding: 0 20px; border-radius: 23px; box-sizing: border-box;
+      border: 2px solid rgba(142,147,181,.45); display: flex; align-items: center; gap: 10px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted); white-space: nowrap;
+      opacity: .55;
+    }
+    #f32-chipdot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+    #f32-query {
+      position: absolute; left: 28px; top: 90px; width: 1304px; height: 66px; box-sizing: border-box;
+      border-radius: 12px; border: 1px solid rgba(244,241,232,.14); background: rgba(11,16,38,.55);
+      display: flex; align-items: center; padding: 0 22px; gap: 16px; white-space: nowrap;
+    }
+    #f32-qprompt { font-family: "JetBrains Mono", monospace; font-size: 30px; color: var(--cyan); }
+    #f32-qtext { font-size: 30px; font-weight: 600; color: var(--ink); }
+    #f32-qcaret { width: 3px; height: 34px; background: var(--cyan); opacity: 0; }
+    #f32-view {
+      position: absolute; left: 0; top: 172px; width: 1360px; height: 440px; overflow: hidden;
+    }
+    #f32-list { position: absolute; left: 0; top: 0; width: 1360px; }
+    .f32-row {
+      position: relative; height: 94px; width: 1360px; box-sizing: border-box;
+      border-bottom: 1px solid rgba(244,241,232,.07);
+      display: flex; align-items: center; padding: 0 40px; gap: 34px; white-space: nowrap;
+    }
+    .f32-row b { width: 310px; font-size: 28px; font-weight: 600; color: var(--muted); }
+    .f32-row span { font-size: 32px; font-weight: 500; color: var(--ink); }
+    #f32-hlbar {
+      position: absolute; left: 0; top: 0; width: 1360px; height: 94px; box-sizing: border-box;
+      background: rgba(255,210,63,.14); border-left: 8px solid var(--gold);
+      transform-origin: 0 50%;
+    }
+    #f32-hitrow b, #f32-hitrow span { position: relative; }
+    .f32-fadeT, .f32-fadeB { position: absolute; left: 0; width: 1360px; height: 70px; pointer-events: none; }
+    .f32-fadeT { top: 172px; background: linear-gradient(#141b3a, rgba(20,27,58,0)); }
+    .f32-fadeB { top: 542px; background: linear-gradient(rgba(20,27,58,0), #141b3a); }
+    #f32-foot {
+      position: absolute; left: 0; top: 612px; width: 1360px; height: 88px; box-sizing: border-box;
+      border-top: 1px solid rgba(244,241,232,.10);
+      display: flex; align-items: center; padding: 0 40px; gap: 36px; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted);
+    }
+    #f32-foot span { display: block; opacity: 0; }
+    #f32-foot em { font-style: normal; color: var(--cyan); }
+
+    /* ---------- Scene 3 overlays (unscaled) ---------- */
+    #f32-folder {
+      position: absolute; left: 545px; top: 58px; height: 64px; display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 34px; color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f32-trail { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f32-trail path { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f32-badge {
+      position: absolute; left: 1320px; top: 284px; height: 84px; padding: 0 30px; box-sizing: border-box;
+      border-radius: 42px; border: 2px solid var(--cyan); background: rgba(62,230,208,.12);
+      display: flex; align-items: center; gap: 16px; white-space: nowrap;
+      font-size: 38px; font-weight: 600; color: var(--cyan); opacity: 0;
+      box-shadow: 0 0 30px rgba(62,230,208,.25);
+    }
+    #f32-check {
+      position: absolute; left: 1150px; top: 478px; width: 64px; height: 64px; border-radius: 50%;
+      background: var(--cyan); display: flex; align-items: center; justify-content: center; opacity: 0;
+      box-shadow: 0 0 24px rgba(62,230,208,.45);
+    }
+  </style>
+
+  <div id="root" data-composition-id="32-tim-lai-cuoc-tro-chuyen-cu" data-width="1920" data-height="1080" data-duration="12.037">
+    <div id="f32-ground" class="clip" data-start="0" data-duration="12.037" data-track-index="0"></div>
+    <div id="f32-stage" class="clip" data-start="0" data-duration="12.037" data-track-index="1">
+
+      <!-- Scene 1: kinetic -->
+      <div id="f32-s1" class="f32-layer">
+        <div id="f32-headA" class="f32-head">
+          <span id="f32-hA1">Quên mất</span>
+          <span id="f32-hA2">tuần trước?</span>
+        </div>
+        <div id="f32-days">
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+          <div class="f32-day"><i></i><i></i><i></i></div>
+        </div>
+        <div id="f32-headB" class="f32-head"><span>Không sao cả.</span></div>
+        <svg id="f32-uline" viewBox="0 0 1760 40">
+          <path id="f32-ulpath" d="M 560 20 C 760 6, 1000 34, 1200 16" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- Scene 2/3: world under the camera -->
+      <div id="f32-world" data-layout-allow-overflow>
+        <svg id="f32-laptop" viewBox="0 0 1760 820">
+          <rect x="545" y="140" width="670" height="360" rx="20" fill="#141b3a" stroke="rgba(244,241,232,.55)" stroke-width="3"/>
+          <circle cx="880" cy="151" r="3.5" fill="#8e93b5"/>
+          <path d="M 500 500 L 1260 500 L 1300 548 Q 1300 560 1288 560 L 472 560 Q 460 560 460 548 Z" fill="#141b3a" stroke="rgba(244,241,232,.55)" stroke-width="3" stroke-linejoin="round"/>
+          <rect x="820" y="512" width="120" height="10" rx="5" fill="rgba(142,147,181,.5)"/>
+        </svg>
+        <div id="f32-termwrap">
+          <div id="f32-term">
+            <div id="f32-thead">
+              <div class="f32-dot"></div><div class="f32-dot"></div><div class="f32-dot"></div>
+              <div id="f32-ttl">hermes · ~/.hermes/state.db</div>
+              <div id="f32-chip"><div id="f32-chipdot"></div>session_search</div>
+            </div>
+            <div id="f32-query">
+              <div id="f32-qprompt">›</div>
+              <div id="f32-qtext"></div>
+              <div id="f32-qcaret"></div>
+            </div>
+            <div id="f32-view">
+              <div id="f32-list" data-layout-allow-overflow>
+                <div class="f32-row"><b>hôm nay · 16:40</b><span>Viết email cho khách</span></div>
+                <div class="f32-row"><b>hôm nay · 14:05</b><span>Tóm tắt báo cáo quý</span></div>
+                <div class="f32-row"><b>hôm nay · 10:12</b><span>Sửa script sao lưu</span></div>
+                <div class="f32-row"><b>hôm nay · 08:30</b><span>Lên lịch họp nhóm</span></div>
+                <div class="f32-row"><b>hôm qua · 21:15</b><span>Dịch tài liệu hướng dẫn</span></div>
+                <div class="f32-row"><b>hôm qua · 17:48</b><span>Soạn slide đào tạo</span></div>
+                <div class="f32-row"><b>hôm qua · 11:02</b><span>Kiểm tra log máy chủ</span></div>
+                <div class="f32-row"><b>hôm qua · 09:20</b><span>Viết bài blog</span></div>
+                <div class="f32-row"><b>2 ngày trước</b><span>Phân tích bảng tính</span></div>
+                <div class="f32-row"><b>2 ngày trước</b><span>Tìm lỗi đăng nhập</span></div>
+                <div class="f32-row"><b>2 ngày trước</b><span>Tạo kịch bản video</span></div>
+                <div class="f32-row"><b>3 ngày trước</b><span>Ghi chú cuộc họp</span></div>
+                <div class="f32-row"><b>3 ngày trước</b><span>Dọn thư mục tải về</span></div>
+                <div class="f32-row"><b>3 ngày trước</b><span>So sánh hai thư viện</span></div>
+                <div class="f32-row"><b>4 ngày trước</b><span>Viết mô tả sản phẩm</span></div>
+                <div class="f32-row"><b>4 ngày trước</b><span>Đổi tên hàng loạt ảnh</span></div>
+                <div class="f32-row"><b>4 ngày trước</b><span>Ôn lại ghi chú học</span></div>
+                <div class="f32-row"><b>5 ngày trước</b><span>Lọc hộp thư đến</span></div>
+                <div class="f32-row"><b>5 ngày trước</b><span>Viết kiểm thử</span></div>
+                <div class="f32-row"><b>5 ngày trước</b><span>Tra cứu thuật ngữ</span></div>
+                <div class="f32-row"><b>6 ngày trước</b><span>Chuẩn bị phỏng vấn</span></div>
+                <div class="f32-row"><b>6 ngày trước</b><span>Gom số liệu bán hàng</span></div>
+                <div class="f32-row" id="f32-hitrow"><div id="f32-hlbar"></div><b id="f32-hitday">tuần trước</b><span id="f32-hittxt">Lập kế hoạch ra mắt</span></div>
+                <div class="f32-row"><b>tuần trước</b><span>Viết tài liệu API</span></div>
+                <div class="f32-row"><b>2 tuần trước</b><span>Thiết kế logo</span></div>
+                <div class="f32-row"><b>2 tuần trước</b><span>Học lệnh Git</span></div>
+              </div>
+            </div>
+            <div class="f32-fadeT"></div>
+            <div class="f32-fadeB"></div>
+            <div id="f32-foot">
+              <span id="f32-fl1"><em>[--resume</em> SESSION]</span>
+              <span id="f32-fl2"><em>[--continue</em> [SESSION_NAME]]</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3 overlays -->
+      <div id="f32-folder">
+        <svg width="54" height="44" viewBox="0 0 54 44"><path d="M3 8 Q3 4 7 4 L20 4 L25 10 L47 10 Q51 10 51 14 L51 38 Q51 41 47 41 L7 41 Q3 41 3 38 Z" fill="rgba(244,241,232,.08)" stroke="#f4f1e8" stroke-width="3" stroke-linejoin="round"/></svg>
+        <div>~/.hermes/</div>
+      </div>
+      <svg id="f32-trail" viewBox="0 0 1760 820">
+        <path id="f32-trpath" d="M 1215 250 C 1262 250, 1262 326, 1316 326" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <div id="f32-badge">
+        <svg width="40" height="40" viewBox="0 0 40 40"><rect x="4" y="8" width="32" height="24" rx="5" fill="none" stroke="#3ee6d0" stroke-width="3"/><line x1="4" y1="22" x2="36" y2="22" stroke="#3ee6d0" stroke-width="3"/><circle cx="29" cy="27" r="2.2" fill="#3ee6d0"/></svg>
+        <div>lưu trên máy</div>
+      </div>
+      <div id="f32-check">
+        <svg width="36" height="36" viewBox="0 0 36 36"><path d="M 8 19 L 15 26 L 28 11" fill="none" stroke="#0b1026" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // camera: world opens zoomed so the terminal fills the stage, then pulls out to the laptop
+      var S = 1 / 0.455882;
+      gsap.set("#f32-world", { transformOrigin: "0 0", x: 200 - 570 * S, y: 40 - 160 * S, scale: S });
+      gsap.set("#f32-ulpath", { attr: { "stroke-dasharray": 700, "stroke-dashoffset": 700 } });
+      gsap.set("#f32-trpath", { attr: { "stroke-dasharray": 160, "stroke-dashoffset": 160 } });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0–3.78): kinetic ----
+      tl.fromTo("#f32-hA1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.42);
+      tl.fromTo("#f32-hA2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.25);
+      tl.fromTo(".f32-day", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out", stagger: 0.05 }, 1.3);
+      // memory fades: the week blurs away
+      tl.fromTo("#f32-days", { opacity: 1, filter: "blur(0px)" }, { opacity: 0.3, filter: "blur(5px)", duration: 0.35, ease: "power2.inOut" }, 1.75);
+      // hard cut on "Không"
+      tl.set(["#f32-headA", "#f32-days"], { opacity: 0 }, 2.13);
+      tl.set("#f32-headB", { opacity: 1 }, 2.13);
+      tl.fromTo("#f32-headB", { scale: 1.08 }, { scale: 1, duration: 0.3, ease: "power3.out" }, 2.13);
+      tl.set("#f32-uline", { opacity: 1 }, 2.2);
+      tl.to("#f32-ulpath", { attr: { "stroke-dashoffset": 0 }, duration: 0.5, ease: "none" }, 2.2);
+      tl.to("#f32-headB", { scale: 1.02, duration: 1.3, ease: "none" }, 2.45);
+      tl.set("#f32-s1", { opacity: 0 }, 3.78);
+
+      // ---- Scene 2 (3.78–8.08): terminal transcript scroll ----
+      tl.fromTo("#f32-term", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.78);
+      // fast upward feed, then decelerate onto "tuần trước"
+      var finalY = (440 - 94) / 2 - 22 * 94; // centre row 22 in the viewport
+      tl.fromTo("#f32-list", { y: 0 }, { y: finalY + 450, duration: 2.36, ease: "power1.in" }, 3.94);
+      tl.to("#f32-list", { y: finalY, duration: 1.0, ease: "power3.out" }, 6.3);
+      tl.fromTo("#f32-list", { filter: "blur(0px)" }, { filter: "blur(3px)", duration: 0.6, ease: "power2.in" }, 4.2);
+      tl.to("#f32-list", { filter: "blur(0px)", duration: 0.7, ease: "power2.out" }, 6.4);
+      // tool chip lights on "session"
+      tl.to("#f32-chip", { opacity: 1, borderColor: "#3ee6d0", color: "#3ee6d0", boxShadow: "0 0 22px rgba(62,230,208,.45)", duration: 0.3, ease: "power2.out" }, 6.37);
+      tl.fromTo("#f32-chip", { scale: 0.9 }, { scale: 1, duration: 0.4, ease: "power3.out" }, 6.37);
+      tl.set("#f32-chipdot", { backgroundColor: "#3ee6d0" }, 6.37);
+      // query types on "search"
+      tl.set("#f32-qcaret", { opacity: 1 }, 6.82);
+      var q = "tuần trước";
+      for (var i = 1; i <= q.length; i++) {
+        tl.set("#f32-qtext", { textContent: q.slice(0, i) }, 6.82 + i * 0.04);
+      }
+      // the old session lands and highlights
+      tl.fromTo("#f32-hlbar", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power3.out" }, 7.3);
+      tl.to(["#f32-hitday", "#f32-hittxt"], { color: "#ffd23f", duration: 0.3, ease: "power2.out" }, 7.3);
+      // real resume flags in the footer
+      tl.fromTo("#f32-fl1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.74);
+      tl.fromTo("#f32-fl2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.9);
+
+      // ---- Scene 3 (8.08–11.54): one zoom-out to the laptop ----
+      tl.to("#f32-world", { x: 0, y: 0, scale: 1, duration: 0.95, ease: "power3.out" }, 8.08);
+      tl.fromTo("#f32-laptop", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 8.12);
+      tl.set("#f32-qcaret", { opacity: 0 }, 8.08);
+      tl.fromTo("#f32-folder", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 8.76);
+      tl.to("#f32-trpath", { attr: { "stroke-dashoffset": 0 }, duration: 0.2, ease: "none" }, 8.88);
+      tl.fromTo("#f32-badge", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 9.05);
+      tl.fromTo("#f32-check", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 9.45);
+      tl.to("#f32-badge", { scale: 1.02, duration: 1.9, ease: "none" }, 9.6);
+
+      tl.to({}, { duration: 11.537 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["32-tim-lai-cuoc-tro-chuyen-cu"] = tl;
+    })();
+  </script>
+</template>

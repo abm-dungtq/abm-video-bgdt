@@ -1,0 +1,229 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f60-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f60-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 (resting geometry from frame 44) */
+    #f60-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f60-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f60-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f60-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f60-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    /* viewport: main content clipped to canvas y 140–880 (stage y 80–820) */
+    #f60-view { position: absolute; left: 0; top: 80px; width: 1760px; height: 740px; overflow: hidden; }
+    #f60-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 740px; transform-origin: 0 0; }
+    #f60-world { position: absolute; left: 0; top: 0; width: 1760px; height: 740px; transform-origin: 880px 370px; }
+
+    .f60-spark { display: block; overflow: visible; }
+    .f60-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* "Opus 5.5" label, centred above both claims */
+    #f60-label {
+      position: absolute; left: 0; top: 110px; width: 1760px; text-align: center; opacity: 0;
+      font: 700 64px/1.12 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap;
+    }
+
+    /* left claim: kicker + "trung thực" + underline */
+    #f60-left { position: absolute; left: 100px; top: 270px; width: 800px; height: 260px; transform-origin: 400px 130px; }
+    #f60-left-in { position: absolute; inset: 0; transform-origin: 400px 130px; }
+    .f60-kicker {
+      position: absolute; left: 0; top: 0; width: 100%; height: 40px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font: 400 30px/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; color: #9A968C; white-space: nowrap;
+    }
+    .f60-kicker .f60-spark { width: 32px; height: 32px; }
+    .f60-kw { display: inline-block; opacity: 0; }
+    #f60-word {
+      position: absolute; left: 0; top: 50px; width: 100%; text-align: center; white-space: nowrap;
+      font: 700 140px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    .f60-w { display: inline-block; opacity: 0; }
+    #f60-ul { position: absolute; left: 90px; top: 206px; width: 620px; height: 40px; overflow: visible; }
+    #f60-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* right claim: kicker + chip slot */
+    #f60-right { position: absolute; left: 980px; top: 270px; width: 620px; height: 260px; }
+    #f60-rkick { opacity: 0; }
+    #f60-slot {
+      position: absolute; left: 0; top: 71px; width: 620px; height: 108px; box-sizing: border-box;
+      border-radius: 54px; border: 2px dashed rgba(240,238,230,.28); opacity: 0;
+      display: flex; align-items: center; justify-content: center; gap: 22px;
+    }
+    .f60-dot { width: 14px; height: 14px; border-radius: 50%; background: #9A968C; opacity: 0; }
+    #f60-chip {
+      position: absolute; left: 0; top: 71px; width: 620px; height: 108px; box-sizing: border-box;
+      border-radius: 54px; background: #2A2926; border: 1px solid rgba(240,238,230,.12);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex; align-items: center; justify-content: center; gap: 22px; opacity: 0;
+      font: 600 44px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap;
+    }
+    #f60-chip .f60-cw { display: inline-block; opacity: 0; }
+    #f60-chip-text { display: flex; gap: 14px; }
+    #f60-shield { width: 48px; height: 54px; overflow: visible; flex: none; }
+    #f60-shield path { fill: none; stroke: #8FB8A8; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  </style>
+
+  <div id="root" data-composition-id="60-trung-thuc-nhat-tu-truoc-toi-nay" data-width="1920" data-height="1080" data-duration="9.864">
+    <div id="f60-ground" class="clip" data-start="0" data-duration="9.864" data-track-index="0"></div>
+    <div id="f60-stage" class="clip" data-start="0" data-duration="9.864" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f60-rail">
+        <div id="f60-pill1" class="f60-pill"><span id="f60-b1" class="f60-badge">1</span>Tính năng<svg id="f60-ps1" class="f60-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f60-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f60-pill2" class="f60-pill"><span id="f60-b2" class="f60-badge">2</span>Vì sao nổi bật<svg id="f60-ps2" class="f60-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f60-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f60-pill3" class="f60-pill"><span id="f60-b3" class="f60-badge">3</span>Bạn được gì<svg id="f60-ps3" class="f60-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <div id="f60-view">
+        <div id="f60-cam">
+          <div id="f60-world">
+            <div id="f60-label">Opus 5.5</div>
+
+            <div id="f60-left">
+              <div id="f60-left-in">
+                <div class="f60-kicker">
+                  <svg class="f60-spark" id="f60-kspark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+                  <span class="f60-kw" id="f60-k1">TỐT</span><span class="f60-kw" id="f60-k2">NHẤT</span>
+                </div>
+                <div id="f60-word"><span class="f60-w" id="f60-w1">trung</span> <span class="f60-w" id="f60-w2">thực</span></div>
+                <svg id="f60-ul" viewBox="0 0 620 40"><path pathLength="1" d="M6 22 C 90 12, 180 30, 300 19 S 500 13, 614 24"/></svg>
+              </div>
+            </div>
+
+            <div id="f60-right">
+              <div class="f60-kicker" id="f60-rkick">ANTHROPIC</div>
+              <div id="f60-slot"><span class="f60-dot"></span><span class="f60-dot"></span><span class="f60-dot"></span></div>
+              <div id="f60-chip">
+                <svg id="f60-shield" viewBox="0 0 48 54"><path pathLength="1" d="M24 3 L44 10 V26 C44 39 35 47 24 51 C13 47 4 39 4 26 V10 Z"/><path pathLength="1" d="M14 27 L21 34 L34 20"/></svg>
+                <span id="f60-chip-text"><span class="f60-cw" id="f60-c1">kiểm</span><span class="f60-cw" id="f60-c2">thử</span><span class="f60-cw" id="f60-c3">kỹ</span><span class="f60-cw" id="f60-c4">nhất</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="60-trung-thuc-nhat-tu-truoc-toi-nay"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      var cam = q("#f60-cam"), left = q("#f60-left"), leftIn = q("#f60-left-in");
+
+      // initial states (before the timeline)
+      // Scene 1: the left claim is centred and enlarged; camera at identity
+      gsap.set(cam, { x: 0, y: 0, scale: 1 });
+      gsap.set(left, { x: 380, scale: 1.15 });
+      gsap.set(q("#f60-kspark"), { scale: 0, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: only slot 2 lights (1.6 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f60-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f60-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f60-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(2, 1.6);
+
+      // ---- Scene 1 (0–4.4): kinetic statement build ----
+      tl.fromTo(q("#f60-label"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.35);
+      tl.fromTo(q("#f60-kspark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 1.86);
+      tl.fromTo(q("#f60-k1"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.86);
+      tl.fromTo(q("#f60-k2"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.02);
+      // "trung thực" slams in word by word (oversized -> settled)
+      tl.fromTo(q("#f60-w1"), { opacity: 0, scale: 1.9, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "power3.out", transformOrigin: "50% 60%" }, 2.54);
+      tl.fromTo(q("#f60-w2"), { opacity: 0, scale: 1.9, y: -20 }, { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "power3.out", transformOrigin: "50% 60%" }, 2.72);
+      tl.fromTo(q("#f60-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.95);
+      // quiet push while held
+      tl.fromTo(leftIn, { scale: 1 }, { scale: 1.02, duration: 0.98, ease: "none" }, 3.4);
+
+      // ---- Scene 2 (4.4–9.364): cut tight on the empty chip slot ----
+      // re-lay the world into its final two-claim layout during the cut
+      tl.set(left, { x: 0, scale: 1 }, 4.4);
+      tl.set(leftIn, { scale: 1 }, 4.4);
+      tl.set(q("#f60-slot"), { opacity: 1 }, 4.4);
+      // camera: scale 2 centred on the chip (world 1290, 395 -> view 880, 370)
+      tl.set(cam, { x: -1700, y: -420, scale: 2 }, 4.4);
+      tl.to(cam, { x: -1829, y: -459.5, scale: 2.1, duration: 2.1, ease: "none" }, 4.42);
+      // waiting dots in the empty slot
+      qa("#f60-slot .f60-dot").forEach(function (d, i) {
+        tl.fromTo(d, { opacity: 0 }, { opacity: 0.8, duration: 0.3, ease: "power2.out" }, 4.55 + i * 0.22);
+      });
+      tl.fromTo(q("#f60-rkick"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 5.93);
+
+      // chip fills the slot on "kiểm thử"
+      tl.to(q("#f60-slot"), { opacity: 0, duration: 0.25, ease: "power2.out" }, 6.54);
+      tl.fromTo(q("#f60-chip"), { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 6.54);
+      tl.fromTo(qa("#f60-shield path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 6.6);
+      tl.fromTo(q("#f60-c1"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 6.54);
+      tl.fromTo(q("#f60-c2"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 6.74);
+      tl.fromTo(q("#f60-c3"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 7.32);
+      tl.fromTo(q("#f60-c4"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 7.46);
+
+      // one decelerating zoom-out: both claims side by side under "Opus 5.5"
+      tl.to(cam, { x: 0, y: 0, scale: 1, duration: 0.95, ease: "power3.out" }, 6.6);
+
+      // lock + hold (1 % drift)
+      tl.fromTo(q("#f60-world"), { scale: 1 }, { scale: 1.01, duration: 1.8, ease: "none" }, 7.56);
+
+      tl.to({}, { duration: 9.364 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["60-trung-thuc-nhat-tu-truoc-toi-nay"] = tl;
+    })();
+  </script>
+</template>

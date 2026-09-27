@@ -1,0 +1,372 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f38-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f38-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f38- */
+
+    /* ---------- Shot 1: centred screenshot viewport 1456×819 ---------- */
+    #f38-s1 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    #f38-viewport {
+      position: absolute;
+      left: 152px;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      /* matches the screenshot's own flat page colour so a pan past its edge stays seamless */
+      background: #151515;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f38-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      transform-origin: 728px 409.5px;
+      opacity: 0;
+    }
+    #f38-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #f38-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      overflow: visible;
+    }
+    .f38-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f38-gold { stroke: var(--gold); }
+    .f38-sage { stroke: var(--cyan); }
+    .f38-w {
+      display: inline-block;
+      opacity: 0;
+    }
+    /* label lives in the wrapper's space (sits in the empty dark area right of the menu) */
+    #f38-label {
+      position: absolute;
+      left: 704px;
+      top: 703px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 28px;
+      line-height: 1.3;
+      color: var(--ink);
+    }
+    #f38-label .f38-w { margin-right: 8px; }
+    #f38-spark1 {
+      width: 24px;
+      height: 24px;
+      display: block;
+      opacity: 0;
+      filter: drop-shadow(0 0 8px rgba(217,119,87,.45));
+    }
+
+    /* ---------- Shot 2: research source hub ---------- */
+    #f38-s2 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+    }
+    #f38-hub {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 340px;
+    }
+    #f38-ring {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    .f38-card {
+      position: absolute;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #f38-center {
+      left: 695px;
+      top: 265px;
+      width: 370px;
+      height: 150px;
+      gap: 16px;
+      opacity: 0;
+    }
+    #f38-center-hot {
+      position: absolute;
+      inset: -1px;
+      border-radius: 16px;
+      border: 2px solid var(--gold);
+      opacity: 0;
+    }
+    #f38-spark2 {
+      width: 44px;
+      height: 44px;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f38-center-t {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f38-web {
+      left: 280px;
+      top: 275px;
+      width: 260px;
+      height: 130px;
+      gap: 16px;
+      opacity: 0;
+    }
+    #f38-globe {
+      width: 44px;
+      height: 44px;
+      display: block;
+    }
+    #f38-web-t {
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f38-gw {
+      left: 1220px;
+      top: 275px;
+      width: 260px;
+      height: 130px;
+      flex-direction: column;
+      opacity: 0;
+    }
+    .f38-gw-line {
+      display: block;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.22;
+      color: var(--ink);
+      white-space: nowrap;
+      text-align: center;
+    }
+    #f38-key {
+      position: absolute;
+      left: 0;
+      top: 630px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 68px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f38-key .f38-w { margin: 0 10px; }
+    .f38-dot { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="38-bat-research" data-width="1920" data-height="1080" data-duration="11.026">
+    <div id="f38-ground" class="clip" data-start="0" data-duration="11.026" data-track-index="0"></div>
+    <div id="f38-stage" class="clip" data-start="0" data-duration="11.026" data-track-index="1">
+
+      <!-- Shot 1: the real "+" menu, Research and Web search switched on -->
+      <div id="f38-s1">
+        <div id="f38-viewport">
+          <div id="f38-wrap">
+            <img id="f38-shot" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg id="f38-callout" viewBox="0 0 1456 819">
+              <!-- active Research icon beside "+" in the composer -->
+              <rect id="f38-rect-icon" class="f38-draw f38-sage" x="476" y="392.5" width="31" height="30" rx="7" ry="7" pathLength="1" stroke-width="1.8"></rect>
+              <!-- "Research" row (thinner) -->
+              <rect id="f38-rect-res" class="f38-draw f38-gold" x="451" y="679.5" width="211" height="26.5" rx="6" ry="6" pathLength="1" stroke-width="1.3"></rect>
+              <!-- "Web search" row -->
+              <rect id="f38-rect-web" class="f38-draw f38-gold" x="451" y="709" width="211" height="27" rx="6" ry="6" pathLength="1" stroke-width="2.1"></rect>
+              <!-- short pointer from the label to the Web search row -->
+              <path id="f38-ptr" class="f38-draw f38-gold" pathLength="1" stroke-width="2" d="M698 723 C 688 721, 679 724, 667 722.5"></path>
+              <path id="f38-ptr-head" class="f38-draw f38-gold" pathLength="1" stroke-width="2" d="M675 716 L 667 722.5 L 675 729"></path>
+            </svg>
+            <div id="f38-label">
+              <svg id="f38-spark1" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+              <span><span id="f38-tim" class="f38-w">tìm</span><span id="f38-kiem" class="f38-w">kiếm</span><span id="f38-webw" class="f38-w">web</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shot 2: Research hub with its two sources on a ring -->
+      <div id="f38-s2">
+        <div id="f38-hub">
+          <svg id="f38-ring" viewBox="0 0 1760 820">
+            <ellipse id="f38-orbit" class="f38-draw" cx="880" cy="340" rx="470" ry="240" pathLength="1" stroke="rgba(240,238,230,.22)" stroke-width="2"></ellipse>
+            <path id="f38-spoke-l" class="f38-draw f38-sage" pathLength="1" stroke-width="3" d="M695 340 C 650 336, 595 344, 540 340"></path>
+            <path id="f38-spoke-r" class="f38-draw f38-sage" pathLength="1" stroke-width="3" d="M1065 340 C 1110 344, 1165 336, 1220 340"></path>
+            <path id="f38-arc" class="f38-draw f38-gold" pathLength="1" stroke-width="4" d="M420 412 C 480 560, 720 560, 880 468 C 1040 380, 1280 560, 1340 412"></path>
+            <circle id="f38-dot-l" class="f38-dot" cx="420" cy="412" r="7" fill="#D97757"></circle>
+            <circle id="f38-dot-r" class="f38-dot" cx="1340" cy="412" r="7" fill="#D97757"></circle>
+          </svg>
+
+          <div id="f38-web" class="f38-card">
+            <svg id="f38-globe" viewBox="0 0 44 44"><g fill="none" stroke="#F0EEE6" stroke-width="2.6" stroke-linecap="round"><circle cx="22" cy="22" r="18"></circle><ellipse cx="22" cy="22" rx="8" ry="18"></ellipse><line x1="4" y1="22" x2="40" y2="22"></line><path d="M7 13 H 37 M7 31 H 37"></path></g></svg>
+            <span id="f38-web-t">web</span>
+          </div>
+
+          <div id="f38-gw" class="f38-card">
+            <span id="f38-google" class="f38-gw-line">Google</span>
+            <span id="f38-workspace" class="f38-gw-line">Workspace</span>
+          </div>
+
+          <div id="f38-center" class="f38-card">
+            <div id="f38-center-hot"></div>
+            <svg id="f38-spark2" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+            <span id="f38-center-t">Research</span>
+          </div>
+
+          <div id="f38-key"><span id="f38-so" class="f38-w">so</span><span id="f38-sanh" class="f38-w">sánh</span><span id="f38-nhieu" class="f38-w">nhiều</span><span id="f38-nguon" class="f38-w">nguồn</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // shot 2 starts hidden (before the timeline is built)
+      gsap.set("#f38-s2", { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Shot 1 — screen (0–5.56 s) ===== */
+      // reveal the screenshot wrapper, full view
+      tl.fromTo("#f38-wrap", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0);
+      // pan down + zoom 1.3: composer and the lower menu group come to the centre
+      tl.fromTo("#f38-wrap", { x: 0, y: 0, scale: 1 }, { x: 98.5, y: -191.75, scale: 1.3, duration: 1.2, ease: "power2.inOut", immediateRender: false }, 0.6);
+      // "bật" @2.06 — sage frame on the active Research icon in the composer
+      tl.fromTo("#f38-rect-icon", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 2.06);
+      // "tìm" @2.22 — thin rectangle on the Research row, label starts
+      tl.fromTo("#f38-rect-res", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 2.22);
+      tl.fromTo("#f38-spark1", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 2.22);
+      tl.fromTo("#f38-tim", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.22);
+      // "kiếm" @2.42 — rectangle on the Web search row
+      tl.fromTo("#f38-kiem", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.42);
+      tl.fromTo("#f38-rect-web", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 2.42);
+      // "web" @2.60 — last label word, pointer, crop zoom to 1.4 on the two rows
+      tl.fromTo("#f38-webw", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 2.6);
+      tl.fromTo("#f38-ptr", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 2.75);
+      tl.fromTo("#f38-ptr-head", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 3.0);
+      tl.fromTo("#f38-wrap", { x: 98.5, y: -191.75, scale: 1.3 }, { x: 114.2, y: -307.4, scale: 1.4, duration: 0.7, ease: "power2.inOut", immediateRender: false }, 2.6);
+      // hold still (tiny drift)
+      tl.fromTo("#f38-wrap", { x: 114.2 }, { x: 108, duration: 1.9, ease: "none", immediateRender: false }, 3.32);
+
+      /* ===== Shot 2 — hub (5.56–10.526 s) ===== */
+      // inverse zoom-through out of the screen shot (shrinks, stays in the safe area)
+      tl.fromTo("#f38-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 5.24);
+      tl.fromTo("#f38-s2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 5.36);
+      // centre node + ring
+      tl.fromTo("#f38-center", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 5.38);
+      tl.fromTo("#f38-spark2", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 5.42);
+      tl.fromTo("#f38-orbit", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.8, ease: "none" }, 5.4);
+      // "Google" @5.56 — right source node springs onto the ring on its sage spoke
+      tl.fromTo("#f38-spoke-r", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.5);
+      tl.fromTo("#f38-gw", { opacity: 0, scale: 0.6, x: -60 }, { opacity: 1, scale: 1, x: 0, duration: 0.5, ease: "power3.out" }, 5.56);
+      tl.fromTo("#f38-google", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 5.56);
+      // left source node "web"
+      tl.fromTo("#f38-spoke-l", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.58);
+      tl.fromTo("#f38-web", { opacity: 0, scale: 0.6, x: 60 }, { opacity: 1, scale: 1, x: 0, duration: 0.5, ease: "power3.out" }, 5.64);
+      // "Workspace" @5.90
+      tl.fromTo("#f38-workspace", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.9);
+      // "Research" @7.63 — the centre lights terracotta, its spark twists
+      tl.fromTo("#f38-center-hot", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 7.63);
+      tl.fromTo("#f38-spark2", { scale: 1.35, rotation: -30 }, { scale: 1, rotation: 0, duration: 0.5, ease: "power3.out", immediateRender: false }, 7.63);
+      // "so" @8.90, "sánh" @9.08, "nhiều" @9.28, "nguồn" @9.46 — key text under the hub
+      tl.fromTo("#f38-so", { opacity: 0, y: 26, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 8.9);
+      tl.fromTo("#f38-sanh", { opacity: 0, y: 26, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 9.08);
+      tl.fromTo("#f38-nhieu", { opacity: 0, y: 26, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 9.28);
+      tl.fromTo("#f38-nguon", { opacity: 0, y: 26, filter: "blur(6px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 9.46);
+      // hand-drawn terracotta arc links the two sources through the centre
+      tl.fromTo("#f38-dot-l", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 9.28);
+      tl.fromTo("#f38-arc", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.65, ease: "none" }, 9.3);
+      tl.fromTo("#f38-dot-r", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 9.95);
+      // slow camera drift under the hub
+      tl.fromTo("#f38-hub", { scale: 1 }, { scale: 1.02, duration: 5.0, ease: "none", immediateRender: false }, 5.5);
+
+      tl.to({}, { duration: 10.526 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["38-bat-research"] = tl;
+    })();
+  </script>
+</template>

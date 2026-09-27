@@ -1,0 +1,387 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f52-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f52-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* ---- Analyze rail: resting geometry x 560, y 64–108 (stage offset 80,60) ---- */
+    #f52-rail {
+      position: absolute;
+      left: 480px;
+      top: 4px;
+      width: 1068px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      transform-origin: 50% 50%;
+    }
+    .f52-pill {
+      position: relative;
+      box-sizing: border-box;
+      width: 340px;
+      height: 44px;
+      flex: 0 0 340px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted);
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 26px;
+      line-height: 42px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .f52-badge {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 26px;
+      height: 26px;
+      margin-right: 10px;
+      border-radius: 50%;
+      border: 1.5px solid #9A968C;
+      color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      line-height: 23px;
+      text-align: center;
+      vertical-align: 3px;
+    }
+    .f52-pill-spark {
+      position: absolute;
+      right: 12px;
+      top: 9px;
+      width: 26px;
+      height: 26px;
+      opacity: 0;
+    }
+    .f52-link {
+      flex: 0 0 24px;
+      width: 24px;
+      height: 44px;
+      overflow: visible;
+    }
+
+    .f52-spark { display: block; overflow: visible; }
+    .f52-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* camera viewport: stage y 80–820 (canvas 140–880), clipped so the zoom never leaves the safe area */
+    #f52-view {
+      position: absolute; left: 0; top: 80px; width: 1760px; height: 740px; overflow: hidden;
+    }
+    #f52-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 740px; }
+
+    /* terminal mini-window (left 40 %) — view coords */
+    #f52-termwrap { position: absolute; left: 20px; top: 150px; width: 600px; height: 340px; }
+    #f52-term {
+      position: absolute; inset: 0; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    .f52-bar {
+      height: 60px; display: flex; align-items: center; padding: 0 24px; gap: 12px;
+      border-bottom: 1px solid rgba(240,238,230,.08);
+    }
+    .f52-dot { width: 14px; height: 14px; border-radius: 50%; background: #9A968C; opacity: .55; }
+    .f52-title {
+      flex: 1; text-align: center; margin-right: 76px;
+      font: 400 28px/1 "JetBrains Mono", monospace; color: #9A968C; letter-spacing: .04em;
+    }
+    .f52-tbody { padding: 30px 36px; font: 400 30px/1.55 "JetBrains Mono", monospace; color: #F0EEE6; }
+    .f52-line { white-space: pre; }
+
+    /* ghost placeholder where the desktop mock will rise */
+    #f52-ghost {
+      position: absolute; left: 700px; top: 70px; width: 1020px; height: 600px; box-sizing: border-box;
+      border: 2px dashed rgba(240,238,230,.22); border-radius: 16px; opacity: 0;
+    }
+
+    /* MINH HỌA desktop-app mock (right 60 %) — view coords */
+    #f52-mock {
+      position: absolute; left: 700px; top: 70px; width: 1020px; height: 600px; box-sizing: border-box;
+      background: var(--surface); border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    .f52-abs { position: absolute; }
+    #f52-mbar {
+      left: 0; top: 0; width: 1020px; height: 60px; background: #242321;
+      border-bottom: 1px solid rgba(240,238,230,.08);
+    }
+    #f52-mdots { left: 24px; top: 23px; display: flex; gap: 12px; }
+    #f52-mtitle {
+      left: 0; top: 0; width: 1020px; height: 60px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font: 600 30px/1 "Be Vietnam Pro", sans-serif; color: var(--ink); white-space: nowrap;
+    }
+    #f52-mtitle .f52-spark { width: 30px; height: 30px; }
+    .f52-head {
+      font: 600 30px/40px "Be Vietnam Pro", sans-serif; color: var(--ink); white-space: nowrap; opacity: 0;
+    }
+    #f52-h-prev { left: 24px; top: 80px; }
+    #f52-h-chg { left: 628px; top: 80px; }
+    #f52-h-ul { left: 622px; top: 118px; width: 150px; height: 16px; overflow: visible; }
+    #f52-h-ul path { fill: none; stroke: #D97757; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* preview pane */
+    #f52-page {
+      left: 24px; top: 134px; width: 580px; height: 326px; border-radius: 12px; background: #232220;
+      border: 1px solid rgba(240,238,230,.08); box-sizing: border-box; overflow: hidden;
+    }
+    .f52-blk { position: absolute; border-radius: 8px; background: rgba(154,150,140,.24); opacity: 0; }
+    #f52-pv-nav { left: 18px; top: 16px; width: 542px; height: 26px; border-radius: 6px; background: rgba(154,150,140,.16); }
+    #f52-pv-hero { left: 18px; top: 58px; width: 300px; height: 150px; background: rgba(143,184,168,.22); }
+    #f52-pv-l1 { left: 338px; top: 64px; width: 204px; height: 18px; background: rgba(240,238,230,.38); }
+    #f52-pv-l2 { left: 338px; top: 98px; width: 180px; height: 12px; }
+    #f52-pv-l3 { left: 338px; top: 124px; width: 196px; height: 12px; }
+    #f52-pv-btn { left: 338px; top: 164px; width: 130px; height: 40px; border-radius: 20px; background: rgba(143,184,168,.75); }
+    #f52-pv-c1 { left: 18px; top: 226px; width: 166px; height: 80px; }
+    #f52-pv-c2 { left: 198px; top: 226px; width: 166px; height: 80px; }
+    #f52-pv-c3 { left: 378px; top: 226px; width: 166px; height: 80px; }
+
+    /* changes list */
+    #f52-chg { left: 628px; top: 134px; width: 368px; height: 326px; }
+    .f52-row {
+      position: absolute; left: 0; width: 368px; height: 44px; border-radius: 10px; background: #33312E; opacity: 0;
+    }
+    .f52-fico { position: absolute; left: 14px; top: 11px; width: 16px; height: 22px; border-radius: 3px; border: 2px solid rgba(154,150,140,.6); box-sizing: border-box; }
+    .f52-fname { position: absolute; left: 42px; top: 18px; height: 8px; border-radius: 4px; background: rgba(154,150,140,.45); }
+    .f52-add, .f52-del { position: absolute; top: 15px; height: 14px; border-radius: 7px; transform-origin: 0 50%; }
+    .f52-add { background: #8FB8A8; }
+    .f52-del { background: #D97757; }
+
+    /* pull-request status row */
+    #f52-pr {
+      left: 24px; top: 484px; width: 972px; height: 92px; border-radius: 14px; box-sizing: border-box;
+      background: #34322F; border: 1px solid rgba(240,238,230,.10);
+    }
+    #f52-pr-ico { left: 28px; top: 20px; width: 40px; height: 52px; overflow: visible; }
+    #f52-pr-ico * { fill: none; stroke: #F0EEE6; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    #f52-pr-t1 { left: 92px; top: 26px; width: 250px; height: 14px; border-radius: 7px; background: rgba(240,238,230,.45); }
+    #f52-pr-t2 { left: 92px; top: 54px; width: 170px; height: 10px; border-radius: 5px; background: rgba(154,150,140,.40); }
+    #f52-pr-st {
+      left: 404px; top: 22px; width: 168px; height: 48px; border-radius: 24px; box-sizing: border-box;
+      border: 2px solid rgba(154,150,140,.45); background: rgba(154,150,140,.08);
+    }
+    #f52-pr-dot { left: 16px; top: 14px; width: 16px; height: 16px; border-radius: 8px; background: #9A968C; }
+    #f52-pr-bar { left: 44px; top: 18px; width: 96px; height: 10px; border-radius: 5px; background: rgba(154,150,140,.45); }
+    #f52-pr-tick { left: 10px; top: 8px; width: 28px; height: 28px; overflow: visible; }
+    #f52-pr-tick path { fill: none; stroke: #1F1E1D; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+    /* kicker pinned to the mock's top-left (outside the camera so it stays readable in the zoom) */
+    #f52-kicker-row {
+      position: absolute; left: 700px; top: 16px; height: 44px; box-sizing: border-box;
+      display: flex; align-items: center; gap: 12px; padding: 0 14px 0 12px;
+      border-radius: 10px; background: rgba(31,30,29,.88); opacity: 0;
+    }
+    #f52-kicker-row .f52-spark { width: 22px; height: 22px; }
+    .f52-minh-hoa-kicker {
+      font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 28px;
+      letter-spacing: .14em; color: var(--muted); line-height: 40px; white-space: nowrap;
+    }
+
+    /* scene 2 overlay (view coords, unscaled) */
+    #f52-circle { position: absolute; left: 0; top: 0; width: 1760px; height: 740px; overflow: visible; }
+    #f52-circle path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f52-key {
+      position: absolute; left: 380px; top: 440px; height: 110px;
+      display: flex; align-items: center; gap: 24px; transform-origin: 0 50%;
+      font: 700 88px/1.08 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    #f52-key .f52-spark { width: 44px; height: 44px; }
+    .f52-w { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="52-claude-code-tren-ung-dung-may-tinh" data-width="1920" data-height="1080" data-duration="12.649">
+    <div id="f52-ground" class="clip" data-start="0" data-duration="12.649" data-track-index="0"></div>
+    <div id="f52-stage" class="clip" data-start="0" data-duration="12.649" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f52-rail">
+        <div id="f52-p1" class="f52-pill"><span id="f52-b1" class="f52-badge">1</span>Tính năng<svg id="f52-ps1" class="f52-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f52-link" viewBox="0 0 24 44"><path id="f52-l1" d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f52-p2" class="f52-pill"><span id="f52-b2" class="f52-badge">2</span>Vì sao nổi bật<svg id="f52-ps2" class="f52-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f52-link" viewBox="0 0 24 44"><path id="f52-l2" d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f52-p3" class="f52-pill"><span id="f52-b3" class="f52-badge">3</span>Bạn được gì<svg id="f52-ps3" class="f52-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <div id="f52-view">
+        <div id="f52-cam">
+          <!-- Scene 1 left: terminal mini-window (real output from frame 45) -->
+          <div id="f52-termwrap">
+            <div id="f52-term">
+              <div class="f52-bar"><span class="f52-dot"></span><span class="f52-dot"></span><span class="f52-dot"></span><span class="f52-title">terminal</span></div>
+              <div class="f52-tbody"><div class="f52-line">2.1.282 (Claude Code)</div></div>
+            </div>
+          </div>
+
+          <div id="f52-ghost"></div>
+
+          <!-- Scene 1 right: MINH HỌA desktop-app mock -->
+          <div id="f52-mock">
+            <div id="f52-mbar" class="f52-abs"></div>
+            <div id="f52-mdots" class="f52-abs"><span class="f52-dot"></span><span class="f52-dot"></span><span class="f52-dot"></span></div>
+            <div id="f52-mtitle" class="f52-abs"><svg class="f52-spark" id="f52-t-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>ứng dụng desktop</span></div>
+
+            <div id="f52-h-prev" class="f52-abs f52-head">xem trước</div>
+            <div id="f52-page" class="f52-abs">
+              <div id="f52-pv-nav" class="f52-blk"></div>
+              <div id="f52-pv-hero" class="f52-blk"></div>
+              <div id="f52-pv-l1" class="f52-blk"></div>
+              <div id="f52-pv-l2" class="f52-blk"></div>
+              <div id="f52-pv-l3" class="f52-blk"></div>
+              <div id="f52-pv-btn" class="f52-blk"></div>
+              <div id="f52-pv-c1" class="f52-blk"></div>
+              <div id="f52-pv-c2" class="f52-blk"></div>
+              <div id="f52-pv-c3" class="f52-blk"></div>
+            </div>
+
+            <div id="f52-h-chg" class="f52-abs f52-head">thay đổi</div>
+            <svg id="f52-h-ul" class="f52-abs" viewBox="0 0 150 16"><path pathLength="1" d="M4 9 C 40 4, 80 13, 146 6"/></svg>
+            <div id="f52-chg" class="f52-abs">
+              <div class="f52-row" style="top:0px"><span class="f52-fico"></span><span class="f52-fname" style="width:120px"></span><span class="f52-add" style="left:200px;width:92px"></span><span class="f52-del" style="left:298px;width:44px"></span></div>
+              <div class="f52-row" style="top:56px"><span class="f52-fico"></span><span class="f52-fname" style="width:96px"></span><span class="f52-add" style="left:200px;width:130px"></span></div>
+              <div class="f52-row" style="top:112px"><span class="f52-fico"></span><span class="f52-fname" style="width:136px"></span><span class="f52-add" style="left:200px;width:40px"></span><span class="f52-del" style="left:246px;width:98px"></span></div>
+              <div class="f52-row" style="top:168px"><span class="f52-fico"></span><span class="f52-fname" style="width:108px"></span><span class="f52-add" style="left:200px;width:70px"></span><span class="f52-del" style="left:276px;width:20px"></span></div>
+              <div class="f52-row" style="top:224px"><span class="f52-fico"></span><span class="f52-fname" style="width:84px"></span><span class="f52-add" style="left:200px;width:112px"></span></div>
+              <div class="f52-row" style="top:280px"><span class="f52-fico"></span><span class="f52-fname" style="width:124px"></span><span class="f52-del" style="left:200px;width:60px"></span></div>
+            </div>
+
+            <!-- pull-request status row -->
+            <div id="f52-pr" class="f52-abs">
+              <svg id="f52-pr-ico" class="f52-abs" viewBox="0 0 40 52"><circle cx="10" cy="8" r="6"/><circle cx="10" cy="44" r="6"/><circle cx="32" cy="44" r="6"/><path d="M10 14 V38"/><path d="M32 38 V22 C 32 16, 28 12, 20 12 H18"/></svg>
+              <div id="f52-pr-t1" class="f52-abs"></div>
+              <div id="f52-pr-t2" class="f52-abs"></div>
+              <div id="f52-pr-st" class="f52-abs">
+                <div id="f52-pr-dot" class="f52-abs"></div>
+                <svg id="f52-pr-tick" class="f52-abs" viewBox="0 0 28 28"><path pathLength="1" d="M8 14.5 L12.5 19 L20 10"/></svg>
+                <div id="f52-pr-bar" class="f52-abs"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MINH HỌA kicker, pinned top-left of the mock -->
+        <div id="f52-kicker-row">
+          <svg class="f52-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+          <div class="f52-minh-hoa-kicker minh-hoa-kicker">MINH HỌA</div>
+        </div>
+
+        <!-- Scene 2 overlay: hand-drawn circle + key text -->
+        <svg id="f52-circle" viewBox="0 0 1760 740"><path pathLength="1" d="M 372 262 C 430 200, 1090 196, 1160 272 C 1204 338, 1010 392, 760 392 C 520 392, 334 378, 350 302 C 358 268, 420 238, 530 224"/></svg>
+        <div id="f52-key"><svg class="f52-spark" id="f52-k-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span><span class="f52-w" id="f52-k-w1">pull</span> <span class="f52-w" id="f52-k-w2">request</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="52-claude-code-tren-ung-dung-may-tinh"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // initial states (before the timeline)
+      gsap.set([q("#f52-t-spark"), q("#f52-k-spark")], { scale: 0, transformOrigin: "50% 50%" });
+      gsap.set(qa("#f52-chg .f52-add, #f52-chg .f52-del"), { scaleX: 0 });
+      gsap.set(q("#f52-cam"), { transformOrigin: "0 0" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light each listed slot on its cue (0.3 s) ----
+      function light(n, t) {
+        tl.fromTo(q("#f52-p" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f52-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f52-ps" + n),
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      light(1, 1.1);
+      light(3, 3.7);
+
+      // ---- Scene 1 (0–8.53): split — terminal left, desktop mock right ----
+      var cam = q("#f52-cam");
+      tl.fromTo(q("#f52-term"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.31);   // "Không quen terminal?"
+      tl.fromTo(q("#f52-ghost"), { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 0.4);
+      tl.fromTo(q("#f52-termwrap"), { opacity: 1, scale: 1 }, { opacity: 0.5, scale: 0.97, duration: 0.6, ease: "power2.inOut" }, 1.84); // terminal mutes on "Claude Code còn chạy…"
+      tl.fromTo(cam, { x: 0, y: 0, scale: 1 }, { x: -6, y: -4, scale: 1.012, duration: 8.2, ease: "none" }, 0.3);         // slow drift underneath
+
+      // "ứng dụng desktop" (3.12): the mock rises into the ghost, label in its title bar
+      tl.fromTo(q("#f52-mock"), { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 3.12);
+      tl.fromTo(q("#f52-kicker-row"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.12);
+      tl.fromTo(q("#f52-ghost"), { opacity: 1 }, { opacity: 0, duration: 0.4, ease: "power2.out", immediateRender: false }, 3.2);
+      tl.fromTo(q("#f52-t-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", immediateRender: false }, 3.43);
+
+      // "Bạn xem trước kết quả" (4.55–5.27): preview pane fills
+      tl.fromTo(q("#f52-h-prev"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.55);
+      ["#f52-pv-nav", "#f52-pv-hero", "#f52-pv-l1", "#f52-pv-l2", "#f52-pv-l3", "#f52-pv-btn", "#f52-pv-c1", "#f52-pv-c2", "#f52-pv-c3"].forEach(function (id, i) {
+        tl.fromTo(q(id), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 4.62 + i * 0.08);
+      });
+
+      // "theo dõi thay đổi" (5.98–6.74): changes list gets sage / terracotta bars; key text lands
+      qa("#f52-chg .f52-row").forEach(function (row, i) {
+        tl.fromTo(row, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, 5.98 + i * 0.07);
+        tl.to(row.querySelectorAll(".f52-add, .f52-del"), { scaleX: 1, duration: 0.35, ease: "power3.out" }, 6.12 + i * 0.1);
+      });
+      tl.fromTo(q("#f52-h-chg"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.36);
+      tl.fromTo(q("#f52-h-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 6.54);
+
+      // ---- Scene 2 (8.53–12.149): push-in on the pull-request row ----
+      tl.fromTo(cam, { x: -6, y: -4, scale: 1.012 }, { x: -555.6, y: -480, scale: 1.3, duration: 1.0, ease: "power2.inOut", immediateRender: false }, 8.53);
+      tl.fromTo(q("#f52-termwrap"), { opacity: 0.5, scale: 0.97 }, { opacity: 0, scale: 0.97, duration: 0.5, ease: "power2.out", immediateRender: false }, 8.53);
+      tl.fromTo(q("#f52-kicker-row"), { x: 0 }, { x: -326, duration: 1.0, ease: "power2.inOut", immediateRender: false }, 8.53); // stays pinned to the zoomed mock's top-left
+      // "trạng thái" (9.05): status pill turns sage, tick draws
+      tl.fromTo(q("#f52-pr-st"), { borderColor: "rgba(154,150,140,0.45)", backgroundColor: "rgba(154,150,140,0.08)" }, { borderColor: "#8FB8A8", backgroundColor: "rgba(143,184,168,0.16)", duration: 0.3, ease: "power2.out" }, 9.05);
+      tl.fromTo(q("#f52-pr-dot"), { scale: 1, backgroundColor: "#9A968C" }, { scale: 1.75, backgroundColor: "#8FB8A8", duration: 0.3, ease: "power3.out" }, 9.05);
+      tl.fromTo(q("#f52-pr-tick path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 9.2);
+      tl.fromTo(q("#f52-pr-bar"), { backgroundColor: "rgba(154,150,140,0.45)" }, { backgroundColor: "rgba(143,184,168,0.8)", duration: 0.3, ease: "power2.out" }, 9.21);
+      // "pull request" (9.58 / 9.88): hand-drawn circle + key text beside the row
+      tl.fromTo(q("#f52-k-w1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.58);
+      tl.fromTo(q("#f52-circle path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 9.7);
+      tl.fromTo(q("#f52-k-w2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.88);
+      tl.fromTo(q("#f52-k-spark"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", immediateRender: false }, 9.88);
+      // hold: quiet drift
+      tl.fromTo(q("#f52-key"), { scale: 1 }, { scale: 1.015, duration: 1.6, ease: "none" }, 10.5);
+
+      tl.to({}, { duration: 12.149 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["52-claude-code-tren-ung-dung-may-tinh"] = tl;
+    })();
+  </script>
+</template>

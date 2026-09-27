@@ -1,0 +1,352 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f03-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(230, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f03-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    #f03-grid { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f03-cam { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+
+    /* ---------- Scene 1: code card + MIT stamp ---------- */
+    #f03-s1 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+    #f03-cardwrap { position: absolute; left: 470px; top: 170px; width: 820px; height: 480px; }
+    #f03-flip { position: absolute; inset: 0; perspective: 1800px; }
+    .f03-face {
+      position: absolute; inset: 0;
+      background: var(--surface);
+      border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+    #f03-back { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; }
+    #f03-mark {
+      width: 150px; height: 150px; border-radius: 50%;
+      border: 5px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 84px; font-weight: 800; color: var(--gold); line-height: 1.05;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+    }
+    #f03-back-name { font-size: 64px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.1; }
+    #f03-front { padding: 40px 52px; box-sizing: border-box; }
+    .f03-dots { display: flex; gap: 12px; }
+    .f03-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: .7; }
+    #f03-glyph {
+      position: absolute; right: 56px; top: 34px;
+      font-family: "JetBrains Mono", monospace; font-size: 40px; color: var(--cyan);
+    }
+    #f03-code { position: absolute; left: 52px; top: 110px; width: 716px; }
+    .f03-line { display: flex; gap: 14px; height: 18px; margin-bottom: 20px; }
+    .f03-bar { height: 18px; border-radius: 9px; }
+    .f03-c { background: rgba(62,230,208,.75); }
+    .f03-i { background: rgba(244,241,232,.28); }
+    .f03-m { background: rgba(142,147,181,.55); }
+    #f03-title {
+      position: absolute; left: 52px; bottom: 44px;
+      font-size: 72px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.1;
+    }
+    #f03-badge {
+      position: absolute; left: 1190px; top: 70px; width: 200px; height: 200px;
+      border-radius: 50%; background: var(--gold);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--canvas);
+      filter: drop-shadow(0 0 18px rgba(255,210,63,.6));
+    }
+    #f03-badge-ring {
+      position: absolute; inset: 12px; border-radius: 50%;
+      border: 3px dashed rgba(11,16,38,.55);
+    }
+    #f03-badge-txt { font-size: 76px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+    #f03-shock {
+      position: absolute; left: 1190px; top: 70px; width: 200px; height: 200px;
+      border-radius: 50%; border: 4px solid var(--gold); box-sizing: border-box;
+    }
+
+    /* ---------- Scene 2: hub ---------- */
+    #f03-hub { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 410px; }
+    #f03-trails { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f03-trail {
+      fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+      filter: drop-shadow(0 0 8px rgba(255,210,63,.5));
+    }
+    #f03-core-ring {
+      position: absolute; left: 820px; top: 360px; width: 120px; height: 120px;
+      border-radius: 50%; border: 2px solid rgba(255,210,63,.5); box-sizing: border-box;
+    }
+    #f03-core {
+      position: absolute; left: 856px; top: 396px; width: 48px; height: 48px;
+      border-radius: 50%; background: var(--gold);
+      filter: drop-shadow(0 0 16px rgba(255,210,63,.7));
+    }
+    #f03-core-label {
+      position: absolute; left: 680px; top: 488px; width: 400px; text-align: center;
+      font-size: 40px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
+    }
+    .f03-spark {
+      position: absolute; left: 871px; top: 411px; width: 18px; height: 18px;
+      border-radius: 50%; background: var(--gold);
+      filter: drop-shadow(0 0 10px rgba(255,210,63,.9));
+    }
+    .f03-disc {
+      position: absolute; width: 170px; height: 170px; border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid rgba(62,230,208,.55); box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--cyan);
+      box-shadow: 0 0 40px rgba(62,230,208,.18), 0 20px 60px rgba(0,0,0,.35);
+    }
+    .f03-disc svg { width: 124px; height: 93px; overflow: visible; }
+    .f03-pulse {
+      position: absolute; width: 170px; height: 170px; border-radius: 50%;
+      border: 3px solid var(--cyan); box-sizing: border-box;
+    }
+    .f03-label {
+      position: absolute; font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    #f03-lap-disc, #f03-lap-pulse { left: 275px; top: 460px; }
+    #f03-lap-label { left: 180px; top: 650px; width: 360px; text-align: center; }
+    #f03-vps-disc, #f03-vps-pulse { left: 1315px; top: 460px; }
+    #f03-vps-label { left: 1220px; top: 650px; width: 360px; text-align: center; }
+    #f03-vps-price { display: inline-block; font-weight: 800; color: var(--cyan); }
+    #f03-cld-disc, #f03-cld-pulse { left: 795px; top: 65px; }
+    #f03-cld-label { left: 990px; top: 126px; }
+
+    /* ---------- Scene 3: zero counter + shield ---------- */
+    #f03-s3 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f03-kicker {
+      position: absolute; left: 0; top: 70px; width: 1760px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    #f03-kicker-dia { color: var(--gold); }
+    #f03-bloom {
+      position: absolute; left: 580px; top: 150px; width: 600px; height: 520px; border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255,210,63,.30), rgba(255,210,63,0) 65%);
+    }
+    #f03-shield { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f03-shield-path {
+      fill: none; stroke: var(--gold); stroke-width: 3; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+    }
+    #f03-countwrap {
+      position: absolute; left: 480px; top: 250px; width: 800px; height: 300px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f03-count {
+      display: inline-block;
+      font-size: 280px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      transform-origin: center center;
+    }
+    #f03-tag {
+      position: absolute; left: 630px; top: 696px; width: 500px; height: 72px;
+      border-radius: 36px; border: 2px solid rgba(62,230,208,.6); box-sizing: border-box;
+      background: rgba(62,230,208,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 600; color: var(--cyan); line-height: 1.2;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-mien-phi-va-chay-o-dau-cung-duoc" data-width="1920" data-height="1080" data-duration="12.865">
+    <div id="f03-ground" class="clip" data-start="0" data-duration="12.865" data-track-index="0"></div>
+    <div id="f03-stage" class="clip" data-start="0" data-duration="12.865" data-track-index="1">
+
+      <!-- background: hairline grid, dim -->
+      <svg id="f03-grid" viewBox="0 0 1760 820">
+        <defs>
+          <pattern id="f03-gridpat" width="80" height="80" patternUnits="userSpaceOnUse">
+            <path d="M80 0 L0 0 L0 80" fill="none" stroke="rgba(142,147,181,0.35)" stroke-width="1"></path>
+          </pattern>
+        </defs>
+        <rect width="1760" height="820" fill="url(#f03-gridpat)"></rect>
+      </svg>
+
+      <div id="f03-cam">
+        <!-- Scene 1 -->
+        <div id="f03-s1">
+          <div id="f03-cardwrap">
+            <div id="f03-flip">
+              <div id="f03-back" class="f03-face">
+                <div id="f03-mark">H</div>
+                <div id="f03-back-name">Hermes</div>
+              </div>
+              <div id="f03-front" class="f03-face">
+                <div class="f03-dots"><div class="f03-dot"></div><div class="f03-dot"></div><div class="f03-dot"></div></div>
+                <div id="f03-glyph">&lt;/&gt;</div>
+                <div id="f03-code">
+                  <div class="f03-line"><div class="f03-bar f03-c" style="width:120px"></div><div class="f03-bar f03-i" style="width:260px"></div></div>
+                  <div class="f03-line"><div class="f03-bar f03-m" style="width:40px"></div><div class="f03-bar f03-i" style="width:180px"></div><div class="f03-bar f03-c" style="width:140px"></div></div>
+                  <div class="f03-line"><div class="f03-bar f03-m" style="width:40px"></div><div class="f03-bar f03-i" style="width:320px"></div></div>
+                  <div class="f03-line"><div class="f03-bar f03-m" style="width:80px"></div><div class="f03-bar f03-c" style="width:90px"></div><div class="f03-bar f03-i" style="width:200px"></div></div>
+                  <div class="f03-line"><div class="f03-bar f03-i" style="width:60px"></div></div>
+                </div>
+                <div id="f03-title">Mã nguồn mở</div>
+              </div>
+            </div>
+          </div>
+          <div id="f03-shock"></div>
+          <div id="f03-badge">
+            <div id="f03-badge-ring"></div>
+            <div id="f03-badge-txt">MIT</div>
+
+          </div>
+        </div>
+
+        <!-- Scene 2 -->
+        <div id="f03-hub">
+          <svg id="f03-trails" viewBox="0 0 1760 820">
+            <path id="f03-trail-lap" class="f03-trail" pathLength="1" d="M880 420 L360 545"></path>
+            <path id="f03-trail-vps" class="f03-trail" pathLength="1" d="M880 420 L1400 545"></path>
+            <path id="f03-trail-cld" class="f03-trail" pathLength="1" d="M880 420 L880 150"></path>
+          </svg>
+          <div id="f03-core-ring"></div>
+          <div id="f03-core"></div>
+          <div id="f03-core-label">Hermes</div>
+
+          <div id="f03-spark-lap" class="f03-spark"></div>
+          <div id="f03-spark-vps" class="f03-spark"></div>
+          <div id="f03-spark-cld" class="f03-spark"></div>
+
+          <div id="f03-lap-pulse" class="f03-pulse"></div>
+          <div id="f03-lap-disc" class="f03-disc">
+            <svg viewBox="0 0 160 120" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+              <rect x="26" y="14" width="108" height="72" rx="8"></rect>
+              <path d="M8 98 L152 98 L140 110 L20 110 Z"></path>
+              <path d="M44 36 L76 36 M44 52 L100 52 M44 68 L66 68" stroke-width="5"></path>
+            </svg>
+          </div>
+          <div id="f03-lap-label" class="f03-label">Máy tính cá nhân</div>
+
+          <div id="f03-vps-pulse" class="f03-pulse"></div>
+          <div id="f03-vps-disc" class="f03-disc">
+            <svg viewBox="0 0 160 120" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+              <rect x="28" y="6" width="104" height="30" rx="6"></rect>
+              <rect x="28" y="45" width="104" height="30" rx="6"></rect>
+              <rect x="28" y="84" width="104" height="30" rx="6"></rect>
+              <path d="M44 21 L44 21 M44 60 L44 60 M44 99 L44 99" stroke-width="10"></path>
+              <path d="M88 21 L116 21 M88 60 L116 60 M88 99 L116 99" stroke-width="5"></path>
+            </svg>
+          </div>
+          <div id="f03-vps-label" class="f03-label">VPS <span id="f03-vps-price">$5</span></div>
+
+          <div id="f03-cld-pulse" class="f03-pulse"></div>
+          <div id="f03-cld-disc" class="f03-disc">
+            <svg viewBox="0 0 160 120" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M44 96 C20 96 10 74 24 60 C20 38 46 26 60 38 C68 14 104 12 114 38 C138 34 152 58 142 74 C154 84 146 98 130 96 Z"></path>
+            </svg>
+          </div>
+          <div id="f03-cld-label" class="f03-label">Đám mây</div>
+        </div>
+      </div>
+
+      <!-- Scene 3 -->
+      <div id="f03-s3">
+        <div id="f03-kicker"><span id="f03-kicker-dia">◆</span> Dữ liệu gửi đi</div>
+        <div id="f03-bloom"></div>
+        <svg id="f03-shield" viewBox="0 0 1760 820">
+          <path id="f03-shield-path" pathLength="1" d="M880 150 L1090 222 L1090 420 C1090 560 992 630 880 672 C768 630 670 560 670 420 L670 222 Z"></path>
+        </svg>
+        <div id="f03-countwrap"><span id="f03-count">100</span></div>
+        <div id="f03-tag">Không thu thập</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var q = function (id) { return document.getElementById(id); };
+
+      /* background grid */
+      tl.fromTo(q("f03-grid"), { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" }, 0);
+
+      /* ---- Scene 1 (0–3.01): Hermes card, flips to "mã nguồn mở", MIT stamps ---- */
+      tl.fromTo(q("f03-cardwrap"), { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.1);
+      tl.fromTo(q("f03-back"), { rotationY: 0 }, { rotationY: 90, duration: 0.26, ease: "power2.in" }, 1.28);
+      tl.fromTo(q("f03-front"), { rotationY: -90 }, { rotationY: 0, duration: 0.45, ease: "power3.out" }, 1.54);
+      tl.fromTo(".f03-line", { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.35, ease: "power3.out", stagger: 0.08 }, 1.7);
+      tl.fromTo(q("f03-title"), { autoAlpha: 0, x: -30 }, { autoAlpha: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.66);
+      /* MIT stamp lands on 3.01 */
+      tl.fromTo(q("f03-badge"), { autoAlpha: 0, scale: 1.5, rotation: -34 }, { autoAlpha: 1, scale: 1, rotation: -12, duration: 0.2, ease: "power3.out" }, 2.84);
+      tl.fromTo(q("f03-shock"), { autoAlpha: 0, scale: 1 }, { autoAlpha: 0.9, scale: 1, duration: 0.01 }, 3.03);
+      tl.to(q("f03-shock"), { autoAlpha: 0, scale: 1.6, duration: 0.5, ease: "power2.out" }, 3.05);
+
+      /* ---- Scene 2 (3.01–9.16): card collapses into the Hermes core; trail reaches each device ---- */
+      tl.fromTo(q("f03-s1"), { scale: 1, autoAlpha: 1 }, { scale: 0.1, autoAlpha: 0, duration: 0.55, ease: "power2.inOut" }, 3.4);
+      tl.fromTo(q("f03-core"), { scale: 0, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.45, ease: "power3.out" }, 3.7);
+      tl.fromTo(q("f03-core-ring"), { scale: 0.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power3.out" }, 3.8);
+      tl.fromTo(q("f03-core-label"), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.9);
+      tl.fromTo(q("f03-cam"), { scale: 1 }, { scale: 1.035, duration: 5.2, ease: "power1.inOut" }, 3.95);
+
+      function light(key, dx, dy, trailAt, drawDur, cue, labelAt) {
+        tl.fromTo(q("f03-trail-" + key), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: drawDur, ease: "none" }, trailAt);
+        tl.fromTo(q("f03-spark-" + key), { autoAlpha: 0, x: 0, y: 0 }, { autoAlpha: 1, x: dx, y: dy, duration: drawDur, ease: "none" }, trailAt);
+        tl.to(q("f03-spark-" + key), { autoAlpha: 0, duration: 0.2, ease: "power2.out" }, trailAt + drawDur);
+        tl.fromTo(q("f03-" + key + "-disc"), { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: 0.45, ease: "power3.out" }, cue - 0.06);
+        tl.fromTo(q("f03-" + key + "-pulse"), { autoAlpha: 0.9, scale: 1 }, { autoAlpha: 0, scale: 1.45, duration: 0.7, ease: "power2.out" }, cue);
+        tl.fromTo(q("f03-" + key + "-label"), { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power3.out" }, labelAt);
+      }
+      /* laptop — "máy tính cá nhân" ~4.58 */
+      light("lap", -520, 125, 4.22, 0.36, 4.58, 4.66);
+      /* VPS — "năm" 6.8, "$5" on "đô" 6.96 */
+      light("vps", 520, 125, 6.44, 0.36, 6.8, 6.8);
+      tl.fromTo(q("f03-vps-price"), { autoAlpha: 0, scale: 0.5 }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 6.96);
+      /* cloud — "đám" 8.05, "mây" 8.17 */
+      light("cld", 0, -270, 7.8, 0.25, 8.05, 8.17);
+
+      /* ---- Scene 3 (9.16–12.37): hub dims, counter counts DOWN to a gold 0, shield draws ---- */
+      tl.fromTo(q("f03-hub"), { autoAlpha: 1, scale: 1, filter: "blur(0px)" }, { autoAlpha: 0.14, scale: 0.86, filter: "blur(6px)", duration: 0.6, ease: "power2.inOut" }, 9.16);
+      tl.fromTo(q("f03-kicker"), { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.24);
+      tl.fromTo(q("f03-countwrap"), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: "power2.out" }, 9.3);
+      var countEl = q("f03-count");
+      var state = { v: 100 };
+      tl.fromTo(state, { v: 100 }, {
+        v: 0, duration: 0.76, ease: "power2.inOut",
+        onUpdate: function () { countEl.textContent = String(Math.round(state.v)); }
+      }, 9.36);
+      tl.fromTo(countEl, { scale: 0.45 }, { scale: 1, duration: 0.76, ease: "power2.inOut" }, 9.36);
+      tl.set(countEl, { color: "#ffd23f", textShadow: "0 0 36px rgba(255,210,63,.55)" }, 10.12);
+      tl.fromTo(q("f03-bloom"), { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 10.12);
+      tl.fromTo(q("f03-shield-path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.26, ease: "none" }, 10.1);
+      tl.fromTo(q("f03-tag"), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.24, ease: "power3.out" }, 10.12);
+      /* hold still from ~10.36 to the end */
+
+      tl.to({}, { duration: 12.365 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["03-mien-phi-va-chay-o-dau-cung-duoc"] = tl;
+    })();
+  </script>
+</template>

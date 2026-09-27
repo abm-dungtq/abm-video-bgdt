@@ -1,0 +1,312 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f43-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f43-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f43- */
+
+    /* warm radial behind the numeral (background, dimmed) */
+    #f43-glow {
+      position: absolute;
+      left: 380px;
+      top: 40px;
+      width: 1000px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 45%, hsla(37, 55%, 42%, 0.34), hsla(37, 55%, 42%, 0.10) 45%, transparent 70%);
+      opacity: 0.4;
+    }
+
+    /* camera group: drifts slowly during the hold */
+    #f43-cam {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* faint spark present before the voice starts */
+    #f43-ghost {
+      position: absolute;
+      left: 810px;
+      top: 280px;
+      width: 140px;
+      height: 140px;
+      opacity: 0.12;
+    }
+    #f43-ghost svg { width: 100%; height: 100%; display: block; }
+
+    /* kicker: spark + CHƯƠNG + 5 + NÂNG CAO tag */
+    #f43-kicker {
+      position: absolute;
+      left: 0;
+      top: 110px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    #f43-kmain {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: 0;
+    }
+    #f43-kmain svg { width: 28px; height: 28px; display: block; }
+    #f43-kdigit { display: inline-block; opacity: 0; }
+    #f43-kdot { display: inline-block; opacity: 0; color: var(--muted); }
+    #f43-tag {
+      display: inline-block;
+      padding: 6px 16px 6px 20px;
+      border: 2px solid rgba(154, 150, 140, 0.55);
+      border-radius: 999px;
+      font-size: 28px;
+      line-height: 1.2;
+      color: var(--ink);
+      background: rgba(42, 41, 38, 0.85);
+      opacity: 0;
+    }
+
+    /* numeral box: terracotta trail (behind, offset echo) + cream Lora "5" on top */
+    #f43-num {
+      position: absolute;
+      left: 730px;
+      top: 170px;
+      width: 300px;
+      height: 320px;
+    }
+    #f43-trailwrap {
+      position: absolute;
+      left: 14px;
+      top: 10px;
+      width: 300px;
+      height: 320px;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f43-trail {
+      width: 300px;
+      height: 320px;
+      display: block;
+      overflow: visible;
+    }
+    #f43-trail path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f43-digit {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 300px;
+      height: 320px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 320px;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+
+    /* title line 1: "Claude Code" in Lora 96 */
+    #f43-title {
+      position: absolute;
+      left: 0;
+      top: 520px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    /* title line 2: "và nền tảng" in the headline size, standing on a drawn foundation */
+    #f43-sub {
+      position: absolute;
+      left: 0;
+      top: 648px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 64px;
+      line-height: 1.12;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f43-subline {
+      display: inline-block;
+      position: relative;
+      padding: 0 34px;
+    }
+    .f43-w {
+      display: inline-block;
+      opacity: 0;
+      margin: 0 12px;
+    }
+    .f43-s {
+      display: inline-block;
+      opacity: 0;
+      margin: 0 9px;
+    }
+    /* the foundation: a hand-drawn base under "và nền tảng" */
+    #f43-base {
+      position: absolute;
+      left: 0;
+      top: 78px;
+      width: 100%;
+      height: 34px;
+      overflow: visible;
+    }
+    #f43-base path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    /* spark that lands on the end of the foundation on "tảng" */
+    #f43-spark {
+      position: absolute;
+      right: -30px;
+      top: 70px;
+      width: 40px;
+      height: 40px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f43-spark svg { width: 100%; height: 100%; display: block; }
+  </style>
+
+  <div id="root" data-composition-id="43-nang-cao-claude-code-va-nen-tang" data-width="1920" data-height="1080" data-duration="4.886">
+    <div id="f43-ground" class="clip" data-start="0" data-duration="4.886" data-track-index="0"></div>
+    <div id="f43-stage" class="clip" data-start="0" data-duration="4.886" data-track-index="1">
+      <div id="f43-glow"></div>
+
+      <div id="f43-cam">
+        <!-- faint spark: the only thing on screen before the voice -->
+        <div id="f43-ghost">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 6 L50 94 M6 50 L94 50 M22 22 L78 78 M78 22 L22 78" stroke="#F0EEE6" stroke-width="5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div id="f43-kicker">
+          <span id="f43-kmain">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/>
+            </svg>
+            <span>Chương</span>
+            <span id="f43-kdigit">5</span>
+            <span id="f43-kdot">·</span>
+          </span>
+          <span id="f43-tag">Nâng cao</span>
+        </div>
+
+        <div id="f43-num">
+          <div id="f43-trailwrap">
+            <svg id="f43-trail" viewBox="0 0 300 320" aria-hidden="true">
+              <path pathLength="1" d="M-150 170 C -110 120, -40 150, 20 110 C 80 76, 160 58, 222 44 L 98 46 L 86 152 C 132 124, 208 128, 228 188 C 246 248, 202 292, 142 292 C 104 292, 76 278, 62 256"/>
+            </svg>
+          </div>
+          <div id="f43-digit">5</div>
+        </div>
+
+        <div id="f43-title"><span class="f43-w" id="f43-w1">Claude</span><span class="f43-w" id="f43-w2">Code</span></div>
+
+        <div id="f43-sub"><span id="f43-subline"><span class="f43-s" id="f43-s1">và</span><span class="f43-s" id="f43-s2">nền</span><span class="f43-s" id="f43-s3">tảng</span><svg id="f43-base" viewBox="0 0 500 34" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M6 14 C 90 20, 170 8, 250 14 C 330 20, 410 10, 494 14 M 40 26 C 150 30, 330 24, 460 28"/></svg><span id="f43-spark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // calm micro drift under the whole card
+      tl.fromTo("#f43-cam", { scale: 1.0 }, { scale: 1.012, duration: 4.386, ease: "none" }, 0);
+
+      // pre-voice: faint spark turns slowly, then hands off as the numeral is written
+      tl.fromTo("#f43-ghost", { rotation: 0 }, { rotation: 18, duration: 1.0, ease: "none" }, 0);
+      tl.fromTo("#f43-ghost", { opacity: 0.12, scale: 1 }, { opacity: 0, scale: 1.3, duration: 0.4, ease: "power2.inOut", immediateRender: false }, 1.0);
+
+      // "Chương" (0.86): muted mono kicker fades in
+      tl.fromTo("#f43-kmain", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.86);
+
+      // "năm" (1.02): kicker digit appears and the terracotta stroke writes the "5"
+      tl.fromTo("#f43-kdigit", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power3.out" }, 1.02);
+      tl.fromTo("#f43-trail path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 1.02);
+      tl.fromTo("#f43-glow", { opacity: 0.4, scale: 0.94 }, { opacity: 0.85, scale: 1, duration: 0.8, ease: "power2.inOut", immediateRender: false }, 1.02);
+      // cream Lora numeral settles over its terracotta echo as the stroke finishes
+      tl.fromTo("#f43-digit", { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 1.4);
+
+      // "nâng cao" (1.682): the NÂNG CAO tag pops in beside the kicker
+      tl.fromTo("#f43-kdot", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 1.68);
+      tl.fromTo("#f43-tag", { opacity: 0, x: -18, scale: 0.9 }, { opacity: 1, x: 0, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, 1.68);
+
+      // "Claude" 2.504 · "Code" 2.804: the title slides up in Lora 96
+      tl.fromTo("#f43-w1", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.5);
+      tl.fromTo("#f43-w2", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.8);
+
+      // "và" 3.125 · "nền" 3.265 · "tảng" 3.426: second line in headline size
+      tl.fromTo("#f43-s1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.12);
+      tl.fromTo("#f43-s2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.26);
+      tl.fromTo("#f43-s3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.42);
+
+      // the foundation is drawn under the line on "nền", the spark lands on its end on "tảng"
+      tl.fromTo("#f43-base path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "power1.inOut" }, 3.26);
+      tl.fromTo("#f43-spark", { opacity: 0, scale: 0, rotation: -30 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "back.out(1.8)" }, 3.6);
+
+      // hold still to the end
+      tl.to({}, { duration: 4.386 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["43-nang-cao-claude-code-va-nen-tang"] = tl;
+    })();
+  </script>
+</template>

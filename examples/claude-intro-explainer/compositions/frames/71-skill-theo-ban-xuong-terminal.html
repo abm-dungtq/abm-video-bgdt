@@ -1,0 +1,346 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f71-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f71-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f71-spark { display: block; overflow: visible; }
+    .f71-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f71-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f71-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f71-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f71-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f71-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f71-scene { position: absolute; inset: 0; transform-origin: 880px 420px; }
+
+    /* shared window chrome (browser card, terminal outline, terminal) */
+    .f71-win {
+      position: absolute; box-sizing: border-box; background: #2A2926; border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      overflow: hidden; opacity: 0;
+    }
+    .f71-bar {
+      height: 60px; display: flex; align-items: center; padding: 0 24px; gap: 12px;
+      border-bottom: 1px solid rgba(240,238,230,.08);
+    }
+    .f71-dot { width: 14px; height: 14px; border-radius: 50%; background: #9A968C; opacity: .55; }
+    .f71-title {
+      flex: 1; text-align: center; margin-right: 76px;
+      font: 400 28px/1 "JetBrains Mono", monospace; color: #9A968C; letter-spacing: .04em;
+    }
+    .f71-hide { opacity: 0; }
+
+    /* scene 1: flow strip */
+    #f71-web { left: 60px; top: 190px; width: 540px; height: 440px; }
+    #f71-out { left: 1160px; top: 190px; width: 540px; height: 440px; }
+    #f71-out .f71-prompt {
+      position: absolute; left: 36px; top: 88px; font: 400 32px/1 "JetBrains Mono", monospace; color: #8FB8A8;
+    }
+    .f71-chip {
+      position: absolute; box-sizing: border-box; height: 80px; border-radius: 40px;
+      background: #1F1E1D; border: 1px solid rgba(240,238,230,.16);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 22px 0 32px;
+      font: 600 36px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap; opacity: 0;
+    }
+    #f71-chip1 { left: 110px; top: 330px; width: 400px; }
+    #f71-chip2 { left: 110px; top: 450px; width: 400px; }
+    .f71-tog { position: relative; width: 64px; height: 34px; border-radius: 17px; background: rgba(240,238,230,.14); }
+    .f71-knob { position: absolute; left: 4px; top: 4px; width: 26px; height: 26px; border-radius: 50%; background: #9A968C; }
+    .f71-tog-on { position: absolute; inset: 0; border-radius: 17px; background: #8FB8A8; opacity: 0; }
+    .f71-clone { justify-content: center; padding: 0; width: 220px; }
+    #f71-cl1 { left: 110px; top: 330px; }
+    #f71-cl2 { left: 110px; top: 450px; }
+    #f71-flow { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f71-flow path { fill: none; stroke: #D97757; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f71-sync {
+      position: absolute; left: 700px; top: 520px; width: 360px; text-align: center; opacity: 0;
+      font: 700 56px/1.12 "Lora", serif; white-space: nowrap;
+    }
+    #f71-sync-spark { position: absolute; left: 858px; top: 600px; width: 40px; height: 40px; opacity: 0; }
+
+    /* scene 2: real terminal */
+    #f71-term { left: 20px; top: 110px; width: 1000px; height: 560px; }
+    .f71-body { padding: 30px 40px; font-family: "JetBrains Mono", monospace; font-size: 30px; color: #F0EEE6; }
+    .f71-line { white-space: pre; height: 1.55em; line-height: 1.55; }
+    .f71-ps { color: #8FB8A8; }
+    .f71-ch { display: none; }
+    .f71-cur {
+      display: inline-block; width: 0.58em; height: 1.1em; margin-left: 2px;
+      vertical-align: -0.18em; background: #F0EEE6; opacity: .85;
+    }
+    .f71-help { display: grid; grid-template-columns: 300px auto; column-gap: 36px; }
+    .f71-desc { color: #9A968C; }
+    #f71-s2-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f71-s2-svg .f71-draw { fill: none; stroke: #D97757; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f71-tick { opacity: 0; }
+    #f71-tick path { fill: none; stroke: #8FB8A8; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    #f71-lab-spark { position: absolute; left: 1130px; top: 250px; width: 44px; height: 44px; opacity: 0; }
+    .f71-lab {
+      position: absolute; left: 1130px; white-space: nowrap;
+      font: 700 64px/1.12 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f71-lab1 { top: 316px; }
+    #f71-lab2 { top: 396px; }
+    .f71-w { display: inline-block; opacity: 0; margin-right: 18px; }
+
+    /* scene 3: hub */
+    #f71-hub-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f71-hub-svg .f71-spoke { fill: none; stroke: #8FB8A8; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f71-hub-svg .f71-ul { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f71-core {
+      left: 530px; top: 370px; width: 700px; height: 150px; border-radius: 75px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1.5px solid rgba(217,119,87,.7);
+    }
+    #f71-core-t { font: 700 64px/1.12 "Lora", serif; letter-spacing: -0.01em; white-space: nowrap; }
+    #f71-core-t .f71-w { margin-right: 16px; }
+    #f71-core-t .f71-w:last-child { margin-right: 0; }
+    #f71-core-spark { position: absolute; left: 858px; top: 290px; width: 44px; height: 44px; opacity: 0; }
+    .f71-node {
+      display: flex; align-items: center; justify-content: center; height: 104px;
+      font: 600 40px/1.2 "Be Vietnam Pro", sans-serif; white-space: nowrap;
+    }
+    #f71-n1 { left: 60px; top: 180px; width: 300px; }
+    #f71-n2 { left: 1400px; top: 580px; width: 300px; }
+    .f71-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 36px; }
+  </style>
+
+  <div id="root" data-composition-id="71-skill-theo-ban-xuong-terminal" data-width="1920" data-height="1080" data-duration="11.411">
+    <div id="f71-ground" class="clip" data-start="0" data-duration="11.411" data-track-index="0"></div>
+    <div id="f71-stage" class="clip" data-start="0" data-duration="11.411" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f71-rail">
+        <div id="f71-pill1" class="f71-pill"><span id="f71-b1" class="f71-badge">1</span>Tính năng<svg id="f71-ps1" class="f71-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f71-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f71-pill2" class="f71-pill"><span id="f71-b2" class="f71-badge">2</span>Vì sao nổi bật<svg id="f71-ps2" class="f71-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f71-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f71-pill3" class="f71-pill"><span id="f71-b3" class="f71-badge">3</span>Bạn được gì<svg id="f71-ps3" class="f71-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1 (0–4.85): claude.ai card -> sync stroke -> terminal outline -->
+      <div class="f71-scene" id="f71-s1">
+        <div class="f71-win" id="f71-web">
+          <div class="f71-bar"><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-title"><span class="f71-hide" id="f71-web-t">claude.ai</span></span></div>
+        </div>
+        <div class="f71-chip" id="f71-chip1"><span>skill</span><span class="f71-tog"><span class="f71-tog-on" id="f71-on1"></span><span class="f71-knob" id="f71-k1"></span></span></div>
+        <div class="f71-chip" id="f71-chip2"><span>plugin</span><span class="f71-tog"><span class="f71-tog-on" id="f71-on2"></span><span class="f71-knob" id="f71-k2"></span></span></div>
+
+        <div class="f71-win" id="f71-out">
+          <div class="f71-bar"><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-title">terminal</span></div>
+          <span class="f71-prompt">$</span>
+        </div>
+
+        <svg id="f71-flow" viewBox="0 0 1760 820"><path pathLength="1" d="M 618 420 C 760 300, 1000 318, 1142 420"/></svg>
+        <div id="f71-sync">đồng bộ</div>
+        <svg class="f71-spark" id="f71-sync-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+
+        <div class="f71-chip f71-clone" id="f71-cl1">skill</div>
+        <div class="f71-chip f71-clone" id="f71-cl2">plugin</div>
+      </div>
+
+      <!-- Scene 2 (4.85–8.46): real terminal left, label right -->
+      <div class="f71-scene" id="f71-s2">
+        <div class="f71-win" id="f71-term">
+          <div class="f71-bar"><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-dot"></span><span class="f71-title">terminal</span></div>
+          <div class="f71-body">
+            <div class="f71-line"><span class="f71-ps">$ </span><span id="f71-cmd1"></span><span class="f71-cur" id="f71-cur1"></span></div>
+            <div class="f71-line f71-hide" id="f71-v-out">2.1.282 (Claude Code)</div>
+            <div class="f71-line f71-hide" id="f71-p2"><span class="f71-ps">$ </span><span id="f71-cmd2"></span><span class="f71-cur" id="f71-cur2"></span></div>
+            <div class="f71-line f71-hide" id="f71-h0">Commands:</div>
+            <div class="f71-help">
+              <div class="f71-line f71-hide f71-h1">  auth</div><div class="f71-line f71-hide f71-h1 f71-desc">Manage authentication</div>
+              <div class="f71-line f71-hide f71-h2">  plugin|plugins</div><div class="f71-line f71-hide f71-h2 f71-desc">Manage Claude Code plugins</div>
+            </div>
+          </div>
+        </div>
+        <svg id="f71-s2-svg" viewBox="0 0 1760 820">
+          <path class="f71-draw" id="f71-callout" pathLength="1" d="M 70 386 C 260 380, 560 379, 812 385 C 826 396, 826 432, 810 440 C 560 446, 260 445, 64 439 C 50 428, 50 396, 76 383"/>
+          <path class="f71-draw" id="f71-conn" pathLength="1" d="M 826 410 C 930 404, 1010 388, 1112 382"/>
+          <g id="f71-tick"><path d="M 900 458 L 912 470 L 934 444"/></g>
+        </svg>
+        <svg class="f71-spark" id="f71-lab-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <div class="f71-lab" id="f71-lab1"><span class="f71-w" id="f71-lw1">đăng</span><span class="f71-w" id="f71-lw2">nhập</span></div>
+        <div class="f71-lab" id="f71-lab2"><span class="f71-w" id="f71-lw3">cùng</span><span class="f71-w" id="f71-lw4">tài</span><span class="f71-w" id="f71-lw5">khoản</span></div>
+      </div>
+
+      <!-- Scene 3 (8.46–10.91): hub -->
+      <div class="f71-scene" id="f71-s3">
+        <svg id="f71-hub-svg" viewBox="0 0 1760 820">
+          <path class="f71-spoke" id="f71-sp1" pathLength="1" d="M 560 410 C 470 360, 420 300, 364 236"/>
+          <path class="f71-spoke" id="f71-sp2" pathLength="1" d="M 1200 482 C 1290 530, 1340 590, 1396 634"/>
+          <path class="f71-ul" id="f71-core-ul" pathLength="1" d="M 640 548 C 760 540, 900 556, 1010 544 S 1100 540, 1120 546"/>
+        </svg>
+        <div class="f71-win" id="f71-core"><div id="f71-core-t"><span class="f71-w" id="f71-cw1">một</span><span class="f71-w" id="f71-cw2">lần</span><span class="f71-w" id="f71-cw3">thiết</span><span class="f71-w" id="f71-cw4">lập</span></div></div>
+        <svg class="f71-spark" id="f71-core-spark" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        <div class="f71-win f71-node" id="f71-n1">claude.ai</div>
+        <div class="f71-win f71-node f71-mono" id="f71-n2">terminal</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="71-skill-theo-ban-xuong-terminal"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+
+      // typed-command characters (hidden until typed)
+      function chars(el, text) {
+        var out = [];
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement("span");
+          s.className = "f71-ch";
+          s.textContent = text[i];
+          el.appendChild(s);
+          out.push(s);
+        }
+        return out;
+      }
+      var cmd1 = chars(q("#f71-cmd1"), "claude --version");
+      var cmd2 = chars(q("#f71-cmd2"), "claude --help");
+
+      // chip clones glide along an arc that follows the sync stroke (seek-safe keyframes)
+      function arc(dx, h) {
+        var kf = [];
+        for (var k = 1; k <= 12; k++) {
+          var t = k / 12;
+          kf.push({ x: dx * t, y: -4 * h * t * (1 - t), duration: 0.07 });
+        }
+        return kf;
+      }
+
+      // initial states (before the timeline)
+      gsap.set([q("#f71-cl1"), q("#f71-cl2")], { x: 0, y: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: slots 1 and 3 light on their cues (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f71-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f71-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f71-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 2.4);
+      lightRail(3, 7.6);
+
+      // ---- Scene 1 (0–4.85): flow strip ----
+      var s1 = q("#f71-s1");
+      tl.fromTo(q("#f71-web"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.05);
+      tl.fromTo(q("#f71-chip1"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.39);  // "Skill"
+      tl.fromTo(q("#f71-chip2"), { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 0.89);  // "plugin"
+      // "bật" 1.54: toggles switch on
+      tl.fromTo([q("#f71-k1"), q("#f71-k2")], { x: 0, backgroundColor: "#9A968C" }, { x: 30, backgroundColor: "#1F1E1D", duration: 0.25, ease: "power2.inOut" }, 1.54);
+      tl.fromTo([q("#f71-on1"), q("#f71-on2")], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.inOut" }, 1.54);
+      tl.fromTo(q("#f71-web-t"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 1.94);             // "claude.ai"
+      // "đồng bộ" 3.02: stroke draws, clones glide, label appears
+      tl.fromTo(q("#f71-flow path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 3.02);
+      tl.fromTo(q("#f71-sync"), { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.02);
+      tl.fromTo(q("#f71-sync-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 3.18);
+      tl.fromTo(q("#f71-cl1"), { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 3.02);
+      tl.to(q("#f71-cl1"), { keyframes: arc(1100, 110), ease: "none" }, 3.05);
+      tl.fromTo(q("#f71-cl2"), { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "none" }, 3.18);
+      tl.to(q("#f71-cl2"), { keyframes: arc(1100, 80), ease: "none" }, 3.21);
+      // "terminal" 3.56: outline window appears
+      tl.fromTo(q("#f71-out"), { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 3.56);
+      // clones land -> connected (sage)
+      tl.fromTo(q("#f71-cl1"), { borderColor: "rgba(240,238,230,0.16)" }, { borderColor: "#8FB8A8", duration: 0.25, ease: "power2.out" }, 3.89);
+      tl.fromTo(q("#f71-cl2"), { borderColor: "rgba(240,238,230,0.16)" }, { borderColor: "#8FB8A8", duration: 0.25, ease: "power2.out" }, 4.05);
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.015, duration: 4.0, ease: "none" }, 0.5);
+      tl.to(s1, { opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.in" }, 4.55);
+
+      // ---- Scene 2 (4.85–8.46): real terminal + callout ----
+      var s2 = q("#f71-s2");
+      tl.fromTo(q("#f71-term"), { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.85);
+      cmd1.forEach(function (c, i) { tl.set(c, { display: "inline" }, 4.9 + i * (0.3 / cmd1.length)); });
+      tl.set(q("#f71-cur1"), { display: "none" }, 5.2);
+      tl.fromTo(q("#f71-v-out"), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, 5.2);
+      tl.fromTo(q("#f71-p2"), { opacity: 0 }, { opacity: 1, duration: 0.05, ease: "none" }, 5.28);
+      cmd2.forEach(function (c, i) { tl.set(c, { display: "inline" }, 5.3 + i * (0.26 / cmd2.length)); });
+      tl.set(q("#f71-cur2"), { display: "none" }, 5.58);
+      tl.fromTo(q("#f71-h0"), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, 5.58);
+      tl.fromTo(qa("#f71-term .f71-h1"), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, 5.7);
+      tl.fromTo(qa("#f71-term .f71-h2"), { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.12, ease: "power2.out" }, 5.82);
+      // label words on their spoken cues
+      tl.fromTo(q("#f71-lab-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 4.85);
+      [["#f71-lw1", 4.85], ["#f71-lw2", 5.03], ["#f71-lw3", 5.25], ["#f71-lw4", 5.45], ["#f71-lw5", 5.63]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, w[1]);
+      });
+      // callout around the "auth" line, then the connector to the label
+      tl.fromTo(q("#f71-callout"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.85);
+      tl.fromTo(q("#f71-conn"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.35);
+      // "Claude Code" 6.15: plugins line marked ready (sage tick)
+      tl.fromTo(q("#f71-tick"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out", transformOrigin: "50% 50%" }, 6.58);
+      tl.fromTo(s2, { scale: 1 }, { scale: 1.02, duration: 1.4, ease: "none" }, 6.7);
+      tl.to(s2, { opacity: 0, scale: 0.95, duration: 0.28, ease: "power2.in" }, 8.16);
+
+      // ---- Scene 3 (8.46–10.91): hub ----
+      tl.fromTo(q("#f71-core"), { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 8.46);
+      [["#f71-cw1", 8.46], ["#f71-cw2", 8.66], ["#f71-cw3", 8.82], ["#f71-cw4", 8.97]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f71-core-spark"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 8.97);
+      tl.fromTo(q("#f71-sp1"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 9.1);
+      tl.fromTo(q("#f71-sp2"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 9.2);
+      tl.fromTo(q("#f71-n1"), { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 9.37);  // "dùng"
+      tl.fromTo(q("#f71-n2"), { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 9.5);
+      tl.fromTo(q("#f71-core-ul"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 9.73);   // "mọi nơi"
+      tl.fromTo(q("#f71-s3"), { scale: 1 }, { scale: 1.015, duration: 0.8, ease: "none" }, 10.1); // quiet hold drift
+
+      tl.to({}, { duration: 10.911 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["71-skill-theo-ban-xuong-terminal"] = tl;
+    })();
+  </script>
+</template>

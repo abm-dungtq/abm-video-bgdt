@@ -1,0 +1,359 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f20-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(254, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f20-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f20- */
+    .f20-mono { font-family: "JetBrains Mono", monospace; font-weight: 400; }
+
+    /* dual side glows (dimmed ambient, one identity per side) */
+    .f20-glow {
+      position: absolute;
+      top: 60px;
+      width: 820px;
+      height: 700px;
+      border-radius: 50%;
+      opacity: 0;
+    }
+    #f20-glow-l { left: 60px; background: radial-gradient(closest-side, rgba(255, 210, 63, 0.16), transparent); }
+    #f20-glow-r { left: 880px; background: radial-gradient(closest-side, rgba(62, 230, 208, 0.15), transparent); }
+
+    /* title kicker, slides down from above */
+    #f20-title {
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 1760px;
+      text-align: center;
+      font-size: 30px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f20-title b { color: var(--gold); font-weight: 400; margin-right: 16px; }
+
+    /* split: one shared perspective parent */
+    #f20-split {
+      position: absolute;
+      inset: 0;
+      perspective: 1800px;
+      transform-style: preserve-3d;
+    }
+    .f20-wing {
+      position: absolute;
+      top: 130px;
+      width: 700px;
+      height: 600px;
+      transform-style: preserve-3d;
+      opacity: 0;
+    }
+    #f20-wing-l { left: 120px; }
+    #f20-wing-r { left: 940px; }
+    .f20-card {
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      padding: 40px 44px;
+      background: var(--surface);
+      border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 18px;
+      transform-style: preserve-3d;
+    }
+    /* shadow falls outward with the tilt */
+    #f20-card-l { box-shadow: 26px 30px 70px rgba(0, 0, 0, 0.45); }
+    #f20-card-r { box-shadow: -26px 30px 70px rgba(0, 0, 0, 0.45); }
+
+    /* placeholder slot for the right drawer (static, opacity only) */
+    #f20-slot {
+      position: absolute;
+      left: 940px;
+      top: 130px;
+      width: 700px;
+      height: 600px;
+      transform-style: preserve-3d;
+      opacity: 0;
+    }
+    #f20-slot-box {
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      border: 2px dashed rgba(142, 147, 181, 0.45);
+      border-radius: 18px;
+      transform: rotateY(-14deg);
+    }
+
+    .f20-kicker {
+      position: absolute;
+      left: 44px;
+      top: 38px;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f20-kicker b { color: var(--gold); font-weight: 400; margin-right: 12px; }
+    .f20-fname {
+      position: absolute;
+      left: 44px;
+      top: 78px;
+      font-size: 56px;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f20-ch { opacity: 0; }
+    #f20-trail {
+      position: absolute;
+      left: 44px;
+      top: 152px;
+      width: 390px;
+      height: 14px;
+      overflow: visible;
+    }
+
+    /* the drawer cabinet */
+    .f20-cab {
+      position: absolute;
+      left: 44px;
+      top: 186px;
+      width: 612px;
+      height: 370px;
+      box-sizing: border-box;
+      border-radius: 14px;
+      background: #0d1330;
+      border: 1px solid rgba(244, 241, 232, 0.1);
+      overflow: hidden;
+    }
+    .f20-front {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 610px;
+      height: 368px;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #1c2550, #161e44);
+      border-top: 1px solid rgba(244, 241, 232, 0.14);
+    }
+    .f20-handle {
+      position: absolute;
+      left: 225px;
+      bottom: 34px;
+      width: 160px;
+      height: 16px;
+      border-radius: 8px;
+      background: rgba(142, 147, 181, 0.55);
+    }
+    #f20-plate {
+      position: absolute;
+      left: 0;
+      top: 36px;
+      width: 610px;
+      text-align: center;
+      font-size: 30px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #f20-plate .f20-key { color: var(--ink); }
+    #f20-lock {
+      position: absolute;
+      left: 250px;
+      top: 104px;
+      width: 110px;
+      height: 140px;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.55));
+    }
+    #f20-flash {
+      position: absolute;
+      left: 225px;
+      top: 124px;
+      width: 160px;
+      height: 160px;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 4px solid var(--gold);
+      opacity: 0;
+    }
+
+    /* config lines */
+    .f20-line {
+      position: absolute;
+      left: 34px;
+      font-size: 28px;
+      line-height: 1.55;
+      white-space: nowrap;
+      color: var(--ink);
+      opacity: 0;
+    }
+    .f20-line .f20-k { color: var(--cyan); }
+    .f20-line .f20-v { color: var(--muted); }
+    #f20-line1 { top: 36px; }
+    #f20-line2 { top: 110px; }
+    #f20-line3 { top: 184px; }
+
+    /* inner-edge pill badges (on the parent, not inside the tilted cards) */
+    .f20-badge {
+      position: absolute;
+      top: 94px;
+      width: 190px;
+      height: 64px;
+      box-sizing: border-box;
+      border-radius: 32px;
+      background: var(--surface);
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 58px;
+      text-align: center;
+      opacity: 0;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+    #f20-badge-l { left: 660px; color: var(--gold); border: 3px solid var(--gold); }
+    #f20-badge-r { left: 910px; color: var(--cyan); border: 3px solid var(--cyan); }
+  </style>
+
+  <div id="root" data-composition-id="20-khoa-bi-mat-va-cai-dat" data-width="1920" data-height="1080" data-duration="8.329">
+    <div id="f20-ground" class="clip" data-start="0" data-duration="8.329" data-track-index="0"></div>
+    <div id="f20-stage" class="clip" data-start="0" data-duration="8.329" data-track-index="1">
+      <div id="f20-glow-l" class="f20-glow"></div>
+      <div id="f20-glow-r" class="f20-glow"></div>
+
+      <div id="f20-title" class="f20-mono"><b>◆</b>~/.hermes/</div>
+
+      <div id="f20-split">
+        <div id="f20-slot"><div id="f20-slot-box"></div></div>
+
+        <!-- left drawer: .env, locked -->
+        <div id="f20-wing-l" class="f20-wing">
+          <div id="f20-card-l" class="f20-card">
+            <div id="f20-kick-l" class="f20-kicker f20-mono"><b>◆</b>Khóa API</div>
+            <div id="f20-fname-l" class="f20-fname f20-mono"><span class="f20-ch f20-chl">.</span><span class="f20-ch f20-chl">e</span><span class="f20-ch f20-chl">n</span><span class="f20-ch f20-chl">v</span></div>
+            <div class="f20-cab">
+              <div id="f20-front-l" class="f20-front">
+                <div id="f20-plate" class="f20-mono"><span id="f20-key" class="f20-key" style="opacity:0">API_KEY=</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span><span class="f20-dot">•</span></div>
+                <div id="f20-flash"></div>
+                <svg id="f20-lock" viewBox="0 0 110 140">
+                  <g id="f20-shackle">
+                    <path d="M28 70 V44 a27 27 0 0 1 54 0 V70" fill="none" stroke="#FFD23F" stroke-width="12" stroke-linecap="round"></path>
+                  </g>
+                  <rect x="10" y="64" width="90" height="72" rx="14" fill="#FFD23F"></rect>
+                  <circle cx="55" cy="94" r="9" fill="#0B1026"></circle>
+                  <rect x="51" y="98" width="8" height="20" rx="3" fill="#0B1026"></rect>
+                </svg>
+                <div class="f20-handle"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- right drawer: config.yaml, opens -->
+        <div id="f20-wing-r" class="f20-wing">
+          <div id="f20-card-r" class="f20-card">
+            <div id="f20-kick-r" class="f20-kicker f20-mono"><b>◆</b>Thông thường</div>
+            <div id="f20-fname-r" class="f20-fname f20-mono"><span class="f20-ch f20-chr">c</span><span class="f20-ch f20-chr">o</span><span class="f20-ch f20-chr">n</span><span class="f20-ch f20-chr">f</span><span class="f20-ch f20-chr">i</span><span class="f20-ch f20-chr">g</span><span class="f20-ch f20-chr">.</span><span class="f20-ch f20-chr">y</span><span class="f20-ch f20-chr">a</span><span class="f20-ch f20-chr">m</span><span class="f20-ch f20-chr">l</span></div>
+            <svg id="f20-trail" viewBox="0 0 390 14">
+              <path id="f20-trail-path" d="M2 7 L388 7" fill="none" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="390" stroke-dashoffset="390"></path>
+            </svg>
+            <div class="f20-cab">
+              <div id="f20-line1" class="f20-line f20-mono"><span class="f20-k">model.provider:</span> <span class="f20-v">auto</span></div>
+              <div id="f20-line2" class="f20-line f20-mono"><span class="f20-k">agent.reasoning_effort:</span> <span class="f20-v">medium</span></div>
+              <div id="f20-line3" class="f20-line f20-mono"><span class="f20-k">terminal.backend:</span> <span class="f20-v">docker</span></div>
+              <div id="f20-front-r" class="f20-front"><div class="f20-handle"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="f20-badge-l" class="f20-badge">bí mật</div>
+      <div id="f20-badge-r" class="f20-badge">cài đặt</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      gsap.set(".f20-dot", { opacity: 0 });
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–4.42s): title settles, left drawer tilts in, padlock snaps shut
+      tl.fromTo("#f20-title", { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.3);
+      tl.fromTo("#f20-slot", { opacity: 0 }, { opacity: 0.6, duration: 0.6, ease: "power2.out" }, 0.35);
+      tl.fromTo("#f20-glow-l", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.out" }, 0.63);
+      tl.fromTo("#f20-wing-l",
+        { x: -110, rotateY: 24, scale: 0.85, opacity: 0 },
+        { x: 0, rotateY: 14, scale: 1, opacity: 1, duration: 0.9, ease: "power3.out" }, 0.4);
+      // "mật" — the drawer slides shut
+      tl.fromTo("#f20-front-l", { y: 150 }, { y: 0, duration: 0.5, ease: "power2.inOut" }, 0.79);
+      // "khóa API"
+      tl.fromTo("#f20-kick-l", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 1.45);
+      tl.fromTo("#f20-key", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 1.87);
+      gsap.utils.toArray(".f20-dot").forEach(function (d, i) {
+        tl.set(d, { opacity: 1 }, 2.0 + i * 0.06);
+      });
+      // "lưu riêng" — padlock arrives open
+      tl.fromTo("#f20-lock", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "power3.out" }, 2.95);
+      tl.fromTo("#f20-shackle", { y: -22 }, { y: 0, duration: 0.2, ease: "power3.in" }, 3.6);
+      // "env" — shut, flash, filename types on
+      tl.fromTo("#f20-flash", { scale: 0.5, opacity: 0.9 }, { scale: 1.5, opacity: 0, duration: 0.6, ease: "power2.out" }, 3.8);
+      gsap.utils.toArray(".f20-chl").forEach(function (c, i) {
+        tl.set(c, { opacity: 1 }, 3.78 + i * 0.05);
+      });
+      // left idle drift (counter-phase with the right)
+      tl.fromTo("#f20-card-l", { y: 0 }, { y: -6, duration: 6.4, ease: "sine.inOut" }, 1.4);
+
+      // Scene 2 (4.42–7.83s): right drawer tilts in and slides open, badges pop
+      tl.to("#f20-slot", { opacity: 0, duration: 0.4, ease: "power2.out" }, 4.8);
+      tl.fromTo("#f20-glow-r", { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "power2.out" }, 4.85);
+      tl.fromTo("#f20-wing-r",
+        { x: 110, rotateY: -24, scale: 0.85, opacity: 0 },
+        { x: 0, rotateY: -14, scale: 1, opacity: 1, duration: 0.9, ease: "power3.out" }, 4.85);
+      tl.fromTo("#f20-kick-r", { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 5.18);
+      tl.fromTo("#f20-front-r", { y: 0 }, { y: 282, duration: 0.7, ease: "power2.inOut" }, 5.34);
+      tl.fromTo("#f20-line1", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 5.6);
+      tl.fromTo("#f20-line2", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 5.8);
+      tl.fromTo("#f20-line3", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 6.0);
+      tl.fromTo("#f20-card-r", { y: 0 }, { y: 6, duration: 2.0, ease: "sine.inOut" }, 5.8);
+      // "config" — filename types on, gold trail underlines it
+      gsap.utils.toArray(".f20-chr").forEach(function (c, i) {
+        tl.set(c, { opacity: 1 }, 6.647 + i * 0.03);
+      });
+      tl.fromTo("#f20-trail-path", { strokeDashoffset: 390 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 6.65);
+      // inner-edge badges
+      tl.fromTo("#f20-badge-l", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 6.95);
+      tl.fromTo("#f20-badge-r", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "power3.out" }, 7.2);
+
+      tl.to({}, { duration: 7.829 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["20-khoa-bi-mat-va-cai-dat"] = tl;
+    })();
+  </script>
+</template>

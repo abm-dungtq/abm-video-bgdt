@@ -1,0 +1,265 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f30-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f30-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f30- */
+    .f30-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    #f30-world { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f30-card {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f30-bar { position: absolute; height: 14px; border-radius: 7px; background: rgba(240,238,230,.13); }
+    .f30-rule { position: absolute; left: 70px; right: 40px; height: 1px; background: rgba(240,238,230,.06); }
+    .f30-margin { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(154,150,140,.22); }
+    .f30-hole { position: absolute; left: 22px; width: 18px; height: 18px; border-radius: 50%; background: var(--canvas); border: 1px solid rgba(240,238,230,.10); }
+    .f30-tag {
+      position: absolute;
+      padding: 6px 22px 8px;
+      border-radius: 28px;
+      font-weight: 600;
+      font-size: 32px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .f30-scrib path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* scene 1 */
+    #f30-nb1 { left: 60px; top: 80px; width: 960px; height: 660px; }
+    #f30-tag-nolu { left: 650px; top: 305px; color: var(--muted); border: 2px solid rgba(154,150,140,.55); opacity: 0; }
+    #f30-scrib1 { position: absolute; left: 96px; top: 300px; width: 530px; height: 60px; }
+    #f30-lock { position: absolute; left: 1220px; top: 150px; width: 240px; height: 300px; }
+    #f30-tag-nhay {
+      left: 1236px; top: 500px;
+      color: var(--gold); border: 2px solid var(--gold);
+      font-size: 38px;
+      opacity: 0;
+    }
+
+    /* scene 2 */
+    #f30-s2, #f30-s3 { opacity: 0; }
+    #f30-left { left: 40px; top: 140px; width: 800px; height: 580px; }
+    #f30-right { left: 920px; top: 140px; width: 800px; height: 580px; }
+    .f30-kicker {
+      position: absolute;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #f30-kick-md { left: 70px; top: 56px; }
+    #f30-scrib2 { position: absolute; left: 70px; top: 262px; width: 520px; height: 60px; }
+    #f30-strike { position: absolute; left: 50px; top: 262px; width: 580px; height: 60px; overflow: visible; }
+    #f30-toggle {
+      position: absolute; left: 70px; top: 52px; width: 128px; height: 64px;
+      border-radius: 32px; border: 3px solid var(--ink); box-sizing: border-box;
+    }
+    #f30-toggle-fill { position: absolute; inset: 0; border-radius: 32px; background: rgba(143,184,168,.28); opacity: 0; }
+    #f30-knob {
+      position: absolute; left: 7px; top: 7px; width: 44px; height: 44px; border-radius: 50%;
+      background: var(--ink);
+    }
+    #f30-lbl-bat { left: 222px; top: 54px; padding: 0; font-size: 40px; color: var(--cyan); opacity: 0; }
+    #f30-scrib3 { position: absolute; left: 70px; top: 382px; width: 460px; height: 60px; }
+    #f30-tag-ghi { left: 548px; top: 385px; color: var(--cyan); border: 2px solid var(--cyan); opacity: 0; }
+
+    /* scene 3 */
+    #f30-lock3 { position: absolute; left: 820px; top: 130px; width: 120px; height: 150px; opacity: 0; }
+    #f30-kicker3 { position: absolute; left: 0; width: 1760px; top: 318px; text-align: center; opacity: 0; }
+    #f30-word { position: absolute; left: 0; width: 1760px; top: 380px; text-align: center; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 168px; line-height: 1.12; letter-spacing: -0.01em; }
+    .f30-w { display: inline-block; opacity: 0; }
+    #f30-spark3 { position: absolute; left: 1196px; top: 368px; width: 56px; height: 56px; opacity: 0; }
+    #f30-uline { position: absolute; left: 600px; top: 596px; width: 560px; height: 40px; overflow: visible; }
+    #f30-uline path { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; }
+  </style>
+
+  <div id="root" data-composition-id="30-nho-co-chon-loc" data-width="1920" data-height="1080" data-duration="11.314">
+    <div id="f30-ground" class="clip" data-start="0" data-duration="11.314" data-track-index="0"></div>
+    <div id="f30-stage" class="clip" data-start="0" data-duration="11.314" data-track-index="1">
+
+      <!-- Scene 1: close-up on a notebook line, one zoom-out reveals the lock -->
+      <div id="f30-s1" class="f30-layer">
+        <div id="f30-world">
+          <div id="f30-nb1" class="f30-card">
+            <div class="f30-margin" style="left:70px"></div>
+            <div class="f30-hole" style="top:90px"></div>
+            <div class="f30-hole" style="top:320px"></div>
+            <div class="f30-hole" style="top:550px"></div>
+            <div class="f30-rule" style="top:124px"></div>
+            <div class="f30-rule" style="top:224px"></div>
+            <div class="f30-rule" style="top:374px"></div>
+            <div class="f30-rule" style="top:474px"></div>
+            <div class="f30-rule" style="top:574px"></div>
+            <div class="f30-bar" style="left:100px; top:92px; width:420px"></div>
+            <div class="f30-bar" style="left:100px; top:192px; width:620px"></div>
+            <div class="f30-bar" style="left:100px; top:442px; width:540px"></div>
+            <div class="f30-bar" style="left:100px; top:542px; width:360px"></div>
+            <svg id="f30-scrib1" class="f30-scrib" viewBox="0 0 530 60" aria-hidden="true">
+              <path id="f30-scrib1-p" pathLength="1" stroke="#F0EEE6" stroke-width="5"
+                d="M6 36 C 30 14, 44 50, 66 30 S 104 18, 120 36 C 138 52, 150 16, 176 28 S 214 46, 236 30 C 256 14, 272 48, 300 34 S 340 20, 362 36 C 384 50, 400 18, 428 30 S 470 44, 492 28 L 522 32"/>
+            </svg>
+            <div id="f30-tag-nolu" class="f30-tag">không lưu</div>
+          </div>
+
+          <svg id="f30-lock" viewBox="0 0 240 300" aria-hidden="true">
+            <g id="f30-shackle">
+              <path d="M62 150 V92 A58 58 0 0 1 178 92 V150" fill="none" stroke="#F0EEE6" stroke-width="12" stroke-linecap="round"/>
+            </g>
+            <rect x="22" y="140" width="196" height="148" rx="24" fill="#2A2926" stroke="#F0EEE6" stroke-width="7"/>
+            <circle cx="120" cy="200" r="16" fill="none" stroke="#F0EEE6" stroke-width="6"/>
+            <path d="M120 216 V246" stroke="#F0EEE6" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+          <div id="f30-tag-nhay" class="f30-tag">nhạy cảm</div>
+        </div>
+      </div>
+
+      <!-- Scene 2: split — default vs switched on -->
+      <div id="f30-s2" class="f30-layer">
+        <div id="f30-left" class="f30-card">
+          <div id="f30-kick-md" class="f30-kicker">Mặc định</div>
+          <div class="f30-rule" style="top:150px"></div>
+          <div class="f30-bar" style="left:70px; top:196px; width:420px"></div>
+          <svg id="f30-scrib2" class="f30-scrib" viewBox="0 0 520 60" aria-hidden="true">
+            <path pathLength="1" stroke="rgba(240,238,230,.55)" stroke-width="5"
+              d="M6 36 C 30 14, 44 50, 66 30 S 104 18, 120 36 C 138 52, 150 16, 176 28 S 214 46, 236 30 C 256 14, 272 48, 300 34 S 340 20, 362 36 C 384 50, 400 18, 428 30 S 470 44, 512 30"/>
+          </svg>
+          <svg id="f30-strike" viewBox="0 0 580 60" aria-hidden="true">
+            <path id="f30-strike-p" pathLength="1" fill="none" stroke="#D97757" stroke-width="6" stroke-linecap="round"
+              d="M6 36 C 120 26, 230 38, 330 30 S 500 24, 574 28"/>
+          </svg>
+          <div class="f30-bar" style="left:70px; top:376px; width:560px"></div>
+          <div class="f30-bar" style="left:70px; top:466px; width:300px"></div>
+        </div>
+
+        <div id="f30-right" class="f30-card">
+          <div id="f30-toggle">
+            <div id="f30-toggle-fill"></div>
+            <div id="f30-knob"></div>
+          </div>
+          <div id="f30-lbl-bat" class="f30-tag">bật lên</div>
+          <div class="f30-rule" style="top:150px"></div>
+          <div class="f30-bar" style="left:70px; top:196px; width:500px"></div>
+          <div class="f30-bar" style="left:70px; top:286px; width:380px"></div>
+          <svg id="f30-scrib3" class="f30-scrib" viewBox="0 0 460 60" aria-hidden="true">
+            <path id="f30-scrib3-p" pathLength="1" stroke="#8FB8A8" stroke-width="5"
+              d="M6 36 C 30 14, 44 50, 66 30 S 104 18, 120 36 C 138 52, 150 16, 176 28 S 214 46, 236 30 C 256 14, 272 48, 300 34 S 340 20, 362 36 C 384 50, 400 18, 452 30"/>
+          </svg>
+          <div id="f30-tag-ghi" class="f30-tag">ghi nhớ</div>
+        </div>
+      </div>
+
+      <!-- Scene 3: kinetic payoff -->
+      <div id="f30-s3" class="f30-layer">
+        <svg id="f30-lock3" viewBox="0 0 240 300" aria-hidden="true">
+          <path d="M62 150 V92 A58 58 0 0 1 178 92 V150" fill="none" stroke="#F0EEE6" stroke-width="14" stroke-linecap="round"/>
+          <rect x="22" y="140" width="196" height="148" rx="24" fill="#2A2926" stroke="#F0EEE6" stroke-width="9"/>
+          <circle cx="120" cy="200" r="16" fill="none" stroke="#F0EEE6" stroke-width="8"/>
+          <path d="M120 216 V246" stroke="#F0EEE6" stroke-width="8" stroke-linecap="round"/>
+        </svg>
+        <div id="f30-kicker3" class="f30-kicker">Riêng tư</div>
+        <div id="f30-word"><span id="f30-w1" class="f30-w">kín</span> <span id="f30-w2" class="f30-w">đáo</span></div>
+        <svg id="f30-spark3" viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/>
+        </svg>
+        <svg id="f30-uline" viewBox="0 0 560 40" preserveAspectRatio="none" aria-hidden="true">
+          <path id="f30-uline-p" pathLength="1" d="M6 24 C 90 14, 180 30, 280 20 C 370 12, 460 26, 554 16"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // camera: start tight on the notebook line (stage point 545,410), zoom out to the wide
+      var S0 = 2.1, CX = 545, CY = 410;
+      gsap.set("#f30-world", { transformOrigin: "0 0", scale: S0, x: 880 - S0 * CX, y: 410 - S0 * CY });
+      gsap.set("#f30-shackle", { y: -44 });
+      gsap.set(["#f30-scrib1-p", "#f30-strike-p", "#f30-scrib3-p", "#f30-uline-p"], { strokeDasharray: 1, strokeDashoffset: 1 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // Scene 1 (0–4.49): close-up micro-action — the line is written
+      tl.to("#f30-scrib1-p", { strokeDashoffset: 0, duration: 1.1, ease: "none" }, 0.2);
+      // "không lưu" 1.52
+      tl.fromTo("#f30-tag-nolu", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 1.52);
+      // one decelerating zoom-out reveals the lock beside the notebook
+      tl.to("#f30-world", { scale: 1, x: 0, y: 0, duration: 1.15, ease: "expo.out" }, 1.66);
+      // "nhạy cảm" 2.30: lock closes, terracotta tag lands
+      tl.to("#f30-shackle", { y: 0, duration: 0.22, ease: "power2.in" }, 2.3);
+      tl.fromTo("#f30-tag-nhay", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 2.3);
+      tl.fromTo("#f30-lock", { scale: 1 }, { scale: 1.04, duration: 0.3, ease: "power2.out", transformOrigin: "50% 60%", immediateRender: false }, 2.52);
+
+      // Scene 2 (4.49–8.54): split — swap by zoom-through
+      tl.to("#f30-s1", { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in", transformOrigin: "50% 50%" }, 4.24);
+      tl.fromTo("#f30-s2", { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out", transformOrigin: "50% 50%", immediateRender: false }, 4.49);
+      tl.fromTo("#f30-left", { x: -40 }, { x: 0, duration: 0.6, ease: "power3.out", immediateRender: false }, 4.49);
+      tl.fromTo("#f30-right", { x: 40 }, { x: 0, duration: 0.6, ease: "power3.out", immediateRender: false }, 4.49);
+      tl.to("#f30-strike-p", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 4.75);
+      // "lên" 4.65: toggle flips to sage
+      tl.to("#f30-knob", { x: 64, duration: 0.3, ease: "power3.out" }, 4.65);
+      tl.to("#f30-toggle-fill", { opacity: 1, duration: 0.3, ease: "power2.out" }, 4.65);
+      tl.set("#f30-toggle", { borderColor: "#8FB8A8" }, 4.65);
+      tl.set("#f30-knob", { backgroundColor: "#8FB8A8" }, 4.65);
+      tl.fromTo("#f30-lbl-bat", { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 4.65);
+      // "ghi nhớ" 5.93–6.18: the notebook gains a new line
+      tl.to("#f30-scrib3-p", { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 5.93);
+      tl.fromTo("#f30-tag-ghi", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 6.06);
+
+      // Scene 3 (8.54–10.81): kinetic payoff, centered
+      tl.to("#f30-s2", { opacity: 0, duration: 0.2, ease: "power2.in" }, 8.3);
+      tl.set("#f30-s3", { opacity: 1 }, 8.44);
+      // "riêng tư" 8.44
+      tl.fromTo("#f30-lock3", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out", transformOrigin: "50% 60%" }, 8.44);
+      tl.fromTo("#f30-kicker3", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.54);
+      // "kín" 9.53, "đáo" 9.69
+      tl.fromTo("#f30-w1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.53);
+      tl.fromTo("#f30-w2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.69);
+      tl.fromTo("#f30-spark3", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 9.69);
+      tl.to("#f30-uline-p", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 9.9);
+      tl.fromTo("#f30-word", { scale: 1 }, { scale: 1.015, duration: 0.8, ease: "none", transformOrigin: "50% 50%", immediateRender: false }, 10.0);
+
+      tl.to({}, { duration: 10.814 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["30-nho-co-chon-loc"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,290 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f57-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(40, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f57-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f57-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f57-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f57-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f57-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f57-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    /* content viewport: canvas y 140–880; clips the push-through inside the safe area */
+    #f57-view {
+      position: absolute; left: 0; top: 80px; width: 1760px; height: 740px; overflow: hidden;
+    }
+    .f57-scene { position: absolute; inset: 0; }
+    #f57-s1 { transform-origin: 880px 281px; }
+    #f57-s2 { transform-origin: 880px 340px; }
+
+    .f57-spark { display: block; overflow: visible; }
+    .f57-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* scene 1: date hero */
+    #f57-kicker {
+      position: absolute; left: 0; width: 1760px; top: 104px; opacity: 0;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: 0.14em; color: #9A968C;
+    }
+    #f57-kicker .f57-spark { width: 32px; height: 32px; }
+    #f57-date {
+      position: absolute; left: 0; width: 1760px; top: 160px; height: 242px;
+      display: flex; justify-content: center;
+      font: 700 220px/1.1 "Lora", serif; letter-spacing: -0.02em; color: #F0EEE6;
+    }
+    .f57-dcol { height: 1.1em; overflow: hidden; opacity: 0; }
+    .f57-strip { display: block; }
+    .f57-strip span { display: block; height: 1.1em; text-align: center; }
+    #f57-slash { opacity: 0; color: #9A968C; padding: 0 14px; font-size: 150px; line-height: 242px; }
+    #f57-year {
+      position: absolute; left: 0; width: 1760px; top: 414px; opacity: 0; text-align: center;
+      font: 400 36px/1 "JetBrains Mono", monospace; letter-spacing: 0.3em; color: #9A968C;
+    }
+    #f57-chips {
+      position: absolute; left: 0; width: 1760px; top: 500px;
+      display: flex; justify-content: center; gap: 36px;
+    }
+    .f57-chip {
+      box-sizing: border-box; height: 80px; padding: 0 36px; border-radius: 40px; opacity: 0;
+      display: flex; align-items: center; gap: 14px;
+      background: #2A2926; border: 1px solid rgba(240,238,230,.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      font: 600 40px/1 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    .f57-w { display: inline-block; opacity: 0; }
+    .f57-w.f57-dim { color: #9A968C; }
+
+    /* scene 2: two model cards */
+    .f57-card {
+      position: absolute; top: 40px; width: 760px; height: 610px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f57-cardL { left: 80px; }
+    #f57-cardR { left: 920px; }
+    .f57-ctitle {
+      position: absolute; left: 56px; top: 44px; white-space: nowrap;
+      font: 700 84px/1.1 "Lora", serif; letter-spacing: -0.01em; color: #F0EEE6;
+    }
+    .f57-cdot {
+      position: absolute; right: 56px; top: 78px; width: 22px; height: 22px; border-radius: 50%;
+    }
+    #f57-dotL { background: #8FB8A8; opacity: 0; }
+    #f57-dotR { background: transparent; border: 2px solid #9A968C; box-sizing: border-box; opacity: 0; }
+    .f57-art { position: absolute; left: 260px; top: 176px; width: 240px; height: 240px; overflow: visible; }
+    .f57-art path, .f57-art circle { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    #f57-ring { stroke: #8FB8A8; stroke-width: 7; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+    .f57-person { opacity: 0; }
+    .f57-person * { stroke: #F0EEE6; stroke-width: 4.5; }
+    .f57-lock { stroke: #9A968C; stroke-width: 5; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+    .f57-clabel {
+      position: absolute; left: 0; width: 760px; top: 446px; text-align: center; opacity: 0;
+      font: 600 52px/1.2 "Be Vietnam Pro", sans-serif; color: #F0EEE6; white-space: nowrap;
+    }
+    #f57-ul { position: absolute; left: 225px; top: 516px; width: 310px; height: 36px; overflow: visible; }
+    #f57-ul path { fill: none; stroke: #D97757; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="57-fable-5-va-mythos-5" data-width="1920" data-height="1080" data-duration="10.902">
+    <div id="f57-ground" class="clip" data-start="0" data-duration="10.902" data-track-index="0"></div>
+    <div id="f57-stage" class="clip" data-start="0" data-duration="10.902" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f57-rail">
+        <div id="f57-pill1" class="f57-pill"><span id="f57-b1" class="f57-badge">1</span>Tính năng<svg id="f57-ps1" class="f57-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f57-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f57-pill2" class="f57-pill"><span id="f57-b2" class="f57-badge">2</span>Vì sao nổi bật<svg id="f57-ps2" class="f57-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f57-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f57-pill3" class="f57-pill"><span id="f57-b3" class="f57-badge">3</span>Bạn được gì<svg id="f57-ps3" class="f57-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <div id="f57-view">
+        <!-- Scene 1: launch date rolls up, model chips pop under it -->
+        <div class="f57-scene" id="f57-s1">
+          <div id="f57-kicker"><svg class="f57-spark" id="f57-ksp" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg><span>ANTHROPIC</span></div>
+          <div id="f57-date">
+            <div class="f57-dcol" id="f57-d1"><span class="f57-strip"></span></div>
+            <div class="f57-dcol" id="f57-d2"><span class="f57-strip"></span></div>
+            <div id="f57-slash">/</div>
+            <div class="f57-dcol" id="f57-d3"><span class="f57-strip"></span></div>
+            <div class="f57-dcol" id="f57-d4"><span class="f57-strip"></span></div>
+          </div>
+          <div id="f57-year">2026</div>
+          <div id="f57-chips">
+            <div class="f57-chip" id="f57-chip1"><span class="f57-w f57-dim" id="f57-c1w1">Claude</span><span class="f57-w" id="f57-c1w2">Fable</span><span class="f57-w" id="f57-c1w3">5</span></div>
+            <div class="f57-chip" id="f57-chip2"><span class="f57-w" id="f57-c2w1">Mythos</span><span class="f57-w" id="f57-c2w2">5</span></div>
+          </div>
+        </div>
+
+        <!-- Scene 2: split — Fable 5 (open to everyone) | Mythos 5 (limited) -->
+        <div class="f57-scene" id="f57-s2">
+          <div class="f57-card" id="f57-cardL">
+            <div class="f57-ctitle">Fable 5</div>
+            <div class="f57-cdot" id="f57-dotL"></div>
+            <svg class="f57-art" viewBox="0 0 240 240">
+              <path id="f57-ring" pathLength="1" d="M158.9 36.6 A92 92 0 1 1 81.1 36.6"/>
+              <g class="f57-person" id="f57-pp1"><circle cx="70" cy="114" r="12"/><path d="M50 160 C52 141, 88 141, 90 160"/></g>
+              <g class="f57-person" id="f57-pp2"><circle cx="120" cy="100" r="14"/><path d="M99 152 C101 129, 139 129, 141 152"/></g>
+              <g class="f57-person" id="f57-pp3"><circle cx="170" cy="114" r="12"/><path d="M150 160 C152 141, 188 141, 190 160"/></g>
+            </svg>
+            <div class="f57-clabel" id="f57-labL">mọi người</div>
+          </div>
+          <div class="f57-card" id="f57-cardR">
+            <div class="f57-ctitle">Mythos 5</div>
+            <div class="f57-cdot" id="f57-dotR"></div>
+            <svg class="f57-art" viewBox="0 0 240 240">
+              <path class="f57-lock" id="f57-shackle" pathLength="1" d="M83 112 C81 98, 80 88, 82 78 C86 46, 156 44, 159 80 C161 90, 159 101, 160 112"/>
+              <path class="f57-lock" id="f57-body" pathLength="1" d="M62 114 C100 111, 140 113, 178 112 C181 140, 179 170, 180 197 C140 200, 100 198, 60 199 C61 170, 59 140, 62 114"/>
+              <path class="f57-lock" id="f57-hole" pathLength="1" d="M120 144 C129 144, 130 158, 121 159 C112 160, 111 145, 120 144 M120 159 C121 165, 119 171, 120 178"/>
+            </svg>
+            <div class="f57-clabel" id="f57-labR">giới hạn</div>
+            <svg id="f57-ul" viewBox="0 0 310 36"><path pathLength="1" d="M6 20 C 60 12, 120 26, 180 17 S 270 11, 304 19"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="57-fable-5-va-mythos-5"]');
+      var q = function (s) { return root.querySelector(s); };
+
+      // digit strips: 0–9 twice, so every column rolls a full turn before landing
+      var digits = [["#f57-d1", 0], ["#f57-d2", 9], ["#f57-d3", 0], ["#f57-d4", 6]];
+      digits.forEach(function (d) {
+        var strip = q(d[0] + " .f57-strip");
+        for (var i = 0; i < 20; i++) {
+          var s = document.createElement("span");
+          s.textContent = String(i % 10);
+          strip.appendChild(s);
+        }
+      });
+
+      gsap.set([q("#f57-ksp")], { scale: 0, transformOrigin: "50% 50%" });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: slot 1 lights on its cue ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f57-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f57-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f57-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 2.1);
+
+      // ---- Scene 1 (0–3.99): date count-up + chips ----
+      var s1 = q("#f57-s1");
+      tl.fromTo(s1, { scale: 1 }, { scale: 1.04, duration: 3.7, ease: "none" }, 0.3); // slow zoom-in under the roll
+      // "Ngày chín" -> 09 lands, "tháng sáu" -> 06 lands
+      var rollAt = [0.25, 0.30, 0.62, 0.66];
+      digits.forEach(function (d, i) {
+        var col = q(d[0]);
+        var start = rollAt[i];
+        var land = 0.45 + i * 0.16; // 0.45 / 0.61 / 0.77 / 0.93 — tracks "chín … sáu"
+        tl.fromTo(col, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, start);
+        tl.fromTo(col.querySelector(".f57-strip"),
+          { yPercent: 0 },
+          { yPercent: -((10 + d[1]) / 20) * 100, duration: land + 0.1 - start, ease: "power3.out" }, start);
+      });
+      tl.fromTo(q("#f57-slash"), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 0.61);
+      tl.fromTo(q("#f57-date"), { scale: 0.86 }, { scale: 1, duration: 0.9, ease: "power3.out" }, 0.25); // number grows as it counts
+      tl.fromTo(q("#f57-year"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.0);
+      // "Anthropic công bố"
+      tl.fromTo(q("#f57-kicker"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 1.5);
+      tl.fromTo(q("#f57-ksp"), { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 1.5);
+      // chips, word by word on the voice
+      tl.fromTo(q("#f57-chip1"), { opacity: 0, y: 26, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, 2.44);
+      tl.fromTo(q("#f57-c1w1"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 2.44);
+      tl.fromTo(q("#f57-c1w2"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.79);
+      tl.fromTo(q("#f57-c1w3"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 3.37);
+      tl.fromTo(q("#f57-chip2"), { opacity: 0, y: 26, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" }, 3.61);
+      tl.fromTo(q("#f57-c2w1"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 3.61);
+      tl.fromTo(q("#f57-c2w2"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, 3.99);
+
+      // push THROUGH the date into the split
+      tl.fromTo(s1, { scale: 1.04, opacity: 1 }, { scale: 5.5, opacity: 0, duration: 0.5, ease: "power2.in", immediateRender: false }, 4.0);
+
+      // ---- Scene 2 (3.99–10.4): split cards ----
+      tl.fromTo(q("#f57-cardL"), { opacity: 0, scale: 1.22, x: 90 }, { opacity: 1, scale: 1, x: 0, duration: 0.6, ease: "power3.out" }, 4.2);
+      tl.fromTo(q("#f57-cardR"), { opacity: 0, scale: 1.22, x: -90 }, { opacity: 1, scale: 1, x: 0, duration: 0.6, ease: "power3.out" }, 4.32);
+      // "Fable 5 dành cho mọi người": open ring draws, people + label land on "mọi người"
+      tl.fromTo(q("#f57-dotL"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 4.69);
+      tl.set(q("#f57-ring"), { opacity: 1 }, 4.69);
+      tl.fromTo(q("#f57-ring"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.93, ease: "none" }, 4.69);
+      ["#f57-pp1", "#f57-pp2", "#f57-pp3"].forEach(function (p, i) {
+        tl.fromTo(q(p), { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 5.62 + i * 0.07);
+      });
+      tl.fromTo(q("#f57-labL"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 5.62);
+      // "Mythos 5 được giới hạn": padlock draws, label + terracotta underline
+      tl.fromTo(q("#f57-dotR"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 6.64);
+      tl.set(q("#f57-body"), { opacity: 1 }, 6.64);
+      tl.fromTo(q("#f57-body"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 6.64);
+      tl.set(q("#f57-shackle"), { opacity: 1 }, 7.1);
+      tl.fromTo(q("#f57-shackle"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 7.1);
+      tl.set(q("#f57-hole"), { opacity: 1 }, 7.45);
+      tl.fromTo(q("#f57-hole"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 7.45);
+      tl.fromTo(q("#f57-labR"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.65);
+      tl.set(q("#f57-ul path"), { opacity: 1 }, 7.79);
+      tl.fromTo(q("#f57-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 7.79);
+
+      // hold: quiet 1 % drift
+      tl.fromTo(q("#f57-s2"), { scale: 1 }, { scale: 1.01, duration: 2.1, ease: "none", immediateRender: false }, 8.3);
+
+      tl.to({}, { duration: 10.402 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["57-fable-5-va-mythos-5"] = tl;
+    })();
+  </script>
+</template>

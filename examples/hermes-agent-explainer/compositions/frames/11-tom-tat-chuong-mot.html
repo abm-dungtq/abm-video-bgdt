@@ -1,0 +1,190 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f11-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(242, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f11-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f11- */
+    #f11-field {
+      position: absolute; inset: 0; opacity: .4;
+      background-image: radial-gradient(circle, rgba(142,147,181,.35) 1.5px, transparent 2px);
+      background-size: 44px 44px;
+    }
+    #f11-kicker {
+      position: absolute; left: 40px; top: 50px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    #f11-kicker b { color: var(--gold); font-weight: 400; margin-right: 14px; }
+    .f11-card {
+      position: absolute; top: 150px; width: 780px; height: 600px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.12);
+      border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    #f11-cardL { left: 40px; }
+    #f11-cardR { left: 940px; }
+    .f11-head {
+      position: absolute; left: 50px; top: 50px; height: 100px;
+      display: flex; align-items: center; gap: 28px;
+    }
+    .f11-ava {
+      width: 96px; height: 96px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #f11-avaL { background: rgba(62,230,208,.14); border: 2px solid var(--cyan); }
+    #f11-avaR { background: rgba(255,210,63,.12); border: 2px solid var(--gold); }
+    .f11-name { font-size: 64px; font-weight: 800; letter-spacing: -.015em; line-height: 1.1; }
+    .f11-arrow {
+      position: absolute; left: 50px; top: 190px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .f11-slot {
+      position: absolute; left: 50px; top: 250px; width: 680px; height: 180px;
+    }
+    .f11-ph {
+      position: absolute; inset: 0; border: 2px dashed rgba(142,147,181,.45); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 64px; font-weight: 800; color: var(--muted); line-height: 1.1;
+    }
+    .f11-word {
+      position: absolute; left: 0; top: 0; height: 180px; display: flex; align-items: center;
+      font-size: 96px; font-weight: 800; letter-spacing: -.02em; line-height: 1.05;
+      transform-origin: 0 50%; white-space: nowrap;
+    }
+    #f11-wordL { color: var(--ink); }
+    #f11-wordR { color: var(--gold); filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f11-trail { position: absolute; left: 50px; top: 460px; width: 680px; height: 60px; overflow: visible; }
+    #f11-spark { position: absolute; left: 50px; top: 460px; width: 60px; height: 60px; }
+    #f11-vs {
+      position: absolute; left: 820px; top: 400px; width: 120px; height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 64px; font-weight: 800; color: var(--muted); line-height: 1.1;
+    }
+  </style>
+
+  <div id="root" data-composition-id="11-tom-tat-chuong-mot" data-width="1920" data-height="1080" data-duration="4.314">
+    <div id="f11-ground" class="clip" data-start="0" data-duration="4.314" data-track-index="0"></div>
+    <div id="f11-stage" class="clip" data-start="0" data-duration="4.314" data-track-index="1">
+      <div id="f11-field"></div>
+      <div id="f11-kicker"><b>◆</b>Tóm lại</div>
+
+      <!-- left anchor: chatbot → trả lời -->
+      <div id="f11-cardL" class="f11-card">
+        <div id="f11-headL" class="f11-head">
+          <div id="f11-avaL" class="f11-ava">
+            <svg width="52" height="52" viewBox="0 0 30 30" fill="none" stroke="#3EE6D0" stroke-width="2.2" stroke-linecap="round">
+              <rect x="5" y="9" width="20" height="15" rx="4"/><line x1="15" y1="4" x2="15" y2="9"/>
+              <circle cx="11" cy="16" r="1.6" fill="#3EE6D0"/><circle cx="19" cy="16" r="1.6" fill="#3EE6D0"/>
+            </svg>
+          </div>
+          <div class="f11-name">chatbot</div>
+        </div>
+        <div id="f11-arrowL" class="f11-arrow">→</div>
+        <div class="f11-slot">
+          <div id="f11-phL" class="f11-ph">…</div>
+          <div id="f11-wordL" class="f11-word">trả lời</div>
+        </div>
+      </div>
+
+      <div id="f11-vs">≠</div>
+
+      <!-- right anchor: agent → làm việc -->
+      <div id="f11-cardR" class="f11-card">
+        <div id="f11-headR" class="f11-head">
+          <div id="f11-avaR" class="f11-ava">
+            <svg width="52" height="52" viewBox="0 0 30 30" fill="none" stroke="#FFD23F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3 L7 17 H14 L12 27 L23 12 H16 Z"/>
+            </svg>
+          </div>
+          <div class="f11-name">agent</div>
+        </div>
+        <div id="f11-arrowR" class="f11-arrow">→</div>
+        <div class="f11-slot">
+          <div id="f11-phR" class="f11-ph">…</div>
+          <div id="f11-wordR" class="f11-word">làm việc</div>
+        </div>
+        <svg id="f11-trail" viewBox="0 0 680 60">
+          <path id="f11-trail-path" d="M4 30 C 170 8, 340 52, 510 26 S 640 22, 676 28" fill="none"
+            stroke="#FFD23F" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="720" stroke-dashoffset="720"/>
+        </svg>
+        <div id="f11-spark">
+          <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+            <path d="M24 30 C 16 20, 8 20, 4 24" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M24 30 C 16 38, 8 38, 4 34" stroke="#F4F1E8" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="30" cy="30" r="8" fill="#FFD23F"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var E = "power3.out";
+
+      // "Tóm lại" (0.29): kicker + the two empty anchor shells pin in place
+      tl.fromTo("#f11-kicker", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 0.29);
+      tl.fromTo("#f11-cardL", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: E }, 0.3);
+      tl.fromTo("#f11-cardR", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: E }, 0.4);
+      tl.set(["#f11-headL", "#f11-headR", "#f11-arrowL", "#f11-arrowR", "#f11-wordL", "#f11-wordR", "#f11-spark", "#f11-vs"], { opacity: 0 }, 0);
+
+      // "chatbot" (1.14): left anchor label lands
+      tl.fromTo("#f11-headL", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: E }, 1.14);
+      tl.fromTo("#f11-arrowL", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: E }, 1.3);
+      // "trả lời" (1.48): hard-cut slot swap
+      tl.set("#f11-phL", { opacity: 0 }, 1.48);
+      tl.fromTo("#f11-wordL", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: E }, 1.48);
+
+      // "còn" (2.09): contrast mark
+      tl.fromTo("#f11-vs", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 2.09);
+
+      // "agent" (2.31): right anchor label lands
+      tl.fromTo("#f11-headR", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: E }, 2.31);
+      tl.fromTo("#f11-arrowR", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: E }, 2.45);
+      // "làm việc" (2.67): slot swaps to the gold answer; card goes active
+      tl.set("#f11-phR", { opacity: 0 }, 2.67);
+      tl.set("#f11-cardR", { borderColor: "rgba(255,210,63,.55)" }, 2.67);
+      tl.fromTo("#f11-wordR", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: E }, 2.67);
+      // courier trail draws under it, spark riding the head, through "việc" (2.81)
+      tl.fromTo("#f11-trail-path", { attr: { "stroke-dashoffset": 720 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.55, ease: "none" }, 2.72);
+      tl.set("#f11-spark", { opacity: 1 }, 2.72);
+      tl.fromTo("#f11-spark", { x: -26 }, { x: 650, duration: 0.55, ease: "none" }, 2.72);
+
+      // hold still to the end
+      tl.to({}, { duration: 3.714 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["11-tom-tat-chuong-mot"] = tl;
+    })();
+  </script>
+</template>

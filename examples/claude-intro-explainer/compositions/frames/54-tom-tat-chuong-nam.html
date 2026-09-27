@@ -1,0 +1,251 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 x chapter */
+    #f54-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80-1840, y 60-880 */
+    #f54-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below */
+    .f54-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f54-spk svg { display: block; width: 100%; height: 100%; }
+
+    /* ---------- shot 1: pinned anchor card + docking chips ---------- */
+    #f54-s1 { position: absolute; inset: 0; }
+    #f54-card {
+      position: absolute; left: 310px; top: 190px; width: 780px; height: 300px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f54-card-spark {
+      position: absolute; left: 60px; top: 112px; width: 76px; height: 76px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f54-card-name {
+      position: absolute; left: 168px; top: 90px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.12;
+      letter-spacing: -0.01em; white-space: nowrap;
+    }
+    .f54-cw { display: inline-block; opacity: 0; }
+
+    /* key text under the card */
+    #f54-key {
+      position: absolute; left: 310px; top: 548px; width: 780px; text-align: center;
+      font-size: 56px; font-weight: 600; line-height: 1.3; white-space: nowrap;
+    }
+    .f54-kw { display: inline-block; opacity: 0; }
+
+    /* dock slots (dashed, empty) + chips on the card's right edge */
+    .f54-slot, .f54-chip {
+      position: absolute; left: 1150px; width: 300px; height: 84px; box-sizing: border-box;
+      border-radius: 42px;
+    }
+    .f54-slot { border: 2px dashed rgba(240,238,230,.22); opacity: 0; }
+    .f54-chip {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface);
+      border: 1.5px solid rgba(143,184,168,.7);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      font-size: 42px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+      opacity: 0;
+    }
+    #f54-slot1, #f54-chip1 { top: 196px; }
+    #f54-slot2, #f54-chip2 { top: 298px; }
+    #f54-slot3, #f54-chip3 { top: 400px; }
+    .f54-port { opacity: 0; }
+
+    /* ---------- shot 2: kinetic teaser on a clean field ---------- */
+    #f54-s2 { position: absolute; inset: 0; }
+    #f54-kicker {
+      position: absolute; left: 0; top: 250px; width: 1760px;
+      display: flex; justify-content: center; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); line-height: 1.3; white-space: nowrap;
+      opacity: 0;
+    }
+    #f54-kick-spark { width: 30px; height: 30px; }
+    #f54-dots { position: absolute; left: 820px; top: 420px; width: 120px; height: 24px; }
+    .f54-dot {
+      position: absolute; top: 0; width: 20px; height: 20px; border-radius: 10px;
+      background: var(--ink); opacity: 0;
+    }
+    #f54-dot1 { left: 0; }
+    #f54-dot2 { left: 50px; }
+    #f54-dot3 { left: 100px; }
+    #f54-hero {
+      position: absolute; left: 0; top: 356px; width: 1760px; text-align: center;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.12;
+      letter-spacing: -0.01em; white-space: nowrap;
+    }
+    .f54-hw { display: inline-block; opacity: 0; }
+    #f54-hero-spark {
+      position: absolute; left: 1094px; top: 338px; width: 56px; height: 56px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+  </style>
+
+  <div id="root" data-composition-id="54-tom-tat-chuong-nam" data-width="1920" data-height="1080" data-duration="9.817">
+    <div id="f54-ground" class="clip" data-start="0" data-duration="9.817" data-track-index="0"></div>
+    <div id="f54-stage" class="clip" data-start="0" data-duration="9.817" data-track-index="1">
+
+      <!-- shot 1 -->
+      <div id="f54-s1">
+        <div id="f54-slot1" class="f54-slot"></div>
+        <div id="f54-slot2" class="f54-slot"></div>
+        <div id="f54-slot3" class="f54-slot"></div>
+
+        <!-- connectors: card right edge (x 1090) to chip left edge (x 1150) -->
+        <svg class="f54-svgfull" viewBox="0 0 1760 820">
+          <g fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round">
+            <path id="f54-link1" d="M1090 290 C 1108 268, 1128 244, 1152 238" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <path id="f54-link2" d="M1090 340 C 1110 337, 1130 342, 1152 340" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+            <path id="f54-link3" d="M1090 390 C 1108 412, 1128 436, 1152 442" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          </g>
+          <g fill="#8FB8A8">
+            <circle id="f54-port1" class="f54-port" cx="1090" cy="290" r="7"/>
+            <circle id="f54-port2" class="f54-port" cx="1090" cy="340" r="7"/>
+            <circle id="f54-port3" class="f54-port" cx="1090" cy="390" r="7"/>
+          </g>
+          <path id="f54-under" d="M420 634 C 520 626, 640 642, 760 632 S 920 628, 980 636" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+
+        <div id="f54-card">
+          <div id="f54-card-spark" class="f54-spk"></div>
+          <div id="f54-card-name"><span id="f54-cw1" class="f54-cw">Claude</span> <span id="f54-cw2" class="f54-cw">Code</span></div>
+        </div>
+
+        <div id="f54-key"><span id="f54-kw1" class="f54-kw">tự</span> <span id="f54-kw2" class="f54-kw">làm</span> <span id="f54-kw3" class="f54-kw">việc</span></div>
+
+        <div id="f54-chip1" class="f54-chip">skill</div>
+        <div id="f54-chip2" class="f54-chip">MCP</div>
+        <div id="f54-chip3" class="f54-chip">plugin</div>
+      </div>
+
+      <!-- shot 2 -->
+      <div id="f54-s2">
+        <div id="f54-kicker"><span id="f54-kick-spark" class="f54-spk"></span><span>Chương tiếp theo</span></div>
+        <div id="f54-dots">
+          <div id="f54-dot1" class="f54-dot"></div>
+          <div id="f54-dot2" class="f54-dot"></div>
+          <div id="f54-dot3" class="f54-dot"></div>
+        </div>
+        <div id="f54-hero"><span id="f54-hw1" class="f54-hw">mới</span> <span id="f54-hw2" class="f54-hw">nhất</span></div>
+        <div id="f54-hero-spark" class="f54-spk"></div>
+        <svg class="f54-svgfull" viewBox="0 0 1760 820">
+          <path id="f54-hero-under" d="M700 492 C 780 484, 880 500, 980 490 S 1040 488, 1062 494" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="54-tom-tat-chuong-nam"]');
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk) drawn as SVG
+      var spark = function (color) {
+        return '<svg viewBox="-50 -50 100 100"><g stroke="' + color + '" stroke-width="11" stroke-linecap="round">' +
+          '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+          '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      };
+      qa('.f54-spk').forEach(function (el) { el.innerHTML = spark('#D97757'); });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var draw = function (sel, t, d) {
+        tl.fromTo(sel, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: d, ease: 'none' }, t);
+      };
+      var word = function (sel, t, dy) {
+        tl.fromTo(sel, { y: dy || 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: IN }, t);
+      };
+      var pop = function (sel, t) {
+        tl.fromTo(sel, { scale: 0, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN }, t);
+      };
+      var dock = function (n, t) {
+        tl.fromTo('#f54-chip' + n, { x: 200, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: IN }, t);
+        tl.to('#f54-slot' + n, { opacity: 0, duration: 0.25, ease: 'power2.out' }, t + 0.3);
+        draw('#f54-link' + n, t + 0.25, 0.25);
+        tl.fromTo('#f54-port' + n, { opacity: 0, scale: 0.4, transformOrigin: '50% 50%' }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, t + 0.4);
+      };
+
+      // ---- Shot 1 (0-5.42) [anchor]: the card lands on "Tóm lại" and never moves
+      tl.fromTo('#f54-card', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 0.29);   // "Tóm"
+      pop('#f54-card-spark', 0.47);                                                                       // "lại"
+      word('#f54-cw1', 0.91);                                                                             // "Claude"
+      word('#f54-cw2', 1.17);                                                                             // "Code"
+
+      // "tự làm việc" lands under the card, word by word
+      word('#f54-kw1', 1.39);
+      word('#f54-kw2', 1.53);
+      word('#f54-kw3', 1.69);
+      draw('#f54-under', 1.9, 0.45);
+
+      // "mở rộng" (2.70): three empty dock slots appear on the card's right edge
+      tl.fromTo('#f54-slot1', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 2.70);
+      tl.fromTo('#f54-slot2', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 2.78);
+      tl.fromTo('#f54-slot3', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 2.86);
+
+      // chips dock one per cue and stay
+      dock(1, 3.24);   // "skill"
+      dock(2, 3.80);   // "MCP"
+      dock(3, 4.46);   // "plugin"
+
+      // ---- Shot 2 (5.42-9.22) [kinetic]: the recap clears into a clean field
+      tl.to('#f54-s1', { scale: 0.9, opacity: 0, duration: 0.45, ease: 'power2.inOut', transformOrigin: '50% 45%' }, 5.2);
+      tl.fromTo('#f54-kicker', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 5.50);  // "Chương"
+      pop('#f54-kick-spark', 5.55);
+
+      // "chờ đợi nhất" (6.59 / 6.79 / 6.95): anticipation dots, one per word
+      tl.fromTo('#f54-dot1', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: IN }, 6.59);
+      tl.fromTo('#f54-dot2', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: IN }, 6.79);
+      tl.fromTo('#f54-dot3', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: IN }, 6.95);
+      // "những gì" (7.67): the dots gather to the centre, making room for the answer
+      tl.to('#f54-dot1', { x: 50, duration: 0.4, ease: 'power2.inOut' }, 7.67);
+      tl.to('#f54-dot3', { x: -50, duration: 0.4, ease: 'power2.inOut' }, 7.67);
+      tl.to('#f54-dots', { opacity: 0, scale: 0.5, duration: 0.25, ease: 'power2.in', transformOrigin: '50% 50%' }, 7.95);
+
+      // "mới nhất" lands in Lora on its cue, the spark pops, the stroke underlines it; hold to the cut
+      tl.fromTo('#f54-hw1', { y: 40, scale: 1.12, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.45, ease: IN }, 8.18);   // "mới"
+      tl.fromTo('#f54-hw2', { y: 40, scale: 1.12, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.45, ease: IN }, 8.32);   // "nhất"
+      pop('#f54-hero-spark', 8.32);
+      draw('#f54-hero-under', 8.5, 0.4);
+
+      tl.to({}, { duration: 9.217 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["54-tom-tat-chuong-nam"] = tl;
+    })();
+  </script>
+</template>

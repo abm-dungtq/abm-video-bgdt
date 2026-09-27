@@ -1,0 +1,139 @@
+{
+  "name": "claude-intro-explainer",
+  "title": "Claude – từ cơ bản đến chuyên sâu",
+  "message": "Claude là trợ lý AI giúp bạn làm việc nhanh hơn – từ trò chuyện đến tự động hóa",
+  "arc": "Mở đầu → Cơ bản → Trung cấp → Nâng cao (Claude Code) → Mới nhất → Tổng kết",
+  "audience": "ABM learners, người dùng claude.ai, tiếng Việt",
+  "voice": {
+    "id": "Thanh Bình",
+    "temperature": 0.55,
+    "sampleRate": 48000,
+    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu."
+  },
+  "spokenOverrides": {
+    "5.5": "năm chấm năm",
+    "5.1": "năm chấm một"
+  },
+  "timing": {
+    "lead": 0.25,
+    "titleLead": 0.8,
+    "gap": 0.5,
+    "tail": 0.7,
+    "pad": 0.08
+  },
+  "budget": {
+    "targetS": [
+      810,
+      880
+    ],
+    "frames": [
+      78,
+      92
+    ],
+    "maxSentenceSyllables": 26,
+    "syllables": {
+      "total": 2880,
+      "range": [
+        2830,
+        2950
+      ]
+    }
+  },
+  "scenes": {
+    "types": [
+      "kinetic",
+      "typewriter",
+      "terminal",
+      "flow",
+      "split",
+      "hub",
+      "cards",
+      "stat",
+      "journey",
+      "zoom",
+      "anchor",
+      "title",
+      "metaphor",
+      "screen"
+    ],
+    "terminalChapters": [
+      "ch5",
+      "ch6"
+    ],
+    "maxShotS": 10
+  },
+  "design": {
+    "canvas": "#1F1E1D",
+    "surface": "#2A2926",
+    "ink": "#F0EEE6",
+    "accent": "#D97757",
+    "accent2": "#8FB8A8",
+    "warn": "#E5484D",
+    "muted": "#9A968C",
+    "hueBase": 22,
+    "hueStep": 3,
+    "glow": "55%, 42%, 0.20"
+  },
+  "fonts": [
+    {
+      "family": "Lora",
+      "weights": [
+        700
+      ],
+      "faces": [
+        {
+          "weight": "400 700",
+          "file": "Lora-Variable.ttf"
+        }
+      ]
+    },
+    {
+      "family": "Be Vietnam Pro",
+      "weights": [
+        500,
+        600,
+        800
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400,
+        700
+      ]
+    }
+  ],
+  "karaoke": {
+    "maxChars": 110,
+    "lead": 0.1,
+    "linger": 0.35
+  },
+  "chapterLabel": {
+    "overlay": "Chương {n} · {title}",
+    "chapters": "Chương {n} – {title}"
+  },
+  "cli": {
+    "pin": "0.7.99",
+    "checkTimeoutMs": 240000
+  },
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js",
+  "render": {
+    "quality": "high",
+    "fps": 30
+  },
+  "loudness": {
+    "i": -16,
+    "tp": -1.5,
+    "lra": 11
+  },
+  "guard": {
+    "missingGlyphs": "①②③✳✕✓→",
+    "railPatterns": [
+      "left: *480px",
+      "top: *4px",
+      "1068px",
+      "340px",
+      "border-radius: *22px"
+    ]
+  }
+}

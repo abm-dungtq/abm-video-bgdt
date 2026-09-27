@@ -1,0 +1,311 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f35-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f35-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f35- */
+
+    /* ---------- Shot 1: screen, centred viewport 1456x819 ---------- */
+    #f35-s1 {
+      position: absolute;
+      inset: 0;
+      transform-origin: 880px 409px;
+    }
+    #f35-viewport {
+      position: absolute;
+      left: 152px;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f35-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      transform-origin: 728px 409.5px;
+      opacity: 0;
+    }
+    #f35-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #f35-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1456px;
+      height: 819px;
+      overflow: visible;
+    }
+    .f35-draw {
+      fill: none;
+      stroke: var(--gold);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    /* labels sit over empty dark areas of the screenshot, in stage space */
+    .f35-label {
+      position: absolute;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 64px;
+      line-height: 1.12;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f35-label1 {
+      left: 232px;
+      top: 395px;
+      width: 430px;
+      text-align: right;
+    }
+    #f35-label2 {
+      left: 942px;
+      top: 392px;
+    }
+    .f35-w {
+      display: inline-block;
+      opacity: 0;
+    }
+
+    /* ---------- Shot 2: kinetic, centred pair around a toggle ---------- */
+    #f35-s2 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 400px;
+    }
+    #f35-kicker {
+      position: absolute;
+      left: 0;
+      top: 150px;
+      width: 1760px;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 30px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f35-row {
+      position: absolute;
+      left: 0;
+      top: 300px;
+      width: 1760px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 90px;
+    }
+    .f35-big {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 168px;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      width: 330px;
+      opacity: 0;
+    }
+    #f35-bat { color: var(--cyan); text-align: right; }
+    #f35-tat { color: var(--muted); text-align: left; }
+    #f35-toggle {
+      position: relative;
+      width: 300px;
+      height: 150px;
+      flex: 0 0 auto;
+      opacity: 0;
+    }
+    #f35-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 75px;
+      background: var(--surface);
+      border: 3px solid rgba(154,150,140,.55);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f35-track-on {
+      position: absolute;
+      inset: 0;
+      border-radius: 75px;
+      background: var(--cyan);
+      opacity: 0;
+    }
+    #f35-knob {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 118px;
+      height: 118px;
+      border-radius: 50%;
+      background: var(--ink);
+      box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    }
+    #f35-spark {
+      position: absolute;
+      left: 856px;
+      top: 232px;
+      width: 48px;
+      height: 48px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f35-sub {
+      position: absolute;
+      left: 0;
+      top: 590px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 48px;
+      line-height: 1.3;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f35-tuy { color: var(--muted); }
+  </style>
+
+  <div id="root" data-composition-id="35-bat-mot-connector" data-width="1920" data-height="1080" data-duration="10.674">
+    <div id="f35-ground" class="clip" data-start="0" data-duration="10.674" data-track-index="0"></div>
+    <div id="f35-stage" class="clip" data-start="0" data-duration="10.674" data-track-index="1">
+
+      <!-- Shot 1: real screenshot, pan + zoom + callouts -->
+      <div id="f35-s1">
+        <div id="f35-viewport">
+          <div id="f35-wrap">
+            <img id="f35-shot" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg id="f35-callout" viewBox="0 0 1456 819">
+              <!-- "+" button down to the Connectors row (source x 582–878, y 514–810) -->
+              <rect id="f35-rect1" class="f35-draw" x="441" y="390" width="225" height="224" rx="8" ry="8" pathLength="1" stroke-width="2.2"></rect>
+              <!-- connector toggle list Canva … Google Drive (source x 890–1150, y 500–728) -->
+              <rect id="f35-rect2" class="f35-draw" x="673" y="377" width="200" height="177" rx="8" ry="8" pathLength="1" stroke-width="2.1"></rect>
+            </svg>
+          </div>
+        </div>
+        <div id="f35-label1" class="f35-label"><span id="f35-khung" class="f35-w">khung</span> <span id="f35-nhap" class="f35-w">nhập</span></div>
+        <div id="f35-label2" class="f35-label"><span id="f35-dua" class="f35-w">đưa</span> <span id="f35-ung" class="f35-w">ứng</span> <span id="f35-dung" class="f35-w">dụng</span></div>
+      </div>
+
+      <!-- Shot 2: kinetic — bật / toggle / tắt -->
+      <div id="f35-s2">
+        <div id="f35-kicker">mỗi connector</div>
+        <div id="f35-row">
+          <span id="f35-bat" class="f35-big">bật</span>
+          <div id="f35-toggle">
+            <div id="f35-track"></div>
+            <div id="f35-track-on"></div>
+            <div id="f35-knob"></div>
+          </div>
+          <span id="f35-tat" class="f35-big">tắt</span>
+        </div>
+        <svg id="f35-spark" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        <div id="f35-sub"><span id="f35-tuy" class="f35-w">tùy</span><span id="f35-cong" class="f35-w">công</span><span id="f35-viec" class="f35-w">việc</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Shot 1 — screen (0–6.93 s) ===== */
+      // reveal the screenshot wrapper, full view
+      tl.fromTo("#f35-wrap", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0);
+      // push to 1.25x onto the composer's lower-left ("+" button and menu), empty dark area stays left
+      tl.fromTo("#f35-wrap", { x: 0, y: 0, scale: 1 }, { x: 182, y: -95, scale: 1.25, duration: 0.95, ease: "power2.inOut", immediateRender: false }, 0.7);
+      // "khung" @1.684 — callout 1 draws; "nhập" @1.845
+      tl.fromTo("#f35-rect1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 1.68);
+      tl.fromTo("#f35-khung", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.68);
+      tl.fromTo("#f35-nhap", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.85);
+      // "Sau" @3.173 — callout 1 steps back, wrapper glides right to the toggle list
+      tl.fromTo("#f35-rect1", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, 3.1);
+      tl.fromTo("#f35-label1", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, 3.1);
+      tl.fromTo("#f35-wrap", { x: 182, y: -95, scale: 1.25 }, { x: -182, y: -80, scale: 1.25, duration: 1.05, ease: "power2.inOut", immediateRender: false }, 3.17);
+      // "đưa" @4.381 — callout 2 frames the toggles; "ứng" @4.542, "dụng" @4.663
+      tl.fromTo("#f35-rect2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 4.38);
+      tl.fromTo("#f35-dua", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 4.38);
+      tl.fromTo("#f35-ung", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 4.54);
+      tl.fromTo("#f35-dung", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 4.66);
+      // crop zoom to 1.4 on the toggles (@4.54), then a near-still hold
+      tl.fromTo("#f35-wrap", { x: -182, y: -80, scale: 1.25 }, { x: -234, y: -88, scale: 1.4, duration: 0.6, ease: "power2.inOut", immediateRender: false }, 4.54);
+      tl.fromTo("#f35-wrap", { x: -234 }, { x: -244, duration: 1.7, ease: "none", immediateRender: false }, 5.14);
+
+      /* ===== Shot 2 — kinetic (6.93–10.174 s) ===== */
+      // zoom-through (inverse) out of the screen shot
+      tl.fromTo("#f35-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 6.9);
+      // "connector" @7.097 — kicker + switch (off) arrive
+      tl.fromTo("#f35-kicker", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 7.1);
+      tl.fromTo("#f35-toggle", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 7.2);
+      // "bật" @7.923 — word lands left, switch slides on (sage)
+      tl.fromTo("#f35-bat", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 7.92);
+      tl.fromTo("#f35-knob", { x: 0 }, { x: 150, duration: 0.35, ease: "power2.inOut", immediateRender: false }, 7.92);
+      tl.fromTo("#f35-track-on", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out", immediateRender: false }, 7.92);
+      // "tắt" @8.447 — word lands right, switch slides off to muted
+      tl.fromTo("#f35-tat", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 8.45);
+      tl.fromTo("#f35-knob", { x: 150 }, { x: 0, duration: 0.35, ease: "power2.inOut", immediateRender: false }, 8.45);
+      tl.fromTo("#f35-track-on", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.out", immediateRender: false }, 8.45);
+      // spark pops between the two words, above the switch
+      tl.fromTo("#f35-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 8.6);
+      // "tùy" @8.729, "công" @9.112, "việc" @9.253
+      tl.fromTo("#f35-tuy", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 8.73);
+      tl.fromTo("#f35-cong", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.11);
+      tl.fromTo("#f35-viec", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 9.25);
+      // quiet hold drift
+      tl.fromTo("#f35-s2", { scale: 1 }, { scale: 1.015, duration: 2.9, ease: "none" }, 7.2);
+
+      tl.to({}, { duration: 10.174 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["35-bat-mot-connector"] = tl;
+    })();
+  </script>
+</template>

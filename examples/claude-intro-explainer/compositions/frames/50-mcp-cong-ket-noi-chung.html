@@ -1,0 +1,448 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f50-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(37, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f50-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---- frame-specific (stage coords = canvas − (80, 60)) ---- */
+    .f50-spark { display: block; overflow: visible; }
+    .f50-spark line { stroke: #D97757; stroke-width: 3.2; stroke-linecap: round; }
+
+    /* analyze rail: canvas y 64–108, x from 560 */
+    #f50-rail {
+      position: absolute; left: 480px; top: 4px; width: 1068px; height: 44px;
+      display: flex; align-items: center;
+    }
+    .f50-pill {
+      position: relative; box-sizing: border-box; width: 340px; height: 44px; flex: 0 0 340px;
+      border-radius: 22px; background: var(--surface); border: 1px solid rgba(240,238,230,.12);
+      color: var(--muted); font-family: "Be Vietnam Pro", sans-serif; font-weight: 600;
+      font-size: 26px; line-height: 42px; text-align: center; white-space: nowrap;
+    }
+    .f50-badge {
+      display: inline-block; box-sizing: border-box; width: 26px; height: 26px; margin-right: 10px;
+      border-radius: 50%; border: 1.5px solid #9A968C; color: #9A968C;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 16px;
+      line-height: 23px; text-align: center; vertical-align: 3px;
+    }
+    .f50-pill-spark { position: absolute; right: 12px; top: 9px; width: 26px; height: 26px; opacity: 0; }
+    .f50-link { flex: 0 0 24px; width: 24px; height: 44px; overflow: visible; }
+
+    .f50-scene { position: absolute; inset: 0; transform-origin: 880px 420px; }
+
+    /* ---- Scene 1: zoom-out on the wall of ports ---- */
+    #f50-view { position: absolute; left: 0; top: 90px; width: 1760px; height: 730px; overflow: hidden; }
+    #f50-world { position: absolute; left: 0; top: 0; width: 1760px; height: 730px; transform-origin: 0 0; }
+    .f50-tile {
+      position: absolute; width: 132px; height: 150px; box-sizing: border-box;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f50-tile-ico { position: absolute; left: 44px; top: 18px; width: 44px; height: 44px; overflow: visible; }
+    .f50-tile-ico path { fill: none; stroke: #F0EEE6; stroke-opacity: .75; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+    .f50-lamp { position: absolute; left: 112px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: #8FB8A8; opacity: .22; }
+    .f50-sock {
+      position: absolute; left: 10px; top: 80px; width: 112px; height: 60px; box-sizing: border-box;
+      border-radius: 12px; background: #1F1E1D; border: 1px solid rgba(240,238,230,.14);
+    }
+    .f50-plug {
+      position: absolute; left: 20px; top: 88px; width: 92px; height: 44px; box-sizing: border-box;
+      border-radius: 9px; background: #3A3834; border: 1px solid rgba(240,238,230,.26);
+    }
+    .f50-plug-pin { position: absolute; top: 14px; width: 4px; height: 16px; border-radius: 2px; background: rgba(240,238,230,.35); }
+    #f50-hplug { background: #45423D; border-color: rgba(143,184,168,.7); }
+    #f50-hlabel {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0;
+      font: 800 28px/42px "Be Vietnam Pro", sans-serif; color: #F0EEE6; text-align: center; letter-spacing: .02em;
+    }
+    #f50-mcph {
+      position: absolute; left: 40px; top: 96px; opacity: 0; white-space: nowrap;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f50-cap {
+      position: absolute; left: 44px; top: 232px; opacity: 0; white-space: nowrap;
+      font: 500 34px/1.4 "Be Vietnam Pro", sans-serif; color: #9A968C;
+    }
+    #f50-key {
+      position: absolute; left: 100px; top: 318px; white-space: nowrap; color: #D97757;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    .f50-w { display: inline-block; opacity: 0; }
+    #f50-key .f50-w { margin-right: 24px; }
+    #f50-ul { position: absolute; left: 96px; top: 430px; width: 440px; height: 40px; overflow: visible; }
+    .f50-draw { fill: none; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+    #f50-ul path { stroke: #D97757; stroke-width: 4; }
+    #f50-sp1 { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; }
+
+    /* ---- Scene 2: hub ---- */
+    #f50-s2 { opacity: 0; }
+    #f50-hubsvg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f50-hubsvg .f50-ring { stroke: rgba(240,238,230,.12); stroke-width: 2; }
+    #f50-hubsvg .f50-spoke { stroke: #8FB8A8; stroke-opacity: .55; stroke-width: 2; }
+    .f50-tt {
+      position: absolute; width: 64px; height: 64px; box-sizing: border-box; opacity: 0;
+      background: #2A2926; border-radius: 14px; border: 1px solid rgba(143,184,168,.35);
+      box-shadow: 0 10px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f50-tt svg { position: absolute; left: 16px; top: 16px; width: 32px; height: 32px; overflow: visible; }
+    .f50-tt path { fill: none; stroke: #F0EEE6; stroke-opacity: .8; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    #f50-hub {
+      position: absolute; left: 660px; top: 338px; width: 440px; height: 124px; box-sizing: border-box; opacity: 0;
+      background: #2A2926; border-radius: 16px; border: 1.5px solid #8FB8A8;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      font: 700 56px/121px "Lora", serif; text-align: center; white-space: nowrap;
+    }
+    #f50-many {
+      position: absolute; left: 0; top: 702px; width: 1760px; text-align: center; white-space: nowrap;
+      font: 700 72px/1.12 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f50-many .f50-w { margin: 0 11px; }
+    #f50-many .f50-hot { color: #D97757; }
+
+    /* ---- Scene 3: split ---- */
+    #f50-s3 { opacity: 0; }
+    #f50-s3svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f50-div { stroke: rgba(240,238,230,.16); stroke-width: 2; }
+    .f50-loop { stroke: #9A968C; stroke-width: 3; stroke-opacity: .8; }
+    #f50-strike { stroke: #D97757; stroke-width: 4; }
+    #f50-mcpline { stroke: #8FB8A8; stroke-width: 4; }
+    .f50-card {
+      position: absolute; box-sizing: border-box; opacity: 0;
+      background: #2A2926; border-radius: 16px; border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    .f50-card svg { position: absolute; overflow: visible; }
+    .f50-card path { fill: none; stroke: #F0EEE6; stroke-opacity: .8; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+    .f50-doc { width: 220px; height: 240px; }
+    .f50-doc svg { left: 50px; top: 40px; width: 120px; height: 160px; }
+    #f50-docL { left: 60px; top: 200px; }
+    #f50-chat { left: 580px; top: 200px; width: 240px; height: 240px; }
+    #f50-chat svg { left: 30px; top: 30px; width: 180px; height: 180px; }
+    #f50-docR { left: 960px; top: 200px; }
+    #f50-node {
+      left: 1400px; top: 240px; width: 340px; height: 160px; border: 1.5px solid rgba(240,238,230,.18);
+      font: 600 40px/157px "Be Vietnam Pro", sans-serif; text-align: center; white-space: nowrap;
+    }
+    .f50-lab {
+      position: absolute; top: 458px; opacity: 0; white-space: nowrap; text-align: center;
+      font: 500 34px/1.4 "Be Vietnam Pro", sans-serif; color: #9A968C;
+    }
+    #f50-labDoc { left: 60px; width: 220px; }
+    #f50-labChat { left: 560px; width: 280px; }
+    #f50-copy {
+      position: absolute; left: 0; top: 566px; width: 860px; text-align: center; white-space: nowrap; color: #D97757;
+      font: 700 96px/1.08 "Lora", serif; letter-spacing: -0.01em;
+    }
+    #f50-copy .f50-w { margin: 0 12px; }
+    .f50-chip {
+      position: absolute; left: 0; top: 0; width: 28px; height: 36px; box-sizing: border-box; opacity: 0;
+      border-radius: 5px; background: #3A3834; border: 1.5px solid #9A968C;
+    }
+    #f50-mcptag {
+      position: absolute; left: 1224px; top: 232px; width: 140px; text-align: center; opacity: 0;
+      font: 400 28px/1 "JetBrains Mono", monospace; letter-spacing: .14em; color: #8FB8A8;
+    }
+    #f50-dot { position: absolute; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%; background: #8FB8A8; opacity: 0; }
+    #f50-tick { position: absolute; left: 1696px; top: 214px; width: 52px; height: 52px; opacity: 0; overflow: visible; }
+    #f50-tick circle { fill: #2A2926; stroke: #8FB8A8; stroke-width: 3; }
+    #f50-tick path { fill: none; stroke: #8FB8A8; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+
+  <div id="root" data-composition-id="50-mcp-cong-ket-noi-chung" data-width="1920" data-height="1080" data-duration="15.376">
+    <div id="f50-ground" class="clip" data-start="0" data-duration="15.376" data-track-index="0"></div>
+    <div id="f50-stage" class="clip" data-start="0" data-duration="15.376" data-track-index="1">
+
+      <!-- analyze rail (resting position from frame 0) -->
+      <div id="f50-rail">
+        <div id="f50-pill1" class="f50-pill"><span id="f50-b1" class="f50-badge">1</span>Tính năng<svg id="f50-ps1" class="f50-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f50-link" viewBox="0 0 24 44"><path d="M0 22 C 6 19.5, 12 24.5, 24 21.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f50-pill2" class="f50-pill"><span id="f50-b2" class="f50-badge">2</span>Vì sao nổi bật<svg id="f50-ps2" class="f50-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+        <svg class="f50-link" viewBox="0 0 24 44"><path d="M0 22 C 6 24.5, 12 19.5, 24 22.5" fill="none" stroke="#D97757" stroke-width="2" stroke-linecap="round"/></svg>
+        <div id="f50-pill3" class="f50-pill"><span id="f50-b3" class="f50-badge">3</span>Bạn được gì<svg id="f50-ps3" class="f50-pill-spark" viewBox="-22 -22 44 44"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="0" y1="-17" x2="0" y2="17"/><line x1="-17" y1="0" x2="17" y2="0"/><line x1="-12" y1="-12" x2="12" y2="12"/><line x1="-12" y1="12" x2="12" y2="-12"/></g></svg></div>
+      </div>
+
+      <!-- Scene 1: one plug in a port, then the wall of identical ports -->
+      <div class="f50-scene" id="f50-s1">
+        <div id="f50-view">
+          <div id="f50-world"></div>
+          <div id="f50-mcph">MCP</div>
+          <div id="f50-cap">Model Context Protocol</div>
+          <div id="f50-key"><span class="f50-w" id="f50-k1">chuẩn</span><span class="f50-w" id="f50-k2">mở</span></div>
+          <svg id="f50-ul" viewBox="0 0 440 40"><path class="f50-draw" pathLength="1" d="M6 22 C 90 12, 180 30, 260 20 S 380 12, 434 22"/></svg>
+          <svg class="f50-spark" id="f50-sp1" viewBox="-20 -20 40 40"><line x1="0" y1="-16" x2="0" y2="16"/><line x1="-16" y1="0" x2="16" y2="0"/><line x1="-11.3" y1="-11.3" x2="11.3" y2="11.3"/><line x1="-11.3" y1="11.3" x2="11.3" y2="-11.3"/></svg>
+        </div>
+      </div>
+
+      <!-- Scene 2: Claude Code hub with tool tiles on two rings -->
+      <div class="f50-scene" id="f50-s2">
+        <svg id="f50-hubsvg" viewBox="0 0 1760 820"></svg>
+        <div id="f50-tiles"></div>
+        <div id="f50-hub">Claude Code</div>
+        <div id="f50-many"><span class="f50-w f50-hot" id="f50-m1">hàng</span><span class="f50-w f50-hot" id="f50-m2">trăm</span><span class="f50-w" id="f50-m3">công</span><span class="f50-w" id="f50-m4">cụ</span></div>
+      </div>
+
+      <!-- Scene 3: copy loop (struck) vs one MCP line -->
+      <div class="f50-scene" id="f50-s3">
+        <svg id="f50-s3svg" viewBox="0 0 1760 820">
+          <path id="f50-div" class="f50-draw" pathLength="1" d="M880 150 L880 700"/>
+          <path id="f50-arcT" class="f50-draw f50-loop" pathLength="1" d="M250 200 C 330 110, 520 110, 600 200"/>
+          <path id="f50-arcB" class="f50-draw f50-loop" pathLength="1" d="M600 440 C 520 530, 330 530, 250 440"/>
+          <path id="f50-headT" class="f50-loop" d="M584 176 L600 200 L572 196" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+          <path id="f50-headB" class="f50-loop" d="M266 464 L250 440 L278 444" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+          <path id="f50-mcpline" class="f50-draw" pathLength="1" d="M1180 320 C 1260 290, 1320 350, 1400 320"/>
+        </svg>
+        <div class="f50-card f50-doc" id="f50-docL"><svg viewBox="0 0 120 160"><path d="M8 6 H80 L112 38 V154 H8 Z M80 6 V38 H112 M28 72 H92 M28 98 H92 M28 124 H72"/></svg></div>
+        <div class="f50-card" id="f50-chat"><svg viewBox="0 0 180 180"><path d="M10 14 H130 V58 H44 L26 74 V58 H10 Z M170 88 H56 V128 H150 L166 142 V128 H170 Z M10 160 H170"/></svg></div>
+        <div class="f50-lab" id="f50-labDoc">dữ liệu</div>
+        <div class="f50-lab" id="f50-labChat">khung chat</div>
+        <div class="f50-chip" id="f50-c1"></div>
+        <div class="f50-chip" id="f50-c2"></div>
+        <div class="f50-chip" id="f50-c3"></div>
+        <svg viewBox="0 0 1760 820" style="position:absolute;left:0;top:0;width:1760px;height:820px;overflow:visible"><path id="f50-strike" class="f50-draw" pathLength="1" d="M40 392 C 220 360, 420 320, 560 300 S 760 262, 842 246"/></svg>
+        <div id="f50-copy"><span class="f50-w" id="f50-cw1">sao</span><span class="f50-w" id="f50-cw2">chép</span></div>
+        <div class="f50-card f50-doc" id="f50-docR"><svg viewBox="0 0 120 160"><path d="M8 6 H80 L112 38 V154 H8 Z M80 6 V38 H112 M28 72 H92 M28 98 H92 M28 124 H72"/></svg></div>
+        <div class="f50-card" id="f50-node">Claude Code</div>
+        <div id="f50-mcptag">MCP</div>
+        <div id="f50-dot"></div>
+        <svg id="f50-tick" viewBox="0 0 52 52"><circle cx="26" cy="26" r="23"/><path d="M15 27 L23 35 L38 18"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="50-mcp-cong-ket-noi-chung"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return root.querySelectorAll(s); };
+      var SVGNS = "http://www.w3.org/2000/svg";
+
+      // generic tool glyphs (48-unit box, no logos)
+      var ICONS = [
+        "M12 6 H30 L38 14 V42 H12 Z M30 6 V14 H38 M18 24 H32 M18 31 H32",
+        "M10 12 C10 5, 38 5, 38 12 V36 C38 43, 10 43, 10 36 Z M10 12 C10 19, 38 19, 38 12 M10 24 C10 31, 38 31, 38 24",
+        "M24 6 A18 18 0 1 0 24.01 6 Z M6 24 H42 M24 6 C14 16, 14 32, 24 42 C34 32, 34 16, 24 6",
+        "M8 12 H40 V40 H8 Z M8 20 H40 M16 6 V14 M32 6 V14",
+        "M8 10 H40 V32 H22 L14 40 V32 H8 Z",
+        "M6 14 H20 L24 18 H42 V38 H6 Z",
+        "M8 40 H40 M14 34 V26 M22 34 V14 M30 34 V20 M38 34 V10",
+        "M6 12 H42 V36 H6 Z M6 12 L24 26 L42 12"
+      ];
+      function icon(cls, k) {
+        var s = document.createElementNS(SVGNS, "svg");
+        if (cls) s.setAttribute("class", cls);
+        s.setAttribute("viewBox", "0 0 48 48");
+        var p = document.createElementNS(SVGNS, "path");
+        p.setAttribute("d", ICONS[k % ICONS.length]);
+        s.appendChild(p);
+        return s;
+      }
+      function div(cls, id) { var d = document.createElement("div"); if (cls) d.className = cls; if (id) d.id = id; return d; }
+
+      // ---- Scene 1 world: 7 × 4 wall of identical ports (final layout, world = viewport) ----
+      var world = q("#f50-world");
+      var COLS = 7, ROWS = 4, TW = 132, TH = 150, GX = 28, GY = 26, WX = 628, WY = 26;
+      var HC = 2, HR = 1; // hero tile
+      var lamps = [], heroLamp = null;
+      for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+          var t = div("f50-tile");
+          t.style.left = (WX + c * (TW + GX)) + "px";
+          t.style.top = (WY + r * (TH + GY)) + "px";
+          t.appendChild(icon("f50-tile-ico", r * 3 + c * 5));
+          var lamp = div("f50-lamp"); t.appendChild(lamp);
+          t.appendChild(div("f50-sock"));
+          var isHero = (r === HR && c === HC);
+          var plug = div("f50-plug", isHero ? "f50-hplug" : null);
+          if (isHero) {
+            var lab = div(null, "f50-hlabel"); lab.textContent = "MCP"; plug.appendChild(lab);
+            heroLamp = lamp;
+          } else {
+            var p1 = div("f50-plug-pin"); p1.style.left = "30px"; plug.appendChild(p1);
+            var p2 = div("f50-plug-pin"); p2.style.left = "56px"; plug.appendChild(p2);
+            lamps.push(lamp);
+          }
+          t.appendChild(plug);
+          world.appendChild(t);
+        }
+      }
+      // hero plug centre in world coords: tile (948, 202) + plug centre (66, 110)
+      var PX = WX + HC * (TW + GX) + 66, PY = WY + HR * (TH + GY) + 110;
+      var CX = 880, CY = 365; // viewport centre
+      var S0 = 10, S1 = 9;
+
+      // ---- Scene 2: rings, spokes, tool tiles ----
+      var hubsvg = q("#f50-hubsvg"), tilesBox = q("#f50-tiles");
+      var HX = 880, HY = 400;
+      function ellPath(rx, ry) {
+        return "M" + (HX - rx) + " " + HY + " A" + rx + " " + ry + " 0 1 0 " + (HX + rx) + " " + HY + " A" + rx + " " + ry + " 0 1 0 " + (HX - rx) + " " + HY;
+      }
+      function svgPath(cls, d) {
+        var p = document.createElementNS(SVGNS, "path");
+        p.setAttribute("class", cls); p.setAttribute("d", d); p.setAttribute("pathLength", "1");
+        hubsvg.appendChild(p); return p;
+      }
+      var rings = [svgPath("f50-draw f50-ring", ellPath(360, 150)), svgPath("f50-draw f50-ring", ellPath(640, 260))];
+      function ring(n, rx, ry, off, iconOff) {
+        var out = [];
+        for (var i = 0; i < n; i++) {
+          var a = (off + i * 360 / n) * Math.PI / 180;
+          var x = HX + rx * Math.cos(a), y = HY + ry * Math.sin(a);
+          var sp = svgPath("f50-draw f50-spoke", "M" + HX + " " + HY + " L" + x.toFixed(1) + " " + y.toFixed(1));
+          var tt = div("f50-tt");
+          tt.style.left = (x - 32).toFixed(1) + "px"; tt.style.top = (y - 32).toFixed(1) + "px";
+          tt.appendChild(icon(null, i + iconOff));
+          tilesBox.appendChild(tt);
+          out.push({ spoke: sp, tile: tt });
+        }
+        return out;
+      }
+      var inner = ring(8, 360, 150, 0, 0);
+      var outer = ring(14, 640, 260, 360 / 28, 3);
+
+      // ---- path samplers for seek-safe travel ----
+      function bezKF(P, half, n, dur) {
+        var kf = [];
+        for (var k = 1; k <= n; k++) {
+          var t = k / n, u = 1 - t;
+          var x = u * u * u * P[0][0] + 3 * u * u * t * P[1][0] + 3 * u * t * t * P[2][0] + t * t * t * P[3][0];
+          var y = u * u * u * P[0][1] + 3 * u * u * t * P[1][1] + 3 * u * t * t * P[2][1] + t * t * t * P[3][1];
+          kf.push({ x: x - half[0], y: y - half[1], duration: dur / n });
+        }
+        return kf;
+      }
+      var ARC = [[250, 200], [330, 110], [520, 110], [600, 200]];
+      var LINE = [[1180, 320], [1260, 290], [1320, 350], [1400, 320]];
+
+      // ---- initial states (before the timeline) ----
+      gsap.set(world, { x: CX - S0 * PX, y: CY - S0 * PY, scale: S0 });
+      gsap.set(q("#f50-hplug"), { y: 16 });
+      gsap.set(q("#f50-sp1"), { x: 1352, y: 108, scale: 0 });
+      gsap.set(q("#f50-cap"), { x: CX - 44, xPercent: -50, y: 436 });
+      ["#f50-c1", "#f50-c2", "#f50-c3"].forEach(function (id) { gsap.set(q(id), { x: ARC[0][0] - 14, y: ARC[0][1] - 18 }); });
+      gsap.set(q("#f50-dot"), { x: LINE[0][0] - 9, y: LINE[0][1] - 9 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- analyze rail: light each slot on its cue (0.3 s) ----
+      function lightRail(n, t) {
+        tl.fromTo(q("#f50-pill" + n),
+          { borderColor: "rgba(240,238,230,0.12)", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#F0EEE6", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f50-b" + n),
+          { borderColor: "#9A968C", color: "#9A968C" },
+          { borderColor: "#D97757", color: "#D97757", duration: 0.3, ease: "power2.out" }, t);
+        tl.fromTo(q("#f50-ps" + n), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.3, ease: "power3.out", transformOrigin: "50% 50%" }, t);
+      }
+      lightRail(1, 0.1);
+      lightRail(2, 5.2);
+      lightRail(3, 8.9);
+
+      // ---- Scene 1 (0–5.94): tight on the plug, one decelerating zoom-out, lock ----
+      // micro-action in close-up: plug seats, MCP lands, lamp connects
+      tl.fromTo(q("#f50-hplug"), { y: 16 }, { y: 0, duration: 0.5, ease: "power3.out" }, 0.33);
+      tl.fromTo(q("#f50-hlabel"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0.33);
+      tl.fromTo(q("#f50-sp1"), { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out", transformOrigin: "50% 50%" }, 0.33);
+      tl.fromTo(heroLamp, { opacity: 0.22 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0.85);
+      tl.fromTo(q("#f50-cap"), { opacity: 0, y: 456 }, { opacity: 1, y: 436, duration: 0.45, ease: "power3.out" }, 1.99);
+      // gentle pre-reveal pull (plug stays centred), then the single burst to the wide
+      tl.fromTo(world, { x: CX - S0 * PX, y: CY - S0 * PY, scale: S0 },
+        { x: CX - S1 * PX, y: CY - S1 * PY, scale: S1, duration: 3.48, ease: "power1.inOut" }, 0.6);
+      tl.fromTo(world, { x: CX - S1 * PX, y: CY - S1 * PY, scale: S1 },
+        { x: 0, y: 0, scale: 1, duration: 0.9, ease: "expo.out", immediateRender: false }, 4.08);
+      // text travels to the left column with the pull; key text lands on its words
+      tl.fromTo(q("#f50-cap"), { x: CX - 44, xPercent: -50, y: 436 },
+        { x: 0, xPercent: 0, y: 0, duration: 0.7, ease: "power3.out", immediateRender: false }, 4.08);
+      tl.fromTo(q("#f50-sp1"), { x: 1352, y: 108 },
+        { x: 40, y: 344, duration: 0.6, ease: "power2.inOut", immediateRender: false }, 4.08);
+      tl.fromTo(q("#f50-k1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.08);
+      tl.fromTo(q("#f50-k2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 4.29);
+      tl.fromTo(q("#f50-mcph"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 4.3);
+      tl.fromTo(q("#f50-ul path"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 4.45);
+      // payoff on the locked wide: every identical port lights up connected
+      lamps.forEach(function (l, i) {
+        tl.fromTo(l, { opacity: 0.22 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 4.7 + i * 0.03);
+      });
+      tl.fromTo(q("#f50-s1"), { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.96, duration: 0.3, ease: "power2.in", immediateRender: false }, 5.64);
+
+      // ---- Scene 2 (5.94–10.22): hub on two rings ----
+      tl.fromTo(q("#f50-s2"), { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.94);
+      tl.fromTo(rings, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut", stagger: 0.15 }, 5.94);
+      tl.fromTo(inner.map(function (o) { return o.spoke; }), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out", stagger: 0.04 }, 6.76);
+      tl.fromTo(q("#f50-hub"), { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 7.76);
+      inner.forEach(function (o, i) {
+        tl.fromTo(o.tile, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 8.41 + i * 0.05);
+      });
+      tl.fromTo(outer.map(function (o) { return o.spoke; }), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.out", stagger: 0.025 }, 8.97);
+      outer.forEach(function (o, i) {
+        tl.fromTo(o.tile, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, 9.0 + i * 0.035);
+      });
+      [["#f50-m1", 8.97], ["#f50-m2", 9.15], ["#f50-m3", 9.33], ["#f50-m4", 9.47]].forEach(function (w) {
+        tl.fromTo(q(w[0]), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, w[1]);
+      });
+      tl.fromTo(q("#f50-s2"), { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.96, duration: 0.28, ease: "power2.in", immediateRender: false }, 9.94);
+
+      // ---- Scene 3 (10.22–14.876): copy loop struck vs one MCP line ----
+      tl.fromTo(q("#f50-s3"), { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 10.22);
+      tl.fromTo(q("#f50-div"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 10.22);
+      tl.fromTo(q("#f50-docL"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 10.64);
+      tl.fromTo(q("#f50-chat"), { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 10.78);
+      tl.fromTo(q("#f50-docR"), { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 10.94);
+      tl.fromTo(q("#f50-node"), { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 11.06);
+      tl.fromTo(q("#f50-arcT"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 11.12);
+      tl.fromTo(q("#f50-headT"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 11.55);
+      tl.fromTo(q("#f50-arcB"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 11.4);
+      tl.fromTo(q("#f50-headB"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 11.83);
+      // copied pages hop doc -> chat along the loop (finite, three trips)
+      [["#f50-c1", 11.2], ["#f50-c2", 11.55], ["#f50-c3", 11.9]].forEach(function (c) {
+        var el = q(c[0]);
+        tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, c[1]);
+        tl.to(el, { keyframes: bezKF(ARC, [14, 18], 10, 0.55), ease: "none" }, c[1]);
+        tl.fromTo(el, { opacity: 1 }, { opacity: 0, duration: 0.1, ease: "none", immediateRender: false }, c[1] + 0.48);
+      });
+      tl.fromTo(q("#f50-cw1"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 11.88);
+      tl.fromTo(q("#f50-cw2"), { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.13);
+      tl.fromTo(q("#f50-strike"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 12.13);
+      tl.fromTo(q("#f50-labDoc"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.35);
+      tl.fromTo(q("#f50-mcpline"), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 12.53);
+      tl.fromTo(q("#f50-mcptag"), { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.77);
+      tl.fromTo(q("#f50-labChat"), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 12.93);
+      tl.fromTo(q("#f50-dot"), { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, 13.03);
+      tl.to(q("#f50-dot"), { keyframes: bezKF(LINE, [9, 9], 10, 0.4), ease: "none" }, 13.03);
+      tl.fromTo(q("#f50-node"), { borderColor: "rgba(240,238,230,0.18)" }, { borderColor: "#8FB8A8", duration: 0.3, ease: "power2.out", immediateRender: false }, 13.43);
+      tl.fromTo(q("#f50-tick"), { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" }, 13.43);
+
+      tl.to({}, { duration: 14.876 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["50-mcp-cong-ket-noi-chung"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,439 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f31-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f31-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f31- */
+    .f31-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    .f31-viewport {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    .f31-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+    }
+    .f31-img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .f31-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .f31-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f31-gold { stroke: var(--gold); }
+    .f31-sage { stroke: var(--cyan); }
+    .f31-ink { stroke: var(--ink); }
+    .f31-w {
+      display: inline-block;
+      opacity: 0;
+    }
+    .f31-kicker {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f31-kicker svg { width: 28px; height: 28px; display: block; }
+    .f31-spark {
+      display: block;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+
+    /* ---------- Shot 1: screen 70 (left) / rail 30 (right) ---------- */
+    #f31-vp1 { left: 0; top: 60px; width: 1240px; height: 697.5px; }
+    #f31-wrap1 {
+      width: 1240px;
+      height: 697.5px;
+      transform-origin: 620px 348.75px;
+    }
+    #f31-ptr1 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f31-k1 { left: 1390px; top: 218px; }
+    #f31-row1 {
+      position: absolute;
+      left: 1310px;
+      top: 330px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      white-space: nowrap;
+    }
+    #f31-ghost1 { width: 64px; height: 70px; display: block; overflow: visible; }
+    #f31-bongma {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 80px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    #f31-bongma .f31-w { margin-right: 18px; }
+    #f31-goc {
+      position: absolute;
+      left: 1312px;
+      top: 448px;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ---------- Shot 2: kinetic "ẩn danh" ---------- */
+    #f31-ghost2 {
+      position: absolute;
+      left: 820px;
+      top: 150px;
+      width: 120px;
+      height: 132px;
+      overflow: visible;
+    }
+    #f31-an-row {
+      position: absolute;
+      left: 0;
+      top: 320px;
+      width: 1760px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      white-space: nowrap;
+    }
+    #f31-an-text {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 180px;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    #f31-an-text .f31-w { margin: 0 20px; }
+    #f31-danh { color: var(--gold); }
+    #f31-spark2 { width: 48px; height: 48px; }
+
+    /* ---------- Shot 3: rail 40 (left) / screen 60 (right) ---------- */
+    #f31-vp3 { left: 680px; top: 110px; width: 1056px; height: 594px; }
+    #f31-wrap3 {
+      width: 1056px;
+      height: 594px;
+      transform-origin: 528px 297px;
+    }
+    #f31-ptr3 {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    #f31-k3 { left: 20px; top: 250px; }
+    .f31-row {
+      position: absolute;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      white-space: nowrap;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.3;
+      color: var(--ink);
+    }
+    .f31-row svg { width: 40px; height: 40px; display: block; overflow: visible; }
+    #f31-r1 { top: 326px; }
+    #f31-r2 { top: 416px; }
+
+    /* ---------- Shot 4: kinetic "riêng tư" ---------- */
+    #f31-k4 {
+      left: 0;
+      top: 220px;
+      width: 1760px;
+      justify-content: center;
+    }
+    #f31-rt-row {
+      position: absolute;
+      left: 0;
+      top: 290px;
+      width: 1760px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      white-space: nowrap;
+    }
+    #f31-rt-text {
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 196px;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+    #f31-rt-text .f31-w { margin: 0 22px; }
+    #f31-spark4 { width: 52px; height: 52px; }
+    #f31-under {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+  </style>
+
+  <div id="root" data-composition-id="31-tro-chuyen-an-danh" data-width="1920" data-height="1080" data-duration="11.797">
+    <div id="f31-ground" class="clip" data-start="0" data-duration="11.797" data-track-index="0"></div>
+    <div id="f31-stage" class="clip" data-start="0" data-duration="11.797" data-track-index="1">
+
+      <!-- Shot 1: home screen, zoom to the ghost button at the top-right -->
+      <div id="f31-s1" class="f31-layer">
+        <div id="f31-vp1" class="f31-viewport">
+          <div id="f31-wrap1" class="f31-wrap">
+            <img class="f31-img" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg class="f31-callout" viewBox="0 0 1240 697.5">
+              <rect id="f31-rect1" class="f31-draw f31-gold" x="1205" y="5" width="31" height="27" rx="6" ry="6" pathLength="1" stroke-width="2.4"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <svg id="f31-ptr1" viewBox="0 0 1760 820">
+          <path id="f31-ptr1-line" class="f31-draw f31-gold" pathLength="1" stroke-width="3.5" d="M1352 318 C 1350 250, 1300 170, 1226 116"></path>
+          <path id="f31-ptr1-head" class="f31-draw f31-gold" pathLength="1" stroke-width="3.5" d="M1232 139 L 1224 114 L 1250 115"></path>
+        </svg>
+
+        <div id="f31-k1" class="f31-kicker">
+          <svg viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+          <span>riêng tư</span>
+        </div>
+        <div id="f31-row1">
+          <svg id="f31-ghost1" viewBox="0 0 100 110">
+            <path id="f31-ghost1-body" class="f31-draw f31-ink" pathLength="1" stroke-width="6" d="M18 102 V 48 C 18 22, 34 8, 50 8 C 66 8, 82 22, 82 48 V 102 L 71 92 L 61 102 L 50 92 L 39 102 L 29 92 Z"></path>
+            <circle id="f31-ghost1-e1" cx="39" cy="50" r="5" fill="#F0EEE6" opacity="0"></circle>
+            <circle id="f31-ghost1-e2" cx="61" cy="50" r="5" fill="#F0EEE6" opacity="0"></circle>
+          </svg>
+          <span id="f31-bongma"><span id="f31-bong" class="f31-w">bóng</span><span id="f31-ma" class="f31-w">ma</span></span>
+        </div>
+        <div id="f31-goc"><span id="f31-goc-w" class="f31-w">góc</span> <span id="f31-tren-w" class="f31-w">trên</span> <span id="f31-benphai-w" class="f31-w">bên phải</span></div>
+      </div>
+
+      <!-- Shot 2: kinetic "ẩn danh" -->
+      <div id="f31-s2" class="f31-layer">
+        <svg id="f31-ghost2" viewBox="0 0 100 110">
+          <path id="f31-ghost2-body" class="f31-draw f31-ink" pathLength="1" stroke-width="5" d="M18 102 V 48 C 18 22, 34 8, 50 8 C 66 8, 82 22, 82 48 V 102 L 71 92 L 61 102 L 50 92 L 39 102 L 29 92 Z"></path>
+          <circle id="f31-ghost2-e1" cx="39" cy="50" r="5" fill="#F0EEE6" opacity="0"></circle>
+          <circle id="f31-ghost2-e2" cx="61" cy="50" r="5" fill="#F0EEE6" opacity="0"></circle>
+        </svg>
+        <div id="f31-an-row">
+          <span id="f31-an-text"><span id="f31-an" class="f31-w">ẩn</span><span id="f31-danh" class="f31-w">danh</span></span>
+          <svg id="f31-spark2" class="f31-spark" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        </div>
+      </div>
+
+      <!-- Shot 3: incognito screen, pan to the notice under the input -->
+      <div id="f31-s3" class="f31-layer">
+        <div id="f31-vp3" class="f31-viewport">
+          <div id="f31-wrap3" class="f31-wrap">
+            <img class="f31-img" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg class="f31-callout" viewBox="0 0 1056 594">
+              <rect id="f31-rect-tag" class="f31-draw f31-sage" x="8" y="4" width="92" height="23" rx="6" ry="6" pathLength="1" stroke-width="2"></rect>
+              <rect id="f31-rect3" class="f31-draw f31-gold" x="348" y="340" width="354" height="48" rx="7" ry="7" pathLength="1" stroke-width="2.2"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <svg id="f31-ptr3" viewBox="0 0 1760 820">
+          <path id="f31-ptr3-line" class="f31-draw f31-gold" pathLength="1" stroke-width="3.5" d="M452 402 C 560 380, 700 430, 820 432 S 920 438, 954 440"></path>
+          <path id="f31-ptr3-head" class="f31-draw f31-gold" pathLength="1" stroke-width="3.5" d="M932 426 L 956 440 L 931 454"></path>
+        </svg>
+
+        <div id="f31-k3" class="f31-kicker"><span>chat ẩn danh</span></div>
+        <div id="f31-r1" class="f31-row">
+          <svg viewBox="0 0 40 40">
+            <path id="f31-x1a" class="f31-draw f31-ink" pathLength="1" stroke-width="4.5" d="M9 8 C 17 17, 24 24, 32 33"></path>
+            <path id="f31-x1b" class="f31-draw f31-ink" pathLength="1" stroke-width="4.5" d="M31 8 C 24 16, 16 25, 8 32"></path>
+          </svg>
+          <span id="f31-r1-t" class="f31-w">không lưu lịch sử</span>
+        </div>
+        <div id="f31-r2" class="f31-row">
+          <svg viewBox="0 0 40 40">
+            <path id="f31-x2a" class="f31-draw f31-ink" pathLength="1" stroke-width="4.5" d="M9 8 C 17 17, 24 24, 32 33"></path>
+            <path id="f31-x2b" class="f31-draw f31-ink" pathLength="1" stroke-width="4.5" d="M31 8 C 24 16, 16 25, 8 32"></path>
+          </svg>
+          <span id="f31-r2-t" class="f31-w">không vào bộ nhớ</span>
+        </div>
+      </div>
+
+      <!-- Shot 4: kinetic "riêng tư" -->
+      <div id="f31-s4" class="f31-layer">
+        <div id="f31-k4" class="f31-kicker"><span>hỏi nhanh</span></div>
+        <div id="f31-rt-row">
+          <span id="f31-rt-text"><span id="f31-rieng" class="f31-w">riêng</span><span id="f31-tu" class="f31-w">tư</span></span>
+          <svg id="f31-spark4" class="f31-spark" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        </div>
+        <svg id="f31-under" viewBox="0 0 1760 820">
+          <path id="f31-under-p" class="f31-draw f31-gold" pathLength="1" stroke-width="4" d="M560 560 C 700 548, 860 566, 1000 552 S 1160 548, 1200 554"></path>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // later shots start hidden (set before the timeline is built)
+      gsap.set(["#f31-s2", "#f31-s3", "#f31-s4"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ===== Shot 1 — screen (0–4.14 s) ===== */
+      tl.fromTo("#f31-wrap1", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 0);
+      // "riêng" @0.57 — rail kicker
+      tl.fromTo("#f31-k1", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 0.57);
+      // "bóng" @2.08 — push to 1.3x pinned on the top-right corner, callout draws, rail label + ghost icon
+      tl.fromTo("#f31-wrap1", { x: 0, y: 0, scale: 1 }, { x: -186, y: 104.6, scale: 1.3, duration: 0.7, ease: "power2.inOut", immediateRender: false }, 2.08);
+      tl.fromTo("#f31-rect1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.2);
+      tl.fromTo("#f31-bong", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.08);
+      tl.fromTo("#f31-ghost1-body", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.08);
+      // "ma" @2.26
+      tl.fromTo("#f31-ma", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 2.26);
+      tl.fromTo(["#f31-ghost1-e1", "#f31-ghost1-e2"], { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.5);
+      // "góc" @2.66 — hand-drawn arrow up to the ghost button, location sub-label
+      tl.fromTo("#f31-ptr1-line", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 2.66);
+      tl.fromTo("#f31-ptr1-head", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 3.01);
+      tl.fromTo("#f31-goc-w", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.66);
+      tl.fromTo("#f31-tren-w", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 2.85);
+      tl.fromTo("#f31-benphai-w", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 3.01);
+      // crop zoom to 1.4, top-right corner stays pinned
+      tl.fromTo("#f31-wrap1", { x: -186, y: 104.6, scale: 1.3 }, { x: -248, y: 139.5, scale: 1.4, duration: 1.1, ease: "none", immediateRender: false }, 2.9);
+
+      /* ===== Shot 2 — kinetic (4.14–5.14 s) ===== */
+      tl.fromTo("#f31-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 4.0);
+      tl.fromTo("#f31-s2", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out", immediateRender: false }, 4.14);
+      tl.fromTo("#f31-ghost2-body", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 4.14);
+      tl.fromTo(["#f31-ghost2-e1", "#f31-ghost2-e2"], { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 4.5);
+      // "ẩn" @4.27, "danh" @4.39 + spark
+      tl.fromTo("#f31-an", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 4.27);
+      tl.fromTo("#f31-danh", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 4.39);
+      tl.fromTo("#f31-spark2", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.4, ease: "power3.out" }, 4.39);
+      // zoom-through out
+      tl.fromTo("#f31-s2", { scale: 1, filter: "blur(0px)" }, { scale: 1.12, filter: "blur(8px)", duration: 0.26, ease: "power2.in", immediateRender: false }, 4.94);
+      tl.fromTo("#f31-s2", { opacity: 1 }, { opacity: 0, duration: 0.26, ease: "power2.in", immediateRender: false }, 4.94);
+
+      /* ===== Shot 3 — screen (5.14–9 s) ===== */
+      tl.fromTo("#f31-s3", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out", immediateRender: false }, 5.12);
+      tl.fromTo("#f31-wrap3", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 5.14);
+      tl.fromTo("#f31-k3", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 5.2);
+      // the "Incognito chat" tag at the top-left
+      tl.fromTo("#f31-rect-tag", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 5.25);
+      // pan + zoom to the notice under the input
+      tl.fromTo("#f31-wrap3", { x: 0, y: 0, scale: 1 }, { x: 5, y: -58, scale: 1.35, duration: 0.7, ease: "power2.inOut", immediateRender: false }, 5.64);
+      tl.fromTo("#f31-rect3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 5.95);
+      // "không lưu" @5.92 — first rail row with its cross
+      tl.fromTo("#f31-r1-t", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 5.92);
+      tl.fromTo("#f31-x1a", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.15, ease: "none" }, 5.95);
+      tl.fromTo("#f31-x1b", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.15, ease: "none" }, 6.1);
+      // connector from the rail to the notice
+      tl.fromTo("#f31-ptr3-line", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 6.2);
+      tl.fromTo("#f31-ptr3-head", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.12, ease: "none" }, 6.55);
+      // "bộ nhớ" @6.50
+      tl.fromTo("#f31-r2-t", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 6.5);
+      tl.fromTo("#f31-x2a", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.15, ease: "none" }, 6.52);
+      tl.fromTo("#f31-x2b", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.15, ease: "none" }, 6.67);
+      // crop zoom hold (scale stays <= 1.4)
+      tl.fromTo("#f31-wrap3", { x: 5, y: -58, scale: 1.35 }, { x: 0, y: -61, scale: 1.4, duration: 2.0, ease: "none", immediateRender: false }, 6.7);
+
+      /* ===== Shot 4 — kinetic (9–11.297 s) ===== */
+      tl.fromTo("#f31-s3", { scale: 1, filter: "blur(0px)" }, { scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 8.85);
+      tl.fromTo("#f31-s3", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power2.in", immediateRender: false }, 8.85);
+      tl.fromTo("#f31-s4", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out", immediateRender: false }, 9.0);
+      // "nhanh" @9.23 — kicker
+      tl.fromTo("#f31-k4", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.23);
+      // "riêng" @9.81, "tư" @10.12 + spark
+      tl.fromTo("#f31-rieng", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 9.81);
+      tl.fromTo("#f31-tu", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 10.12);
+      tl.fromTo("#f31-spark4", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: "power3.out" }, 10.12);
+      tl.fromTo("#f31-under-p", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 10.3);
+      // quiet hold drift
+      tl.fromTo("#f31-s4", { scale: 1 }, { scale: 1.015, duration: 1.0, ease: "none", immediateRender: false }, 10.29);
+
+      tl.to({}, { duration: 11.297 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["31-tro-chuyen-an-danh"] = tl;
+    })();
+  </script>
+</template>

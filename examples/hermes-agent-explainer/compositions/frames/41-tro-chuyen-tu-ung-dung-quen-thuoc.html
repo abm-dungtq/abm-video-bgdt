@@ -1,0 +1,309 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f41-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(290, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f41-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f41- */
+
+    /* ---------- Scene 1: kinetic headline + empty desk chair ---------- */
+    #f41-s1 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 400px; }
+    #f41-head {
+      position: absolute; left: 70px; top: 230px; width: 980px;
+      font-size: 104px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
+    }
+    .f41-line { display: flex; gap: 30px; height: 124px; align-items: center; }
+    .f41-w { display: inline-block; position: relative; opacity: 0; }
+    #f41-uline { position: absolute; left: 70px; top: 356px; overflow: visible; }
+    #f41-desk { position: absolute; left: 1080px; top: 150px; overflow: visible; }
+    .f41-draw { fill: none; stroke: var(--ink); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+    #f41-deskmark { opacity: 0; }
+
+    /* ---------- Scene 2/3: gateway hub constellation ---------- */
+    #f41-hubgroup { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; transform-origin: 880px 400px; }
+    #f41-field { position: absolute; left: 0; top: 0; overflow: visible; }
+    .f41-orbit { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 14; }
+    .f41-conn { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; opacity: 0.7; }
+    #f41-hub {
+      position: absolute; left: 750px; top: 270px; width: 260px; height: 260px;
+      border-radius: 50%; background: var(--surface);
+      border: 4px solid var(--gold);
+      box-shadow: 0 0 0 14px rgba(255,210,63,.08), 0 20px 60px rgba(0,0,0,.45);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      opacity: 0;
+    }
+    #f41-hubname { font-size: 46px; font-weight: 800; line-height: 1.1; letter-spacing: -0.015em; }
+    #f41-pulse {
+      position: absolute; left: 750px; top: 270px; width: 260px; height: 260px;
+      border-radius: 50%; border: 4px solid var(--gold); opacity: 0;
+    }
+    #f41-gw {
+      position: absolute; left: 630px; top: 556px; width: 500px; height: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      color: var(--gold); opacity: 0;
+    }
+    .f41-node {
+      position: absolute; width: 300px; height: 96px;
+      background: var(--surface); border: 2px solid rgba(62,230,208,.55); border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 18px; padding: 0 22px;
+      opacity: 0;
+    }
+    .f41-ico {
+      width: 58px; height: 58px; border-radius: 50%; flex: none;
+      background: rgba(62,230,208,.14); border: 2px solid var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .f41-ico svg { overflow: visible; }
+    .f41-istroke { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .f41-nlabel { font-size: 36px; font-weight: 600; line-height: 1.2; }
+    #f41-n1 { left: 245px; top: 152px; }
+    #f41-n2 { left: 1215px; top: 152px; }
+    #f41-n3 { left: 1215px; top: 552px; }
+    #f41-n4 { left: 245px; top: 552px; }
+
+    /* ---------- Scene 3: phone on the go + courier trail ---------- */
+    #f41-phone {
+      position: absolute; left: 1380px; top: 170px; width: 300px; height: 600px;
+      border-radius: 46px; background: var(--surface);
+      border: 3px solid rgba(244,241,232,.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      opacity: 0;
+    }
+    #f41-notch { position: absolute; left: 105px; top: 18px; width: 90px; height: 22px; border-radius: 11px; background: var(--canvas); }
+    #f41-loc {
+      position: absolute; left: 0; top: 66px; width: 294px; height: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-size: 28px; font-weight: 600; color: var(--muted); opacity: 0;
+    }
+    #f41-input { position: absolute; left: 24px; top: 520px; width: 246px; height: 48px; border-radius: 24px; border: 2px solid rgba(244,241,232,.18); }
+    #f41-check { position: absolute; left: 1490px; top: 390px; overflow: visible; opacity: 0; }
+    #f41-trail { position: absolute; left: 0; top: 0; overflow: visible; }
+    #f41-trailpath { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+    #f41-bubble {
+      position: absolute; left: 1410px; top: 392px; width: 240px; height: 76px;
+      border-radius: 26px; border-bottom-right-radius: 6px;
+      background: var(--gold); color: var(--canvas);
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      font-size: 34px; font-weight: 800; line-height: 1.1;
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+      opacity: 0;
+    }
+    .f41-bw { display: inline-block; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="41-tro-chuyen-tu-ung-dung-quen-thuoc" data-width="1920" data-height="1080" data-duration="12.755">
+    <div id="f41-ground" class="clip" data-start="0" data-duration="12.755" data-track-index="0"></div>
+    <div id="f41-stage" class="clip" data-start="0" data-duration="12.755" data-track-index="1">
+
+      <!-- Scene 1 -->
+      <div id="f41-s1">
+        <div id="f41-head">
+          <div class="f41-line">
+            <span class="f41-w" id="f41-w1">Không</span>
+            <span class="f41-w" id="f41-w2">cần</span>
+            <span class="f41-w" id="f41-w3">ngồi</span>
+          </div>
+          <div class="f41-line">
+            <span class="f41-w" id="f41-w4">trước</span>
+            <span class="f41-w" id="f41-w5">máy</span>
+            <span class="f41-w" id="f41-w6">tính</span>
+          </div>
+        </div>
+        <svg id="f41-uline" width="460" height="20" viewBox="0 0 460 20">
+          <path id="f41-ulinepath" d="M4 10 C 120 2, 300 18, 456 8" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+        </svg>
+        <svg id="f41-desk" width="600" height="520" viewBox="0 0 600 520">
+          <!-- monitor -->
+          <path class="f41-draw" id="f41-d1" d="M60 40 H330 Q340 40 340 50 V210 Q340 220 330 220 H60 Q50 220 50 210 V50 Q50 40 60 40 Z" />
+          <path class="f41-draw" id="f41-d2" d="M195 220 V270 M150 270 H240" />
+          <!-- desk -->
+          <path class="f41-draw" id="f41-d3" d="M10 280 H400 M40 280 V500 M370 280 V500" />
+          <!-- empty chair -->
+          <path class="f41-draw" id="f41-d4" d="M470 150 Q480 140 490 150 L520 330 M440 340 H560 M460 340 L440 500 M540 340 L560 500 M500 340 V430" />
+          <!-- Hermes mark on the screen -->
+          <g transform="translate(195 130)"><g id="f41-deskmark">
+            <circle cx="0" cy="0" r="14" fill="#ffd23f" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+            <path d="M-20 -2 Q-44 -26 -64 -14 Q-50 -6 -34 6" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round" />
+            <path d="M20 -2 Q44 -26 64 -14 Q50 -6 34 6" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round" />
+          </g></g>
+        </svg>
+      </div>
+
+      <!-- Scene 2/3: hub constellation -->
+      <div id="f41-hubgroup">
+        <svg id="f41-field" width="1760" height="820" viewBox="0 0 1760 820">
+          <ellipse class="f41-orbit" id="f41-orb1" cx="880" cy="400" rx="485" ry="200" />
+          <ellipse class="f41-orbit" id="f41-orb2" cx="880" cy="400" rx="640" ry="300" />
+          <path class="f41-conn" id="f41-c1" d="M880 400 L395 200" />
+          <path class="f41-conn" id="f41-c2" d="M880 400 L1365 200" />
+          <path class="f41-conn" id="f41-c3" d="M880 400 L1365 600" />
+          <path class="f41-conn" id="f41-c4" d="M880 400 L395 600" />
+        </svg>
+
+        <div class="f41-node" id="f41-n1">
+          <div class="f41-ico"><svg width="30" height="30" viewBox="0 0 30 30"><path class="f41-istroke" d="M2 14 L28 3 L22 27 L14 19 Z M14 19 L28 3" /></svg></div>
+          <span class="f41-nlabel">Telegram</span>
+        </div>
+        <div class="f41-node" id="f41-n2">
+          <div class="f41-ico"><svg width="32" height="28" viewBox="0 0 32 28"><path class="f41-istroke" d="M4 3 H28 Q30 3 30 5 V19 Q30 21 28 21 H14 L7 27 V21 H4 Q2 21 2 19 V5 Q2 3 4 3 Z" /><circle cx="11" cy="12" r="2.4" fill="#f4f1e8" /><circle cx="21" cy="12" r="2.4" fill="#f4f1e8" /></svg></div>
+          <span class="f41-nlabel">Discord</span>
+        </div>
+        <div class="f41-node" id="f41-n3">
+          <div class="f41-ico"><svg width="28" height="28" viewBox="0 0 28 28"><path class="f41-istroke" d="M10 2 L8 26 M20 2 L18 26 M3 9 H26 M2 19 H25" /></svg></div>
+          <span class="f41-nlabel">Slack</span>
+        </div>
+        <div class="f41-node" id="f41-n4">
+          <div class="f41-ico"><svg width="30" height="30" viewBox="0 0 30 30"><path class="f41-istroke" d="M15 2 A13 13 0 1 1 5 23 L2 28 L8 26 A13 13 0 0 0 15 28" /><path class="f41-istroke" d="M10 9 Q9 15 15 20 Q19 22 21 20 L19 17 L17 18 Q13 16 12 12 L13 10 Z" /></svg></div>
+          <span class="f41-nlabel">WhatsApp</span>
+        </div>
+
+        <div id="f41-pulse"></div>
+        <div id="f41-hub">
+          <svg width="120" height="44" viewBox="-64 -24 128 44" style="overflow: visible;">
+            <circle cx="0" cy="0" r="13" fill="#ffd23f" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));" />
+            <path d="M-20 -2 Q-44 -26 -64 -14 Q-50 -6 -34 6" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round" />
+            <path d="M20 -2 Q44 -26 64 -14 Q50 -6 34 6" fill="none" stroke="#f4f1e8" stroke-width="5" stroke-linecap="round" />
+          </svg>
+          <span id="f41-hubname">Hermes</span>
+        </div>
+        <div id="f41-gw"><span>◆</span><span>GATEWAY</span></div>
+      </div>
+
+      <!-- Scene 3: phone -->
+      <div id="f41-phone">
+        <div id="f41-notch"></div>
+        <div id="f41-loc">
+          <svg width="24" height="30" viewBox="0 0 24 30"><path d="M12 29 C 4 18, 2 14, 2 11 A10 10 0 0 1 22 11 C 22 14, 20 18, 12 29 Z" fill="none" stroke="#3ee6d0" stroke-width="3" stroke-linejoin="round" /><circle cx="12" cy="11" r="3.5" fill="#3ee6d0" /></svg>
+          <span>Ngoài đường</span>
+        </div>
+        <div id="f41-input"></div>
+      </div>
+      <svg id="f41-check" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="rgba(62,230,208,.14)" stroke="#3ee6d0" stroke-width="4" />
+        <path d="M24 41 L35 52 L57 28" fill="none" stroke="#3ee6d0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <svg id="f41-trail" width="1760" height="820" viewBox="0 0 1760 820">
+        <path id="f41-trailpath" d="M1530 430 C 1300 300, 980 290, 745 395" />
+      </svg>
+      <div id="f41-bubble"><span class="f41-bw" id="f41-b1">giao</span><span class="f41-bw" id="f41-b2">việc</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      function len(id, fb) {
+        var el = document.getElementById(id);
+        try { var l = el.getTotalLength(); return l > 0 ? l : fb; } catch (e) { return fb; }
+      }
+      // initial hidden states for draw-on strokes (before the timeline)
+      var draws = [["f41-ulinepath", 460], ["f41-d1", 900], ["f41-d2", 140], ["f41-d3", 820], ["f41-d4", 700],
+                   ["f41-orb1", 2200], ["f41-orb2", 3000], ["f41-c1", 530], ["f41-c2", 530], ["f41-c3", 530], ["f41-c4", 530],
+                   ["f41-trailpath", 1000]];
+      var L = {};
+      draws.forEach(function (d) {
+        L[d[0]] = len(d[0], d[1]);
+        gsap.set("#" + d[0], { strokeDasharray: L[d[0]], strokeDashoffset: L[d[0]] });
+      });
+
+      var tl = gsap.timeline({ paused: true });
+
+      // ---- Scene 1 (0–3.5): kinetic words on their spoken times ----
+      var words = [["#f41-w1", 0.491], ["#f41-w2", 0.651], ["#f41-w3", 0.791], ["#f41-w4", 0.972], ["#f41-w5", 1.152], ["#f41-w6", 1.333]];
+      words.forEach(function (w) {
+        tl.fromTo(w[0], { opacity: 0, y: 46 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, w[1]);
+      });
+      // gold courier underline under "Không cần"
+      tl.to("#f41-ulinepath", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 0.651);
+      // empty desk + chair draws on
+      tl.to("#f41-d1", { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 1.4);
+      tl.to("#f41-d2", { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 1.9);
+      tl.to("#f41-d3", { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.0);
+      tl.to("#f41-d4", { strokeDashoffset: 0, duration: 0.6, ease: "none" }, 2.35);
+      // Hermes mark lights on the screen on "Hermes"
+      tl.fromTo("#f41-deskmark", { opacity: 0, scale: 0.5, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.45, ease: "power3.out" }, 2.275);
+      // in-frame zoom-through into the hub
+      tl.to("#f41-s1", { scale: 1.06, opacity: 0, filter: "blur(12px)", duration: 0.4, ease: "power2.inOut" }, 3.2);
+
+      // ---- Scene 2 (3.5–7.58): gateway hub + app nodes on their cues ----
+      tl.fromTo("#f41-hub", { opacity: 0, scale: 0.45 }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 3.45);
+      tl.fromTo("#f41-gw", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 3.5);
+      tl.to("#f41-orb1", { strokeDashoffset: 0, duration: 1.2, ease: "none" }, 3.6);
+      tl.to("#f41-orb2", { strokeDashoffset: 0, duration: 1.2, ease: "none" }, 3.75);
+      tl.fromTo("#f41-orb1", { opacity: 0 }, { opacity: 0.16, duration: 0.4, ease: "power3.out" }, 3.6);
+      tl.fromTo("#f41-orb2", { opacity: 0 }, { opacity: 0.09, duration: 0.4, ease: "power3.out" }, 3.75);
+      var nodes = [["1", 4.94], ["2", 5.95], ["3", 6.79], ["4", 7.53]];
+      nodes.forEach(function (n) {
+        tl.to("#f41-c" + n[0], { strokeDashoffset: 0, duration: 0.35, ease: "none" }, n[1]);
+        tl.fromTo("#f41-n" + n[0], { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.3)" }, n[1]);
+      });
+      // slow constellation drift while the ring fills
+      tl.fromTo("#f41-hubgroup", { scale: 1, x: 0 }, { scale: 1.02, x: 0, duration: 5.1, ease: "none" }, 3.5);
+
+      // ---- Scene 3 (7.58–12.26): on the go → "giao việc" rides the courier trail ----
+      tl.to("#f41-hubgroup", { x: -260, scale: 0.9, duration: 0.9, ease: "power2.inOut" }, 8.65);
+      tl.fromTo("#f41-phone", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 8.653);
+      tl.fromTo("#f41-loc", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 9.318);
+      tl.fromTo("#f41-bubble", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 10.507);
+      tl.fromTo("#f41-b1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 10.507);
+      tl.fromTo("#f41-b2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 10.708);
+
+      // trail draws from phone to hub; the bubble rides its head
+      var T0 = 10.95, TD = 0.8, N = 12;
+      tl.to("#f41-trailpath", { strokeDashoffset: 0, duration: TD, ease: "none" }, T0);
+      var p0 = [1530, 430], p1 = [1300, 300], p2 = [980, 290], p3 = [745, 395];
+      function bz(t, i) {
+        var u = 1 - t;
+        return u * u * u * p0[i] + 3 * u * u * t * p1[i] + 3 * u * t * t * p2[i] + t * t * t * p3[i];
+      }
+      var kf = [];
+      for (var k = 1; k <= N; k++) {
+        var t = k / N;
+        kf.push({ x: bz(t, 0) - p0[0], y: bz(t, 1) - p0[1], duration: TD / N, ease: "none" });
+      }
+      tl.to("#f41-bubble", { keyframes: kf }, T0);
+      tl.to("#f41-bubble", { scale: 0.5, duration: TD, ease: "power2.in" }, T0 + 0.35);
+      tl.to("#f41-bubble", { opacity: 0, duration: 0.15, ease: "none" }, T0 + TD - 0.12);
+      tl.fromTo("#f41-check", { opacity: 0, scale: 0.4, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out" }, T0 + 0.3);
+
+      // hub pulses once and holds
+      var TP = T0 + TD;
+      tl.to("#f41-hub", { scale: 1.1, duration: 0.18, ease: "power2.out" }, TP);
+      tl.to("#f41-hub", { scale: 1, duration: 0.4, ease: "power2.inOut" }, TP + 0.18);
+      tl.fromTo("#f41-pulse", { opacity: 0.85, scale: 1 }, { opacity: 0, scale: 1.8, duration: 0.8, ease: "power2.out", immediateRender: false }, TP);
+
+      tl.to({}, { duration: 12.255 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["41-tro-chuyen-tu-ung-dung-quen-thuoc"] = tl;
+    })();
+  </script>
+</template>

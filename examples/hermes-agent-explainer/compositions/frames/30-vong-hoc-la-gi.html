@@ -1,0 +1,341 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f30-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(278, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f30-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with f30- */
+    #f30-cam { position: absolute; inset: 0; transform-origin: 880px 410px; }
+    .f30-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f30-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f30-trail, #f30-spiral, .f30-mark { filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+
+    /* Scene 1 — kinetic kicker + display phrase */
+    #f30-kick {
+      position: absolute; left: 0; top: 230px; width: 1760px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 18px;
+      font-family: "JetBrains Mono", monospace; font-size: 34px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap;
+    }
+    #f30-kick b { color: var(--gold); font-weight: 400; }
+    #f30-kick span { display: block; }
+    #f30-kh { color: var(--ink); }
+    #f30-title {
+      position: absolute; left: 0; top: 320px; width: 1760px; height: 170px;
+      transform-origin: 880px 85px;
+    }
+    #f30-words {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 140px;
+      display: flex; justify-content: center; align-items: center; gap: 34px;
+      font-size: 128px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; white-space: nowrap;
+    }
+    #f30-words span { display: block; }
+    #f30-kin { color: var(--gold); }
+    #f30-uline { position: absolute; left: 0; top: 140px; width: 1760px; height: 30px; overflow: visible; }
+
+    /* Scene 2 — loop stations */
+    #f30-orbit { position: absolute; left: 880px; top: 470px; width: 0; height: 0; }
+    #f30-spark { position: absolute; left: -38px; top: -282px; width: 60px; height: 44px; }
+
+    .f30-slot { position: absolute; width: 420px; height: 100px; display: flex; justify-content: center; align-items: center; }
+    #f30-slot1 { left: 670px; top: 160px; }
+    #f30-slot2 { left: 895px; top: 550px; }
+    #f30-slot3 { left: 445px; top: 550px; }
+    .f30-node {
+      position: relative; height: 96px; padding: 0 34px; border-radius: 18px;
+      background: var(--surface); border: 1px solid rgba(244,241,232,.22);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex; align-items: center; gap: 18px;
+      font-size: 40px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+    }
+    .f30-hl {
+      position: absolute; left: -3px; top: -3px; right: -3px; bottom: -3px; border-radius: 20px;
+      border: 3px solid var(--gold); box-shadow: 0 0 28px rgba(255,210,63,.45);
+    }
+    #f30-chip {
+      position: absolute; left: 445px; top: 668px; width: 420px; height: 50px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--cyan); white-space: nowrap;
+    }
+    #f30-chip span { display: block; }
+
+    #f30-status {
+      position: absolute; left: 630px; top: 400px; width: 500px; height: 150px;
+    }
+    #f30-spinbox { position: absolute; left: 222px; top: 0; width: 56px; height: 56px; }
+    #f30-spin, #f30-check { position: absolute; left: 0; top: 0; width: 56px; height: 56px; }
+    .f30-st {
+      position: absolute; left: 0; top: 74px; width: 500px; height: 50px;
+      display: flex; justify-content: center; align-items: center;
+      font-family: "JetBrains Mono", monospace; font-size: 30px; letter-spacing: .08em;
+      color: var(--cyan); white-space: nowrap;
+    }
+
+    /* Scene 3 — rising spiral */
+    #f30-use {
+      position: absolute; left: 40px; top: 560px; height: 80px;
+      display: flex; align-items: center; gap: 20px;
+      font-size: 56px; font-weight: 800; line-height: 1.1; letter-spacing: -.015em; white-space: nowrap;
+    }
+    #f30-use span { display: block; }
+    #f30-good {
+      position: absolute; left: 0; top: 128px; width: 1760px; height: 110px;
+      display: flex; justify-content: center; align-items: center; gap: 30px;
+      font-size: 96px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; white-space: nowrap;
+      color: var(--gold);
+    }
+    #f30-good span { display: block; filter: drop-shadow(0 0 12px rgba(255,210,63,.55)); }
+  </style>
+
+  <div id="root" data-composition-id="30-vong-hoc-la-gi" data-width="1920" data-height="1080" data-duration="11.662">
+    <div id="f30-ground" class="clip" data-start="0" data-duration="11.662" data-track-index="0"></div>
+    <div id="f30-stage" class="clip" data-start="0" data-duration="11.662" data-track-index="1">
+      <div id="f30-cam">
+        <!-- background field (dimmed) -->
+        <svg class="f30-svg" viewBox="0 0 1760 820" fill="none">
+          <g id="f30-field" stroke="#8E93B5" stroke-width="2">
+            <circle cx="880" cy="470" r="380" opacity="0.14"/>
+            <circle cx="880" cy="470" r="480" opacity="0.08"/>
+          </g>
+        </svg>
+
+        <!-- the loop ring: flattens into the spiral's base in Scene 3 -->
+        <div id="f30-ringwrap" class="f30-layer">
+          <svg class="f30-svg" viewBox="0 0 1760 820" fill="none">
+            <ellipse id="f30-ghost" cx="880" cy="470" rx="260" ry="260" transform="rotate(-90 880 470)"
+                     stroke="#8E93B5" stroke-width="3" stroke-dasharray="6 14"/>
+            <ellipse id="f30-trail" cx="880" cy="470" rx="260" ry="260" transform="rotate(-90 880 470)" pathLength="100"
+                     stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+          </svg>
+          <div id="f30-orbit">
+            <svg id="f30-spark" viewBox="0 0 60 44" fill="none">
+              <path d="M30 17 C22 6 14 4 6 5" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+              <path d="M30 27 C22 38 14 40 6 39" stroke="#F4F1E8" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="38" cy="22" r="10" fill="#FFD23F" style="filter: drop-shadow(0 0 10px rgba(255,210,63,.8));"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- the rising spiral (path built deterministically in the script) -->
+        <svg class="f30-svg" viewBox="0 0 1760 820" fill="none">
+          <path id="f30-spiral" d="M880 798" stroke="#FFD23F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle id="f30-m1" class="f30-mark" cx="0" cy="0" r="10" fill="#FFD23F"/>
+          <circle id="f30-m2" class="f30-mark" cx="0" cy="0" r="10" fill="#FFD23F"/>
+          <circle id="f30-m3" class="f30-mark" cx="0" cy="0" r="16" fill="#FFD23F"/>
+        </svg>
+
+        <!-- stations -->
+        <div id="f30-slot1" class="f30-slot">
+          <div id="f30-node1" class="f30-node">
+            <div id="f30-hl1" class="f30-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 6h24a4 4 0 0 1 4 4v32l-8-5-8 5-8-5-8 5V10a4 4 0 0 1 4-4z"/><line x1="16" y1="16" x2="32" y2="16"/><line x1="16" y1="24" x2="28" y2="24"/>
+            </svg>
+            <span>ghi nhớ</span>
+          </div>
+        </div>
+        <div id="f30-slot2" class="f30-slot">
+          <div id="f30-node2" class="f30-node">
+            <div id="f30-hl2" class="f30-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M31 7a10 10 0 0 0-9 14L8 35a3.5 3.5 0 0 0 5 5l14-14a10 10 0 0 0 14-9l-6 6-6-2-2-6z"/>
+            </svg>
+            <span>kỹ năng</span>
+          </div>
+        </div>
+        <div id="f30-slot3" class="f30-slot">
+          <div id="f30-node3" class="f30-node">
+            <div id="f30-hl3" class="f30-hl"></div>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#F4F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="24" cy="15" r="8"/><path d="M8 42c2-9 8-14 16-14s14 5 16 14"/>
+            </svg>
+            <span>hiểu bạn</span>
+          </div>
+        </div>
+        <div id="f30-chip"><span id="f30-cup">↑</span><span id="f30-cmoi">mỗi</span><span id="f30-cngay">ngày</span></div>
+
+        <!-- working-state theater in the ring centre -->
+        <div id="f30-status">
+          <div id="f30-spinbox">
+            <svg id="f30-spin" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="22" stroke="#3EE6D0" stroke-opacity="0.2" stroke-width="5"/>
+              <path d="M28 6 A22 22 0 0 1 50 28" stroke="#3EE6D0" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            <svg id="f30-check" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="24" fill="#3EE6D0"/>
+              <path id="f30-checkp" d="M16 29 L25 38 L41 20" pathLength="100" stroke="#0B1026" stroke-width="5.5"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="100 100" stroke-dashoffset="100"/>
+            </svg>
+          </div>
+          <div id="f30-s1" class="f30-st">ghi nhớ…</div>
+          <div id="f30-s2" class="f30-st">tạo kỹ năng…</div>
+          <div id="f30-s3" class="f30-st">hiểu bạn…</div>
+          <div id="f30-s4" class="f30-st">khép kín</div>
+        </div>
+
+        <!-- Scene 1 kinetic type (lifts to a kicker in Scene 2) -->
+        <div id="f30-kick"><b id="f30-kd">◆</b><span id="f30-k1">điểm</span><span id="f30-k2">đặc</span><span id="f30-k3">biệt</span><span id="f30-k4">nhất</span><span id="f30-kh">· Hermes</span></div>
+        <div id="f30-title">
+          <div id="f30-words"><span id="f30-w1">vòng</span><span id="f30-w2">học</span><span id="f30-w3">khép</span><span id="f30-kin">kín</span></div>
+          <svg id="f30-uline" viewBox="0 0 1760 30" fill="none">
+            <path id="f30-ul" d="M420 14 C700 26 1060 26 1340 12" pathLength="100" stroke="#FFD23F" stroke-width="5"
+                  stroke-linecap="round" stroke-dasharray="100 100" stroke-dashoffset="100" style="filter: drop-shadow(0 0 12px rgba(255,210,63,.55));"/>
+          </svg>
+        </div>
+
+        <!-- Scene 3 copy -->
+        <div id="f30-use"><span id="f30-u1">dùng</span><span id="f30-u2">càng</span><span id="f30-u3">nhiều</span></div>
+        <div id="f30-good"><span id="f30-g1">làm</span><span id="f30-g2">càng</span><span id="f30-g3">tốt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      /* ---- deterministic rising-spiral geometry (pseudo-3D helix, 2.5 turns) ---- */
+      var N = 400, th0 = Math.PI / 2, span = 5 * Math.PI;
+      var px = [], py = [], cum = [0], d = "";
+      for (var i = 0; i <= N; i++) {
+        var u = i / N, th = th0 + span * u;
+        var rx = 260 + 80 * u, ry = 78 + 22 * u, yb = 720 - 340 * u;
+        px.push(880 + rx * Math.cos(th));
+        py.push(yb + ry * Math.sin(th));
+        d += (i === 0 ? "M" : " L") + px[i].toFixed(1) + " " + py[i].toFixed(1);
+        if (i > 0) cum.push(cum[i - 1] + Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1]));
+      }
+      var L = cum[N];
+      var spiral = document.getElementById("f30-spiral");
+      spiral.setAttribute("d", d);
+      var marks = [["f30-m1", N * 0.4], ["f30-m2", N * 0.8], ["f30-m3", N]];
+      marks.forEach(function (m) {
+        var el = document.getElementById(m[0]);
+        el.setAttribute("cx", px[m[1]].toFixed(1));
+        el.setAttribute("cy", py[m[1]].toFixed(1));
+      });
+      var S0 = 8.43, SD = 1.32; // spiral draws from "dùng" to just before "làm"
+      function markTime(idx) { return S0 + SD * (cum[idx] / L); }
+
+      /* ---- initial hidden inner states (never clips) ---- */
+      gsap.set(spiral, { strokeDasharray: L, strokeDashoffset: L, opacity: 0 });
+      gsap.set(["#f30-trail", "#f30-spark", "#f30-ghost", "#f30-status", "#f30-chip",
+                "#f30-hl1", "#f30-hl2", "#f30-hl3", "#f30-check", "#f30-kd"], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = "power3.out", MOVE = "power2.inOut";
+
+      /* ---- Scene 1 (0–3.73): kinetic kicker, then the display phrase ---- */
+      tl.fromTo("#f30-kd", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.35, ease: IN }, 0.31);
+      tl.fromTo("#f30-k1", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 0.31);   // Điểm
+      tl.fromTo("#f30-k2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 0.472);  // đặc
+      tl.fromTo("#f30-k3", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 0.592);  // biệt
+      tl.fromTo("#f30-k4", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 0.754);  // nhất
+      tl.fromTo("#f30-kh", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: IN }, 1.056);  // Hermes
+      tl.fromTo("#f30-ghost", { opacity: 0 }, { opacity: 0.3, duration: 0.6, ease: IN }, 1.881);           // là — the loop's footprint
+      tl.fromTo("#f30-w1", { opacity: 0, y: 60, scale: 1.18 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: IN }, 2.063); // vòng
+      tl.fromTo("#f30-w2", { opacity: 0, y: 60, scale: 1.18 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: IN }, 2.244); // học
+      tl.fromTo("#f30-w3", { opacity: 0, y: 60, scale: 1.18 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: IN }, 2.425); // khép
+      tl.fromTo("#f30-kin", { opacity: 0, y: 60, scale: 1.18 }, { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: IN }, 2.607); // kín
+      tl.fromTo("#f30-ul", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 2.607);
+
+      /* ---- Scene 2 (3.73–7.78): phrase lifts to a kicker; stations pop onto the ring ---- */
+      tl.to("#f30-kick", { opacity: 0, y: -30, duration: 0.35, ease: MOVE }, 3.3);
+      tl.to("#f30-title", { y: -360, scale: 0.42, duration: 0.55, ease: MOVE }, 3.3);
+      // ghi @3.73 — station 1 + the machine starts working
+      tl.fromTo("#f30-node1", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: IN }, 3.731);
+      tl.fromTo("#f30-status", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: IN }, 3.731);
+      tl.fromTo("#f30-s1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 3.731);
+      tl.fromTo("#f30-spin", { rotation: 0 }, { rotation: 900, duration: 2.713, ease: "none" }, 3.731);
+      // nhớ @3.85 — station 1 goes gold, the spark ignites at the top of the ring
+      tl.fromTo("#f30-hl1", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: IN }, 3.851);
+      tl.fromTo("#f30-spark", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, 3.851);
+      tl.fromTo("#f30-trail", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: IN }, 3.95);
+      // trail leg 1 → station 2 (arrives on "tạo" @4.70)
+      tl.fromTo("#f30-trail", { strokeDashoffset: 100 }, { strokeDashoffset: 66.667, duration: 0.75, ease: "none" }, 3.95);
+      tl.fromTo("#f30-orbit", { rotation: 0 }, { rotation: 120, duration: 0.75, ease: "none" }, 3.95);
+      tl.set("#f30-s1", { opacity: 0 }, 4.695);
+      tl.fromTo("#f30-s2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 4.695);
+      tl.fromTo("#f30-node2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: IN }, 4.695);
+      // năng @5.04 — gold focus hands over to station 2
+      tl.to("#f30-hl1", { opacity: 0, duration: 0.25, ease: MOVE }, 5.037);
+      tl.fromTo("#f30-hl2", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: IN }, 5.037);
+      // trail leg 2 → station 3 (arrives on "hiểu" @5.74)
+      tl.to("#f30-trail", { strokeDashoffset: 33.333, duration: 0.64, ease: "none" }, 5.1);
+      tl.to("#f30-orbit", { rotation: 240, duration: 0.64, ease: "none" }, 5.1);
+      tl.set("#f30-s2", { opacity: 0 }, 5.741);
+      tl.fromTo("#f30-s3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 5.741);
+      tl.fromTo("#f30-node3", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.45, ease: IN }, 5.741);
+      // hơn @6.10 — gold to station 3, growth arrow
+      tl.to("#f30-hl2", { opacity: 0, duration: 0.25, ease: MOVE }, 6.103);
+      tl.fromTo("#f30-hl3", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: IN }, 6.103);
+      tl.fromTo("#f30-chip", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: IN }, 6.103);
+      tl.fromTo("#f30-cup", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 6.103);
+      tl.fromTo("#f30-cmoi", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 6.283);  // mỗi
+      tl.fromTo("#f30-cngay", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 6.444); // ngày
+      // trail leg 3 closes the ring on "ngày" @6.44; the working state resolves
+      tl.to("#f30-trail", { strokeDashoffset: 0, duration: 0.44, ease: "none" }, 6.0);
+      tl.to("#f30-orbit", { rotation: 360, duration: 0.44, ease: "none" }, 6.0);
+      tl.set("#f30-s3", { opacity: 0 }, 6.444);
+      tl.set("#f30-spin", { opacity: 0 }, 6.444);
+      tl.fromTo("#f30-s4", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: IN }, 6.444);
+      tl.fromTo("#f30-check", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: IN }, 6.444);
+      tl.fromTo("#f30-checkp", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.55);
+
+      /* ---- Scene 3 (7.78–11.16): the ring lifts into a rising spiral ---- */
+      tl.to(["#f30-slot1", "#f30-slot2", "#f30-slot3", "#f30-chip", "#f30-status"],
+            { opacity: 0, duration: 0.4, ease: MOVE }, 7.78);
+      tl.to("#f30-spark", { opacity: 0, duration: 0.3, ease: MOVE }, 7.78);
+      // the ring tilts flat (vertical radius 260 → 78) and sinks to become the spiral's base
+      tl.to(["#f30-trail", "#f30-ghost"], { attr: { rx: 78 }, duration: 0.6, ease: MOVE }, 7.8);
+      tl.to("#f30-ringwrap", { y: 250, duration: 0.6, ease: MOVE }, 7.8);
+      // dùng @8.43 / càng @8.63 / nhiều @8.79
+      tl.fromTo("#f30-u1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 8.432);
+      tl.fromTo("#f30-u2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 8.633);
+      tl.fromTo("#f30-u3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 8.794);
+      tl.to(spiral, { opacity: 1, duration: 0.1, ease: IN }, S0);
+      tl.to(spiral, { strokeDashoffset: 0, duration: SD, ease: "none" }, S0);
+      tl.fromTo("#f30-m1", { opacity: 0, scale: 0.3, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, markTime(N * 0.4));
+      tl.fromTo("#f30-m2", { opacity: 0, scale: 0.3, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.3, ease: IN }, markTime(N * 0.8));
+      // làm @9.80 — the spiral tops out; càng @10.04, tốt @10.24 land gold at its top
+      tl.fromTo("#f30-m3", { opacity: 0, scale: 0.3, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.35, ease: IN }, 9.799);
+      tl.fromTo("#f30-g1", { opacity: 0, y: 40, scale: 1.15 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: IN }, 9.799);
+      tl.fromTo("#f30-g2", { opacity: 0, y: 40, scale: 1.15 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: IN }, 10.041);
+      tl.fromTo("#f30-g3", { opacity: 0, y: 40, scale: 1.15 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: IN }, 10.242);
+      // hold with a near-imperceptible drift
+      tl.fromTo("#f30-cam", { scale: 1 }, { scale: 1.015, duration: 0.76, ease: "power1.inOut" }, 10.4);
+
+      tl.to({}, { duration: 11.162 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["30-vong-hoc-la-gi"] = tl;
+    })();
+  </script>
+</template>

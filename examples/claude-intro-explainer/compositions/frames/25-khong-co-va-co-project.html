@@ -1,0 +1,303 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    #f25-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    #f25-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* ---------- shot 1: split ---------- */
+    #f25-split { position: absolute; inset: 0; transform-origin: 50% 45%; }
+    #f25-divider { position: absolute; left: 879px; top: 40px; width: 2px; height: 740px; }
+    .f25-half { position: absolute; top: 40px; width: 820px; height: 740px; }
+    #f25-left { left: 0; }
+    #f25-right { left: 940px; }
+    .f25-head {
+      position: absolute; left: 0; top: 30px;
+      font-family: "Lora", serif; font-weight: 700; font-size: 60px; line-height: 1.12;
+      white-space: nowrap;
+    }
+    .f25-head span { display: inline-block; opacity: 0; }
+    #f25-left .f25-head { color: var(--muted); }
+    .f25-bubble {
+      position: absolute; left: 0; width: 600px; height: 118px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 22px 22px 22px 6px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      opacity: 0;
+    }
+    .f25-bar {
+      position: absolute; left: 32px; height: 16px; border-radius: 8px;
+      background: rgba(240,238,230,.22); transform-origin: 0 50%;
+    }
+    #f25-loop { position: absolute; left: 610px; top: 150px; width: 200px; height: 440px; overflow: visible; }
+    #f25-redo {
+      position: absolute; left: 0; top: 628px; white-space: nowrap;
+      font-weight: 600; font-size: 40px; line-height: 1.2; color: var(--ink);
+    }
+    #f25-redo span { display: inline-block; opacity: 0; }
+    #f25-drawer { position: absolute; left: 0; top: 180px; width: 250px; height: 250px; opacity: 0; }
+    #f25-rbubble {
+      position: absolute; left: 300px; top: 240px; width: 460px; height: 118px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 22px 22px 22px 6px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      opacity: 0;
+    }
+    #f25-check { position: absolute; left: 0; top: 520px; width: 120px; height: 120px; overflow: visible; }
+    #f25-know {
+      position: absolute; left: 150px; top: 520px; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.12;
+      color: var(--gold);
+    }
+    #f25-know span { display: inline-block; opacity: 0; }
+    #f25-spark1 { position: absolute; left: 566px; top: 514px; width: 56px; height: 56px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    /* ---------- shot 2: cards on a shelf ---------- */
+    #f25-shelfwrap { position: absolute; inset: 0; transform-origin: 50% 60%; }
+    #f25-kicker {
+      position: absolute; left: 120px; top: 90px; display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); opacity: 0;
+    }
+    #f25-kicker svg { width: 36px; height: 36px; }
+    #f25-shelf { position: absolute; left: 60px; top: 650px; width: 1640px; height: 30px; overflow: visible; }
+    .f25-card {
+      position: absolute; top: 250px; width: 720px; height: 380px;
+      opacity: 0;
+    }
+    #f25-card1 { left: 120px; }
+    #f25-card2 { left: 920px; }
+    .f25-tab {
+      position: absolute; left: 40px; top: 0; width: 220px; height: 52px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10); border-bottom: none;
+      border-radius: 14px 14px 0 0;
+    }
+    .f25-body {
+      position: absolute; left: 0; top: 50px; width: 720px; height: 330px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+    }
+    .f25-icon { position: absolute; left: 48px; top: 48px; width: 96px; height: 96px; }
+    .f25-label {
+      position: absolute; left: 48px; top: 172px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    .f25-title {
+      position: absolute; left: 48px; top: 222px; white-space: nowrap;
+      font-weight: 600; font-size: 52px; line-height: 1.2; color: var(--ink);
+    }
+    .f25-title span { display: inline-block; opacity: 0; }
+    .f25-handle { position: absolute; left: 560px; top: 60px; width: 110px; height: 20px;
+      border-radius: 10px; border: 3px solid rgba(240,238,230,.30); }
+  </style>
+
+  <div id="root" data-composition-id="25-khong-co-va-co-project" data-width="1920" data-height="1080" data-duration="12.681">
+    <div id="f25-ground" class="clip" data-start="0" data-duration="12.681" data-track-index="0"></div>
+    <div id="f25-stage" class="clip" data-start="0" data-duration="12.681" data-track-index="1">
+
+      <!-- SHOT 1: split -->
+      <div id="f25-split">
+        <svg id="f25-divider" viewBox="0 0 2 740" preserveAspectRatio="none">
+          <line id="f25-divline" x1="1" y1="0" x2="1" y2="740" stroke="rgba(240,238,230,0.18)" stroke-width="2" stroke-dasharray="740" stroke-dashoffset="740"/>
+        </svg>
+
+        <div id="f25-left" class="f25-half">
+          <div class="f25-head"><span id="f25-lh1">Không</span> <span id="f25-lh2">có</span> <span id="f25-lh3">Project</span></div>
+          <div id="f25-b1" class="f25-bubble" style="top:150px">
+            <div class="f25-bar f25-bar1" style="top:34px;width:500px"></div>
+            <div class="f25-bar f25-bar1" style="top:68px;width:380px"></div>
+          </div>
+          <div id="f25-b2" class="f25-bubble" style="top:302px">
+            <div class="f25-bar f25-bar2" style="top:34px;width:500px"></div>
+            <div class="f25-bar f25-bar2" style="top:68px;width:380px"></div>
+          </div>
+          <div id="f25-b3" class="f25-bubble" style="top:454px">
+            <div class="f25-bar f25-bar3" style="top:34px;width:500px"></div>
+            <div class="f25-bar f25-bar3" style="top:68px;width:380px"></div>
+          </div>
+          <svg id="f25-loop" viewBox="0 0 200 440">
+            <path id="f25-looppath" d="M 20 400 C 150 410, 175 330, 150 230 C 128 140, 160 60, 60 30 C 40 24, 28 26, 20 30"
+                  fill="none" stroke="rgba(240,238,230,0.55)" stroke-width="4" stroke-linecap="round" stroke-dasharray="620" stroke-dashoffset="620"/>
+            <path id="f25-loophead" d="M 42 10 L 18 30 L 44 48" fill="none" stroke="rgba(240,238,230,0.55)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+          </svg>
+          <div id="f25-redo"><span id="f25-r1">giải</span> <span id="f25-r2">thích</span> <span id="f25-r3">từ</span> <span id="f25-r4">đầu</span></div>
+        </div>
+
+        <div id="f25-right" class="f25-half">
+          <div class="f25-head"><span id="f25-rh1">Có</span> <span id="f25-rh2">Project</span></div>
+          <svg id="f25-drawer" viewBox="0 0 250 250">
+            <rect x="20" y="30" width="210" height="200" rx="18" fill="#2A2926" stroke="rgba(240,238,230,0.55)" stroke-width="4"/>
+            <line x1="20" y1="130" x2="230" y2="130" stroke="rgba(240,238,230,0.55)" stroke-width="4"/>
+            <rect x="95" y="70" width="60" height="16" rx="8" fill="none" stroke="#F0EEE6" stroke-width="4"/>
+            <rect x="95" y="168" width="60" height="16" rx="8" fill="none" stroke="#F0EEE6" stroke-width="4"/>
+            <rect x="50" y="8" width="70" height="40" rx="6" fill="#2A2926" stroke="rgba(143,184,168,0.9)" stroke-width="3"/>
+            <rect x="130" y="14" width="70" height="34" rx="6" fill="#2A2926" stroke="rgba(240,238,230,0.40)" stroke-width="3"/>
+          </svg>
+          <div id="f25-rbubble">
+            <div class="f25-bar" id="f25-rbar" style="top:51px;width:220px"></div>
+          </div>
+          <svg id="f25-check" viewBox="0 0 120 120">
+            <circle id="f25-checkring" cx="60" cy="60" r="52" fill="none" stroke="#8FB8A8" stroke-width="5" stroke-dasharray="327" stroke-dashoffset="327" transform="rotate(-90 60 60)"/>
+            <path id="f25-checktick" d="M 34 62 L 53 80 L 88 42" fill="none" stroke="#8FB8A8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="80" stroke-dashoffset="80"/>
+          </svg>
+          <div id="f25-know"><span id="f25-k1">hiểu</span> <span id="f25-k2">sẵn</span></div>
+          <svg id="f25-spark1" viewBox="0 0 56 56">
+            <g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+              <line x1="28" y1="4" x2="28" y2="52"/>
+              <line x1="4" y1="28" x2="52" y2="28"/>
+              <line x1="11" y1="11" x2="45" y2="45"/>
+              <line x1="45" y1="11" x2="11" y2="45"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- SHOT 2: project cards on a shelf -->
+      <div id="f25-shelfwrap">
+        <div id="f25-kicker">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          <span>Ví dụ</span>
+        </div>
+
+        <div id="f25-card1" class="f25-card">
+          <div class="f25-tab"></div>
+          <div class="f25-body">
+            <svg class="f25-icon" viewBox="0 0 96 96">
+              <rect x="8" y="14" width="80" height="72" rx="10" fill="none" stroke="rgba(240,238,230,0.6)" stroke-width="4"/>
+              <line x1="30" y1="70" x2="30" y2="54" stroke="#F0EEE6" stroke-width="6" stroke-linecap="round"/>
+              <line x1="48" y1="70" x2="48" y2="40" stroke="#F0EEE6" stroke-width="6" stroke-linecap="round"/>
+              <line x1="66" y1="70" x2="66" y2="30" stroke="#F0EEE6" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+            <div class="f25-handle"></div>
+            <div class="f25-label">PROJECT</div>
+            <div class="f25-title"><span id="f25-t1a">báo</span> <span id="f25-t1b">cáo</span> <span id="f25-t1c">tháng</span></div>
+          </div>
+        </div>
+
+        <div id="f25-card2" class="f25-card">
+          <div class="f25-tab"></div>
+          <div class="f25-body">
+            <svg class="f25-icon" viewBox="0 0 96 96">
+              <circle cx="48" cy="34" r="16" fill="none" stroke="#F0EEE6" stroke-width="5"/>
+              <path d="M 18 84 C 20 62, 34 54, 48 54 C 62 54, 76 62, 78 84" fill="none" stroke="rgba(240,238,230,0.6)" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            <div class="f25-handle"></div>
+            <div class="f25-label">PROJECT</div>
+            <div class="f25-title"><span id="f25-t2a">chăm</span> <span id="f25-t2b">sóc</span> <span id="f25-t2c">khách</span> <span id="f25-t2d">hàng</span></div>
+          </div>
+        </div>
+
+        <svg id="f25-shelf" viewBox="0 0 1640 30">
+          <path id="f25-shelfline" d="M 4 14 C 400 10, 820 19, 1230 13 C 1420 10, 1560 16, 1636 13"
+                fill="none" stroke="rgba(240,238,230,0.45)" stroke-width="4" stroke-linecap="round" stroke-dasharray="1650" stroke-dashoffset="1650"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var OUT = "power3.out";
+      function word(sel, t) {
+        tl.fromTo(sel, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: OUT }, t);
+      }
+
+      /* ---- Scene 1: split (0 - 7.91) ---- */
+      tl.to("#f25-divline", { strokeDashoffset: 0, duration: 0.6, ease: "power2.inOut" }, 0.1);
+      word("#f25-lh1", 0.31);
+      word("#f25-lh2", 0.45);
+      word("#f25-lh3", 0.59);
+
+      // three bubbles, each repeats the same skeleton paragraph (mỗi lần hỏi)
+      var bubbleT = [1.46, 1.82, 2.2];
+      ["#f25-b1", "#f25-b2", "#f25-b3"].forEach(function (b, i) {
+        var t = bubbleT[i];
+        tl.fromTo(b, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, t);
+        tl.fromTo(".f25-bar" + (i + 1), { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: OUT, stagger: 0.08 }, t + 0.12);
+      });
+      // looping stroke: back to the start, again and again
+      tl.to("#f25-looppath", { strokeDashoffset: 0, duration: 1.0, ease: "none" }, 2.3);
+      tl.fromTo("#f25-loophead", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: OUT }, 3.25);
+      // "giải thích từ đầu"
+      word("#f25-r1", 2.53);
+      word("#f25-r2", 2.73);
+      word("#f25-r3", 2.91);
+      word("#f25-r4", 3.05);
+      // the left side recedes as the right side arrives
+      tl.to("#f25-left", { opacity: 0.55, duration: 0.6, ease: "power2.inOut" }, 3.7);
+
+      // right: "Có Project"
+      word("#f25-rh1", 3.89);
+      word("#f25-rh2", 4.05);
+      tl.fromTo("#f25-drawer", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: OUT }, 4.1);
+      tl.fromTo("#f25-rbubble", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: OUT }, 4.92);
+      tl.fromTo("#f25-rbar", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: OUT }, 5.05);
+      // "hiểu sẵn": sage check draws, terracotta keyword + spark
+      tl.to("#f25-checkring", { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 5.36);
+      tl.to("#f25-checktick", { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.7);
+      tl.fromTo("#f25-k1", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 5.36);
+      tl.fromTo("#f25-k2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 5.6);
+      tl.fromTo("#f25-spark1", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: OUT }, 5.72);
+      // quiet hold drift
+      tl.fromTo("#f25-split", { scale: 1 }, { scale: 1.015, duration: 1.8, ease: "none" }, 6.05);
+
+      /* ---- Scene 2: cards on a shelf (7.91 - 12.18) ---- */
+      // zoom-through swap inside the frame: split pushes away
+      tl.to("#f25-split", { scale: 1.06, opacity: 0, filter: "blur(8px)", duration: 0.45, ease: "power2.inOut" }, 7.91);
+      tl.fromTo("#f25-kicker", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: OUT }, 8.05);
+      tl.to("#f25-shelfline", { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, 8.05);
+      // card 1: "một Project cho báo cáo tháng"
+      tl.fromTo("#f25-card1", { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 0.55, ease: OUT }, 8.31);
+      word("#f25-t1a", 8.83);
+      word("#f25-t1b", 8.99);
+      word("#f25-t1c", 9.17);
+      // card 2: "một Project cho chăm sóc khách hàng"
+      tl.fromTo("#f25-card2", { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 0.55, ease: OUT }, 10.0);
+      word("#f25-t2a", 10.64);
+      word("#f25-t2b", 10.84);
+      word("#f25-t2c", 11.0);
+      word("#f25-t2d", 11.18);
+      // hold with a slight drift
+      tl.fromTo("#f25-shelfwrap", { scale: 1 }, { scale: 1.012, duration: 0.6, ease: "none", immediateRender: false }, 11.55);
+
+      tl.to({}, { duration: 12.181 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["25-khong-co-va-co-project"] = tl;
+    })();
+  </script>
+</template>

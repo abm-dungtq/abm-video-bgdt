@@ -1,0 +1,396 @@
+// Authoring source for script.json. Build: node tools/src-to-script.mjs script.src.txt script.json
+// Format: "# chapter | title | level", "## id | scene_hint | frame title", "> visual note",
+// one sentence per line, *keyword* marks on-screen key text, {F-NN} cites the fact sheet.
+// Screen frames carry "> screen: F-NN | feature | UI state" right under their "##" line (shot list for phase 5).
+
+# ch0 | Mở đầu | basic
+## 1 | title | Claude – từ cơ bản đến chuyên sâu
+Chào mừng bạn đến với bài học về *Claude*.
+## 2 | kinetic | Một đồng nghiệp luôn sẵn sàng
+> Hook: a blinking cursor turns into a colleague; the trail writes "Claude".
+Hãy tưởng tượng bạn có một *đồng* *nghiệp* luôn sẵn sàng giúp đỡ.
+Bạn nhờ *viết*, nhờ *phân* *tích*, hay giao cả việc nhiều bước, nó đều làm được. {F-16}
+Đó chính là *Claude*, trợ lý AI do công ty *Anthropic* phát triển. {F-01}
+Bạn chỉ cần *nói* bằng lời, rõ ràng và tự nhiên. {F-15}
+## 3 | hub | Claude ở khắp nơi
+> Center: Claude; around it the web, a laptop and a phone light up in turn.
+Bạn dùng Claude trên *trang* *web* claude.ai, trên *máy* *tính*, và cả *điện* *thoại*. {F-03}
+Claude được huấn luyện để *hữu* *ích*, *trung* *thực* và *vô* *hại*. {F-02}
+Dù ở văn phòng hay đang di chuyển, Claude luôn *ở* *bên* bạn. {F-03}
+## 4 | anchor | Sau bài học này
+> Learning objectives checklist, three items tick in on cue.
+Sau bài học, bạn sẽ biết cách *trò* *chuyện* và làm việc hằng ngày với Claude.
+Bạn sẽ biết cách *kết* *nối* Claude với công cụ bạn đang dùng.
+Và bạn sẽ nắm được những *tính* *năng* *mới* *nhất* của năm nay.
+Bài học đi từ *cơ* *bản* đến *chuyên* *sâu*, từng bước một.
+
+# ch1 | Làm quen với Claude | basic
+## 5 | title | Làm quen với Claude
+Chương một: *làm* *quen* với Claude.
+## 6 | split | Tìm kiếm và trò chuyện
+> Left: a search box returns a list of links; right: Claude answers in one paragraph and asks back.
+Công cụ tìm kiếm đưa cho bạn một *danh* *sách* *đường* *link*.
+Còn Claude *đọc*, *hiểu* và *trả* *lời* thẳng vào câu hỏi của bạn.
+Bạn có thể hỏi câu *đơn* *giản*, hoặc giao cả một việc *nhiều* *bước*. {F-16}
+Giống như trò chuyện với một *người* *hiểu* *việc*, thay vì tự đọc từng trang.
+## 7 | cards | Họ nhà Claude
+> Four cards grow from small to large: Haiku, Sonnet, Opus, Fable.
+Claude không phải một, mà là cả một *họ* *mô* *hình*. {F-01}
+Các bậc gồm *Haiku*, *Sonnet*, *Opus*, và bậc cao nhất là *Fable*. {F-05}
+Bậc càng cao thì năng lực càng *mạnh*. {F-05}
+Bạn không cần nhớ hết, chỉ cần biết bậc nào *mạnh* *hơn*. {F-05}
+## 8 | metaphor | Chọn model như chọn người giúp việc
+> Analogy: picking the right helper for a task; a "mặc định" badge sits on the middle card.
+Nếu chưa chắc nên chọn gì, bạn cứ dùng *model* *mặc* *định* được đề xuất. {F-11}
+Chỉ khi việc thật sự khó, bạn mới cần tới *Fable*. {F-11}
+Đó cũng là lời khuyên trong *tài* *liệu* *chính* *thức* của Anthropic. {F-11}
+## 9 | hub | Nhiều cách để làm việc với Claude
+> Center Claude; orbit: ứng dụng chat, Claude Code, Cowork, nền tảng nhà phát triển.
+Claude có nhiều *bề* *mặt* khác nhau để bạn làm việc. {F-13}
+Có ứng dụng *chat*, có *Claude* *Code* cho lập trình, và có *Cowork*, chế độ để Claude tự làm việc giúp bạn. {F-13,F-68}
+Nhà phát triển thì dùng Claude qua *nền* *tảng* riêng. {F-13}
+Dù dùng cách nào, bạn vẫn làm việc với *cùng* *một* Claude. {F-13}
+## 10 | zoom | Đồng bộ trên mọi thiết bị
+> Zoom out from one phone to three devices joined by a sync ring.
+Ứng dụng có trên *Mac*, *Windows*, và điện thoại *iOS*, *Android*. {F-51}
+Khi đăng nhập cùng tài khoản, mọi *cuộc* *trò* *chuyện* đều được *đồng* *bộ*. {F-52}
+Dự án, bộ nhớ và tùy chọn của bạn cũng *đi* *theo* bạn. {F-52}
+## 11 | anchor | Tóm tắt chương một
+Tóm lại: Claude là một *họ* *mô* *hình*, dùng được trên *mọi* *thiết* *bị*.
+Tiếp theo, ta bắt đầu dùng Claude trên *claude.ai*.
+
+# ch2 | Cơ bản trên claude.ai | basic
+## 12 | title | Cơ bản trên claude.ai
+Chương hai: những điều *cơ* *bản* trên claude.ai.
+## 13 | screen | Màn hình đầu tiên
+> screen: F-15 | Trang chủ claude.ai | khung nhập "How can I help you today?", thanh bên thu gọn
+Khi mở claude.ai, bạn thấy một *khung* *nhập* ở giữa màn hình. {F-15}
+Bạn chỉ cần gõ câu hỏi rồi *gửi* đi.
+Hãy nói chuyện *tự* *nhiên*, như với một *đồng* *nghiệp*. {F-15}
+## 14 | typewriter | Câu hỏi đầu tiên
+> A request types itself; Claude's draft appears, then two refinement chips: ngắn hơn, trang trọng hơn.
+Ví dụ, bạn gõ: hãy viết giúp tôi một *email* *cảm* *ơn* khách hàng.
+Chỉ vài giây sau, Claude đưa ra một *bản* *nháp* hoàn chỉnh.
+Bạn đọc lại, rồi nhờ viết *ngắn* *hơn* hoặc *trang* *trọng* *hơn*. {F-24}
+Bạn không cần câu lệnh phức tạp, chỉ cần nói đúng *điều* *bạn* *muốn*. {F-15}
+## 15 | screen | Tải file lên
+> screen: F-21 | Menu dấu cộng để tải file | menu + đang mở, thấy mục tải file
+Claude còn đọc được *tài* *liệu* của bạn. {F-19}
+Bạn bấm *dấu* *cộng* để chọn file. {F-21}
+Hoặc bạn *kéo* *thả* file thẳng vào khung chat. {F-21}
+## 16 | cards | File nào cũng đọc được
+> Card grid of formats: PDF, Word, Excel, CSV, ảnh.
+Claude đọc được *PDF*, file *Word*, file *Excel*, file CSV, và cả *hình* *ảnh*. {F-19}
+Claude đọc cả *văn* *bản*, *bảng* *tính*, trang web đã lưu, hay sách điện tử. {F-19}
+Với PDF ngắn, Claude đọc cả *chữ* lẫn *hình* trong file. {F-20}
+PDF dài hơn một trăm trang thì Claude chỉ đọc *phần* *chữ*. {F-20}
+## 17 | stat | Những con số cần biết
+> Count-up numbers: 20 file, 500 megabyte, 1000 trang.
+Mỗi cuộc trò chuyện nhận tới *hai* *mươi* file. {F-17}
+Mỗi file có thể nặng tới *năm* *trăm* megabyte. {F-17}
+Một file PDF có thể dài tới *một* *nghìn* *trang*. {F-18}
+Ảnh tải lên có thể lớn tới *tám* *nghìn* nhân tám nghìn điểm ảnh. {F-18}
+## 18 | flow | Cách hỏi để được trả lời hay
+> Three-step flow: rõ ràng → đủ ngữ cảnh → chia nhỏ.
+Muốn câu trả lời hay, bạn hãy hỏi *rõ* *ràng* và *đơn* *giản*. {F-22}
+Hãy cho đủ *ngữ* *cảnh*, như đang hướng dẫn một *người* *mới*. {F-22}
+Việc phức tạp thì *chia* *nhỏ* thành từng bước. {F-23}
+Ví dụ, thay vì hỏi báo cáo này thế nào, hãy nói rõ bạn cần *nhận* *xét* phần nào. {F-22}
+## 19 | split | Hỏi chung chung và hỏi cụ thể
+> Left: a vague prompt and a vague answer; right: a specific prompt with context and a sharp answer.
+So sánh nhé: viết bài về sản phẩm là một yêu cầu *chung* *chung*.
+Còn viết bài hai trăm chữ cho khách văn phòng, giọng thân thiện, thì *cụ* *thể* hơn nhiều.
+Câu hỏi càng cụ thể, câu trả lời càng *sát* *ý* bạn. {F-22}
+## 20 | journey | Sửa và hỏi tiếp
+> Stations: bản nháp → phản hồi → bản tốt hơn.
+Câu trả lời đầu tiên chưa ưng ý? Không sao cả.
+Bạn cứ *phản* *hồi*, hỏi *làm* *rõ*, hoặc nhờ Claude *viết* *lại*. {F-24}
+Mỗi lượt trao đổi giúp kết quả *tốt* *hơn*. {F-24}
+Hãy coi đó là một *cuộc* *trò* *chuyện*, không phải một lần tra cứu. {F-15}
+## 21 | anchor | Tóm tắt chương hai
+Tóm lại: hỏi *tự* *nhiên*, cho đủ *ngữ* *cảnh*, và đừng ngại *hỏi* *tiếp*.
+Chương tiếp theo, ta học cách làm việc *có* *tổ* *chức* hơn.
+
+# ch3 | Làm việc có tổ chức | intermediate
+## 22 | title | Làm việc có tổ chức
+Chương ba: làm việc *có* *tổ* *chức* với Claude.
+## 23 | metaphor | Mỗi dự án một ngăn kéo
+> Analogy: a cabinet with labeled drawers; each drawer holds documents and a chat history.
+Khi làm nhiều việc cùng lúc, bạn cần mỗi việc một *ngăn* *kéo* riêng.
+Đó là *Projects*, không gian làm việc riêng cho từng dự án. {F-25}
+Mỗi ngăn kéo chứa *tài* *liệu*, *hướng* *dẫn*, và các cuộc trò chuyện của riêng dự án đó. {F-25}
+## 24 | screen | Bên trong một Project
+> screen: F-25 | Trang một Project | Project demo "ABM Demo" có tài liệu và hướng dẫn, thanh bên thu gọn
+Trong mỗi Project, bạn *tải* *tài* *liệu* và đặt *ngữ* *cảnh* một lần. {F-25}
+Lịch sử trò chuyện của dự án được giữ *tách* *biệt*. {F-25}
+Mỗi Project còn có *bộ* *nhớ* riêng, không lẫn sang dự án khác. {F-36}
+Bạn có thể tạo một Project cho mỗi *khách* *hàng* hay mỗi *phòng* *ban*. {F-25}
+## 25 | split | Không có và có Project
+> Left: re-explaining the context in every chat; right: the Project already knows.
+Không có Project, mỗi lần hỏi bạn lại phải *giải* *thích* *từ* *đầu*.
+Có Project, Claude đã *hiểu* *sẵn* bối cảnh công việc của bạn. {F-25}
+Ví dụ, một Project cho *báo* *cáo* *tháng*, một Project cho *chăm* *sóc* *khách* *hàng*.
+## 26 | kinetic | Artifact là gì?
+> The word "Artifact" lands; examples orbit it: tài liệu, bài trình bày, công cụ nhỏ.
+Tiếp theo là *Artifacts*.
+Artifact là thứ Claude tạo ra mà bạn muốn *đưa* *cho* *người* *khác* xem. {F-31}
+Đó có thể là một *tài* *liệu*, một *bài* *trình* *bày*, hay một *công* *cụ* nhỏ. {F-31}
+## 27 | screen | Artifact ngay bên cạnh cuộc trò chuyện
+> screen: F-31 | Một artifact mở bên phải cuộc trò chuyện | khung artifact hiển thị tài liệu demo
+Khi nội dung đủ dài và dùng lại được, Claude tạo artifact ở *khung* *bên* *cạnh*. {F-33}
+Bạn xem, *chỉnh* *sửa*, rồi *chia* *sẻ* nó. {F-31}
+Claude thường tạo artifact khi nội dung dài hơn khoảng *mười* *lăm* *dòng*. {F-33}
+## 28 | cards | Docs, Slides và Design
+> Three cards light up in turn: Docs, Slides, Design.
+Artifact có ba mẫu mới: *Docs*, *Slides* và *Design*. {F-34}
+Docs để *viết* *tài* *liệu* cùng Claude, Slides để *dựng* *bài* *trình* *bày*. {F-34}
+Design giúp bạn làm *hình* *ảnh* và bản phác thảo theo hệ thống thiết kế. {F-34}
+Ba mẫu này *đang* *thử* *nghiệm*, nên giao diện có thể còn thay đổi. {F-34}
+## 29 | metaphor | Claude biết ghi nhớ
+> A notebook fills itself line by line: vai trò, dự án, phong cách.
+Claude còn có *bộ* *nhớ*, giống một cuốn *sổ* *tay* về bạn. {F-35}
+Nó nhớ *vai* *trò*, *dự* *án*, và *phong* *cách* giao tiếp bạn thích. {F-35}
+Nhờ vậy, bạn không phải *nhắc* *lại* mỗi lần. {F-35}
+## 30 | zoom | Nhớ có chọn lọc
+> Zoom out from a notebook page to a lock icon labeled "nhạy cảm".
+Theo mặc định, Claude *không* *lưu* các chủ đề *nhạy* *cảm* vào bộ nhớ. {F-37}
+Chỉ khi bạn tự *bật* *lên*, Claude mới ghi nhớ những chủ đề đó. {F-37}
+Nhờ vậy, điều riêng tư của bạn được giữ *kín* *đáo* hơn. {F-37}
+## 31 | screen | Trò chuyện ẩn danh
+> screen: F-86 | Nút chat ẩn danh (bóng ma) | trang chat mới ở chế độ ẩn danh, nút ở góc trên bên phải
+Khi cần riêng tư, bạn bấm biểu tượng *bóng* *ma* ở góc trên bên phải. {F-86}
+Chat *ẩn* *danh* không lưu vào lịch sử, cũng không lưu vào bộ nhớ. {F-38}
+Đây là lựa chọn hợp lý khi bạn cần hỏi nhanh một việc *riêng* *tư*. {F-38}
+## 32 | anchor | Tóm tắt chương ba
+Tóm lại: *Projects* để sắp xếp, *Artifacts* để tạo sản phẩm, *bộ* *nhớ* để Claude hiểu bạn.
+Ba công cụ này biến Claude thành *trợ* *lý* *riêng* cho từng việc của bạn.
+
+# ch4 | Kết nối và nghiên cứu | intermediate
+## 33 | title | Kết nối và nghiên cứu
+Chương bốn: *kết* *nối* và *nghiên* *cứu*.
+## 34 | hub | Connectors: cánh tay nối dài
+> Center Claude; spokes to Google Drive, Slack and Linear light up on cue.
+*Connectors* giúp Claude truy cập các *ứng* *dụng* bạn đang dùng. {F-39}
+Ví dụ: tìm file trong *Google* *Drive*, gửi tin trên *Slack*, hay tạo việc trong *Linear*. {F-40}
+Kết nối một lần, bạn *không* *phải* *sao* *chép* dữ liệu qua lại nữa. {F-39}
+## 35 | screen | Bật một connector
+> screen: F-41 | Menu connectors trong khung nhập | danh sách connector với công tắc bật tắt (che tên connector riêng)
+Bạn bật connector ngay trong *khung* *nhập* tin nhắn.
+Sau đó, Claude tự *đưa* *ứng* *dụng* vào cuộc trò chuyện khi thấy phù hợp. {F-41}
+Mỗi connector có thể *bật* hay *tắt* tùy theo công việc.
+## 36 | flow | Không chỉ đọc, mà còn làm
+> Flow: yêu cầu → Claude → dịch vụ đã kết nối → kết quả.
+Không chỉ đọc dữ liệu, Claude còn *thực* *hiện* *hành* *động* trong dịch vụ đã kết nối. {F-39}
+Bạn chỉ cần *giao* *việc* bằng lời, không cần mở từng ứng dụng. {F-39}
+Ví dụ, bạn nhờ Claude *tìm* *file* hợp đồng trong Google Drive rồi *tóm* *tắt* giúp. {F-40}
+## 37 | kinetic | Research: nghiên cứu sâu
+> The word "Research" lands; a step counter ticks 1, 2, 3.
+*Research* giúp Claude tìm kiếm và phân tích theo *nhiều* *bước*. {F-43}
+Claude tự quyết định bước tiếp theo *cần* *tìm* *gì*. {F-43}
+Kết quả là một câu trả lời *chi* *tiết* chỉ trong *vài* *phút*. {F-46}
+## 38 | screen | Bật Research
+> screen: F-44 | Nút Research và tìm kiếm web | menu công cụ trong khung nhập, Research đang bật
+Trước khi dùng Research, bạn cần bật *tìm* *kiếm* *web*. {F-44}
+Claude có thể tìm cả trên web lẫn trong *Google* *Workspace* của bạn. {F-46}
+Hãy dùng Research cho những câu hỏi cần *so* *sánh* *nhiều* *nguồn*. {F-43}
+## 39 | metaphor | Claude trong trình duyệt
+> A browser window with a side-panel assistant pointing at page elements.
+*Claude* *in* *Chrome* là tiện ích mở rộng cho trình duyệt. {F-47}
+Claude *nhìn* *thấy* trang đang mở, rồi *bấm*, *gõ* và *điền* *form* giúp bạn. {F-47}
+Claude dùng luôn *đăng* *nhập* *có* *sẵn* của bạn trên trình duyệt. {F-47}
+## 40 | split | Trình duyệt hay ứng dụng máy tính
+> Left: the Chrome extension on a web page; right: the desktop app next to local files.
+Muốn làm việc với *file* *trên* *máy*, bạn dùng ứng dụng *Claude* *Desktop*. {F-50}
+Ứng dụng này còn có *tiện* *ích* *riêng* để nối Claude với công cụ trên máy. {F-14}
+Hiện tại, Claude in Chrome chưa chạy trên *điện* *thoại*. {F-50}
+## 41 | typewriter | Cẩn thận lệnh ẩn
+> A web page types out a hidden instruction, highlighted in the warn colour.
+Hãy cẩn thận với *lệnh* *ẩn* giấu trong trang web. {F-49}
+Kẻ xấu có thể giấu chỉ dẫn để Claude làm việc *ngoài* *ý* *muốn* của bạn. {F-49}
+Vì vậy, hãy *theo* *dõi* những gì Claude làm trên các trang lạ. {F-49}
+## 42 | anchor | Tóm tắt chương bốn
+Tóm lại: *Connectors* nối công cụ, *Research* để tìm hiểu sâu, và Claude có mặt *trong* *trình* *duyệt*.
+
+# ch5 | Nâng cao: Claude Code và nền tảng | advanced
+## 43 | title | Nâng cao: Claude Code và nền tảng
+Chương năm, phần nâng cao: *Claude* *Code* và nền tảng.
+## 44 | flow | Ba câu hỏi cho mỗi điểm nổi bật
+> Build the three-slot rail ① Tính năng · ② Vì sao nổi bật · ③ Bạn được gì; it stays small at the top of later ch5–ch6 frames.
+Ở phần nâng cao, mỗi tính năng ta xem qua *ba* *câu* *hỏi*.
+*Nó* *là* *gì*, vì sao *nổi* *bật*, và *bạn* *được* *gì*.
+Cách nhìn này giúp bạn biết tính năng nào đáng dùng ngay.
+## 45 | terminal | Claude Code trong terminal
+> Real capture: `claude --version`, then an excerpt of `claude --help` from capture/terminal.
+*Claude* *Code* là Claude làm việc ngay trong *terminal*, tức cửa sổ dòng lệnh. {F-54}
+Nó biết *đọc* *file*, *tìm* *kiếm*, *chạy* *lệnh* và truy cập web. {F-54}
+Vì sao nổi bật? Vì nó *tự* *làm*, chứ không chỉ gợi ý. {F-54}
+Bạn giao một việc, Claude Code dùng công cụ của nó để *làm* *đến* *cùng*. {F-54}
+## 46 | metaphor | CLAUDE.md: bảng nội quy
+> A pinned note on the wall titled CLAUDE.md.
+*CLAUDE.md* giống một *bảng* *nội* *quy* dán sẵn cho Claude. {F-55}
+Claude đọc nó ở *mọi* *phiên* làm việc. {F-55}
+Bạn được gì? Không phải nhắc lại *quy* *ước* dự án mỗi ngày. {F-55}
+## 47 | cards | Skill: công thức làm việc
+> Recipe cards stack up; each card is one reusable skill.
+*Skill* là một file hướng dẫn, chứa *quy* *trình* dùng lại được. {F-56}
+Claude tự *nạp* skill khi thấy phù hợp, hoặc bạn gọi bằng *lệnh*. {F-56}
+Bạn được gì? Làm đúng quy trình của bạn, *lần* *nào* *cũng* *vậy*. {F-56}
+## 48 | hub | Subagent: trợ lý phụ
+> Center: the main agent; three subagents orbit, each returns a small summary card.
+*Subagent* là trợ lý phụ, làm việc trong *ngữ* *cảnh* *riêng*. {F-57}
+Xong việc, nó chỉ gửi về một *bản* *tóm* *tắt*. {F-57}
+Nhờ vậy, cuộc trò chuyện chính luôn *gọn* *gàng*. {F-57}
+## 49 | flow | Hook: việc luôn xảy ra
+> A timeline of lifecycle events; a hook fires at each marker.
+*Hook* là việc được gắn vào một *thời* *điểm* nhất định. {F-58}
+Hook có thể chạy script hay gọi công cụ, *bất* *kể* Claude đang làm gì. {F-58}
+Điểm nổi bật: việc đó *luôn* *luôn* *xảy* *ra*. {F-58}
+## 50 | zoom | MCP: cổng kết nối chung
+> Zoom out from one plug to a wall of tools plugged into the same standard port.
+*MCP*, viết tắt của Model Context Protocol, là một *chuẩn* *mở* để nối AI với nguồn dữ liệu. {F-62}
+Qua MCP, Claude Code kết nối tới *hàng* *trăm* công cụ bên ngoài. {F-60}
+Bạn nên dùng khi thấy mình cứ *sao* *chép* dữ liệu vào khung chat. {F-61}
+## 51 | kinetic | Plugin: đóng gói tất cả
+> A box closes over the skill, hook, subagent and MCP icons.
+*Plugin* gói skill, hook, subagent và MCP thành *một* *gói* *cài* *đặt*. {F-59}
+Bạn được gì? *Chia* *sẻ* cả bộ thiết lập cho đồng đội. {F-59}
+Một plugin có thể dùng lại trên *nhiều* *dự* *án* khác nhau. {F-59}
+## 52 | split | Claude Code trên ứng dụng máy tính
+> Left: the terminal; right: the desktop app with a preview and a pull request status.
+Không quen terminal? Claude Code còn chạy ngay trong *ứng* *dụng* *desktop*. {F-53}
+Bạn xem trước kết quả và *theo* *dõi* *thay* *đổi* mà không rời ứng dụng. {F-53}
+Bạn còn theo dõi được trạng thái *pull* *request* ngay trong ứng dụng. {F-53}
+## 53 | journey | Nền tảng cho nhà phát triển
+> Three stations: gọi API trực tiếp → Agent SDK → Managed Agents.
+Với nhà phát triển, *Agent* *SDK* giúp nhúng agent của Claude vào ứng dụng riêng. {F-63}
+Họ cũng có thể gọi *API* trực tiếp từ mã nguồn. {F-64}
+Hoặc dùng *Managed* *Agents*, agent được Anthropic *vận* *hành* sẵn. {F-64}
+## 54 | anchor | Tóm tắt chương năm
+Tóm lại: Claude Code *tự* *làm* *việc*, và bạn mở rộng nó bằng *skill*, *MCP* và *plugin*.
+Chương tiếp theo là phần được chờ đợi nhất: những gì *mới* *nhất*.
+
+# ch6 | Mới nhất, tính đến 25/09/2026 | advanced
+## 55 | title | Mới nhất, tính đến 25/09/2026
+Chương sáu: những gì *mới* *nhất*, tính đến ngày hai mươi lăm tháng chín năm hai nghìn không trăm hai mươi sáu.
+## 56 | journey | Một năm thay đổi rất nhanh
+> Timeline stations: 06 Fable 5 · 06 Claude Tag · 08 Chrome thành Cowork · 09 Cowork gộp chat, Projects mới, Opus 5.5, Marketplace.
+Năm nay, Claude thay đổi rất *nhanh*.
+Ta đi qua *mười* *tính* *năng* nổi bật, chia làm ba nhóm.
+Đó là *ứng* *dụng*, *Claude* *Code*, và *nền* *tảng*.
+Với mỗi tính năng, ta vẫn hỏi *ba* *câu*: là gì, vì sao nổi bật, bạn được gì.
+## 57 | stat | Fable 5 và Mythos 5
+> Date chip 09/06/2026; two cards: Fable 5 (mọi người) and Mythos 5 (hạn chế).
+Ngày chín tháng sáu, Anthropic công bố *Claude* *Fable* *5* và *Mythos* *5*. {F-75}
+Fable 5 dành cho *mọi* *người*. {F-06}
+Mythos 5 được *giới* *hạn*, vì năng lực an ninh mạng rất mạnh. {F-06}
+## 58 | split | Cùng một model, khác lớp an toàn
+> One base model in the middle; two safety layers wrap it: Fable and Mythos.
+Điểm thú vị: hai tên này dùng *cùng* *một* *model* *nền*. {F-07}
+Chúng chỉ khác nhau ở *lớp* *an* *toàn* được gắn thêm. {F-07}
+Bạn được gì? Lần đầu, bậc model mạnh nhất đến tay *người* *dùng* *phổ* *thông*. {F-75}
+## 59 | stat | Claude Opus 5.5
+> Date chip 22/09/2026 and a count chip "−40%".
+Mới nhất là *Claude* *Opus* *5.5*, ra mắt ngày hai mươi hai tháng chín. {F-73}
+Chi phí vận hành thấp hơn *khoảng* *bốn* *mươi* *phần* *trăm* so với Opus 5. {F-73}
+Năng lực *gần* *bằng* Fable 5.1 trên phần lớn công việc. {F-08}
+## 60 | kinetic | Trung thực nhất từ trước tới nay
+> The words "trung thực" land; a smaller chip follows: kiểm thử hành vi kỹ nhất.
+Opus 5.5 đạt kết quả *tốt* *nhất* về *trung* *thực* trong các model Claude. {F-74}
+Đây cũng là model được Anthropic *kiểm* *thử* hành vi kỹ nhất từ trước tới nay. {F-74}
+## 61 | screen | Cowork và chat gộp làm một
+> screen: F-66 | Khung nhập có hai nút Chat và Cowork | trang chủ, hai chế độ hiện rõ, thanh bên thu gọn
+Ngày mười sáu tháng chín, *Cowork* và *chat* gộp thành *một* *ứng* *dụng* Claude. {F-66}
+Bạn chọn Claude *hỏi* *trước* khi làm, hoặc để Claude *tự* *làm*. {F-68}
+Khi tự làm, Claude chỉ hỏi bạn lúc cần một *quyết* *định* *quan* *trọng*. {F-68}
+## 62 | cards | Claude Docs, Slides và Design
+> Three product cards light up in turn; export chips: PowerPoint, PDF.
+Cùng đợt đó, *Claude* *Docs*, *Claude* *Slides* ra mắt, và *Claude* *Design* vào thẳng cuộc trò chuyện. {F-67}
+Claude dựng bản nháp bài trình bày, bạn *sửa* *trực* *tiếp*, rồi *trình* *chiếu* ngay. {F-67}
+Bạn cũng có thể tải về dạng *PowerPoint* hay *PDF*. {F-67}
+## 63 | screen | Slides ngay trong cuộc trò chuyện
+> screen: F-67 | Một bản Slides do Claude dựng | artifact Slides demo đang mở bên cạnh cuộc trò chuyện
+Đây là một bản *Slides* do Claude dựng, mở ngay *bên* *cạnh* cuộc trò chuyện. {F-67}
+Bạn được gì? *Tài* *liệu*, *bài* *trình* *bày* và *hình* *ảnh*, tất cả ở một nơi. {F-67}
+Mọi thứ nằm gọn trong một cuộc trò chuyện, *không* *cần* *chuyển* qua lại. {F-67}
+## 64 | flow | Projects được thiết kế lại
+> A single conversation fans out into parallel lanes that merge back into one result.
+Ngày mười bảy tháng chín, *Projects* trong Claude Code được *thiết* *kế* *lại*. {F-72}
+Bạn chỉ *mô* *tả* việc cần làm, Claude tự *chia* *việc* và *điều* *phối*. {F-28}
+Các luồng chạy *song* *song*, xong thì ghép kết quả lại. {F-28}
+Mỗi luồng là một phiên Claude Code chạy *trên* *đám* *mây*. {F-29}
+## 65 | metaphor | Một bộ nhớ chung cho cả dự án
+> Analogy: a shared whiteboard every lane writes to and reads from.
+Mọi luồng công việc dùng chung *một* *bộ* *nhớ* của dự án. {F-30}
+Bạn được gì? *Không* *phải* *giải* *thích* *lại* từ đầu. {F-30}
+Mỗi luồng chạy trên *bản* *sao* *riêng* của kho mã, nên ít khi giẫm chân nhau. {F-29}
+## 66 | screen | Cowork trong Chrome
+> screen: F-76 | Khung Claude in Chrome ở panel bên | panel bên đang mở cạnh một trang web công khai
+Từ tháng tám, khung *Claude* *in* *Chrome* trở thành một phiên *Cowork*. {F-48}
+Claude làm việc *xuyên* *nhiều* *tab*. {F-76}
+Rồi bạn *tiếp* *tục* công việc trên máy tính hay điện thoại. {F-76}
+## 67 | zoom | Connector có giao diện riêng
+> Zoom into a chat where a dashboard card renders inline.
+Connector giờ còn hiện *giao* *diện* *tương* *tác* ngay trong cuộc trò chuyện. {F-80}
+Ví dụ một *bảng* *điều* *khiển*, một *bảng* *công* *việc*, hay công cụ thiết kế. {F-80}
+Nhờ vậy, cuộc trò chuyện trở thành *nơi* *làm* *việc* thật sự. {F-80}
+## 68 | hub | Claude Tag trong Slack
+> A Slack channel in the center; teammates around it tag Claude; an admin chip shows a spend limit.
+Ngày hai mươi ba tháng sáu, *Claude* *Tag* ra mắt cho các nhóm dùng *Slack*. {F-88}
+Ai trong kênh cũng có thể *gắn* *thẻ* Claude để *giao* *việc*. {F-88}
+Quản trị viên đặt *giới* *hạn* *chi* *tiêu* và xem *nhật* *ký* mọi việc Claude làm. {F-89}
+## 69 | stat | Claude Marketplace
+> Count-up "2000+"; text chips: Atlassian, Google, Microsoft, Notion, Salesforce.
+Ngày hai mươi ba tháng chín, *Claude* *Marketplace* ra mắt. {F-69}
+Đây là nơi gom *plugin*, *connector* và agent vào *một* *chỗ*. {F-69}
+Ngay khi ra mắt, đã có *hơn* *hai* *nghìn* connector và plugin. {F-70}
+Trong đó có *Atlassian*, *Google*, *Microsoft*, *Notion* và *Salesforce*. {F-70}
+## 70 | split | Hai chuẩn mở phía sau
+> Left: Model Context Protocol; right: Agent Skills; both feed the Marketplace.
+Chúng được xây trên hai *chuẩn* *mở*: *Model* *Context* *Protocol* và *Agent* *Skills*. {F-71}
+Bạn được gì? Một nơi duy nhất để *tìm* *công* *cụ* mở rộng Claude. {F-69}
+Ai cũng có thể dùng hai chuẩn này để *tạo* connector hay plugin mới. {F-71}
+## 71 | terminal | Skill theo bạn xuống terminal
+> Terminal shows an excerpt of the real `claude --help`; skill icons slide from a browser card into it.
+Skill và plugin bạn bật trên claude.ai giờ được *đồng* *bộ* sang *terminal*. {F-78}
+Chỉ cần *đăng* *nhập* *cùng* *tài* *khoản* trong Claude Code. {F-78}
+Bạn được gì? *Một* *lần* *thiết* *lập*, dùng ở mọi nơi. {F-78}
+## 72 | cards | Mười tính năng trong một khung
+> A grid of ten mini cards in three colour groups: Ứng dụng, Claude Code, Nền tảng.
+Hãy nhìn lại mười tính năng mới theo ba nhóm.
+Nhóm ứng dụng có *Cowork*, bộ *Docs* *Slides* *Design*, *Chrome*, *connector* và *Claude* *Tag*.
+Nhóm Claude Code có *Projects* mới và *đồng* *bộ* *skill*.
+Nhóm nền tảng có *Fable* *5*, *Opus* *5.5* và *Marketplace*.
+## 73 | anchor | Tóm tắt chương sáu
+Tóm lại: Claude đang đi từ *trả* *lời* sang *cùng* *làm* *việc* với bạn và cả nhóm.
+Mỗi tháng lại có thêm tính năng mới, nên hãy *theo* *dõi* thường xuyên.
+
+# ch7 | Dùng an toàn và tổng kết | basic
+## 74 | title | Dùng an toàn và tổng kết
+Chương bảy: dùng Claude *an* *toàn*, và tổng kết.
+## 75 | flow | Lớp bảo vệ của Anthropic
+> Flow: nội dung → model phát hiện → bộ lọc an toàn.
+Anthropic dùng các *model* *phát* *hiện* để gắn cờ nội dung có hại. {F-81}
+Khi phát hiện, *bộ* *lọc* *an* *toàn* có thể chặn câu trả lời. {F-82}
+Công cụ này *không* *hoàn* *hảo*, nên bạn vẫn cần tự kiểm tra. {F-84}
+## 76 | cards | Ba thói quen an toàn
+> Three cards tick in: kiểm tra lại, ẩn danh khi cần, cẩn thận trang lạ.
+Hãy *kiểm* *tra* *lại* thông tin quan trọng trước khi dùng. {F-84}
+Dùng chat *ẩn* *danh* khi làm việc với nội dung riêng tư. {F-38}
+Và *cẩn* *thận* khi để Claude thao tác trên trang web lạ. {F-49}
+## 77 | split | Chat ẩn danh khác gì?
+> Left: a normal chat saved to history and memory; right: an incognito chat, not used for training.
+Chat ẩn danh *không* *dùng* *để* *huấn* *luyện* model. {F-85}
+Theo mặc định, dữ liệu được giữ *ba* *mươi* *ngày*. {F-85}
+Bạn bật nó bằng biểu tượng *bóng* *ma* mà ta đã thấy ở chương ba. {F-86}
+Cuộc trò chuyện đó *không* *lưu* vào lịch sử, cũng không vào bộ nhớ. {F-38}
+## 78 | journey | Hành trình của bạn hôm nay
+> Journey stations recap: cơ bản → tổ chức → kết nối → Claude Code → mới nhất.
+Hôm nay, bạn đã đi từ *trò* *chuyện* *cơ* *bản* đến *Projects* và *Artifacts*.
+Bạn đã biết *kết* *nối* công cụ, và làm quen với *Claude* *Code*.
+Và bạn đã cập nhật *mười* *tính* *năng* *mới* *nhất* năm nay.
+Mỗi chương là một *bậc* *thang*, đưa bạn đi xa hơn một chút.
+## 79 | anchor | Bước tiếp theo
+> Checklist: mở claude.ai, tạo một Project, thử một connector.
+Bước tiếp theo: mở claude.ai và *tạo* *một* *Project* cho công việc của bạn.
+Rồi thử *một* *connector*, hay nhờ Claude *dựng* *một* *bài* *trình* *bày*.
+Chúc bạn *làm* *việc* *hiệu* *quả* cùng Claude!

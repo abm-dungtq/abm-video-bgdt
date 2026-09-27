@@ -1,0 +1,303 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f02-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(22, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f02-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    .f02-layer { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f02-svgfull { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    .f02-spk { display: inline-block; }
+    .f02-spk svg { display: block; width: 100%; height: 100%; }
+    .f02-kicker {
+      position: absolute;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .f02-kicker .f02-spk { width: 24px; height: 24px; }
+
+    /* Scene 1 — cursor becomes the colleague */
+    #f02-cursor {
+      position: absolute;
+      left: 340px; top: 300px;
+      width: 10px; height: 120px;
+      border-radius: 3px;
+      background: var(--ink);
+    }
+    #f02-s1-head {
+      position: absolute;
+      left: 700px; top: 285px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 150px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      padding-top: 10px;
+    }
+    #f02-s1-head span { display: inline-block; opacity: 0; }
+    #f02-s1-kick { left: 706px; top: 222px; opacity: 0; }
+    #f02-s1-spark { position: absolute; left: 1690px; top: 452px; width: 44px; height: 44px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+
+    /* Scene 2 — three paper cards */
+    .f02-card {
+      position: absolute;
+      top: 230px;
+      width: 500px; height: 360px;
+      box-sizing: border-box;
+      padding: 40px 44px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    #f02-card1 { left: 70px; }
+    #f02-card2 { left: 630px; }
+    #f02-card3 { left: 1190px; }
+    .f02-card-idx { position: absolute; left: 44px; top: 38px; font-family: "JetBrains Mono", monospace; font-size: 28px; color: var(--muted); letter-spacing: 0.14em; }
+    .f02-card-tick { position: absolute; right: 40px; top: 36px; width: 36px; height: 36px; opacity: 0; }
+    .f02-card-icon { position: absolute; left: 40px; top: 100px; width: 120px; height: 120px; overflow: visible; }
+    .f02-card-title { position: absolute; left: 44px; bottom: 40px; font-size: 44px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+    .f02-dot { opacity: 0; }
+    #f02-s2-kick { left: 70px; top: 650px; opacity: 0; }
+
+    /* Scene 3 — the trail writes Claude */
+    #f02-claude-text { font-family: "Lora", serif; font-weight: 700; font-size: 230px; stroke-dasharray: 1600; stroke-dashoffset: 1600; }
+    #f02-s3-spark { position: absolute; left: 1262px; top: 486px; width: 40px; height: 40px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f02-s3-kick { left: 0; top: 572px; width: 1760px; justify-content: center; }
+    #f02-s3-kick .f02-spk { opacity: 0; }
+    .f02-ch { opacity: 0; white-space: pre; }
+
+    /* Scene 4 — just say it */
+    #f02-bubble-text {
+      position: absolute;
+      left: 100px; top: 300px;
+      width: 760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 104px;
+      line-height: 1.12;
+      white-space: nowrap;
+      padding-top: 6px;
+    }
+    #f02-bubble-text span { display: inline-block; opacity: 0; }
+    #f02-bigspark { position: absolute; left: 1365px; top: 325px; width: 150px; height: 150px; opacity: 0; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f02-s4-kick { left: 330px; top: 612px; }
+    #f02-s4-kick .f02-spk, #f02-s4-k1, #f02-s4-k2 { opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="02-mot-dong-nghiep-luon-san-sang" data-width="1920" data-height="1080" data-duration="15.804">
+    <div id="f02-ground" class="clip" data-start="0" data-duration="15.804" data-track-index="0"></div>
+    <div id="f02-stage" class="clip" data-start="0" data-duration="15.804" data-track-index="1">
+
+      <!-- Scene 1: cursor → underline → "Đồng nghiệp" -->
+      <div id="f02-s1" class="f02-layer">
+        <svg class="f02-svgfull" viewBox="0 0 1760 820">
+          <path id="f02-s1-stroke" d="M345 466 C 560 494, 820 474, 1080 488 S 1500 498, 1684 474" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f02-cursor"></div>
+        <div id="f02-s1-kick" class="f02-kicker"><span class="f02-spk"></span><span>Luôn sẵn sàng</span></div>
+        <div id="f02-s1-head"><span id="f02-w-dong">Đồng</span> <span id="f02-w-nghiep">nghiệp</span></div>
+        <div id="f02-s1-spark" class="f02-spk"></div>
+      </div>
+
+      <!-- Scene 2: triptych of task cards -->
+      <div id="f02-s2" class="f02-layer">
+        <div id="f02-card1" class="f02-card">
+          <div class="f02-card-idx">01</div>
+          <div class="f02-card-tick f02-spk"></div>
+          <svg class="f02-card-icon" viewBox="0 0 96 96" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 70 L26 56 L64 18 L76 30 L38 68 Z"/>
+            <path d="M58 24 L70 36"/>
+            <path d="M14 86 Q28 78 42 86 T70 86 T90 84"/>
+          </svg>
+          <div class="f02-card-title">Viết</div>
+        </div>
+        <div id="f02-card2" class="f02-card">
+          <div class="f02-card-idx">02</div>
+          <div class="f02-card-tick f02-spk"></div>
+          <svg class="f02-card-icon" viewBox="0 0 96 96" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 86 H90"/>
+            <rect x="14" y="58" width="16" height="28" rx="3"/>
+            <rect x="40" y="40" width="16" height="46" rx="3"/>
+            <rect x="66" y="50" width="16" height="36" rx="3"/>
+            <path d="M12 38 L36 22 L58 30 L86 10"/>
+          </svg>
+          <div class="f02-card-title">Phân tích</div>
+        </div>
+        <div id="f02-card3" class="f02-card">
+          <div class="f02-card-idx">03</div>
+          <div class="f02-card-tick f02-spk"></div>
+          <svg class="f02-card-icon" viewBox="0 0 96 96" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round">
+            <g>
+              <circle cx="14" cy="48" r="10"/>
+              <path d="M26 48 H38"/>
+              <circle cx="50" cy="48" r="10"/>
+              <path d="M62 48 H74"/>
+              <circle cx="86" cy="48" r="10"/>
+              <circle id="f02-dot1" class="f02-dot" cx="14" cy="48" r="5" fill="#8FB8A8" stroke="none"/>
+              <circle id="f02-dot2" class="f02-dot" cx="50" cy="48" r="5" fill="#8FB8A8" stroke="none"/>
+              <circle id="f02-dot3" class="f02-dot" cx="86" cy="48" r="5" fill="#8FB8A8" stroke="none"/>
+            </g>
+          </svg>
+          <div class="f02-card-title">Việc nhiều bước</div>
+        </div>
+        <div id="f02-s2-kick" class="f02-kicker"><span class="f02-spk"></span><span>Đều làm được</span></div>
+      </div>
+
+      <!-- Scene 3: trail-written "Claude" -->
+      <div id="f02-s3" class="f02-layer">
+        <svg id="f02-claude-svg" class="f02-svgfull" viewBox="0 0 1760 820">
+          <text id="f02-claude-text" x="880" y="470" text-anchor="middle" fill="#F0EEE6" fill-opacity="0" stroke="#D97757" stroke-width="3">Claude</text>
+          <path id="f02-s3-trail" d="M470 512 C 640 534, 860 506, 1040 520 S 1210 524, 1262 506" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f02-s3-spark" class="f02-spk"></div>
+        <div id="f02-s3-kick" class="f02-kicker"><span class="f02-spk"></span><span id="f02-s3-type">Do Anthropic phát triển</span></div>
+      </div>
+
+      <!-- Scene 4: speech bubble → sound waves → spark -->
+      <div id="f02-s4" class="f02-layer">
+        <svg class="f02-svgfull" viewBox="0 0 1760 820">
+          <path id="f02-bubble" d="M160 200 H800 Q860 200 860 260 V500 Q860 560 800 560 H310 L210 650 L240 560 H160 Q100 560 100 500 V260 Q100 200 160 200 Z" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f02-wave1" d="M960 362 Q992 400 960 438" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f02-wave2" d="M1062 332 Q1108 400 1062 468" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="f02-wave3" d="M1164 302 Q1226 400 1164 498" fill="none" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f02-bubble-text"><span id="f02-b1">Chỉ</span> <span id="f02-b2">cần</span> <span id="f02-b3">nói</span></div>
+        <div id="f02-bigspark" class="f02-spk"></div>
+        <div id="f02-s4-kick" class="f02-kicker"><span class="f02-spk"></span><span id="f02-s4-k1">Rõ ràng</span><span id="f02-s4-k2">· Tự nhiên</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="02-mot-dong-nghiep-luon-san-sang"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f02-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // split the Scene 3 kicker into characters for a type-on
+      var typeEl = q('#f02-s3-type');
+      var chars = Array.from(typeEl.textContent.normalize('NFC'));
+      typeEl.textContent = '';
+      chars.forEach(function (c) {
+        var s = document.createElement('span');
+        s.className = 'f02-ch';
+        s.textContent = c;
+        typeEl.appendChild(s);
+      });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = 'power3.out';
+      var popFrom = { scale: 0, rotation: -20, opacity: 0 };
+      var popTo = { scale: 1, rotation: 0, opacity: 1, duration: 0.45, ease: IN };
+
+      // ---- Scene 1 (0–3.9): blinking cursor stretches into the underline of "Đồng nghiệp"
+      tl.set('#f02-cursor', { opacity: 0 }, 0.45);
+      tl.set('#f02-cursor', { opacity: 1 }, 0.9);
+      tl.to('#f02-cursor', { scaleY: 0.04, y: 106, duration: 0.14, ease: 'power2.in' }, 1.24);
+      tl.set('#f02-cursor', { opacity: 0 }, 1.38);
+      tl.fromTo('#f02-s1-stroke', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: 'none' }, 1.36);
+      tl.fromTo('#f02-w-dong', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: IN }, 1.36);
+      tl.fromTo('#f02-w-nghiep', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: IN }, 1.5);
+      tl.fromTo('#f02-s1-spark', popFrom, popTo, 2.02);
+      tl.fromTo('#f02-s1-kick', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 2.19);
+      // cut the curve out to the left before the cards arrive
+      tl.to('#f02-s1', { x: -250, opacity: 0, filter: 'blur(10px)', duration: 0.36, ease: 'power2.in' }, 3.52);
+
+      // ---- Scene 2 (3.9–8.2): three paper cards cascade in on their words
+      var cards = [
+        ['#f02-card1', 3.90, -5],
+        ['#f02-card2', 4.64, 4],
+        ['#f02-card3', 5.64, -3]
+      ];
+      cards.forEach(function (c) {
+        tl.fromTo(c[0], { y: 90, rotation: c[2], opacity: 0 }, { y: 0, rotation: 0, opacity: 1, duration: 0.6, ease: IN }, c[1]);
+        tl.fromTo(c[0] + ' .f02-card-tick', popFrom, popTo, c[1] + 0.32);
+      });
+      tl.fromTo('#f02-dot1', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 5.81);
+      tl.fromTo('#f02-dot2', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 5.95);
+      tl.fromTo('#f02-dot3', { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'none' }, 6.07);
+      tl.fromTo('#f02-s2-kick', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: IN }, 6.81);
+      // cards recede and dim
+      tl.to('#f02-s2', { scale: 0.88, opacity: 0.1, filter: 'blur(3px)', transformOrigin: '880px 410px', duration: 0.5, ease: 'power2.inOut' }, 7.73);
+
+      // ---- Scene 3 (8.2–11.76): the trail writes "Claude"
+      tl.fromTo('#f02-claude-text', { strokeDashoffset: 1600 }, { strokeDashoffset: 0, duration: 0.75, ease: 'none' }, 8.2);
+      tl.fromTo('#f02-s3-trail', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.75, ease: 'none' }, 8.2);
+      tl.fromTo('#f02-claude-text', { attr: { 'fill-opacity': 0 } }, { attr: { 'fill-opacity': 1 }, duration: 0.5, ease: 'power2.out' }, 8.72);
+      tl.fromTo('#f02-s3-spark', popFrom, popTo, 8.95);
+      tl.fromTo('#f02-claude-svg', { scale: 1 }, { scale: 1.02, transformOrigin: '880px 420px', duration: 2.4, ease: 'power1.inOut' }, 9.25);
+      tl.fromTo('#f02-s3-kick .f02-spk', popFrom, popTo, 10.54);
+      qa('#f02-s3-kick .f02-ch').forEach(function (el, i) {
+        tl.set(el, { opacity: 1 }, 10.6 + i * 0.034);
+      });
+
+      // ---- Scene 4 (11.76–15.3): "Claude" shrinks into the spark; speech bubble; sound waves
+      tl.to('#f02-s3', { x: 560, y: -20, scale: 0.18, opacity: 0, transformOrigin: '880px 420px', duration: 0.45, ease: 'power2.inOut' }, 11.76);
+      tl.to('#f02-s2', { opacity: 0, duration: 0.35, ease: 'power2.out' }, 11.76);
+      tl.fromTo('#f02-bigspark', { scale: 0, rotation: -20, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: IN }, 12.02);
+      tl.fromTo('#f02-bubble', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: 'none' }, 11.8);
+      tl.fromTo('#f02-b1', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 12.33);
+      tl.fromTo('#f02-b2', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: IN }, 12.45);
+      tl.fromTo('#f02-b3', { y: 36, scale: 1.25, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5, ease: IN }, 12.59);
+      tl.fromTo('#f02-wave1', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 12.93);
+      tl.fromTo('#f02-wave2', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 13.05);
+      tl.fromTo('#f02-wave3', { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: 'none' }, 13.17);
+      tl.fromTo('#f02-bigspark', { filter: 'drop-shadow(0 0 10px rgba(217,119,87,0.45))' }, { filter: 'drop-shadow(0 0 30px rgba(217,119,87,0.9))', duration: 0.3, ease: 'power2.out' }, 13.56);
+      tl.to('#f02-bigspark', { filter: 'drop-shadow(0 0 10px rgba(217,119,87,0.45))', duration: 0.6, ease: 'power2.inOut' }, 13.87);
+      tl.fromTo('#f02-s4-kick .f02-spk', popFrom, popTo, 13.56);
+      tl.fromTo('#f02-s4-k1', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 13.56);
+      tl.fromTo('#f02-s4-k2', { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: IN }, 14.12);
+
+      tl.to({}, { duration: 15.304 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["02-mot-dong-nghiep-luon-san-sang"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,406 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f28-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f28-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f28- */
+
+    #f28-cam { position: absolute; inset: 0; }
+
+    /* kicker: spark + BA MẪU MỚI */
+    #f28-kicker {
+      position: absolute;
+      left: 0;
+      top: 30px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f28-kspark { width: 28px; height: 28px; display: block; }
+
+    /* empty slots established before the names are spoken */
+    .f28-slot {
+      position: absolute;
+      top: 130px;
+      width: 500px;
+      height: 560px;
+      border-radius: 16px;
+      border: 2px dashed rgba(240,238,230,.14);
+      box-sizing: border-box;
+      opacity: 0;
+    }
+
+    /* card wrappers (move between shots) */
+    .f28-cw {
+      position: absolute;
+      top: 130px;
+      width: 500px;
+      height: 560px;
+    }
+    #f28-c1, #f28-s1 { left: 60px; }
+    #f28-c2, #f28-s2 { left: 630px; }
+    #f28-c3, #f28-s3 { left: 1200px; }
+
+    /* card body (entrance) */
+    .f28-card {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    /* active ring: terracotta border overlay */
+    .f28-ring {
+      position: absolute;
+      inset: -2px;
+      border-radius: 18px;
+      border: 3px solid var(--gold);
+      opacity: 0;
+    }
+    .f28-icon {
+      position: absolute;
+      left: 90px;
+      top: 48px;
+      width: 320px;
+      height: 220px;
+      overflow: visible;
+    }
+    .f28-icon .f28-draw {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f28-icon .f28-soft { stroke: var(--muted); stroke-width: 3; }
+    .f28-title {
+      position: absolute;
+      left: 0;
+      top: 286px;
+      width: 500px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 72px;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+    .f28-chips {
+      position: absolute;
+      left: 0;
+      top: 408px;
+      width: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .f28-chip {
+      display: inline-flex;
+      gap: 9px;
+      padding: 8px 24px;
+      border-radius: 28px;
+      border: 1.5px solid rgba(240,238,230,.22);
+      background: rgba(240,238,230,.04);
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f28-w { display: inline-block; opacity: 0; }
+
+    /* spark that marks the Design card */
+    #f28-dspark {
+      position: absolute;
+      left: 404px;
+      top: 300px;
+      width: 40px;
+      height: 40px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f28-dspark svg, #f28-tspark svg { width: 100%; height: 100%; display: block; }
+
+    /* shot 3: dashed bracket around the small row */
+    #f28-bracket {
+      position: absolute;
+      left: 500px;
+      top: 14px;
+      width: 760px;
+      height: 270px;
+      overflow: visible;
+    }
+    #f28-bracket path {
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+
+    /* shot 3: "đang thử nghiệm" with hand-drawn circle */
+    #f28-tag {
+      position: absolute;
+      left: 380px;
+      top: 390px;
+      width: 1000px;
+      height: 280px;
+    }
+    #f28-ttext {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1000px;
+      height: 280px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 104px;
+      line-height: 1.1;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f28-tw { display: inline-block; opacity: 0; }
+    #f28-circle {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1000px;
+      height: 280px;
+      overflow: visible;
+    }
+    #f28-circle path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    #f28-tspark {
+      position: absolute;
+      left: 950px;
+      top: 18px;
+      width: 44px;
+      height: 44px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+  </style>
+
+  <div id="root" data-composition-id="28-docs-slides-va-design" data-width="1920" data-height="1080" data-duration="16.695">
+    <div id="f28-ground" class="clip" data-start="0" data-duration="16.695" data-track-index="0"></div>
+    <div id="f28-stage" class="clip" data-start="0" data-duration="16.695" data-track-index="1">
+      <div id="f28-cam">
+        <div id="f28-kicker">
+          <svg id="f28-kspark" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg>
+          <span>Ba mẫu mới</span>
+        </div>
+
+        <div class="f28-slot" id="f28-s1"></div>
+        <div class="f28-slot" id="f28-s2"></div>
+        <div class="f28-slot" id="f28-s3"></div>
+
+        <!-- Docs: a page with folded corner and text lines -->
+        <div class="f28-cw" id="f28-c1">
+          <div class="f28-card" id="f28-c1in">
+            <div class="f28-ring" id="f28-r1"></div>
+            <svg class="f28-icon" viewBox="0 0 320 220" aria-hidden="true">
+              <path class="f28-draw" pathLength="1" d="M100 10 L196 10 L230 44 L230 210 L100 210 Z"/>
+              <path class="f28-draw" pathLength="1" d="M196 10 L196 44 L230 44"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M120 72 L210 72"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M120 100 L210 100"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M120 128 L196 128"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M120 156 L210 156"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M120 184 L170 184"/>
+            </svg>
+            <div class="f28-title">Docs</div>
+            <div class="f28-chips">
+              <div class="f28-chip" id="f28-ch1"><span class="f28-w" id="f28-w1a">viết</span><span class="f28-w" id="f28-w1b">tài</span><span class="f28-w" id="f28-w1c">liệu</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slides: a 16:9 slide with bullets and a thumbnail strip -->
+        <div class="f28-cw" id="f28-c2">
+          <div class="f28-card" id="f28-c2in">
+            <div class="f28-ring" id="f28-r2"></div>
+            <svg class="f28-icon" viewBox="0 0 320 220" aria-hidden="true">
+              <path class="f28-draw" pathLength="1" d="M30 10 L290 10 L290 156 L30 156 Z"/>
+              <path class="f28-draw" pathLength="1" d="M56 40 L180 40"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M56 76 L150 76"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M56 102 L136 102"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M56 128 L146 128"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M200 132 L200 104 M226 132 L226 82 M252 132 L252 60"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M30 178 L100 178 L100 212 L30 212 Z"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M125 178 L195 178 L195 212 L125 212 Z"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M220 178 L290 178 L290 212 L220 212 Z"/>
+            </svg>
+            <div class="f28-title">Slides</div>
+            <div class="f28-chips">
+              <div class="f28-chip" id="f28-ch2"><span class="f28-w" id="f28-w2a">dựng</span><span class="f28-w" id="f28-w2b">bài</span><span class="f28-w" id="f28-w2c">trình</span><span class="f28-w" id="f28-w2d">bày</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Design: a canvas frame with handles, shapes and a pen stroke -->
+        <div class="f28-cw" id="f28-c3">
+          <div class="f28-card" id="f28-c3in">
+            <div class="f28-ring" id="f28-r3"></div>
+            <svg class="f28-icon" viewBox="0 0 320 220" aria-hidden="true">
+              <path class="f28-draw" pathLength="1" d="M40 16 L280 16 L280 204 L40 204 Z"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M32 8 L48 8 L48 24 L32 24 Z M272 8 L288 8 L288 24 L272 24 Z M32 196 L48 196 L48 212 L32 212 Z M272 196 L288 196 L288 212 L272 212 Z"/>
+              <path class="f28-draw" pathLength="1" d="M118 92 C118 70, 86 58, 76 78 C 64 100, 90 124, 112 112 C 122 106, 120 98, 118 92"/>
+              <path class="f28-draw" pathLength="1" d="M170 150 L212 72 L252 150 Z"/>
+              <path class="f28-draw f28-soft" pathLength="1" d="M64 176 C 100 150, 136 188, 176 166 C 204 150, 226 172, 252 164"/>
+            </svg>
+            <div class="f28-title">Design</div>
+            <div class="f28-chips">
+              <div class="f28-chip" id="f28-ch3"><span class="f28-w" id="f28-w3a">hình</span><span class="f28-w" id="f28-w3b">ảnh</span></div>
+              <div class="f28-chip" id="f28-ch4"><span class="f28-w" id="f28-w4a">bản</span><span class="f28-w" id="f28-w4b">phác</span><span class="f28-w" id="f28-w4c">thảo</span></div>
+            </div>
+            <div id="f28-dspark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></div>
+          </div>
+        </div>
+
+        <svg id="f28-bracket" viewBox="0 0 760 270" preserveAspectRatio="none" aria-hidden="true">
+          <path pathLength="1" d="M20 6 L740 6 C 752 6, 754 10, 754 22 L754 248 C 754 260, 750 264, 738 264 L22 264 C 10 264, 6 260, 6 248 L6 22 C 6 10, 10 6, 20 6"/>
+        </svg>
+
+        <div id="f28-tag">
+          <svg id="f28-circle" viewBox="0 0 1000 280" aria-hidden="true">
+            <path pathLength="1" d="M560 30 C 760 22, 960 60, 972 136 C 984 214, 760 262, 500 258 C 250 254, 30 222, 26 142 C 22 70, 220 30, 470 26 C 560 24, 640 30, 700 40"/>
+          </svg>
+          <div id="f28-ttext"><span class="f28-tw" id="f28-t1">đang</span><span class="f28-tw" id="f28-t2">thử</span><span class="f28-tw" id="f28-t3">nghiệm</span></div>
+          <div id="f28-tspark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var OUT = "power3.out", MOVE = "power2.inOut";
+
+      // whole-frame micro drift
+      tl.fromTo("#f28-cam", { scale: 1 }, { scale: 1.008, duration: 16.195, ease: "none" }, 0);
+
+      // ===== Shot 1 (0 - 7.59): triptych assembles =====
+      // "Artifact" 0.35: empty slots appear
+      tl.fromTo(".f28-slot", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: OUT, stagger: 0.08 }, 0.35);
+      // "ba mẫu mới" 1.08: kicker + spark pop
+      tl.fromTo("#f28-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 1.08);
+      tl.fromTo("#f28-kspark", { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.45, ease: OUT }, 1.08);
+
+      // cards land in their slots on their names: Docs 2.12 · Slides 2.77 · Design 3.29
+      [["1", 2.12], ["2", 2.77], ["3", 3.29]].forEach(function (c) {
+        tl.fromTo("#f28-c" + c[0] + "in", { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: OUT }, c[1]);
+        tl.fromTo("#f28-c" + c[0] + " .f28-draw", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none", stagger: 0.04 }, c[1] + 0.15);
+      });
+      // slots are covered; clear their dashed edges before the cards move
+      tl.fromTo(".f28-slot", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "none", immediateRender: false }, 3.9);
+
+      // "Docs" 4.29: Docs active; chip words viết 5.14 · tài 5.32 · liệu 5.46
+      tl.fromTo("#f28-r1", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: OUT }, 4.29);
+      tl.fromTo("#f28-ch1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 5.14);
+      tl.fromTo("#f28-w1a", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.14);
+      tl.fromTo("#f28-w1b", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.32);
+      tl.fromTo("#f28-w1c", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.46);
+
+      // "Slides" 6.26: focus hands over; chip words dựng 7.10 · bài 7.29 · trình 7.43 · bày 7.59
+      tl.fromTo("#f28-r1", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "none", immediateRender: false }, 6.26);
+      tl.fromTo("#f28-r2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: OUT }, 6.26);
+      tl.fromTo("#f28-ch2", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 7.1);
+      tl.fromTo("#f28-w2a", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 7.1);
+      tl.fromTo("#f28-w2b", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 7.29);
+      tl.fromTo("#f28-w2c", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 7.43);
+      tl.fromTo("#f28-w2d", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 7.59);
+
+      // ===== Shot 2 (7.59 - 13.04): push in on Design, others to the edges and dim =====
+      tl.fromTo("#f28-r2", { opacity: 1 }, { opacity: 0, duration: 0.4, ease: "none", immediateRender: false }, 7.8);
+      tl.fromTo("#f28-c1", { x: 0, scale: 1, opacity: 1 }, { x: -60, scale: 0.8, opacity: 0.35, duration: 0.8, ease: MOVE, immediateRender: false }, 7.7);
+      tl.fromTo("#f28-c2", { x: 0, scale: 1, opacity: 1 }, { x: 630, scale: 0.8, opacity: 0.35, duration: 0.8, ease: MOVE, immediateRender: false }, 7.7);
+      tl.fromTo("#f28-c3", { x: 0, scale: 1 }, { x: -570, scale: 1.25, duration: 0.8, ease: MOVE, immediateRender: false }, 7.6);
+      tl.fromTo("#f28-kicker", { opacity: 1 }, { opacity: 0.45, duration: 0.6, ease: "none", immediateRender: false }, 7.7);
+      // "Design" 8.41: ring + spark pop
+      tl.fromTo("#f28-r3", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: OUT }, 8.41);
+      tl.fromTo("#f28-dspark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: OUT }, 8.41);
+      // chips: hình 9.33 · ảnh 9.51 ; bản 10.36 · phác 10.54 · thảo 10.72
+      tl.fromTo("#f28-ch3", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 9.33);
+      tl.fromTo("#f28-w3a", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 9.33);
+      tl.fromTo("#f28-w3b", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 9.51);
+      tl.fromTo("#f28-ch4", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 10.36);
+      tl.fromTo("#f28-w4a", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 10.36);
+      tl.fromTo("#f28-w4b", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 10.54);
+      tl.fromTo("#f28-w4c", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 10.72);
+
+      // ===== Shot 3 (12.45 "Ba mẫu này" - end): cards shrink to a small row at the top =====
+      tl.fromTo(".f28-chip", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "none", immediateRender: false }, 12.45);
+      tl.fromTo(["#f28-r3", "#f28-dspark"], { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "none", immediateRender: false }, 12.45);
+      tl.fromTo("#f28-c1", { x: -60, y: 0, scale: 0.8, opacity: 0.35 }, { x: 320, y: -260, scale: 0.42, opacity: 1, duration: 0.7, ease: MOVE, immediateRender: false }, 12.45);
+      tl.fromTo("#f28-c2", { x: 630, y: 0, scale: 0.8, opacity: 0.35 }, { x: 0, y: -260, scale: 0.42, opacity: 1, duration: 0.7, ease: MOVE, immediateRender: false }, 12.45);
+      tl.fromTo("#f28-c3", { x: -570, y: 0, scale: 1.25 }, { x: -320, y: -260, scale: 0.42, duration: 0.7, ease: MOVE, immediateRender: false }, 12.45);
+      // đang 13.04 · thử 13.24 · nghiệm 13.38
+      tl.fromTo("#f28-t1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 13.04);
+      tl.fromTo("#f28-t2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 13.24);
+      tl.fromTo("#f28-t3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: OUT }, 13.38);
+      // hand-drawn circle around it, spark at its tail
+      tl.fromTo("#f28-circle path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 13.62);
+      tl.fromTo("#f28-tspark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: OUT }, 14.3);
+      // "giao diện" 14.24-14.57: a dashed frame traces the three cards (still changing)
+      tl.fromTo("#f28-bracket path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.9, ease: "none" }, 14.41);
+
+      tl.to({}, { duration: 16.195 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["28-docs-slides-va-design"] = tl;
+    })();
+  </script>
+</template>

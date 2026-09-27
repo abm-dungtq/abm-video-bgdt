@@ -1,0 +1,337 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f41-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(34, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f41-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+
+    /* ---------- shot 1: the web page with a hidden line ---------- */
+    #f41-s1 { position: absolute; inset: 0; transform-origin: 50% 50%; }
+    #f41-kicker {
+      position: absolute; left: 380px; top: 36px; display: flex; align-items: center; gap: 16px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f41-kicker svg { width: 30px; height: 30px; }
+    #f41-cam { position: absolute; left: 380px; top: 110px; width: 1000px; height: 600px; transform-origin: 30% 55%; }
+    #f41-card {
+      position: absolute; inset: 0;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+      overflow: hidden;
+    }
+    #f41-chrome {
+      position: absolute; left: 0; top: 0; width: 1000px; height: 64px;
+      border-bottom: 1px solid rgba(240,238,230,.10);
+    }
+    .f41-dot { position: absolute; top: 24px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); opacity: 0.55; }
+    #f41-url { position: absolute; left: 130px; top: 17px; width: 560px; height: 30px; border-radius: 15px; background: rgba(240,238,230,.08); }
+    #f41-urlbar { position: absolute; left: 24px; top: 12px; width: 240px; height: 6px; border-radius: 3px; background: rgba(240,238,230,.22); }
+    #f41-body { position: absolute; left: 0; top: 64px; width: 1000px; height: 536px; }
+    .f41-bar { position: absolute; left: 70px; height: 16px; border-radius: 8px; background: rgba(240,238,230,0.20); transform-origin: 0 50%; }
+    #f41-h { height: 30px; border-radius: 10px; background: rgba(240,238,230,0.34); }
+    #f41-img { position: absolute; left: 700px; top: 40px; width: 230px; height: 150px; border-radius: 12px; background: rgba(240,238,230,0.07); border: 1px solid rgba(240,238,230,0.10); }
+    #f41-btn { position: absolute; left: 70px; top: 456px; width: 200px; height: 48px; border-radius: 24px; background: rgba(240,238,230,0.12); }
+    #f41-line {
+      position: absolute; left: 70px; top: 232px; height: 64px; white-space: nowrap;
+      font-weight: 600; font-size: 48px; line-height: 64px; color: rgba(240,238,230,0.30);
+    }
+    #f41-line .f41-ch { display: none; }
+    #f41-caret { display: inline-block; width: 4px; height: 50px; margin-left: 4px; vertical-align: -8px; background: var(--ink); opacity: 0; }
+    #f41-box { position: absolute; left: 44px; top: 220px; width: 250px; height: 88px; overflow: visible; }
+    #f41-bang {
+      position: absolute; left: 272px; top: 200px; width: 44px; height: 44px; border-radius: 50%;
+      background: var(--warn); color: var(--ink); font-weight: 800; font-size: 30px; line-height: 44px;
+      text-align: center; opacity: 0;
+    }
+
+    /* ---------- shot 2: flow strip ---------- */
+    #f41-s2 { position: absolute; inset: 0; transform-origin: 880px 410px; opacity: 0; }
+    #f41-lines { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f41-chip {
+      position: absolute; left: 80px; top: 344px; width: 360px; height: 116px;
+      background: var(--surface); border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06), 0 18px 50px rgba(0,0,0,.35);
+    }
+    #f41-chipbox { position: absolute; left: 0; top: 0; width: 360px; height: 116px; overflow: visible; }
+    #f41-chiptext {
+      position: absolute; left: 0; top: 0; width: 360px; height: 116px; text-align: center;
+      font-weight: 600; font-size: 44px; line-height: 116px; color: var(--ink); white-space: nowrap;
+    }
+    #f41-chipbang {
+      position: absolute; left: 336px; top: -20px; width: 44px; height: 44px; border-radius: 50%;
+      background: var(--warn); color: var(--ink); font-weight: 800; font-size: 30px; line-height: 44px; text-align: center;
+    }
+    .f41-node { position: absolute; }
+    #f41-claude { left: 730px; top: 312px; width: 180px; height: 180px; }
+    #f41-claude svg.f41-ring { position: absolute; left: 0; top: 0; width: 180px; height: 180px; }
+    #f41-claude svg.f41-spark { position: absolute; left: 52px; top: 52px; width: 76px; height: 76px; }
+    #f41-claudelbl {
+      position: absolute; left: -60px; top: 196px; width: 300px; text-align: center;
+      font-weight: 600; font-size: 34px; line-height: 1.3; color: var(--ink); white-space: nowrap;
+    }
+    #f41-ghost { left: 1376px; top: 336px; width: 128px; height: 128px; }
+    #f41-ghost svg { position: absolute; left: 0; top: 0; width: 128px; height: 128px; overflow: visible; }
+    #f41-ghostlbl {
+      position: absolute; left: -86px; top: -58px; width: 300px; text-align: center;
+      font-weight: 500; font-size: 30px; line-height: 1.3; color: var(--muted); white-space: nowrap; opacity: 0;
+    }
+    #f41-off { left: 1416px; top: 536px; width: 128px; height: 128px; opacity: 0; }
+    #f41-off svg { position: absolute; left: 0; top: 0; width: 128px; height: 128px; overflow: visible; }
+    #f41-offlbl {
+      position: absolute; left: 1230px; top: 676px; width: 500px; text-align: center; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 52px; line-height: 1.12; color: var(--ink);
+    }
+    #f41-offlbl span { display: inline-block; opacity: 0; }
+
+    /* ---------- shot 3: kinetic "theo dõi" ---------- */
+    #f41-s3 { position: absolute; inset: 0; transform-origin: 880px 530px; }
+    #f41-hero {
+      position: absolute; left: 480px; top: 468px; width: 800px; text-align: center; white-space: nowrap;
+      font-family: "Lora", serif; font-weight: 700; font-size: 96px; line-height: 1.08; letter-spacing: -0.01em; color: var(--ink);
+    }
+    #f41-hero span { display: inline-block; opacity: 0; }
+    #f41-circle { position: absolute; left: 560px; top: 410px; width: 640px; height: 230px; overflow: visible; }
+    #f41-spark3 { position: absolute; left: 1188px; top: 404px; width: 44px; height: 44px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f41-spark3 svg { width: 44px; height: 44px; }
+    #f41-strange {
+      position: absolute; left: 580px; top: 672px; width: 600px; text-align: center; white-space: nowrap;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="41-can-than-lenh-an" data-width="1920" data-height="1080" data-duration="11.078">
+    <div id="f41-ground" class="clip" data-start="0" data-duration="11.078" data-track-index="0"></div>
+    <div id="f41-stage" class="clip" data-start="0" data-duration="11.078" data-track-index="1">
+
+      <!-- SHOT 1: an abstract web page; a caret types the hidden line -->
+      <div id="f41-s1">
+        <div id="f41-kicker">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          <span>trang web</span>
+        </div>
+        <div id="f41-cam">
+          <div id="f41-card">
+            <div id="f41-chrome">
+              <div class="f41-dot" style="left:28px"></div>
+              <div class="f41-dot" style="left:56px"></div>
+              <div class="f41-dot" style="left:84px"></div>
+              <div id="f41-url"><div id="f41-urlbar"></div></div>
+            </div>
+            <div id="f41-body">
+              <div id="f41-h" class="f41-bar" style="top:44px; width:480px"></div>
+              <div id="f41-img"></div>
+              <div class="f41-bar f41-top" style="top:110px; width:560px"></div>
+              <div class="f41-bar f41-top" style="top:146px; width:600px"></div>
+              <div class="f41-bar f41-top" style="top:182px; width:520px"></div>
+              <div id="f41-line"><span class="f41-ch" id="f41-c1">l</span><span class="f41-ch" id="f41-c2">ệ</span><span class="f41-ch" id="f41-c3">n</span><span class="f41-ch" id="f41-c4">h</span><span class="f41-ch" id="f41-c5">&#160;</span><span class="f41-ch" id="f41-c6">ẩ</span><span class="f41-ch" id="f41-c7">n</span><span id="f41-caret"></span></div>
+              <svg id="f41-box" viewBox="0 0 250 88">
+                <path id="f41-boxpath" d="M 14 4 C 90 2, 170 5, 238 3 C 246 4, 247 10, 247 16 C 248 40, 246 60, 247 74 C 246 82, 240 85, 232 85 C 160 86, 80 84, 14 85 C 6 85, 3 80, 3 72 C 2 50, 4 30, 3 14 C 3 7, 7 4, 14 4 Z"
+                  fill="rgba(229,72,77,0.10)" stroke="#E5484D" stroke-width="4" stroke-linejoin="round"
+                  stroke-dasharray="700" stroke-dashoffset="700" fill-opacity="0"/>
+              </svg>
+              <div id="f41-bang">!</div>
+              <div class="f41-bar f41-bot" style="top:338px; width:820px"></div>
+              <div class="f41-bar f41-bot" style="top:374px; width:760px"></div>
+              <div class="f41-bar f41-bot" style="top:410px; width:540px"></div>
+              <div id="f41-btn"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOT 2: boxed line -> Claude -> off-course node -->
+      <div id="f41-s2">
+        <svg id="f41-lines" viewBox="0 0 1760 820">
+          <g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <path id="f41-intent" d="M 916 400 C 1060 396, 1220 404, 1370 400" stroke="rgba(154,150,140,0.55)" stroke-dasharray="10 14" opacity="0"/>
+            <path id="f41-a1" d="M 456 402 C 540 394, 640 408, 720 400" stroke="#E5484D" stroke-dasharray="300" stroke-dashoffset="300"/>
+            <path id="f41-h1" d="M 702 388 L 722 400 L 701 413" stroke="#E5484D" opacity="0"/>
+            <path id="f41-a2" d="M 916 404 C 1080 402, 1200 420, 1296 478 C 1356 514, 1396 538, 1428 558" stroke="#E5484D" stroke-dasharray="600" stroke-dashoffset="600"/>
+            <path id="f41-h2" d="M 1404 556 L 1430 559 L 1424 533" stroke="#E5484D" opacity="0"/>
+          </g>
+        </svg>
+
+        <div id="f41-chip">
+          <svg id="f41-chipbox" viewBox="0 0 360 116">
+            <rect id="f41-chiprect" x="2" y="2" width="356" height="112" rx="16" fill="rgba(229,72,77,0.08)" stroke="#E5484D" stroke-width="4"/>
+          </svg>
+          <div id="f41-chiptext">lệnh ẩn</div>
+          <div id="f41-chipbang">!</div>
+        </div>
+
+        <div id="f41-claude" class="f41-node">
+          <svg class="f41-ring" viewBox="0 0 180 180"><circle id="f41-claudering" cx="90" cy="90" r="86" fill="#2A2926" stroke="rgba(240,238,230,0.55)" stroke-width="4"/></svg>
+          <svg class="f41-spark" viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+          <div id="f41-claudelbl">Claude</div>
+        </div>
+
+        <div id="f41-ghost" class="f41-node">
+          <svg viewBox="0 0 128 128">
+            <circle cx="64" cy="64" r="60" fill="none" stroke="rgba(154,150,140,0.6)" stroke-width="3" stroke-dasharray="8 10"/>
+            <g id="f41-person" opacity="0">
+              <circle cx="64" cy="50" r="14" fill="none" stroke="#9A968C" stroke-width="5"/>
+              <path d="M 38 94 C 40 78, 50 72, 64 72 C 78 72, 88 78, 90 94" fill="none" stroke="#9A968C" stroke-width="5" stroke-linecap="round"/>
+            </g>
+          </svg>
+          <div id="f41-ghostlbl">bạn</div>
+        </div>
+
+        <div id="f41-off" class="f41-node">
+          <svg viewBox="0 0 128 128">
+            <circle id="f41-offring" cx="64" cy="64" r="60" fill="#2A2926" stroke="#E5484D" stroke-width="4"/>
+            <g id="f41-offx" stroke="#E5484D" stroke-width="7" stroke-linecap="round">
+              <line x1="44" y1="44" x2="84" y2="84"/><line x1="84" y1="44" x2="44" y2="84"/>
+            </g>
+          </svg>
+        </div>
+        <div id="f41-offlbl"><span id="f41-o1">ngoài</span> <span id="f41-o2">ý</span> <span id="f41-o3">muốn</span></div>
+      </div>
+
+      <!-- SHOT 3: "theo dõi" circled -->
+      <div id="f41-s3">
+        <div id="f41-hero"><span id="f41-w1">theo</span> <span id="f41-w2">dõi</span></div>
+        <svg id="f41-circle" viewBox="0 0 640 230">
+          <path id="f41-circ" d="M 330 12 C 470 10, 622 44, 628 112 C 634 182, 480 222, 320 220 C 160 218, 14 186, 12 116 C 10 52, 150 16, 300 14 C 380 13, 440 20, 470 28"
+            fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="1700" stroke-dashoffset="1700"/>
+        </svg>
+        <div id="f41-spark3">
+          <svg viewBox="0 0 56 56"><g stroke="#D97757" stroke-width="6" stroke-linecap="round">
+            <line x1="28" y1="4" x2="28" y2="52"/><line x1="4" y1="28" x2="52" y2="28"/>
+            <line x1="11" y1="11" x2="45" y2="45"/><line x1="45" y1="11" x2="11" y2="45"/></g></svg>
+        </div>
+        <div id="f41-strange">trang lạ</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var OUT = "power3.out";
+      var tl = gsap.timeline({ paused: true });
+      function pop(sel, t) {
+        tl.fromTo(sel, { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.35, ease: OUT }, t);
+      }
+      function word(sel, t, dy) {
+        tl.fromTo(sel, { opacity: 0, y: dy || 24 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, t);
+      }
+
+      /* ---- Scene 1: typewriter (0 - 5.34) ---- */
+      // the page card arrives at once (hero visible by 0.5 s)
+      tl.fromTo("#f41-card", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: OUT }, 0);
+      tl.fromTo(".f41-top", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: OUT, stagger: 0.06 }, 0.1);
+      tl.fromTo(".f41-bot", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: OUT, stagger: 0.06 }, 0.25);
+
+      // a caret appears between the bars and blinks, then types "lệnh ẩn" on the voice
+      tl.set("#f41-caret", { opacity: 1 }, 0.45);
+      tl.set("#f41-caret", { opacity: 0 }, 0.65);
+      tl.set("#f41-caret", { opacity: 1 }, 0.8);
+      var typeAt = [0.88, 0.93, 0.98, 1.03, 1.06, 1.08, 1.13];
+      for (var i = 0; i < typeAt.length; i++) {
+        tl.set("#f41-c" + (i + 1), { display: "inline" }, typeAt[i]);
+      }
+      // the hidden text surfaces: faint -> cream, as the warn box draws round it
+      tl.to("#f41-line", { color: "#F0EEE6", duration: 0.3, ease: "power2.inOut" }, 1.1);
+      tl.to("#f41-boxpath", { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 1.08);
+      tl.to("#f41-boxpath", { fillOpacity: 1, duration: 0.3, ease: "power2.inOut" }, 1.5);
+      tl.fromTo("#f41-bang", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 1.3);
+      // caret keeps a few steady blinks after typing, then leaves
+      tl.set("#f41-caret", { opacity: 0 }, 1.5);
+      tl.set("#f41-caret", { opacity: 1 }, 1.8);
+      tl.set("#f41-caret", { opacity: 0 }, 2.1);
+      tl.set("#f41-caret", { opacity: 1 }, 2.4);
+      tl.set("#f41-caret", { opacity: 0 }, 2.7);
+
+      // "trang web" kicker
+      tl.fromTo("#f41-kicker", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 1.76);
+
+      // "Kẻ xấu ... giấu chỉ dẫn": the page pushes in, the other bars step back
+      tl.fromTo("#f41-cam", { scale: 1 }, { scale: 1.06, duration: 3.5, ease: "sine.inOut" }, 1.8);
+      tl.to("#f41-box", { filter: "drop-shadow(0 0 12px rgba(229,72,77,0.55))", duration: 0.5, ease: "power2.inOut" }, 2.75);
+      tl.to(".f41-top, .f41-bot, #f41-h, #f41-img, #f41-btn", { opacity: 0.4, duration: 0.5, ease: "power2.inOut" }, 3.55);
+
+      /* ---- Scene 2: flow strip (5.34 - 7.73) ---- */
+      // the page recedes to the left (zoom-through), the strip takes over
+      tl.to("#f41-s1", { scale: 0.55, x: -520, opacity: 0, filter: "blur(6px)", duration: 0.4, ease: "power2.inOut" }, 5.34);
+      tl.fromTo("#f41-s2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: OUT, immediateRender: false }, 5.34);
+      tl.fromTo("#f41-chip", { opacity: 0, scale: 1.4, x: 300 }, { opacity: 1, scale: 1, x: 0, duration: 0.45, ease: OUT }, 5.34);
+      tl.fromTo("#f41-claude", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: OUT }, 5.4);
+      tl.fromTo("#f41-ghost", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: OUT }, 5.4);
+      tl.to("#f41-intent", { opacity: 1, duration: 0.3 }, 5.4);
+      tl.to("#f41-a1", { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 5.4);
+      tl.set("#f41-h1", { opacity: 1 }, 5.65);
+      tl.to("#f41-a2", { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 5.55);
+      tl.set("#f41-h2", { opacity: 1 }, 5.95);
+      tl.fromTo("#f41-off", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: OUT }, 5.6);
+      word("#f41-o1", 5.34);
+      word("#f41-o2", 5.6);
+      word("#f41-o3", 5.72);
+      // "của bạn": the intended target is you
+      tl.to("#f41-person", { opacity: 1, duration: 0.35, ease: OUT }, 6.07);
+      tl.fromTo("#f41-ghostlbl", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, ease: OUT }, 6.07);
+
+      /* ---- Scene 3: kinetic "theo dõi" (7.73 - 10.578) ---- */
+      // warn elements cool to muted; the strip steps up and back
+      tl.to("#f41-s2", { scale: 0.6, y: -262, opacity: 0.6, duration: 0.55, ease: "power2.inOut" }, 7.73);
+      var MUTED = "#9A968C";
+      tl.to("#f41-a1, #f41-h1, #f41-a2, #f41-h2", { attr: { stroke: MUTED }, duration: 0.5 }, 7.73);
+      tl.to("#f41-chiprect, #f41-offring", { attr: { stroke: MUTED, fill: "#2A2926" }, duration: 0.5 }, 7.73);
+      tl.to("#f41-offx", { attr: { stroke: MUTED }, duration: 0.5 }, 7.73);
+      tl.to("#f41-chipbang", { backgroundColor: MUTED, duration: 0.5 }, 7.73);
+      tl.to("#f41-offlbl", { color: MUTED, duration: 0.5 }, 7.73);
+
+      word("#f41-w1", 7.73, 30);
+      word("#f41-w2", 7.91, 30);
+      tl.to("#f41-circ", { strokeDashoffset: 0, duration: 0.7, ease: "none" }, 7.91);
+      pop("#f41-spark3", 8.55);
+      // "Claude làm": the watched node brightens again
+      tl.to("#f41-claudering", { attr: { stroke: "#F0EEE6" }, duration: 0.4 }, 8.49);
+      // "trang lạ"
+      tl.fromTo("#f41-strange", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: OUT }, 9.5);
+      // quiet hold drift
+      tl.fromTo("#f41-s3", { scale: 1 }, { scale: 1.02, duration: 1.9, ease: "sine.inOut" }, 8.6);
+
+      tl.to({}, { duration: 10.578 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["41-can-than-lenh-an"] = tl;
+    })();
+  </script>
+</template>

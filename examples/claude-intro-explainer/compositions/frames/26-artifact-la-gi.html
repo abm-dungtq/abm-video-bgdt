@@ -1,0 +1,216 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f26-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f26-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f26- */
+    .f26-spk svg { display: block; width: 100%; height: 100%; }
+    .f26-lines { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* shot 1 extras (kicker, underline, arrow, phrase) */
+    #f26-s1x { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f26-kicker {
+      position: absolute; left: 0; top: 120px; width: 1760px; height: 40px;
+      display: flex; justify-content: center; align-items: center; gap: 14px;
+      font-family: "JetBrains Mono", monospace; font-size: 28px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .f26-kicker .f26-spk { width: 22px; height: 22px; }
+    .f26-w { display: inline-block; opacity: 0; }
+    #f26-phrase {
+      position: absolute; left: 960px; top: 596px; height: 80px;
+      display: flex; gap: 16px; align-items: center; white-space: nowrap;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 56px; line-height: 1.3;
+      color: var(--ink);
+    }
+
+    /* hero word */
+    #f26-hero { position: absolute; left: 0; top: 212px; width: 1760px; height: 216px; }
+    #f26-word {
+      position: absolute; left: 0; top: 0; width: 1760px; height: 216px;
+      text-align: center; font-family: "Lora", serif; font-weight: 700; font-size: 200px;
+      line-height: 1.08; letter-spacing: -0.01em; color: var(--ink); opacity: 0;
+    }
+    #f26-spark {
+      position: absolute; left: 1290px; top: 14px; width: 60px; height: 60px; opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+
+    /* hub */
+    #f26-hub { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+    .f26-card {
+      position: absolute; width: 460px; height: 108px; box-sizing: border-box;
+      display: flex; align-items: center; gap: 22px; padding: 0 28px;
+      background: var(--surface); border: 1px solid rgba(240,238,230,.10); border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f26-card svg { flex: 0 0 60px; width: 60px; height: 60px; overflow: visible; }
+    .f26-lab {
+      display: flex; gap: 11px; white-space: nowrap;
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 38px; line-height: 1.3;
+    }
+    #f26-c1 { left: 20px; top: 246px; }
+    #f26-c2 { left: 1280px; top: 246px; }
+    #f26-c3 { left: 650px; top: 636px; }
+  </style>
+
+  <div id="root" data-composition-id="26-artifact-la-gi" data-width="1920" data-height="1080" data-duration="10.796">
+    <div id="f26-ground" class="clip" data-start="0" data-duration="10.796" data-track-index="0"></div>
+    <div id="f26-stage" class="clip" data-start="0" data-duration="10.796" data-track-index="1">
+
+      <!-- HUB (shot 2) — sits under the hero word -->
+      <div id="f26-hub">
+        <svg class="f26-lines" viewBox="0 0 1760 820">
+          <ellipse id="f26-orbit" cx="880" cy="400" rx="670" ry="290" fill="none" stroke="#9A968C" stroke-width="2" stroke-dasharray="8 16" stroke-linecap="round" opacity="0"/>
+          <path id="f26-ring" pathLength="1" d="M640 352 C700 282 1120 276 1168 372 C1210 456 980 512 820 506 C650 500 560 452 596 392 C616 358 660 334 720 322" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f26-sp1" pathLength="1" d="M592 446 C540 470 460 440 420 360" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f26-sp2" pathLength="1" d="M1164 440 C1220 470 1300 444 1342 360" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f26-sp3" pathLength="1" d="M884 512 C866 552 902 592 880 632" fill="none" stroke="#8FB8A8" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+
+        <div class="f26-card" id="f26-c1">
+          <svg viewBox="0 0 60 60"><path d="M12 4 H38 L50 16 V56 H12 Z" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linejoin="round"/><path d="M38 4 V16 H50" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linejoin="round"/><path d="M20 28 H42 M20 37 H42 M20 46 H34" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round"/></svg>
+          <div class="f26-lab"><span class="f26-w" id="f26-l1a">tài</span><span class="f26-w" id="f26-l1b">liệu</span></div>
+        </div>
+        <div class="f26-card" id="f26-c2">
+          <svg viewBox="0 0 60 60"><rect x="4" y="8" width="52" height="34" rx="4" fill="none" stroke="#F0EEE6" stroke-width="3.5"/><path d="M30 42 V54 M20 56 L30 48 L40 56" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 34 V26 M26 34 V20 M36 34 V28 M46 34 V16" stroke="#F0EEE6" stroke-width="4" stroke-linecap="round"/></svg>
+          <div class="f26-lab"><span class="f26-w" id="f26-l2a">bài</span><span class="f26-w" id="f26-l2b">trình</span><span class="f26-w" id="f26-l2c">bày</span></div>
+        </div>
+        <div class="f26-card" id="f26-c3">
+          <svg viewBox="0 0 60 60"><rect x="4" y="8" width="52" height="44" rx="6" fill="none" stroke="#F0EEE6" stroke-width="3.5"/><path d="M4 20 H56" stroke="#F0EEE6" stroke-width="3.5"/><path d="M14 36 H46" stroke="#9A968C" stroke-width="3.5" stroke-linecap="round"/><circle cx="32" cy="36" r="6" fill="#1F1E1D" stroke="#F0EEE6" stroke-width="3.5"/></svg>
+          <div class="f26-lab"><span class="f26-w" id="f26-l3a">công</span><span class="f26-w" id="f26-l3b">cụ</span><span class="f26-w" id="f26-l3c">nhỏ</span></div>
+        </div>
+      </div>
+
+      <!-- SHOT 1 extras -->
+      <div id="f26-s1x">
+        <div class="f26-kicker" id="f26-k1"><span class="f26-spk"></span><span>Tiếp theo</span></div>
+        <div class="f26-kicker" id="f26-k2"><span class="f26-w" id="f26-k2a">Claude</span><span class="f26-w" id="f26-k2b">tạo</span><span class="f26-w" id="f26-k2c">ra</span></div>
+        <svg class="f26-lines" viewBox="0 0 1760 820">
+          <path id="f26-under" pathLength="1" d="M478 446 C660 432 900 454 1060 440 C1160 432 1230 446 1290 438" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f26-arrow" pathLength="1" d="M620 478 C600 560 680 640 930 638" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="f26-head" pathLength="1" d="M902 616 L934 638 L904 662" fill="none" stroke="#F0EEE6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        </svg>
+        <div id="f26-phrase"><span class="f26-w" id="f26-p1">đưa</span><span class="f26-w" id="f26-p2">cho</span><span class="f26-w" id="f26-p3">người</span><span class="f26-w" id="f26-p4">khác</span><span class="f26-w" id="f26-p5">xem</span></div>
+      </div>
+
+      <!-- HERO word (both shots) -->
+      <div id="f26-hero">
+        <div id="f26-word">Artifacts</div>
+        <div id="f26-spark" class="f26-spk"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var root = document.querySelector('[data-composition-id="26-artifact-la-gi"]');
+      var q = function (s) { return root.querySelector(s); };
+      var qa = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
+
+      // eight-ray spark (generic asterisk), drawn in SVG
+      var SPARK = '<svg viewBox="-50 -50 100 100"><g stroke="#D97757" stroke-width="11" stroke-linecap="round">' +
+        '<line x1="0" y1="-44" x2="0" y2="44"/><line x1="-44" y1="0" x2="44" y2="0"/>' +
+        '<line x1="-31" y1="-31" x2="31" y2="31"/><line x1="-31" y1="31" x2="31" y2="-31"/></g></svg>';
+      qa('.f26-spk').forEach(function (el) { el.innerHTML = SPARK; });
+
+      // initial states (before the timeline is built)
+      gsap.set(['#f26-k1', '#f26-spark'], { opacity: 0 });
+
+      var tl = gsap.timeline({ paused: true });
+
+      function draw(sel, at, dur) {
+        tl.fromTo(q(sel), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: dur, ease: 'none' }, at);
+      }
+      function word(sel, at) {
+        tl.fromTo(q(sel), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' }, at);
+      }
+
+      // ---- SHOT 1 — kinetic (0 – 5.6 s) ----
+      // "Tiếp theo" (0.31)
+      tl.fromTo('#f26-k1', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 0.31);
+      // "Artifacts" lands (0.98)
+      tl.fromTo('#f26-word', { opacity: 0, scale: 1.28, filter: 'blur(14px)' },
+        { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.6, ease: 'power3.out' }, 0.98);
+      tl.fromTo('#f26-spark', { opacity: 0, scale: 0, rotation: -20 },
+        { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'power3.out' }, 1.12);
+      // "Artifact" (2.25) — hand-drawn underline
+      draw('#f26-under', 2.25, 0.5);
+      // kicker swap: "Tiếp theo" → "Claude tạo ra"
+      tl.to('#f26-k1', { opacity: 0, duration: 0.2, ease: 'power2.inOut' }, 2.8);
+      word('#f26-k2a', 3.03);
+      word('#f26-k2b', 3.77);
+      word('#f26-k2c', 3.93);
+      // "đưa cho người khác xem" (4.68 → 5.34) — arrow reaches out, phrase builds word by word
+      draw('#f26-arrow', 4.68, 0.45);
+      draw('#f26-head', 5.1, 0.15);
+      word('#f26-p1', 4.68);
+      word('#f26-p2', 4.88);
+      word('#f26-p3', 5.0);
+      word('#f26-p4', 5.18);
+      word('#f26-p5', 5.34);
+
+      // ---- SHOT 2 — hub (5.7 – 10.296 s) ----
+      tl.to('#f26-s1x', { opacity: 0, y: -24, filter: 'blur(8px)', duration: 0.45, ease: 'power2.inOut' }, 5.7);
+      tl.to('#f26-hero', { y: 80, scale: 0.6, duration: 0.7, ease: 'power2.inOut' }, 5.7);
+      draw('#f26-ring', 6.05, 0.55);
+      tl.fromTo('#f26-orbit', { opacity: 0 }, { opacity: 0.55, duration: 0.6, ease: 'power2.inOut' }, 6.1);
+      tl.fromTo('#f26-orbit', { strokeDashoffset: 0 }, { strokeDashoffset: -220, duration: 4.1, ease: 'none' }, 6.1);
+
+      function sat(spoke, card, at, fromX, fromY) {
+        draw(spoke, at - 0.12, 0.3);
+        tl.fromTo(q(card), { opacity: 0, scale: 0.7, x: fromX, y: fromY },
+          { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.45, ease: 'power3.out' }, at);
+      }
+      // "tài liệu" (6.78)
+      sat('#f26-sp1', '#f26-c1', 6.78, 120, 60);
+      word('#f26-l1a', 6.78);
+      word('#f26-l1b', 6.95);
+      // "bài trình bày" (7.77)
+      sat('#f26-sp2', '#f26-c2', 7.77, -120, 60);
+      word('#f26-l2a', 7.77);
+      word('#f26-l2b', 7.95);
+      word('#f26-l2c', 8.13);
+      // "công cụ nhỏ" (9.01)
+      sat('#f26-sp3', '#f26-c3', 9.01, 0, -70);
+      word('#f26-l3a', 9.01);
+      word('#f26-l3b', 9.18);
+      word('#f26-l3c', 9.32);
+
+      tl.to({}, { duration: 10.296 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["26-artifact-la-gi"] = tl;
+    })();
+  </script>
+</template>

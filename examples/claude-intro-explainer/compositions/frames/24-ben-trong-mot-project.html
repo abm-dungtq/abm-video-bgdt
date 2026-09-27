@@ -1,0 +1,482 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f24-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(31, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f24-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f24- */
+    .f24-shot {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      transform-origin: 880px 410px;
+    }
+    .f24-w { display: inline-block; opacity: 0; }
+    .f24-draw {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f24-gold { stroke: var(--gold); }
+    .f24-cream { stroke: rgba(240,238,230,.55); }
+    .f24-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+      overflow: visible;
+    }
+    .f24-spark {
+      display: block;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    /* screenshot viewports (1240 x 697.5 = 0.6458 of the 1920x1080 source) */
+    .f24-viewport {
+      position: absolute;
+      top: 60px;
+      width: 1240px;
+      height: 697.5px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(240,238,230,.10);
+      background: var(--surface);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    .f24-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      transform-origin: 620px 348.75px;
+    }
+    .f24-img {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .f24-callout {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1240px;
+      height: 697.5px;
+      overflow: visible;
+    }
+    .f24-kicker {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .f24-label {
+      position: absolute;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 72px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f24-sub {
+      position: absolute;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 34px;
+      line-height: 1.3;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ---------- Shot 1: viewport left (70) + rail right (30) ---------- */
+    #f24-vp1 { left: 0; }
+    #f24-wrap1 { opacity: 0; }
+    #f24-k1 { left: 1292px; top: 120px; opacity: 0; }
+    #f24-l2 { left: 1290px; top: 218px; }
+    #f24-sub2 { left: 1294px; top: 312px; }
+    #f24-l1 { left: 1290px; top: 511px; }
+
+    /* ---------- Shot 2: split, two chat stacks ---------- */
+    #f24-s2 { opacity: 0; }
+    #f24-tach {
+      position: absolute;
+      left: 0;
+      top: 40px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 96px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f24-tach .f24-w { margin: 0 14px; }
+    .f24-stack {
+      position: absolute;
+      top: 230px;
+      width: 560px;
+      height: 520px;
+    }
+    #f24-stackA { left: 190px; }
+    #f24-stackB { left: 1010px; }
+    .f24-head {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 560px;
+      height: 56px;
+      opacity: 0;
+    }
+    .f24-head-dot {
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(240,238,230,.35);
+    }
+    .f24-head-bar {
+      position: absolute;
+      left: 58px;
+      top: 18px;
+      width: 190px;
+      height: 20px;
+      border-radius: 10px;
+      background: rgba(154,150,140,.45);
+    }
+    .f24-bub {
+      position: absolute;
+      height: 58px;
+      border-radius: 29px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      box-shadow: 0 12px 30px rgba(0,0,0,.30), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f24-bub.f24-me {
+      background: rgba(240,238,230,.14);
+      border-color: rgba(240,238,230,.16);
+    }
+    .f24-bub i {
+      position: absolute;
+      left: 26px;
+      top: 24px;
+      height: 10px;
+      border-radius: 5px;
+      background: rgba(154,150,140,.55);
+    }
+    #f24-split { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+
+    /* ---------- Shot 3: rail left (30) + viewport right (70) ---------- */
+    #f24-s3 { opacity: 0; }
+    #f24-vp3 { left: 520px; }
+    #f24-spark3 { position: absolute; left: 4px; top: 262px; width: 44px; height: 44px; }
+    #f24-l3 { left: 0; top: 328px; font-size: 64px; }
+    #f24-sub3 { left: 4px; top: 420px; }
+
+    /* ---------- Shot 4: hub ring ---------- */
+    #f24-s4 { opacity: 0; }
+    #f24-core {
+      position: absolute;
+      left: 760px;
+      top: 310px;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid rgba(240,238,230,.22);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.1;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f24-spark4 { position: absolute; left: 968px; top: 300px; width: 40px; height: 40px; }
+    .f24-sat {
+      position: absolute;
+      top: 176px;
+      height: 88px;
+      padding: 0 34px;
+      border-radius: 44px;
+      background: var(--surface);
+      border: 2px solid rgba(240,238,230,.20);
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "Be Vietnam Pro", sans-serif;
+      font-weight: 600;
+      font-size: 40px;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #f24-sat1 { left: 160px; width: 340px; justify-content: center; }
+    #f24-sat2 { left: 1260px; width: 340px; justify-content: center; }
+    .f24-ghost {
+      position: absolute;
+      width: 200px;
+      height: 64px;
+      border-radius: 32px;
+      border: 2px dashed rgba(154,150,140,.45);
+      opacity: 0;
+    }
+    .f24-ghost i {
+      position: absolute;
+      left: 36px;
+      top: 26px;
+      width: 120px;
+      height: 10px;
+      border-radius: 5px;
+      background: rgba(154,150,140,.35);
+    }
+    #f24-g1 { left: 130px; top: 488px; }
+    #f24-g2 { left: 370px; top: 658px; }
+    #f24-g3 { left: 1430px; top: 488px; }
+    #f24-g4 { left: 1190px; top: 658px; }
+  </style>
+
+  <div id="root" data-composition-id="24-ben-trong-mot-project" data-width="1920" data-height="1080" data-duration="14.703">
+    <div id="f24-ground" class="clip" data-start="0" data-duration="14.703" data-track-index="0"></div>
+    <div id="f24-stage" class="clip" data-start="0" data-duration="14.703" data-track-index="1">
+
+      <!-- Shot 1: screenshot viewport (left) + label rail (right) -->
+      <div id="f24-s1" class="f24-shot">
+        <div id="f24-vp1" class="f24-viewport">
+          <div id="f24-wrap1" class="f24-wrap">
+            <img class="f24-img" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg class="f24-callout" viewBox="0 0 1240 697.5">
+              <rect id="f24-rect-doc" class="f24-draw f24-gold" x="782" y="343" width="121" height="100" rx="8" ry="8" pathLength="1" stroke-width="2.3"></rect>
+              <rect id="f24-rect-ins" class="f24-draw f24-gold" x="777" y="141" width="255" height="53" rx="8" ry="8" pathLength="1" stroke-width="2.3"></rect>
+            </svg>
+          </div>
+        </div>
+
+        <svg class="f24-overlay" viewBox="0 0 1760 820">
+          <path id="f24-ptr1" class="f24-draw f24-cream" pathLength="1" stroke-width="2.5" d="M1276 553 C 1180 546, 1060 558, 960 550 S 860 552, 818 551"></path>
+          <path id="f24-ptr2" class="f24-draw f24-cream" pathLength="1" stroke-width="2.5" d="M1276 262 C 1200 256, 1110 266, 1050 259 S 1000 259, 986 258"></path>
+        </svg>
+
+        <div id="f24-k1" class="f24-kicker">
+          <svg class="f24-spark" id="f24-spark1" width="30" height="30" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+          <span>Mỗi Project</span>
+        </div>
+        <div id="f24-l2" class="f24-label"><span id="f24-ngu" class="f24-w">ngữ</span> <span id="f24-canh" class="f24-w">cảnh</span></div>
+        <div id="f24-sub2" class="f24-sub"><span id="f24-mot" class="f24-w">một</span> <span id="f24-lan" class="f24-w">lần</span></div>
+        <div id="f24-l1" class="f24-label"><span id="f24-tai" class="f24-w">tải</span> <span id="f24-tai2" class="f24-w">tài</span> <span id="f24-lieu" class="f24-w">liệu</span></div>
+      </div>
+
+      <!-- Shot 2: two chat stacks split by a hand-drawn line -->
+      <div id="f24-s2" class="f24-shot">
+        <div id="f24-tach"><span id="f24-tach-w" class="f24-w">tách</span><span id="f24-biet-w" class="f24-w">biệt</span></div>
+        <div id="f24-stackA" class="f24-stack">
+          <div class="f24-head"><div class="f24-head-dot"></div><div class="f24-head-bar"></div></div>
+          <div class="f24-bub f24-me" style="left:250px;top:92px;width:310px;"><i style="width:220px;"></i></div>
+          <div class="f24-bub" style="left:0;top:176px;width:420px;"><i style="width:330px;"></i></div>
+          <div class="f24-bub f24-me" style="left:320px;top:260px;width:240px;"><i style="width:150px;"></i></div>
+          <div class="f24-bub" style="left:0;top:344px;width:380px;"><i style="width:280px;"></i></div>
+          <div class="f24-bub f24-me" style="left:280px;top:428px;width:280px;"><i style="width:190px;"></i></div>
+        </div>
+        <div id="f24-stackB" class="f24-stack">
+          <div class="f24-head"><div class="f24-head-dot"></div><div class="f24-head-bar" style="width:150px;"></div></div>
+          <div class="f24-bub f24-me" style="left:300px;top:92px;width:260px;"><i style="width:170px;"></i></div>
+          <div class="f24-bub" style="left:0;top:176px;width:360px;"><i style="width:260px;"></i></div>
+          <div class="f24-bub f24-me" style="left:230px;top:260px;width:330px;"><i style="width:240px;"></i></div>
+          <div class="f24-bub" style="left:0;top:344px;width:440px;"><i style="width:340px;"></i></div>
+          <div class="f24-bub f24-me" style="left:340px;top:428px;width:220px;"><i style="width:130px;"></i></div>
+        </div>
+        <svg id="f24-split" viewBox="0 0 1760 820">
+          <path id="f24-line" class="f24-draw f24-gold" pathLength="1" stroke-width="4" d="M880 196 C 872 320, 891 430, 877 560 S 885 700, 880 772"></path>
+        </svg>
+      </div>
+
+      <!-- Shot 3: label rail (left) + screenshot viewport (right), pre-zoomed on Memory -->
+      <div id="f24-s3" class="f24-shot">
+        <div id="f24-vp3" class="f24-viewport">
+          <div id="f24-wrap3" class="f24-wrap">
+            <img class="f24-img" src="assets/screens/private-screenshot-placeholder.svg" alt="">
+            <svg class="f24-callout" viewBox="0 0 1240 697.5">
+              <rect id="f24-rect-mem" class="f24-draw f24-gold" x="777.5" y="214.5" width="253" height="41.5" rx="7" ry="7" pathLength="1" stroke-width="2.2"></rect>
+            </svg>
+          </div>
+        </div>
+        <svg class="f24-overlay" viewBox="0 0 1760 820">
+          <path id="f24-ptr3" class="f24-draw f24-cream" pathLength="1" stroke-width="2.5" d="M448 368 C 560 360, 720 374, 880 366 S 1060 368, 1118 368"></path>
+        </svg>
+        <svg class="f24-spark" id="f24-spark3" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        <div id="f24-l3" class="f24-label"><span id="f24-bo" class="f24-w">bộ</span> <span id="f24-nho" class="f24-w">nhớ</span> <span id="f24-rieng" class="f24-w">riêng</span></div>
+        <div id="f24-sub3" class="f24-sub"><span id="f24-khong" class="f24-w">không</span> <span id="f24-lan3" class="f24-w">lẫn</span></div>
+      </div>
+
+      <!-- Shot 4: hub ring -->
+      <div id="f24-s4" class="f24-shot">
+        <svg class="f24-overlay" viewBox="0 0 1760 820">
+          <path id="f24-sp1" class="f24-draw f24-gold" pathLength="1" stroke-width="3.5" d="M770 380 C 690 332, 592 282, 505 262"></path>
+          <path id="f24-sp2" class="f24-draw f24-gold" pathLength="1" stroke-width="3.5" d="M990 380 C 1070 332, 1168 282, 1255 262"></path>
+          <path id="f24-gs1" class="f24-draw f24-cream" pathLength="1" stroke-width="2" d="M762 452 C 620 482, 450 500, 334 516"></path>
+          <path id="f24-gs2" class="f24-draw f24-cream" pathLength="1" stroke-width="2" d="M790 520 C 720 590, 640 650, 574 684"></path>
+          <path id="f24-gs3" class="f24-draw f24-cream" pathLength="1" stroke-width="2" d="M998 452 C 1140 482, 1310 500, 1426 516"></path>
+          <path id="f24-gs4" class="f24-draw f24-cream" pathLength="1" stroke-width="2" d="M970 520 C 1040 590, 1120 650, 1186 684"></path>
+        </svg>
+        <div id="f24-core">Project</div>
+        <svg class="f24-spark" id="f24-spark4" viewBox="0 0 40 40"><g stroke="#D97757" stroke-width="4.5" stroke-linecap="round"><line x1="20" y1="3" x2="20" y2="37"></line><line x1="3" y1="20" x2="37" y2="20"></line><line x1="8" y1="8" x2="32" y2="32"></line><line x1="32" y1="8" x2="8" y2="32"></line></g></svg>
+        <div id="f24-sat1" class="f24-sat"><span id="f24-khach" class="f24-w">khách</span><span id="f24-hang" class="f24-w">hàng</span></div>
+        <div id="f24-sat2" class="f24-sat"><span id="f24-phong" class="f24-w">phòng</span><span id="f24-ban" class="f24-w">ban</span></div>
+        <div id="f24-g1" class="f24-ghost"><i></i></div>
+        <div id="f24-g2" class="f24-ghost"><i></i></div>
+        <div id="f24-g3" class="f24-ghost"><i></i></div>
+        <div id="f24-g4" class="f24-ghost"><i></i></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      // later shots start hidden; shot 3's screenshot is pre-positioned on the Memory row
+      gsap.set(["#f24-s2", "#f24-s3", "#f24-s4"], { opacity: 0 });
+      gsap.set("#f24-wrap3", { x: -217, y: 122, scale: 1.35 });
+
+      var tl = gsap.timeline({ paused: true });
+      var IN = "power3.out";
+
+      /* ===== Shot 1 — screen, viewport left (0–5.66 s) ===== */
+      tl.fromTo("#f24-wrap1", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: IN }, 0);
+      // "Project" @0.63 — rail kicker with the spark
+      tl.fromTo("#f24-k1", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.5, ease: IN }, 0.63);
+      tl.fromTo("#f24-spark1", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: IN }, 0.63);
+      // "tải" @1.55 — pan + zoom to 1.3x onto the right column; rectangle frames the document card
+      tl.fromTo("#f24-wrap1", { x: 0, y: 0, scale: 1 }, { x: -186, y: 85, scale: 1.3, duration: 0.7, ease: "power2.inOut", immediateRender: false }, 1.55);
+      tl.fromTo("#f24-rect-doc", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 1.62);
+      tl.fromTo("#f24-tai", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 1.55);
+      tl.fromTo("#f24-tai2", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 1.72);
+      tl.fromTo("#f24-lieu", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 1.84);
+      tl.fromTo("#f24-ptr1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 1.95);
+      // "ngữ cảnh" @2.30 — focus moves: first callout steps back, the Instructions panel is framed
+      tl.to(["#f24-rect-doc"], { stroke: "#9A968C", duration: 0.3, ease: "power2.out" }, 2.3);
+      tl.to("#f24-l1", { color: "#9A968C", duration: 0.3, ease: "power2.out" }, 2.3);
+      tl.fromTo("#f24-rect-ins", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.3);
+      tl.fromTo("#f24-ngu", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 2.3);
+      tl.fromTo("#f24-canh", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 2.5);
+      tl.fromTo("#f24-ptr2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 2.6);
+      // "một lần" @2.68 / @2.82
+      tl.fromTo("#f24-mot", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 2.68);
+      tl.fromTo("#f24-lan", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 2.82);
+      // crop-zoom hold, focal point kept in place (scale <= 1.4)
+      tl.fromTo("#f24-wrap1", { x: -186, y: 85, scale: 1.3 }, { x: -203, y: 89, scale: 1.36, duration: 2.1, ease: "none", immediateRender: false }, 3.2);
+      // zoom-through out of the screen shot
+      tl.fromTo("#f24-s1", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.3, ease: "power2.in", immediateRender: false }, 5.34);
+
+      /* ===== Shot 2 — split (5.66–7.57 s) ===== */
+      tl.fromTo("#f24-s2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 5.5);
+      tl.fromTo("#f24-s2 .f24-head", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 5.5);
+      tl.fromTo("#f24-stackA .f24-bub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: IN, stagger: 0.06 }, 5.54);
+      tl.fromTo("#f24-stackB .f24-bub", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: IN, stagger: 0.06 }, 5.6);
+      // "tách" @5.66, "biệt" @5.82 — label lands, the line draws down between the stacks
+      tl.fromTo("#f24-tach-w", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: IN }, 5.66);
+      tl.fromTo("#f24-biet-w", { opacity: 0, scale: 0.86, y: 30, filter: "blur(8px)" }, { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.45, ease: IN }, 5.82);
+      tl.fromTo("#f24-line", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 5.82);
+      // stacks ease apart as the line settles
+      tl.fromTo("#f24-stackA", { x: 0 }, { x: -24, duration: 0.9, ease: "power2.inOut" }, 6.3);
+      tl.fromTo("#f24-stackB", { x: 0 }, { x: 24, duration: 0.9, ease: "power2.inOut" }, 6.3);
+      tl.fromTo("#f24-s2", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 1.06, filter: "blur(8px)", duration: 0.26, ease: "power2.in", immediateRender: false }, 7.26);
+
+      /* ===== Shot 3 — screen mirrored, viewport right (7.57–11.97 s) ===== */
+      tl.fromTo("#f24-s3", { opacity: 0, scale: 0.97 }, { opacity: 1, scale: 1, duration: 0.5, ease: IN, immediateRender: false }, 7.34);
+      // "bộ" @7.57, "nhớ" @7.71, "riêng" @7.89 — rectangle frames the Memory row + "Only you"
+      tl.fromTo("#f24-rect-mem", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.55, ease: "none" }, 7.57);
+      tl.fromTo("#f24-bo", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 7.57);
+      tl.fromTo("#f24-nho", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 7.71);
+      tl.fromTo("#f24-spark3", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: IN }, 7.71);
+      tl.fromTo("#f24-rieng", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: IN }, 7.89);
+      tl.fromTo("#f24-ptr3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.4, ease: "none" }, 8.05);
+      // "không" @8.53, "lẫn" @8.73
+      tl.fromTo("#f24-khong", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 8.53);
+      tl.fromTo("#f24-lan3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: IN }, 8.73);
+      // crop-zoom hold on the Memory row (scale 1.35 -> 1.4)
+      tl.fromTo("#f24-wrap3", { x: -217, y: 122, scale: 1.35 }, { x: -232, y: 127, scale: 1.4, duration: 3.0, ease: "none", immediateRender: false }, 8.6);
+      tl.fromTo("#f24-s3", { opacity: 1, scale: 1, filter: "blur(0px)" }, { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.28, ease: "power2.in", immediateRender: false }, 11.64);
+
+      /* ===== Shot 4 — hub (11.97–14.2 s) ===== */
+      tl.fromTo("#f24-s4", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out", immediateRender: false }, 11.8);
+      tl.fromTo("#f24-core", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45, ease: IN }, 11.8);
+      tl.fromTo("#f24-spark4", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.45, ease: IN }, 11.97);
+      // "khách" @11.97, "hàng" @12.16
+      tl.fromTo("#f24-sp1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 11.97);
+      tl.fromTo("#f24-sat1", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: IN }, 11.97);
+      tl.fromTo("#f24-khach", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 11.97);
+      tl.fromTo("#f24-hang", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 12.16);
+      tl.fromTo("#f24-gs1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 12.35);
+      tl.fromTo("#f24-g1", { opacity: 0, scale: 0.8 }, { opacity: 0.6, scale: 1, duration: 0.4, ease: IN }, 12.5);
+      tl.fromTo("#f24-gs2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 12.5);
+      tl.fromTo("#f24-g2", { opacity: 0, scale: 0.8 }, { opacity: 0.6, scale: 1, duration: 0.4, ease: IN }, 12.65);
+      // "phòng" @13.08, "ban" @13.24
+      tl.fromTo("#f24-sp2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 13.08);
+      tl.fromTo("#f24-sat2", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: IN }, 13.08);
+      tl.fromTo("#f24-phong", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 13.08);
+      tl.fromTo("#f24-ban", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: IN }, 13.24);
+      tl.fromTo("#f24-gs3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 13.4);
+      tl.fromTo("#f24-g3", { opacity: 0, scale: 0.8 }, { opacity: 0.6, scale: 1, duration: 0.4, ease: IN }, 13.55);
+      tl.fromTo("#f24-gs4", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 13.55);
+      tl.fromTo("#f24-g4", { opacity: 0, scale: 0.8 }, { opacity: 0.6, scale: 1, duration: 0.4, ease: IN }, 13.7);
+
+      tl.to({}, { duration: 14.203 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["24-ben-trong-mot-project"] = tl;
+    })();
+  </script>
+</template>

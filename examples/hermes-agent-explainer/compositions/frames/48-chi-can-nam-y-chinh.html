@@ -1,0 +1,258 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f48-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(302, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f48-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* background field (dimmed) */
+    #f48-field {
+      position: absolute;
+      inset: 0;
+      opacity: 0.4;
+      background-image: radial-gradient(circle, rgba(244,241,232,.22) 1.6px, transparent 2px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse at 50% 55%, #000 20%, transparent 72%);
+      mask-image: radial-gradient(ellipse at 50% 55%, #000 20%, transparent 72%);
+    }
+    /* rail geometry shared by ghost + real rail */
+    .f48-railbox {
+      position: absolute;
+      left: 180px;
+      top: 10px;
+      width: 1400px;
+      height: 76px;
+    }
+    .f48-slot {
+      position: absolute;
+      top: 0;
+      width: 420px;
+      height: 76px;
+      border-radius: 16px;
+      box-sizing: border-box;
+    }
+    .f48-s1 { left: 0; }
+    .f48-s2 { left: 490px; }
+    .f48-s3 { left: 980px; }
+    #f48-ghost { opacity: 0; }
+    #f48-ghost .f48-slot {
+      border: 2px dashed rgba(142,147,181,.45);
+    }
+    #f48-rail { opacity: 0; }
+    #f48-rail .f48-slot {
+      background: var(--surface);
+      border: 2px solid rgba(244,241,232,.14);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 22px;
+      opacity: 0;
+    }
+    .f48-num {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--muted);
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      line-height: 40px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .f48-lab {
+      font-size: 30px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    #f48-links {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1400px;
+      height: 76px;
+      overflow: visible;
+    }
+    /* centered kinetic words */
+    #f48-words {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1760px;
+      height: 820px;
+    }
+    .f48-line {
+      position: absolute;
+      left: 0;
+      width: 1760px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    #f48-nangcao {
+      top: 300px;
+      font-size: 120px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0;
+    }
+    #f48-chican {
+      top: 214px;
+      font-size: 40px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+    #f48-chican span { display: inline-block; opacity: 0; margin: 0 8px; }
+    #f48-ychinh {
+      top: 270px;
+      font-size: 190px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      color: var(--gold);
+      filter: drop-shadow(0 0 12px rgba(255,210,63,.55));
+      opacity: 0;
+    }
+    #f48-under {
+      position: absolute;
+      left: 580px;
+      top: 490px;
+      width: 600px;
+      height: 40px;
+      overflow: visible;
+    }
+    #f48-visao {
+      top: 560px;
+      font-size: 112px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--gold);
+    }
+    #f48-visao span { display: inline-block; opacity: 0; margin: 0 14px; }
+  </style>
+
+  <div id="root" data-composition-id="48-chi-can-nam-y-chinh" data-width="1920" data-height="1080" data-duration="4.872">
+    <div id="f48-ground" class="clip" data-start="0" data-duration="4.872" data-track-index="0"></div>
+    <div id="f48-stage" class="clip" data-start="0" data-duration="4.872" data-track-index="1">
+      <div id="f48-field"></div>
+
+      <!-- ghost rail: the empty three-slot frame waiting at the top edge -->
+      <div id="f48-ghost" class="f48-railbox">
+        <div class="f48-slot f48-s1"></div>
+        <div class="f48-slot f48-s2"></div>
+        <div class="f48-slot f48-s3"></div>
+      </div>
+
+      <!-- centered kinetic words -->
+      <div id="f48-words">
+        <div id="f48-nangcao" class="f48-line">Nâng cao</div>
+        <div id="f48-chican" class="f48-line"><span id="f48-w1">chỉ</span><span id="f48-w2">cần</span><span id="f48-w3">nắm</span></div>
+        <div id="f48-ychinh" class="f48-line">ý chính</div>
+        <svg id="f48-under" viewBox="0 0 600 40">
+          <path id="f48-under-path" d="M10 26 C 150 8, 300 36, 450 18 S 570 14, 590 20" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="620" stroke-dashoffset="620"/>
+        </svg>
+        <div id="f48-visao" class="f48-line"><span id="f48-v1">vì sao</span><span id="f48-v2">đặc biệt</span></div>
+      </div>
+
+      <!-- the analyze rail: born center, shrinks to the top edge and holds -->
+      <div id="f48-rail" class="f48-railbox">
+        <svg id="f48-links" viewBox="0 0 1400 76">
+          <path id="f48-link1" d="M420 38 L490 38" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="72" stroke-dashoffset="72"/>
+          <path id="f48-link2" d="M910 38 L980 38" fill="none" stroke="#ffd23f" stroke-width="5" stroke-linecap="round" stroke-dasharray="72" stroke-dashoffset="72"/>
+        </svg>
+        <div id="f48-slot1" class="f48-slot f48-s1"><div id="f48-num1" class="f48-num">1</div><div class="f48-lab">Tính năng</div></div>
+        <div id="f48-slot2" class="f48-slot f48-s2"><div class="f48-num">2</div><div class="f48-lab">Vì sao nổi bật</div></div>
+        <div id="f48-slot3" class="f48-slot f48-s3"><div class="f48-num">3</div><div class="f48-lab">Bạn được gì</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      // ambient field drift (background, whole shot)
+      tl.fromTo("#f48-field", { scale: 1 }, { scale: 1.04, duration: 4.372, ease: "none" }, 0);
+
+      // hero (rail being born): empty ghost slots visible early
+      tl.fromTo("#f48-ghost", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.05);
+
+      // Scene 1 — "nâng cao" (0.73) slams, then recedes to a kicker as "chỉ cần nắm" starts
+      tl.fromTo("#f48-nangcao", { opacity: 0, scale: 1.5, filter: "blur(10px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.35, ease: "power3.out" }, 0.73);
+      tl.to("#f48-nangcao", { scale: 0.3, y: -250, opacity: 0.75, duration: 0.45, ease: "power2.inOut" }, 1.5);
+
+      // "chỉ cần nắm" — per-word on voice
+      tl.fromTo("#f48-w1", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.76);
+      tl.fromTo("#f48-w2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 1.88);
+      tl.fromTo("#f48-w3", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 2.04);
+
+      // "ý chính" slams center on cue (2.22), courier underline draws on "chính" (2.32)
+      tl.fromTo("#f48-ychinh", { opacity: 0, scale: 1.9 }, { opacity: 1, scale: 1, duration: 0.28, ease: "power3.out" }, 2.22);
+      tl.fromTo("#f48-under-path", { strokeDashoffset: 620 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 2.32);
+
+      // Scene 2 — gold hands over to "vì sao đặc biệt"
+      tl.to("#f48-ychinh", { color: "#f4f1e8", filter: "drop-shadow(0 0 0px rgba(255,210,63,0))", duration: 0.2, ease: "power2.inOut" }, 2.79);
+      tl.to("#f48-under", { opacity: 0.35, duration: 0.2, ease: "power2.inOut" }, 2.79);
+      tl.fromTo("#f48-v1", { opacity: 0, scale: 1.8, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.26, ease: "power3.out" }, 2.79);
+      tl.fromTo("#f48-v2", { opacity: 0, scale: 1.8, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.26, ease: "power3.out" }, 3.31);
+
+      // words snap into the rail: whole word block collapses toward center
+      tl.to("#f48-words", { scale: 0.25, opacity: 0, filter: "blur(6px)", duration: 0.26, ease: "power2.inOut" }, 3.68);
+
+      // rail born big at center...
+      tl.fromTo("#f48-rail", { opacity: 0, y: 360, scale: 0.6 }, { opacity: 1, y: 360, scale: 1.2, duration: 0.2, ease: "power3.out" }, 3.72);
+      tl.fromTo("#f48-slot1", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.2, ease: "power3.out" }, 3.72);
+      tl.fromTo("#f48-slot2", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.2, ease: "power3.out" }, 3.74);
+      tl.fromTo("#f48-slot3", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.2, ease: "power3.out" }, 3.76);
+
+      // ...then shrinks up into the ghost frame at the top edge and holds
+      tl.to("#f48-rail", { y: 0, scale: 1, duration: 0.32, ease: "power2.inOut" }, 3.93);
+      tl.fromTo("#f48-link1", { strokeDashoffset: 72 }, { strokeDashoffset: 0, duration: 0.14, ease: "none" }, 4.02);
+      tl.fromTo("#f48-link2", { strokeDashoffset: 72 }, { strokeDashoffset: 0, duration: 0.14, ease: "none" }, 4.12);
+      tl.to("#f48-ghost", { opacity: 0, duration: 0.1, ease: "none" }, 4.25);
+
+      // slot 1 goes active (gold) — hand-off to the next frame
+      tl.to("#f48-slot1", { borderColor: "#ffd23f", duration: 0.1, ease: "none" }, 4.25);
+      tl.to("#f48-num1", { borderColor: "#ffd23f", color: "#ffd23f", duration: 0.1, ease: "none" }, 4.25);
+
+      tl.to({}, { duration: 4.372 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["48-chi-can-nam-y-chinh"] = tl;
+    })();
+  </script>
+</template>

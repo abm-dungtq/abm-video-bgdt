@@ -1,0 +1,317 @@
+<template>
+  <style>
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #f4f1e8;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #0b1026; --surface: #141b3a; --ink: #f4f1e8; --gold: #ffd23f;
+      --cyan: #3ee6d0; --warn: #ff6b6b; --muted: #8e93b5;
+    }
+    /* full-bleed ground on its own clip (never on #root); H = 230 + 12 × chapter */
+    #f02-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(230, 70%, 45%, 0.28), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f02-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+      overflow: hidden;
+    }
+    /* frame-specific styles below — prefix every id/class with PFX- */
+    #f02-s1, #f02-s2, #f02-s3 { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+
+    .f02-kicker {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .f02-kicker b { color: var(--gold); font-weight: 400; }
+    #f02-k1 { position: absolute; left: 0; top: 240px; width: 1760px; text-align: center; }
+
+    /* scene 1 — hero phrase */
+    #f02-phrase { position: absolute; left: 0; top: 330px; width: 1760px; height: 160px; text-align: center; }
+    #f02-line {
+      display: inline-block;
+      position: relative;
+      font-weight: 800;
+      font-size: 128px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .f02-w { display: inline-block; position: relative; margin: 0 0.12em; }
+    .f02-wt { display: inline-block; }
+    .f02-slot {
+      position: absolute; left: 6px; right: 6px; bottom: 4px; height: 6px;
+      border-radius: 3px; background: rgba(142, 147, 181, 0.35); transform-origin: left center;
+    }
+    #f02-uline { position: absolute; left: 0; bottom: -36px; width: 100%; height: 40px; overflow: visible; }
+    #f02-upath {
+      fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round;
+      stroke-dasharray: 1;
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.55));
+    }
+
+    /* scene 2 — back layer: floating experience notes */
+    .f02-bn {
+      position: absolute; width: 150px; height: 96px; border-radius: 12px;
+      background: var(--surface); border: 1px solid rgba(244, 241, 232, 0.12);
+      filter: blur(2px);
+    }
+    .f02-bn i, .f02-nl {
+      position: absolute; left: 18px; height: 8px; border-radius: 4px; background: rgba(142, 147, 181, 0.45);
+    }
+
+    /* scene 2 — mid layer: finished-task card */
+    #f02-card {
+      position: absolute; left: 100px; top: 330px; width: 480px; height: 260px;
+      background: var(--surface); border: 1px solid rgba(244, 241, 232, 0.12);
+      border-radius: 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    #f02-card-t { position: absolute; left: 40px; top: 34px; font-weight: 600; font-size: 44px; line-height: 1.2; }
+    #f02-check { position: absolute; right: 34px; top: 28px; width: 76px; height: 76px; overflow: visible; }
+    #f02-check path { fill: none; stroke: var(--cyan); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
+    .f02-bar { position: absolute; left: 40px; height: 12px; border-radius: 6px; background: rgba(142, 147, 181, 0.3); }
+    #f02-note {
+      position: absolute; right: 30px; bottom: 26px; width: 130px; height: 80px; border-radius: 10px;
+      background: rgba(244, 241, 232, 0.06); border: 1px solid rgba(244, 241, 232, 0.14);
+    }
+
+    /* scene 2 — front layer: trail, spark, written word */
+    #f02-trail-svg { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+    #f02-trail {
+      fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.55));
+    }
+    #f02-th {
+      font-family: "Be Vietnam Pro", sans-serif; font-weight: 800; font-size: 190px; letter-spacing: -0.02em;
+      fill: var(--gold); stroke: var(--gold); stroke-width: 3; stroke-linejoin: round;
+      filter: drop-shadow(0 0 14px rgba(255, 210, 63, 0.45));
+    }
+    #f02-spark { filter: drop-shadow(0 0 12px rgba(255, 210, 63, 0.8)); }
+
+    /* scene 3 — typewriter name lockup */
+    #f02-title {
+      position: absolute; left: 200px; top: 250px;
+      font-weight: 800; font-size: 150px; line-height: 1.1; letter-spacing: -0.02em; white-space: pre;
+    }
+    #f02-rule {
+      position: absolute; left: 206px; top: 448px; width: 880px; height: 2px;
+      background: rgba(244, 241, 232, 0.18); transform-origin: left center;
+    }
+    #f02-sub {
+      position: absolute; left: 206px; top: 480px;
+      font-family: "JetBrains Mono", monospace; font-size: 40px; line-height: 1.4; letter-spacing: 0.02em;
+      color: var(--muted); white-space: pre;
+    }
+    .f02-ink { color: var(--ink); }
+    .f02-ch { display: none; }
+    .f02-caret {
+      display: none; background: var(--gold); border-radius: 2px;
+      box-shadow: 0 0 14px rgba(255, 210, 63, 0.6);
+    }
+    #f02-c1 { width: 12px; height: 0.8em; margin-left: 10px; vertical-align: -0.04em; }
+    #f02-c2 { width: 6px; height: 0.95em; margin-left: 6px; vertical-align: -0.15em; }
+  </style>
+
+  <div id="root" data-composition-id="02-mot-tro-ly-biet-tu-hoc" data-width="1920" data-height="1080" data-duration="11.762">
+    <div id="f02-ground" class="clip" data-start="0" data-duration="11.762" data-track-index="0"></div>
+    <div id="f02-stage" class="clip" data-start="0" data-duration="11.762" data-track-index="1">
+
+      <!-- Scene 2 layers (behind the phrase so the phrase-kicker stays on top) -->
+      <div id="f02-s2">
+        <div id="f02-back">
+          <div class="f02-bn" style="left:700px;top:120px;"><i style="top:28px;width:96px;"></i><i style="top:52px;width:70px;"></i></div>
+          <div class="f02-bn" style="left:1250px;top:90px;"><i style="top:28px;width:110px;"></i><i style="top:52px;width:60px;"></i></div>
+          <div class="f02-bn" style="left:1570px;top:210px;"><i style="top:28px;width:84px;"></i><i style="top:52px;width:100px;"></i></div>
+          <div class="f02-bn" style="left:720px;top:670px;"><i style="top:28px;width:104px;"></i><i style="top:52px;width:66px;"></i></div>
+          <div class="f02-bn" style="left:1380px;top:690px;"><i style="top:28px;width:90px;"></i><i style="top:52px;width:76px;"></i></div>
+        </div>
+
+        <div id="f02-card">
+          <div id="f02-card-t">Việc khó</div>
+          <svg id="f02-check" viewBox="0 0 76 76">
+            <path id="f02-ring" pathLength="1" stroke-dashoffset="1" stroke-width="5" d="M38 4 A34 34 0 1 1 37.99 4"></path>
+            <path id="f02-tick" pathLength="1" stroke-dashoffset="1" stroke-width="7" d="M22 39 L34 51 L55 27"></path>
+          </svg>
+          <div class="f02-bar" style="top:140px;width:250px;"></div>
+          <div class="f02-bar" style="top:172px;width:200px;"></div>
+          <div class="f02-bar" style="top:204px;width:150px;"></div>
+          <div id="f02-note">
+            <div class="f02-nl" style="top:24px;width:80px;"></div>
+            <div class="f02-nl" style="top:46px;width:56px;"></div>
+          </div>
+        </div>
+
+        <svg id="f02-trail-svg" viewBox="0 0 1760 820">
+          <defs>
+            <clipPath id="f02-clip"><rect id="f02-cliprect" x="900" y="330" width="0" height="310"></rect></clipPath>
+          </defs>
+          <text id="f02-th" x="940" y="560" clip-path="url(#f02-clip)" fill-opacity="0" stroke-dasharray="1600" stroke-dashoffset="1600">tự học</text>
+          <path id="f02-trail" d="M575 262 C690 100 860 140 905 330 S880 628 960 628 L1650 628"></path>
+          <g id="f02-spark" opacity="0">
+            <circle r="24" fill="#ffd23f" opacity="0.22"></circle>
+            <path d="M-6 -4 C-16 -26 -36 -26 -42 -12 C-30 -14 -18 -10 -6 -4 Z" fill="#f4f1e8"></path>
+            <path d="M-6 4 C-16 26 -36 26 -42 12 C-30 14 -18 10 -6 4 Z" fill="#f4f1e8"></path>
+            <circle r="10" fill="#ffd23f"></circle>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Scene 1 — kicker + hero phrase -->
+      <div id="f02-s1">
+        <div id="f02-k1" class="f02-kicker"><b>◆</b> Hãy tưởng tượng</div>
+        <div id="f02-phrase">
+          <div id="f02-line">
+            <span class="f02-w" id="f02-w1"><span class="f02-slot"></span><span class="f02-wt">không</span></span><span class="f02-w" id="f02-w2"><span class="f02-slot"></span><span class="f02-wt">bao</span></span><span class="f02-w" id="f02-w3"><span class="f02-slot"></span><span class="f02-wt">giờ</span></span><span class="f02-w" id="f02-w4"><span class="f02-slot"></span><span class="f02-wt">quên</span></span>
+            <svg id="f02-uline" viewBox="0 0 1000 40" preserveAspectRatio="none">
+              <path id="f02-upath" pathLength="1" stroke-dashoffset="1" vector-effect="non-scaling-stroke" d="M8 22 C250 34 600 8 992 18"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 3 — typewriter name lockup -->
+      <div id="f02-s3">
+        <div id="f02-title"><span id="f02-c1" class="f02-caret"></span></div>
+        <div id="f02-rule"></div>
+        <div id="f02-sub"><span id="f02-c2" class="f02-caret"></span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var D = 11.262;
+      var tl = gsap.timeline({ paused: true });
+      function q(s) { return document.querySelector(s); }
+
+      // build typewriter character spans (deterministic DOM, before the timeline)
+      function buildChars(box, caret, segs) {
+        var out = [];
+        segs.forEach(function (sg) {
+          Array.from(sg[0]).forEach(function (ch) {
+            var s = document.createElement("span");
+            s.className = "f02-ch" + (sg[1] ? " " + sg[1] : "");
+            s.textContent = ch;
+            box.insertBefore(s, caret);
+            out.push(s);
+          });
+        });
+        return out;
+      }
+      function typeOn(chars, from, to, t0, step) {
+        for (var i = from; i < to; i++) tl.set(chars[i], { display: "inline" }, t0 + (i - from) * step);
+      }
+      function blink(el, t0, t1, half) {
+        var on = true, n = Math.round((t1 - t0) / half);
+        for (var k = 0; k < n; k++) { on = !on; tl.set(el, { opacity: on ? 1 : 0 }, t0 + k * half); }
+        tl.set(el, { opacity: 1 }, t1);
+      }
+
+      var titleChars = buildChars(q("#f02-title"), q("#f02-c1"), [["Hermes Agent", ""]]);
+      var subChars = buildChars(q("#f02-sub"), q("#f02-c2"), [["do ", ""], ["Nous Research", "f02-ink"], [" tạo ra", ""]]);
+
+      // ---- Scene 1 (0–3.51): kicker, empty slots, four words slam on their cues ----
+      tl.fromTo("#f02-k1", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.15);
+      tl.fromTo(".f02-slot", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.4, ease: "power3.out", stagger: 0.12 }, 0.35);
+
+      tl.fromTo("#f02-w1 .f02-wt", { opacity: 0, scale: 2.4, filter: "blur(12px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.32, ease: "power3.out" }, 1.94);
+      tl.fromTo("#f02-w2 .f02-wt", { opacity: 0, x: -140, filter: "blur(10px)" },
+        { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.28, ease: "power3.out" }, 2.18);
+      tl.fromTo("#f02-w3 .f02-wt", { opacity: 0, y: 80 },
+        { opacity: 1, y: 0, duration: 0.26, ease: "power3.out" }, 2.36);
+      tl.fromTo("#f02-w4 .f02-wt", { opacity: 0, scale: 0.4, rotation: -6 },
+        { opacity: 1, scale: 1, rotation: 0, duration: 0.34, ease: "power3.out" }, 2.54);
+      tl.fromTo("#f02-s1", { scale: 1.035 }, { scale: 1, duration: 0.5, ease: "power3.out" }, 2.54);
+      tl.to(".f02-slot", { opacity: 0, duration: 0.3, ease: "power2.out" }, 2.62);
+      tl.fromTo("#f02-upath", { attr: { "stroke-dashoffset": 1 } },
+        { attr: { "stroke-dashoffset": 0 }, duration: 0.6, ease: "none" }, 2.7);
+
+      // ---- Scene 2 (3.51–8.26): phrase becomes kicker; card; note lifts; trail writes "tự học" ----
+      tl.to("#f02-k1", { opacity: 0, y: -24, duration: 0.35, ease: "power2.in" }, 3.51);
+      tl.to("#f02-phrase", { x: -619, y: -350, scale: 0.34, duration: 0.65, ease: "power2.inOut" }, 3.51);
+      tl.to("#f02-upath", { opacity: 0.45, duration: 0.4, ease: "power2.out" }, 3.6);
+
+      var bns = document.querySelectorAll(".f02-bn");
+      tl.fromTo(bns, { opacity: 0 }, { opacity: 0.32, duration: 0.6, ease: "power2.out", stagger: 0.12 }, 3.6);
+      Array.prototype.forEach.call(bns, function (el, i) {
+        tl.fromTo(el, { y: 0 }, { y: -(20 + i * 7), duration: 7.75 - 3.6, ease: "none" }, 3.6);
+      });
+
+      tl.fromTo("#f02-card", { opacity: 0, y: -70 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 3.72);
+      tl.fromTo("#f02-ring", { attr: { "stroke-dashoffset": 1 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "power2.out" }, 4.6);
+      tl.fromTo("#f02-tick", { attr: { "stroke-dashoffset": 1 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.22, ease: "power2.out" }, 4.85);
+
+      // kinh @5.73 — the note lifts off the card and glows
+      tl.fromTo("#f02-note", { x: 0, y: 0, rotation: 0 }, { x: 40, y: -230, rotation: -7, duration: 0.45, ease: "power3.out" }, 5.73);
+      tl.fromTo("#f02-note",
+        { backgroundColor: "rgba(244,241,232,0.06)", borderColor: "rgba(244,241,232,0.14)", boxShadow: "0 0 0px rgba(255,210,63,0)" },
+        { backgroundColor: "rgba(255,210,63,0.16)", borderColor: "rgba(255,210,63,0.9)", boxShadow: "0 0 36px rgba(255,210,63,0.55)", duration: 0.4, ease: "power2.out" }, 5.73);
+
+      // nghiệm @5.87 — the courier spark rides the trail; the word is revealed behind it
+      var trail = q("#f02-trail"), spark = q("#f02-spark"), clipRect = q("#f02-cliprect");
+      var L = trail.getTotalLength();
+      trail.style.strokeDasharray = L;
+      function drawTrail(p) {
+        var len = L * p;
+        trail.style.strokeDashoffset = L - len;
+        var a = trail.getPointAtLength(len), b = trail.getPointAtLength(Math.min(L, len + 2));
+        var ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+        spark.setAttribute("transform", "translate(" + a.x.toFixed(2) + " " + a.y.toFixed(2) + ") rotate(" + ang.toFixed(2) + ")");
+        clipRect.setAttribute("width", Math.max(0, a.x - 900 + 30).toFixed(2));
+      }
+      var proxy = { p: 0 };
+      drawTrail(0);
+      tl.fromTo(spark, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 5.82);
+      tl.fromTo(proxy, { p: 0 }, { p: 1, duration: 1.08, ease: "power1.inOut", onUpdate: function () { drawTrail(proxy.p); } }, 5.87);
+      tl.fromTo("#f02-th", { attr: { "stroke-dashoffset": 1600 } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.8, ease: "none" }, 6.2);
+      tl.fromTo("#f02-th", { attr: { "fill-opacity": 0 } }, { attr: { "fill-opacity": 1 }, duration: 0.4, ease: "power2.out" }, 7.0);
+
+      // Hermes @7.75 — seam cut: scene 2 pushes away (scale down + blur + fade)
+      tl.fromTo("#f02-s2", { scale: 1, opacity: 1, filter: "blur(0px)" },
+        { scale: 0.9, opacity: 0, filter: "blur(10px)", duration: 0.35, ease: "power2.in" }, 7.75);
+      tl.fromTo("#f02-s1", { opacity: 1, filter: "blur(0px)" },
+        { opacity: 0, filter: "blur(10px)", duration: 0.35, ease: "power2.in" }, 7.75);
+
+      // ---- Scene 3 (8.26–11.26): "Hermes Agent" types on with a gold caret ----
+      tl.set("#f02-c1", { display: "inline-block" }, 7.78);
+      typeOn(titleChars, 0, 7, 7.85, 0.058);   // "Hermes "
+      typeOn(titleChars, 7, 12, 8.26, 0.06);   // "Agent" @8.26
+      blink("#f02-c1", 8.6, 9.0, 0.2);
+      tl.fromTo("#f02-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 8.62);
+      tl.set("#f02-c1", { display: "none" }, 9.02);
+      tl.set("#f02-c2", { display: "inline-block" }, 9.02);
+      typeOn(subChars, 0, 3, 9.05, 0.05);      // "do "
+      typeOn(subChars, 3, 8, 9.26, 0.045);     // "Nous " @9.26
+      typeOn(subChars, 8, 16, 9.56, 0.04);     // "Research" @9.56
+      typeOn(subChars, 16, 23, 9.95, 0.045);   // " tạo ra"
+      blink("#f02-c2", 10.3, 10.9, 0.2);       // caret settles solid, hold still
+      tl.fromTo("#f02-s3", { scale: 1 }, { scale: 1.012, duration: D - 8.26, ease: "none" }, 8.26);
+
+      tl.to({}, { duration: 11.262 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["02-mot-tro-ly-biet-tu-hoc"] = tl;
+    })();
+  </script>
+</template>

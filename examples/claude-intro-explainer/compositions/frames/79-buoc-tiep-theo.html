@@ -1,0 +1,505 @@
+<template>
+  <style>
+    @font-face{font-family:"Lora";font-weight:400 700;font-style:normal;font-display:block;src:url("assets/fonts/Lora-Variable.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:800;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-ExtraBold.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:500;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-Medium.ttf") format("truetype");}
+    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: #F0EEE6;
+      font-family: "Be Vietnam Pro", sans-serif;
+      --canvas: #1F1E1D; --surface: #2A2926; --ink: #F0EEE6; --gold: #D97757;
+      --cyan: #8FB8A8; --warn: #E5484D; --muted: #9A968C;
+    }
+    /* full-bleed ground on its own clip (never on #root); HUE = 22 + 3 × chapter */
+    #f79-ground {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 70% 30%, hsla(43, 55%, 42%, 0.20), transparent 60%),
+        var(--canvas);
+    }
+    /* the stage: safe area x 80–1840, y 60–880 */
+    #f79-stage {
+      position: absolute;
+      left: 80px;
+      top: 60px;
+      width: 1760px;
+      height: 820px;
+    }
+    /* frame-specific styles below — prefix every id/class with f79- */
+
+    /* ---------- Scene 1: pinned anchor + checklist (60/40) ---------- */
+    #f79-s1 { position: absolute; inset: 0; }
+
+    #f79-kicker {
+      position: absolute;
+      left: 0;
+      top: 60px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 28px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+    }
+    #f79-kicker svg { width: 28px; height: 28px; display: block; }
+
+    /* the pinned anchor chip */
+    #f79-chip {
+      position: absolute;
+      left: 0;
+      top: 130px;
+      height: 116px;
+      width: 500px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 36px 0 28px;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+    }
+    #f79-chipdot {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+    }
+    #f79-chipdot svg { position: absolute; inset: 0; width: 56px; height: 56px; display: block; overflow: visible; }
+    #f79-chipdot .f79-ring { fill: none; stroke: rgba(240,238,230,.22); stroke-width: 3; }
+    #f79-chiptick {
+      fill: none; stroke: var(--cyan); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+    }
+    #f79-chipring2 { fill: none; stroke: var(--cyan); stroke-width: 3; opacity: 0; }
+    #f79-url {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 64px;
+      line-height: 1;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f79-ch { opacity: 0; }
+
+    /* tree connector from the anchor down to the checklist */
+    #f79-tree {
+      position: absolute;
+      left: 44px;
+      top: 246px;
+      width: 120px;
+      height: 440px;
+      overflow: visible;
+    }
+    #f79-tree path {
+      fill: none;
+      stroke: rgba(240,238,230,.32);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+
+    /* checklist rows */
+    .f79-row {
+      position: absolute;
+      left: 136px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+    #f79-r1 { top: 320px; }
+    #f79-r2 { top: 460px; }
+    #f79-r3 { top: 600px; }
+    .f79-box {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      box-sizing: border-box;
+      border: 3px solid rgba(240,238,230,.28);
+      border-radius: 16px;
+    }
+    .f79-boxon {
+      position: absolute;
+      inset: -3px;
+      border: 3px solid var(--cyan);
+      border-radius: 16px;
+      background: rgba(143,184,168,.16);
+      opacity: 0;
+    }
+    .f79-box svg { position: absolute; left: 6px; top: 6px; width: 46px; height: 46px; display: block; overflow: visible; }
+    .f79-tick {
+      fill: none; stroke: var(--cyan); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+    }
+    .f79-label {
+      font-size: 48px;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--ink);
+      white-space: nowrap;
+      opacity: 0;
+    }
+    .f79-label b { font-weight: 800; }
+
+    /* right 40%: the cycling panel */
+    #f79-panel {
+      position: absolute;
+      left: 1120px;
+      top: 130px;
+      width: 600px;
+      height: 580px;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.10);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+    .f79-state {
+      position: absolute;
+      left: 120px;
+      top: 70px;
+      width: 360px;
+      height: 360px;
+      opacity: 0;
+    }
+    .f79-state svg { position: absolute; display: block; overflow: visible; }
+    .f79-draw {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .f79-draw.f79-soft { stroke: var(--muted); stroke-width: 7; }
+
+    #f79-bigspark { position: absolute; left: 90px; top: 90px; width: 180px; height: 180px; filter: drop-shadow(0 0 10px rgba(217,119,87,.45)); }
+    #f79-bigspark svg { position: relative; width: 180px; height: 180px; }
+
+    #f79-plugL { left: 0; top: 0; width: 180px; height: 360px; }
+    #f79-plugR { left: 180px; top: 0; width: 180px; height: 360px; }
+    #f79-joint { left: 140px; top: 140px; width: 80px; height: 80px; }
+    #f79-joint path { fill: none; stroke: var(--cyan); stroke-width: 6; stroke-linecap: round; }
+
+    .f79-bar { fill: var(--cyan); }
+
+    #f79-pager {
+      position: absolute;
+      left: 0;
+      top: 480px;
+      width: 600px;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+    }
+    .f79-pip {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(240,238,230,.18);
+    }
+    .f79-pipon {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: var(--cyan);
+      opacity: 0;
+    }
+
+    /* ---------- Scene 2: centred closing line ---------- */
+    #f79-s2 { position: absolute; inset: 0; }
+    #f79-warm {
+      position: absolute;
+      left: 280px;
+      top: 60px;
+      width: 1200px;
+      height: 620px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 50%, hsla(43, 55%, 42%, 0.30), hsla(43, 55%, 42%, 0.08) 50%, transparent 72%);
+      opacity: 0;
+    }
+    #f79-done {
+      position: absolute;
+      left: 0;
+      top: 150px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+    }
+    .f79-mini {
+      width: 44px;
+      height: 44px;
+      opacity: 0;
+    }
+    .f79-mini svg { width: 44px; height: 44px; display: block; overflow: visible; }
+    .f79-mini circle { fill: rgba(143,184,168,.16); stroke: var(--cyan); stroke-width: 3; }
+    .f79-mini path { fill: none; stroke: var(--cyan); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+
+    #f79-hero {
+      position: absolute;
+      left: 0;
+      top: 250px;
+      width: 1760px;
+      text-align: center;
+      font-family: "Lora", serif;
+      font-weight: 700;
+      font-size: 128px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .f79-w { display: inline-block; margin: 0 0.12em; opacity: 0; }
+    #f79-hq { position: relative; display: inline-block; }
+    #f79-under {
+      position: absolute;
+      left: 0.1em;
+      bottom: -14px;
+      width: calc(100% - 0.2em);
+      height: 34px;
+      overflow: visible;
+    }
+    #f79-under path {
+      fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round;
+      stroke-dasharray: 1; stroke-dashoffset: 1;
+    }
+    #f79-spark {
+      position: absolute;
+      right: -64px;
+      top: -18px;
+      width: 64px;
+      height: 64px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(217,119,87,.45));
+    }
+    #f79-spark svg { width: 64px; height: 64px; display: block; }
+
+    #f79-with {
+      position: absolute;
+      left: 0;
+      top: 500px;
+      width: 1760px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 22px;
+      font-size: 52px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    #f79-cung { color: var(--muted); opacity: 0; }
+    #f79-claude {
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid rgba(240,238,230,.12);
+      border-radius: 16px;
+      padding: 8px 28px;
+      box-shadow: inset 0 1px 0 rgba(240,238,230,.06);
+      opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="79-buoc-tiep-theo" data-width="1920" data-height="1080" data-duration="11.87">
+    <div id="f79-ground" class="clip" data-start="0" data-duration="11.87" data-track-index="0"></div>
+    <div id="f79-stage" class="clip" data-start="0" data-duration="11.87" data-track-index="1">
+
+      <!-- Scene 1: anchor + checklist -->
+      <div id="f79-s1">
+        <div id="f79-kicker">
+          <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg>
+          <span>Bước tiếp theo</span>
+        </div>
+
+        <div id="f79-chip">
+          <div id="f79-chipdot">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <circle class="f79-ring" cx="28" cy="28" r="25"/>
+              <circle id="f79-chipring2" cx="28" cy="28" r="25"/>
+              <path id="f79-chiptick" pathLength="1" d="M16 29 L25 38 L41 19"/>
+            </svg>
+          </div>
+          <div id="f79-url"><span class="f79-ch">c</span><span class="f79-ch">l</span><span class="f79-ch">a</span><span class="f79-ch">u</span><span class="f79-ch">d</span><span class="f79-ch">e</span><span class="f79-ch">.</span><span class="f79-ch">a</span><span class="f79-ch">i</span></div>
+        </div>
+
+        <svg id="f79-tree" viewBox="0 0 120 440" aria-hidden="true">
+          <path id="f79-t1" pathLength="1" d="M12 0 C 11 40, 13 80, 12 118 C 13 124, 30 125, 84 124"/>
+          <path id="f79-t2" pathLength="1" d="M12 118 C 11 170, 13 220, 12 258 C 13 264, 30 265, 84 264"/>
+          <path id="f79-t3" pathLength="1" d="M12 258 C 11 310, 13 360, 12 398 C 13 404, 30 405, 84 404"/>
+        </svg>
+
+        <div class="f79-row" id="f79-r1">
+          <div class="f79-box"><div class="f79-boxon" id="f79-on1"></div><svg viewBox="0 0 46 46" aria-hidden="true"><path class="f79-tick" id="f79-k1" pathLength="1" d="M8 24 L19 35 L39 11"/></svg></div>
+          <div class="f79-label" id="f79-l1">tạo một <b>Project</b></div>
+        </div>
+        <div class="f79-row" id="f79-r2">
+          <div class="f79-box"><div class="f79-boxon" id="f79-on2"></div><svg viewBox="0 0 46 46" aria-hidden="true"><path class="f79-tick" id="f79-k2" pathLength="1" d="M8 24 L19 35 L39 11"/></svg></div>
+          <div class="f79-label" id="f79-l2">thử một <b>connector</b></div>
+        </div>
+        <div class="f79-row" id="f79-r3">
+          <div class="f79-box"><div class="f79-boxon" id="f79-on3"></div><svg viewBox="0 0 46 46" aria-hidden="true"><path class="f79-tick" id="f79-k3" pathLength="1" d="M8 24 L19 35 L39 11"/></svg></div>
+          <div class="f79-label" id="f79-l3">dựng một <b>bài trình bày</b></div>
+        </div>
+
+        <!-- right 40%: the cycling panel (spark -> folder -> plug -> slide) -->
+        <div id="f79-panel">
+          <div class="f79-state" id="f79-st0">
+            <div id="f79-bigspark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></div>
+          </div>
+          <div class="f79-state" id="f79-st1">
+            <svg viewBox="0 0 360 360" style="left:0;top:0;width:360px;height:360px" aria-hidden="true">
+              <path class="f79-draw" id="f79-fold" pathLength="1" d="M40 100 Q40 86 54 86 L140 86 L166 116 L306 116 Q320 116 320 130 L320 286 Q320 300 306 300 L54 300 Q40 300 40 286 Z"/>
+              <path class="f79-draw f79-soft" id="f79-doc1" pathLength="1" d="M92 176 L268 176"/>
+              <path class="f79-draw f79-soft" id="f79-doc2" pathLength="1" d="M92 216 L234 216"/>
+              <path class="f79-draw f79-soft" id="f79-doc3" pathLength="1" d="M92 256 L200 256"/>
+            </svg>
+          </div>
+          <div class="f79-state" id="f79-st2">
+            <svg id="f79-plugL" viewBox="0 0 180 360" aria-hidden="true">
+              <path class="f79-draw" id="f79-pl1" pathLength="1" d="M0 180 L56 180 M56 132 L144 132 Q156 132 156 144 L156 216 Q156 228 144 228 L56 228 Z M156 156 L178 156 M156 204 L178 204"/>
+            </svg>
+            <svg id="f79-plugR" viewBox="0 0 180 360" aria-hidden="true">
+              <path class="f79-draw" id="f79-pr1" pathLength="1" d="M22 132 L112 132 Q124 132 124 144 L124 216 Q124 228 112 228 L22 228 Z M124 180 L180 180"/>
+            </svg>
+            <svg id="f79-joint" viewBox="0 0 80 80" aria-hidden="true">
+              <path d="M40 4 L40 18 M40 62 L40 76 M4 40 L14 40 M66 40 L76 40 M14 14 L22 22 M58 58 L66 66 M66 14 L58 22 M14 66 L22 58"/>
+            </svg>
+          </div>
+          <div class="f79-state" id="f79-st3">
+            <svg viewBox="0 0 360 360" style="left:0;top:0;width:360px;height:360px" aria-hidden="true">
+              <path class="f79-draw" id="f79-slide" pathLength="1" d="M40 60 L320 60 L320 250 L40 250 Z"/>
+              <path class="f79-draw" id="f79-stand" pathLength="1" d="M180 250 L180 300 M128 310 L232 310"/>
+              <rect class="f79-bar" id="f79-b1" x="96" y="170" width="40" height="56" rx="6"/>
+              <rect class="f79-bar" id="f79-b2" x="160" y="134" width="40" height="92" rx="6"/>
+              <rect class="f79-bar" id="f79-b3" x="224" y="96" width="40" height="130" rx="6"/>
+            </svg>
+          </div>
+          <div id="f79-pager">
+            <div class="f79-pip"><div class="f79-pipon" id="f79-p1"></div></div>
+            <div class="f79-pip"><div class="f79-pipon" id="f79-p2"></div></div>
+            <div class="f79-pip"><div class="f79-pipon" id="f79-p3"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scene 2: centred closing line -->
+      <div id="f79-s2">
+        <div id="f79-warm"></div>
+        <div id="f79-done">
+          <div class="f79-mini" id="f79-m1"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19"/><path d="M13 23 L20 30 L32 15"/></svg></div>
+          <div class="f79-mini" id="f79-m2"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19"/><path d="M13 23 L20 30 L32 15"/></svg></div>
+          <div class="f79-mini" id="f79-m3"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19"/><path d="M13 23 L20 30 L32 15"/></svg></div>
+        </div>
+        <div id="f79-hero"><span class="f79-w" id="f79-w1">làm</span><span class="f79-w" id="f79-w2">việc</span><span id="f79-hq"><span class="f79-w" id="f79-w3">hiệu</span><span class="f79-w" id="f79-w4">quả</span><svg id="f79-under" viewBox="0 0 500 34" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M4 20 C 90 10, 190 28, 290 16 S 440 12, 496 20"/></svg><span id="f79-spark"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L50 94 M6 50 L94 50 M21 21 L79 79 M79 21 L21 79" stroke="#D97757" stroke-width="11" stroke-linecap="round" fill="none"/></svg></span></span></div>
+        <div id="f79-with"><span id="f79-cung">cùng</span><span id="f79-claude">Claude</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+      var E = "power3.out";
+
+      // ---- Scene 1 (0 – 8.79): anchor pins, checklist ticks, panel cycles ----
+      // "Bước tiếp theo" 0.33
+      tl.fromTo("#f79-kicker", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 0.33);
+
+      // panel shell on "mở" 1.61
+      tl.fromTo("#f79-panel", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 1.61);
+
+      // "claude.ai" 1.835 – 2.496: typed into the pinned chip
+      var chars = gsap.utils.toArray("#f79-url .f79-ch");
+      chars.forEach(function (c, i) { tl.set(c, { opacity: 1 }, 1.835 + i * 0.065); });
+      // panel state 0: the spark pops on "claude.ai"
+      tl.set("#f79-st0", { opacity: 1 }, 1.835);
+      tl.fromTo("#f79-bigspark", { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.55, ease: E }, 1.835);
+      // chip "done" tick once the address is said
+      tl.fromTo("#f79-chiptick", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 2.4);
+      tl.fromTo("#f79-chipring2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: E }, 2.4);
+
+      // item 1 — "tạo" 2.70, "Project" 3.04
+      tl.fromTo("#f79-t1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 2.45);
+      tl.fromTo("#f79-l1", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 2.7);
+      tl.set("#f79-st0", { opacity: 0 }, 2.7);
+      tl.set("#f79-st1", { opacity: 1 }, 2.7);
+      tl.fromTo("#f79-fold", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, ease: "none" }, 2.7);
+      tl.fromTo("#f79-on1", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 3.04);
+      tl.fromTo("#f79-k1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 3.04);
+      tl.fromTo("#f79-doc1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 3.2);
+      tl.fromTo("#f79-doc2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 3.4);
+      tl.fromTo("#f79-doc3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.25, ease: "none" }, 3.6);
+      tl.fromTo("#f79-p1", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: E }, 3.04);
+
+      // item 2 — "thử" 4.96, "một" 5.16, "connector" 5.34
+      tl.fromTo("#f79-t2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 4.7);
+      tl.fromTo("#f79-l2", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 4.96);
+      tl.set("#f79-st1", { opacity: 0 }, 5.16);
+      tl.set("#f79-st2", { opacity: 1 }, 5.16);
+      tl.fromTo("#f79-pl1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 5.16);
+      tl.fromTo("#f79-pr1", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 5.16);
+      tl.fromTo("#f79-plugL", { x: -56 }, { x: 0, duration: 0.45, ease: "power2.inOut" }, 5.16);
+      tl.fromTo("#f79-plugR", { x: 56 }, { x: 0, duration: 0.45, ease: "power2.inOut" }, 5.16);
+      tl.fromTo("#f79-joint", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.4, ease: E }, 5.55);
+      tl.fromTo("#f79-on2", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 5.34);
+      tl.fromTo("#f79-k2", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 5.34);
+      tl.fromTo("#f79-p2", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: E }, 5.34);
+
+      // item 3 — "dựng" 7.03, "bài" 7.39, "trình" 7.53, "bày" 7.69
+      tl.fromTo("#f79-t3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 6.75);
+      tl.fromTo("#f79-l3", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.5, ease: E }, 7.03);
+      tl.set("#f79-st2", { opacity: 0 }, 7.03);
+      tl.set("#f79-st3", { opacity: 1 }, 7.03);
+      tl.fromTo("#f79-slide", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.35, ease: "none" }, 7.03);
+      tl.fromTo("#f79-stand", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.2, ease: "none" }, 7.2);
+      tl.fromTo("#f79-b1", { scaleY: 0, transformOrigin: "50% 100%" }, { scaleY: 1, duration: 0.3, ease: E }, 7.39);
+      tl.fromTo("#f79-b2", { scaleY: 0, transformOrigin: "50% 100%" }, { scaleY: 1, duration: 0.3, ease: E }, 7.53);
+      tl.fromTo("#f79-b3", { scaleY: 0, transformOrigin: "50% 100%" }, { scaleY: 1, duration: 0.3, ease: E }, 7.69);
+      tl.fromTo("#f79-on3", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 7.69);
+      tl.fromTo("#f79-k3", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.3, ease: "none" }, 7.69);
+      tl.fromTo("#f79-p3", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.3, ease: E }, 7.69);
+
+      // shot change: the checklist block recedes before the closing line
+      tl.to("#f79-s1", { opacity: 0, scale: 0.96, filter: "blur(6px)", duration: 0.34, ease: "power2.in" }, 8.43);
+
+      // ---- Scene 2 (8.79 – 11.87): centred closing line ----
+      tl.fromTo("#f79-m1", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 8.79);
+      tl.fromTo("#f79-m2", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 8.87);
+      tl.fromTo("#f79-m3", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: E }, 8.95);
+      tl.fromTo("#f79-w1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 8.79);
+      tl.fromTo("#f79-w2", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 8.95);
+      tl.fromTo("#f79-w3", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 9.14);
+      tl.fromTo("#f79-w4", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 9.32);
+      tl.fromTo("#f79-under path", { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.45, ease: "none" }, 9.14);
+      tl.fromTo("#f79-spark", { opacity: 0, scale: 0, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: 0.55, ease: E }, 9.32);
+      tl.fromTo("#f79-cung", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: E }, 9.6);
+      tl.fromTo("#f79-claude", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: E }, 9.82);
+      tl.fromTo("#f79-warm", { opacity: 0 }, { opacity: 0.8, duration: 1.2, ease: "power2.inOut" }, 9.6);
+
+      // final beat: the spark settles with a slow quarter-twist, then everything holds
+      tl.to("#f79-spark", { rotation: 22.5, duration: 1.4, ease: "power2.inOut" }, 10.2);
+
+      tl.to({}, { duration: 11.87 }, 0); // full-span anchor
+      window.__timelines = window.__timelines || {};
+      window.__timelines["79-buoc-tiep-theo"] = tl;
+    })();
+  </script>
+</template>
