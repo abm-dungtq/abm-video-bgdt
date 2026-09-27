@@ -5,6 +5,7 @@
 //   tools/worker-delta-<pin>.md     filled from tools/worker-kit/worker-delta-<pin>.md.tmpl
 //   tools/frame-skeleton.html       filled from tools/worker-kit/frame-skeleton.html.tmpl
 //   tools/worker-screen-addendum.md filled from tools/worker-kit/worker-screen-addendum.md.tmpl
+//   tools/worker-layouts.md        filled from tools/worker-kit/worker-layouts.md.tmpl
 // The skeleton's @font-face lines come from video.config.json `fonts`: an entry's `faces`
 // ([{weight, file}], file in assets/fonts/) or, for the fonts the skill ships, the built-in list below.
 // Run whenever the title, palette or CLI pin changes, and always before dispatching frame workers.
@@ -12,7 +13,7 @@
 //   node tools/build-design-kit.mjs
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { cfg, ROOT } from "./lib/config.mjs";
+import { cfg, DNA, ROOT } from "./lib/config.mjs";
 
 const d = cfg.design;
 
@@ -63,6 +64,7 @@ const vars = {
   // saturation, lightness, alpha of the ground's radial glow (hsla(HUE, …))
   GLOW: d.glow ?? "70%, 45%, 0.28",
   FONT_FACES: fontFaces.join("\n    "),
+  ROLE_CHIP_NOTE: DNA.enabled ? " When the storyboard has `- role:` bullets, the top-right area (x 1440–1880, y 14–50) belongs to the overlay role chip." : "",
 };
 const fill = (s) => s.replace(/\{\{(\w+)\}\}/g, (m, k) => {
   if (!(k in vars)) throw new Error(`unknown placeholder ${m}`);
@@ -74,6 +76,7 @@ const kit = [
   [`worker-delta-${cfg.cli.pin}.md.tmpl`, `worker-delta-${cfg.cli.pin}.md`],
   ["frame-skeleton.html.tmpl", "frame-skeleton.html"],
   ["worker-screen-addendum.md.tmpl", "worker-screen-addendum.md"],
+  ["worker-layouts.md.tmpl", "worker-layouts.md"],
 ];
 for (const [tmpl, out] of kit) {
   const src = `tools/worker-kit/${tmpl}`;

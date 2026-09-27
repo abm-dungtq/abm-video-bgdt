@@ -8,6 +8,9 @@
 //    Comments are ignored.
 // 2. Rail geometry (only when `guard.railPatterns` is set): every frame whose storyboard block has a
 //    `- rail:` bullet must match each regex, so the analyze rail sits in the same place in every frame.
+// 3. Card identity (only when `guard.layoutPatterns` is set): every frame whose `- layout:` bullet contains a
+//    key of `guard.layoutPatterns` (e.g. `card-exercise`) must match each regex of that key. This pins only the
+//    card's identity (label, icon, accent, label position), never the layout inside the card.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -17,9 +20,15 @@ const nums = process.argv.slice(2).map(Number).filter(Boolean);
 if (!nums.length) throw new Error("usage: frame-guard.mjs <frame numbers…>");
 const dir = "compositions/frames";
 const files = readdirSync(dir);
+const blocks = readFileSync("STORYBOARD.md", "utf8").split(/(?=^## Frame \d+ )/m);
 const railFrames = new Set(
-  readFileSync("STORYBOARD.md", "utf8").split(/(?=^## Frame \d+ )/m)
-    .filter((b) => /^- rail: /m.test(b)).map((b) => Number(b.match(/^## Frame (\d+) /)?.[1])),
+  blocks.filter((b) => /^- rail: /m.test(b)).map((b) => Number(b.match(/^## Frame (\d+) /)?.[1])),
+);
+const layoutOf = new Map(
+  blocks.filter((b) => /^- layout: /m.test(b)).map((b) => [
+    Number(b.match(/^## Frame (\d+) /)?.[1]),
+    b.match(/^- layout: (.+)$/m)[1].split(",").map((s) => s.trim()),
+  ]),
 );
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -39,6 +48,11 @@ for (const n of nums) {
   if (GUARD.railPatterns.length && railFrames.has(n)) {
     const miss = GUARD.railPatterns.filter((r) => !r.test(code)).map(String);
     if (miss.length) { console.log(`✗ ${n}: rail geometry missing ${miss.join(" ")}`); problems++; }
+  }
+  for (const [tok, regs] of Object.entries(GUARD.layoutPatterns)) {
+    if (!layoutOf.get(n)?.includes(tok)) continue;
+    const miss = regs.filter((r) => !r.test(code)).map(String);
+    if (miss.length) { console.log(`✗ ${n}: ${tok} identity missing ${miss.join(" ")}`); problems++; }
   }
 }
 console.log(problems ? `frame-guard: ${problems} problem(s)` : `frame-guard ok (${nums.length} frames)`);

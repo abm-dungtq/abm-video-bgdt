@@ -1,0 +1,58 @@
+# Layout library for frame workers (read only if your block has `- layout:`)
+
+`- layout:` is positional: one token per shot, in the same order as `- shots:`. A token is a piece from the
+library below, a DNA card (`card-*`), or `custom-<name>`.
+
+**The library is a source of ideas, not a closed list.** Bend it: shift the axis, stack layers, tilt the
+frame, lay content along a motion path, use a lopsided ratio, blow one detail up past the edge. When your
+token is `custom-<name>`, the Scene line of that shot describes the layout: build exactly that. The goal
+is that a learner never sees two consecutive shots that look like the same slide.
+
+## Coordinates
+
+Boxes are in `#PFX-stage` coordinates (x 0–1760, y 0–820; on the canvas x 80–1840, y 60–880). The karaoke
+band (y ≥ 918) and the overlay areas stay empty. Boxes are suggestions: move them when the idea needs it,
+but keep text readable (≥ 28 px) and inside the stage at every moment.
+
+## The pieces
+
+| id | use when | suggested boxes | two ways to vary it |
+|---|---|---|---|
+| `hero-center` | one idea, one keyword, a definition | hero x 380–1380, y 160–660 | push the hero off-centre and let a trail balance it; scale the keyword past the box and crop it |
+| `split-50` | A vs B, before vs after | A x 0–860, B x 900–1760, y 0–820 | tilt the divider; let B slide over A on the cue |
+| `split-60-40` | a subject plus its explanation | A x 0–1040, B x 1080–1760 | swap sides mid-shot; turn the 40 into a floating card |
+| `split-40-60` | a label or icon plus a large visual | A x 0–680, B x 720–1760 | stack A vertically as a rail; let the 60 bleed off the right edge |
+| `triptych` | three steps, three options | columns x 0–560, 600–1160, 1200–1760 | stagger the columns in height; light one column at a time |
+| `strip-top` | a headline over a body | strip y 0–220 full width; body y 260–820 | turn the strip into a ticker; drop the strip into the body on the cue |
+| `ring` | a cycle, a hub, parts of a whole | centre (880, 410), radius 330 | open the ring into an arc; orbit the items along the ring |
+| `sidebar-left` | an agenda, a checklist beside content | column x 0–480; content x 520–1760 | collapse the column into icons; make the column the hero for one beat |
+| `screen-focus` | a real screenshot or mock-up | viewport 1456×819 centred (x 152–1608); rules in `worker-screen-addendum.md` | zoom into a region; pan along a path with a callout |
+| `screen-steps` | a screen with numbered steps | viewport x 0–1180, y 78–742; steps x 1220–1760 | move the steps over the screen as pins; reveal one step per cue |
+| `lower-third` | main visual with a caption line | main visual full stage; band x 0–1200, y 600–780 | lift the band into a speech bubble; slide it in from the side |
+| `full-bleed-quote` | a quote, a principle, a punchline | quote block x 120–1640, y 180–640; large quote mark top-left | set the quote along a curve; reveal it word by word on the voice |
+
+## DNA cards
+
+Each card has a fixed **identity**, the same for every card of that type in the video:
+- an uppercase label in the mono font, 24 px, letter-spacing 0.12em, colour {{ACCENT}}, at the top-left inside the card (x +48, y +40);
+- a 36 px SVG icon left of the label;
+- the card surface {{SURFACE}} with a 2 px top border in {{ACCENT}}.
+
+Suggested card box: x 160–1600, y 60–760. **Everything inside the card below the label is free**; vary it from
+chapter to chapter so the fourth card never looks like the first.
+
+| token | label | icon | what happens inside |
+|---|---|---|---|
+| `card-objective` | MỤC TIÊU CHƯƠNG | target | 1–3 objectives, each revealed on its cue |
+| `card-principle` | NGUYÊN LÝ CỐT LÕI | key | one principle sentence as the hero |
+| `card-antipattern` | CÁCH SAI · CÁCH ĐÚNG | cross and check, drawn as SVG (the fonts lack ✕ ✓) | the wrong way always appears first; the right way follows on its cue |
+| `card-case` | TÌNH HUỐNG | briefcase | a short situation with one striking detail |
+| `card-exercise` | BÀI TẬP NHANH · 5 PHÚT | timer | the line "Dừng video và làm ngay"; an SVG ring that turns by `strokeDashoffset` for the **whole** shot so the frame never stands still; the card lasts 8–10 s, never a real 5-minute hold |
+| `card-quiz` | CÂU HỎI TÌNH HUỐNG | question mark | options A/B/C on their cues; the right answer lights only after a hold of at least 2 s; a caret blinks by timeline opacity while the learner thinks |
+
+Colours for secondary text: {{MUTED}}; for the main text: {{INK}}.
+
+## Changing layout between shots
+
+Build each shot as its own `.PFX-layer`. Switch shots by crossfading layers or moving them with transforms.
+Never tween `left`, `top`, `width` or `height`.
