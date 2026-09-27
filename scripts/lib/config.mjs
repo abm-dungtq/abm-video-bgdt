@@ -1,44 +1,33 @@
 // config.mjs — project parameters (video.config.json at the project root = cwd) plus
-// machine-local paths (env vars, else discovered; nothing is tied to one machine).
+// machine-local paths, resolved by lib/machine.mjs (env var → machine profile → discovery; nothing is tied to one machine).
 //
 //   HF_SKILLS_DIR   HeyGen skills root (default: the first of ~/.agents/skills, ~/.claude/skills, ~/.codex/skills,
 //                   ~/.cursor/skills, ~/.gemini/skills, ~/.config/opencode/skills that holds faceless-explainer)
-//   VIENEU_TTS_DIR  VieNeu-TTS checkout whose uv venv runs the audio tools (default: the nearest folder named
-//                   VieNeu-TTS beside the project or beside one of its parents, e.g. <workspace>/VieNeu-TTS)
+//   VIENEU_TTS_DIR  VieNeu-TTS checkout whose uv venv runs the audio tools (default: `vieneuDir` in the machine profile
+//                   written by setup/setup.mjs, else the nearest VieNeu-TTS/ folder beside the project or its parents)
 //   HF_CACHE_DIR    render frames cache            (default <project>/.hf-cache)
 //
 //   node tools/lib/config.mjs --vieneu-dir         prints the resolved VieNeu-TTS folder (used by run-pipeline.ps1)
 //   node tools/lib/config.mjs --skills-dir         prints the resolved HeyGen skills root (used by run-pipeline.ps1)
 
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { findSkillsDir, findVieneuDir } from "./machine.mjs";
 
 export const ROOT = resolve(".");
 export const cfg = JSON.parse(readFileSync(join(ROOT, "video.config.json"), "utf8"));
 
 const slash = (p) => p.replace(/\\/g, "/");
-// `npx hyperframes skills` installs into the skill folder of each agent it finds, so look in all of them
-const SKILL_ROOTS = [".agents/skills", ".claude/skills", ".codex/skills", ".cursor/skills", ".gemini/skills", ".config/opencode/skills"]
-  .map((r) => join(homedir(), r));
-export const SKILLS_DIR = slash(process.env.HF_SKILLS_DIR ??
-  SKILL_ROOTS.find((r) => existsSync(join(r, "faceless-explainer/scripts/lib/storyboard.mjs"))) ?? SKILL_ROOTS[0]);
+export const SKILLS_DIR = findSkillsDir();
 export const FE_SCRIPTS = `${SKILLS_DIR}/faceless-explainer/scripts`;
 export const CACHE_DIR = slash(process.env.HF_CACHE_DIR ?? resolve(ROOT, ".hf-cache"));
 
-/** The VieNeu-TTS checkout: $VIENEU_TTS_DIR, else the nearest VieNeu-TTS/pyproject.toml found walking up from the project. */
+/** The VieNeu-TTS checkout the audio tools run in; throws with a setup hint when none is found. */
 export function vieneuDir() {
-  if (process.env.VIENEU_TTS_DIR) {
-    const d = resolve(process.env.VIENEU_TTS_DIR);
-    if (!existsSync(join(d, "pyproject.toml"))) throw new Error(`VIENEU_TTS_DIR=${d} is not a VieNeu-TTS checkout (no pyproject.toml)`);
-    return slash(d);
-  }
-  for (let d = ROOT; ; d = dirname(d)) {
-    if (existsSync(join(d, "VieNeu-TTS", "pyproject.toml"))) return slash(join(d, "VieNeu-TTS"));
-    if (dirname(d) === d) break;
-  }
-  throw new Error("VieNeu-TTS not found: set VIENEU_TTS_DIR to your VieNeu-TTS checkout (see SETUP.md)");
+  const d = findVieneuDir(ROOT);
+  if (!d) throw new Error("VieNeu-TTS not found: run setup/setup.mjs, or set VIENEU_TTS_DIR (see SETUP.md)");
+  return d;
 }
 export const HF = `hyperframes@${cfg.cli.pin}`;
 // full-project check/snapshot navigation timeout; 60 s timed out on a loaded machine (2026-09-25)

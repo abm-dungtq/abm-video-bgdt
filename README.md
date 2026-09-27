@@ -69,22 +69,31 @@ TTS của HeyGen) và phụ đề (karaoke 15 % thay cho phụ đề 180 px). T�
 
 ## Cài đặt
 
-Hướng dẫn đầy đủ cho từng agent (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Windsurf/Devin) và từng
-hệ điều hành (Windows, macOS, Linux) nằm trong **[SETUP.md](SETUP.md)**. Tóm tắt năm bước:
+Chạy **một lệnh**. Trình cài làm lần lượt:
+1. cài công cụ nền còn thiếu;
+2. cài toàn bộ skill HyperFrames;
+3. dò phần cứng và cài VieNeu-TTS đúng cấu hình (GPU NVIDIA, Mac Apple Silicon hoặc CPU);
+4. đăng ký MCP cho mọi agent tìm thấy;
+5. kiểm tra lại.
 
-1. **Công cụ nền:** Node ≥ 20, ffmpeg, uv, PowerShell 7, git.
-2. **Skill:** clone vào thư mục chung rồi liên kết cho agent của bạn:
-   ```bash
-   git clone https://github.com/abm-dungtq/abm-video-bgdt.git ~/.agents/skills/abm-video-bgdt
-   ```
-3. **Skill HyperFrames:** `npx -y hyperframes@0.7.99 skills update faceless-explainer`.
-4. **Giọng đọc:** clone [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS), rồi `uv sync` và
-   `uv pip install torchaudio uroman`. Chạy API bằng `mcp/vieneu-tts/start-api.ps1 -Repo <VIENEU_DIR>`, sau đó đăng ký MCP
-   `mcp/vieneu-tts` với agent.
-5. **Kiểm tra:** `new-project.mjs`, rồi `build-design-kit.mjs` và `fixture-check.mjs`, phải in `fixture-check ok`.
+Trước khi thay đổi gì, trình cài đều hỏi xác nhận.
 
-Không có đường dẫn nào gắn cứng. Các script tự dò thư mục skill HeyGen, tự tìm `VieNeu-TTS/` cạnh thư mục làm việc, và nhận
-biến `VIENEU_TTS_DIR`, `HF_SKILLS_DIR`, `HF_CACHE_DIR` khi bạn đặt chỗ khác (SETUP.md § 6).
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -c "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/abm-dungtq/abm-video-bgdt/main/setup/install.ps1)))"
+```
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/abm-video-bgdt/main/setup/install.sh | bash
+```
+
+Hoặc để agent tự cài. Nói với agent: *"Đọc https://github.com/abm-dungtq/abm-video-bgdt/blob/main/setup/AGENT-SETUP.md và cài
+abm-video-bgdt cho máy này."*
+
+Muốn cài thủ công, cần tùy chọn nâng cao, hoặc cần cấu hình riêng cho Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub
+Copilot, OpenCode, Windsurf/Devin trên Windows, macOS, Linux? Xem **[SETUP.md](SETUP.md)**. Kiểm tra máy bất cứ lúc nào bằng
+`node setup/doctor.mjs`.
 
 ## Dùng skill
 
@@ -121,7 +130,8 @@ SETUP.md                 cài đặt theo agent và hệ điều hành
 references/              quy trình từng bước, viết kịch bản, storyboard và bố cục, các lỗi đã gặp
 scripts/                 công cụ; mỗi dự án nhận một bản sao trong tools/
 templates/               cấu hình mẫu, kịch bản mẫu, bộ hướng dẫn cho worker, theme, font (OFL)
-mcp/vieneu-tts/          MCP server giọng đọc và script khởi động API
+mcp/vieneu-tts/          MCP server giọng đọc và script khởi động API (start-api.mjs)
+setup/                   trình cài 1 lệnh, doctor, dò phần cứng, đăng ký MCP, runbook cho agent
 examples/                thư viện mẫu từ hai video đã giao
 dev/                     kiểm tra hồi quy, test lint, dựng thư viện mẫu
 ```

@@ -6,6 +6,59 @@ những chỗ cần đường dẫn đều dùng biến môi trường hoặc t�
 - Ký hiệu `<SKILL_DIR>` là thư mục bạn clone repo này về.
 - Ký hiệu `<VIENEU_DIR>` là thư mục bạn clone VieNeu-TTS về.
 
+## Cài nhanh
+
+**Cách 1: một lệnh.** Trình cài làm lần lượt:
+1. cài các công cụ nền còn thiếu;
+2. clone skill vào `~/.agents/skills/abm-video-bgdt`;
+3. cài **toàn bộ** skill HyperFrames;
+4. dò phần cứng và cài VieNeu-TTS đúng cấu hình máy (GPU NVIDIA → CUDA, Mac Apple Silicon → MPS, còn lại → CPU);
+5. đăng ký MCP cho mọi agent tìm thấy;
+6. kiểm tra lại toàn bộ.
+
+Trước khi thay đổi gì, trình cài đều in kế hoạch và hỏi xác nhận.
+
+```powershell
+# Windows (PowerShell 5.1 hoặc 7)
+powershell -ExecutionPolicy Bypass -c "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/abm-dungtq/abm-video-bgdt/main/setup/install.ps1)))"
+```
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/abm-video-bgdt/main/setup/install.sh | bash
+```
+
+Tùy chọn hay dùng (thêm vào sau `setup.mjs`, sau `-SetupArgs "…"` trên Windows, hoặc sau `-- …` trên macOS/Linux):
+
+| Tùy chọn | Tác dụng |
+|---|---|
+| `--vieneu-dir <đường-dẫn>` | dùng bản VieNeu-TTS có sẵn, hoặc clone vào chỗ bạn chọn (mặc định `~/VieNeu-TTS`) |
+| `--profile cpu\|cuda\|mps` | ép cấu hình thay vì để tự dò |
+| `--agents claude,codex` | chỉ đăng ký MCP cho các agent này |
+| `--only link\|hyperframes\|vieneu\|mcp` | chỉ chạy một bước |
+| `--dry-run` | chỉ in kế hoạch, không thay đổi gì |
+
+**Cách 2: để agent tự cài.** Nói với agent của bạn:
+
+> Đọc https://github.com/abm-dungtq/abm-video-bgdt/blob/main/setup/AGENT-SETUP.md và cài abm-video-bgdt cho máy này.
+
+Agent sẽ làm theo [setup/AGENT-SETUP.md](setup/AGENT-SETUP.md):
+1. chạy `doctor` và dry-run;
+2. cho bạn xem kế hoạch và hỏi xác nhận;
+3. chạy trình cài;
+4. khởi động API giọng đọc;
+5. hướng dẫn bạn khởi động lại agent và kiểm tra.
+
+**Kiểm tra bất cứ lúc nào:** `node ~/.agents/skills/abm-video-bgdt/setup/doctor.mjs`. Mỗi mục thiếu đều kèm lệnh sửa.
+
+**Mỗi lần làm video**, bật API giọng đọc trước:
+
+```bash
+node ~/.agents/skills/abm-video-bgdt/mcp/vieneu-tts/start-api.mjs
+```
+
+Các mục dưới đây là cách **cài thủ công**, và giải thích trình cài làm gì ở từng bước.
+
 ## 1. Skill gồm những phần nào
 
 | Phần | Vai trò | Cài ở mục |
@@ -71,11 +124,12 @@ New-Item -ItemType Junction -Path "$HOME\.claude\skills\abm-video-bgdt" -Target 
 ## 4. Skill HyperFrames của HeyGen
 
 ```bash
-npx -y hyperframes@0.7.99 skills update faceless-explainer
-npx -y hyperframes@0.7.99 skills check
+npx -y hyperframes@0.7.99 skills          # toàn bộ skill HyperFrames đã phát hành
+npx -y hyperframes@0.7.99 skills check    # kiểm tra đã đủ và mới chưa
 ```
 
-Lệnh `update` cài `faceless-explainer` và các skill lõi vào thư mục skill của những agent nó tìm thấy. Script của skill này
+Lệnh `skills` (không kèm tham số) cài toàn bộ skill HyperFrames vào thư mục skill của những agent nó tìm thấy. Không
+dùng được CLI thì chạy `npx skills add heygen-com/hyperframes --all`. Script của skill này
 tự tìm `faceless-explainer` lần lượt trong `~/.agents/skills`, `~/.claude/skills`, `~/.codex/skills`, `~/.cursor/skills`,
 `~/.gemini/skills` và `~/.config/opencode/skills`. Nếu bạn cài ở chỗ khác, đặt `HF_SKILLS_DIR` trỏ tới thư mục chứa
 `faceless-explainer/`.
@@ -87,16 +141,23 @@ tự tìm `faceless-explainer` lần lượt trong `~/.agents/skills`, `~/.claud
 ```bash
 git clone https://github.com/pnnbao97/VieNeu-TTS.git
 cd VieNeu-TTS
-uv sync --extra cuda      # máy có GPU NVIDIA
-# uv sync                 # CPU, hoặc Mac Apple Silicon (PyTorch tự dùng MPS)
-uv pip install torchaudio uroman
+# GPU NVIDIA có driver hỗ trợ CUDA 12.8+ (xem dòng "CUDA Version" của nvidia-smi):
+uv sync --extra cuda && uv pip install uroman
+# Mac Apple Silicon:
+uv sync && uv pip install torch==2.8.0 torchaudio==2.8.0 uroman
+# CPU (không có GPU phù hợp):
+uv sync && uv pip install torch==2.8.0 torchaudio==2.8.0 uroman --torch-backend cpu
 ```
+
+`node setup/hardware.mjs` in ra cấu hình phù hợp với máy bạn. torch và torchaudio giữ ở 2.8.0, vì torchaudio 2.9 bỏ hàm
+`forced_align` mà bước căn thời gian cần.
 
 - Không có GPU vẫn chạy được, nhưng tạo giọng chậm.
 - Nếu `uv sync` trên Windows/Linux cài nhầm bản torch CPU, xem [uv + PyTorch](https://docs.astral.sh/uv/guides/integration/pytorch/).
 - Lần căn thời gian đầu tiên sẽ tải model MMS_FA, khoảng 1,2 GB.
 
-**Cho skill biết VieNeu-TTS ở đâu.** Chọn một trong hai cách:
+**Cho skill biết VieNeu-TTS ở đâu.** Trình cài ghi đường dẫn này vào hồ sơ máy `~/.config/abm-video-bgdt/machine.json`, cùng
+backend và dtype phù hợp phần cứng. Nếu cài thủ công, chọn một trong hai cách:
 - đặt biến `VIENEU_TTS_DIR=<VIENEU_DIR>` (mục 6);
 - hoặc đặt thư mục `VieNeu-TTS/` cạnh thư mục làm việc. Script tự dò ngược từ dự án lên các thư mục cha, nên cấu trúc
   `workspace/VieNeu-TTS` + `workspace/videos/<bài>` không cần đặt biến.
@@ -104,14 +165,11 @@ uv pip install torchaudio uroman
 **Chạy API giọng đọc** và để nó chạy suốt thời gian làm video. Lần đầu mất khoảng 40 s để nạp model.
 
 ```bash
-pwsh <SKILL_DIR>/mcp/vieneu-tts/start-api.ps1 -Repo <VIENEU_DIR>
+node <SKILL_DIR>/mcp/vieneu-tts/start-api.mjs [--repo <VIENEU_DIR>] [--port 8000]
 ```
 
-Không muốn dùng PowerShell? Chạy thẳng bằng bash hoặc zsh:
-
-```bash
-cd <VIENEU_DIR> && HOST=127.0.0.1 PORT=8000 uv run python <SKILL_DIR>/mcp/vieneu-tts/run-api.py
-```
+Lệnh này chạy được trên mọi hệ điều hành. Nó đọc thư mục VieNeu-TTS và backend/dtype từ hồ sơ máy; `start-api.ps1` chỉ là
+bản bọc của nó.
 
 API nghe ở `http://127.0.0.1:8000`. Mặc định nó chạy fp32 (nhanh hơn trên GPU đời cũ). Đổi bằng `VIENEU_DTYPE=auto|bfloat16|float16`.
 
@@ -119,7 +177,8 @@ API nghe ở `http://127.0.0.1:8000`. Mặc định nó chạy fp32 (nhanh hơn 
 
 | Biến | Bắt buộc? | Mặc định khi không đặt |
 |---|---|---|
-| `VIENEU_TTS_DIR` | khi VieNeu-TTS không nằm cạnh thư mục làm việc | thư mục `VieNeu-TTS/` gần nhất khi dò ngược từ dự án |
+| `VIENEU_TTS_DIR` | không (trình cài ghi vào hồ sơ máy) | `vieneuDir` trong `~/.config/abm-video-bgdt/machine.json`, rồi thư mục `VieNeu-TTS/` gần nhất khi dò ngược từ dự án |
+| `ABM_VIDEO_PROFILE` | không | đường dẫn khác cho file hồ sơ máy |
 | `HF_SKILLS_DIR` | khi skill HeyGen nằm ngoài các thư mục ở mục 4 | thư mục đầu tiên có `faceless-explainer/` |
 | `HF_CACHE_DIR` | không | `<dự án>/.hf-cache` (bước dọn dẹp sẽ xóa) |
 | `VIENEU_API_URL` | không | `http://127.0.0.1:8000` (dùng trong cấu hình MCP) |
@@ -224,8 +283,8 @@ Agent không gọi được subagent vẫn làm được. Khi đó agent dựng 
 
 | Triệu chứng | Nguyên nhân thường gặp | Cách sửa |
 |---|---|---|
-| `VieNeu-TTS not found: set VIENEU_TTS_DIR` | VieNeu-TTS không nằm cạnh thư mục làm việc | đặt `VIENEU_TTS_DIR` (mục 6) |
-| `Cannot reach the VieNeu API` | API chưa chạy | chạy `start-api.ps1` (mục 5) |
+| `VieNeu-TTS not found` | chưa cài, hoặc hồ sơ máy chưa ghi đường dẫn | `node setup/setup.mjs --only vieneu [--vieneu-dir <path>]` |
+| `Cannot reach the VieNeu API` | API chưa chạy | `node mcp/vieneu-tts/start-api.mjs` (mục 5) |
 | `faceless-explainer … not found` hoặc lỗi import `storyboard.mjs` | chưa cài skill HeyGen hoặc cài ở chỗ lạ | chạy mục 4, hoặc đặt `HF_SKILLS_DIR` |
 | `fixture-check` lỗi ở bước lint/check | bản HyperFrames khác 0.7.99, hoặc skill HeyGen mới đổi | giữ đúng `npx -y hyperframes@0.7.99`; xem `references/gotchas.md` |
 | Chữ tiếng Việt lỗi dấu trong log MCP | console không dùng UTF-8 | giữ `PYTHONIOENCODING=utf-8` trong cấu hình MCP |

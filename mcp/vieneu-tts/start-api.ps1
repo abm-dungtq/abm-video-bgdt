@@ -1,22 +1,14 @@
-# Start the VieNeu-TTS speech API that the MCP server talks to (http://127.0.0.1:8000).
-# GPU (CUDA torch installed) is used automatically, in fp32 by default (see run-api.py).
-# Extra env such as VIENEU_BACKEND=onnx|pytorch, VIENEU_DTYPE or VIENEU_API_KEY is passed through.
-# The VieNeu-TTS checkout comes from -Repo or $env:VIENEU_TTS_DIR.
+# Start the VieNeu-TTS speech API (http://127.0.0.1:8000). Thin wrapper around start-api.mjs, which works on every OS
+# and reads the VieNeu-TTS folder and backend settings from the machine profile written by setup/setup.mjs.
+#
+#   pwsh mcp/vieneu-tts/start-api.ps1 [-Repo <VieNeu-TTS dir>] [-HostName 127.0.0.1] [-Port 8000]
 param(
     [string]$HostName = "127.0.0.1",
     [int]$Port = 8000,
-    [string]$Repo = $env:VIENEU_TTS_DIR
+    [string]$Repo = ""
 )
 $ErrorActionPreference = "Stop"
-if (-not $Repo -or -not (Test-Path (Join-Path $Repo "pyproject.toml"))) {
-    throw "VieNeu-TTS not found: pass -Repo <path> or set VIENEU_TTS_DIR to your VieNeu-TTS checkout"
-}
-$env:HOST = $HostName
-$env:PORT = "$Port"
-$env:PYTHONIOENCODING = "utf-8"
-Push-Location $Repo
-try {
-    uv run python (Join-Path $PSScriptRoot "run-api.py")
-} finally {
-    Pop-Location
-}
+$argsList = @("$PSScriptRoot/start-api.mjs", "--host", $HostName, "--port", "$Port")
+if ($Repo) { $argsList += @("--repo", $Repo) }
+node @argsList
+exit $LASTEXITCODE

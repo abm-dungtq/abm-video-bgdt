@@ -64,7 +64,9 @@ VieNeu-TTS venv with torchaudio and uroman. The first alignment downloads the 1.
     parents is used. If none is found, the audio stages stop with a clear message.
   - `HF_SKILLS_DIR`: the HeyGen skills root (default `~/.agents/skills`).
   - `HF_CACHE_DIR`: the render frames cache (default `<project>/.hf-cache`).
-- Installing the skill for a particular agent or OS: see [SETUP.md](SETUP.md).
+- **First run or a failing environment:** run `node $SKILL/setup/doctor.mjs`. To install or repair, follow
+  [setup/AGENT-SETUP.md](setup/AGENT-SETUP.md): diagnose, show the user the plan, and install only after they agree.
+  Manual setup per agent and OS: [SETUP.md](SETUP.md).
 
 ## Stages
 

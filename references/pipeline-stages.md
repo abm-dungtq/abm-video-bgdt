@@ -15,7 +15,8 @@ On the second failure of the same step, spawn `kongming` with the stage, the com
 ## Stage 0: Scaffold
 
 1. Check that the VieNeu API is up: MCP `server_status` must return `"status":"ok"`. If it does not, ask the
-   user to start the speech API with this skill's `mcp/vieneu-tts/start-api.ps1` (SETUP.md § 4).
+   user to start the speech API (`node $SKILL/mcp/vieneu-tts/start-api.mjs`), or start it in the background yourself.
+   If `node $SKILL/setup/doctor.mjs` reports failures, follow `setup/AGENT-SETUP.md` first.
 2. `node $SKILL/scripts/new-project.mjs videos/<kebab-slug> --title "<Tiêu đề bài giảng>"`. Add `--theme abm-brand` for the
    ABM brand (Navy #030548, orange-gold #F9B508, Montserrat for frames via `design.bodyFont` and for karaoke via
    `karaoke.font`). The theme is optional; without it the project keeps the default palette.
