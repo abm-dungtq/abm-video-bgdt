@@ -89,7 +89,7 @@ These are not linted but are still required:
 ## Layout library (pieces, not a template)
 
 The `- layout:` bullet records the framing of every shot. The 12 pieces in `layouts.catalog` are **inspiration, not a
-template**: `custom-<name>` is always valid, and the Scene line of that shot describes the layout. Combine pieces, shift
+template**: `custom-<name>` (lowercase kebab-case, e.g. `custom-orbit-left`) is always valid, and the Scene line of that shot describes the layout. Combine pieces, shift
 the axis, stack layers, tilt the frame, lay content along a motion path. The goal is that a learner never sees two
 consecutive shots that look like the same slide. When a custom layout works well, propose it for the library in the
 next skill version.

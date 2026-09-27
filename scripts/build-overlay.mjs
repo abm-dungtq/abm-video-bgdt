@@ -36,7 +36,7 @@ const runs = roleRuns
   .map((r, i) => ({ ...r, end: i + 1 < roleRuns.length ? roleRuns[i + 1].start : total }))
   .filter((r) => r.role);
 const roleHtml = runs.length
-  ? `\n    <div id="ov-roles">${runs.map((r, i) => `<div class="ov-role" id="ov-role-${i}">${DNA.roleLabels[r.role]}</div>`).join("")}</div>`
+  ? `\n    <div id="ov-roles">${runs.map((r, i) => `<div class="ov-role" id="ov-role-${i}">${DNA.roleLabels[r.role] ?? r.role}</div>`).join("")}</div>`
   : "";
 const roleCss = runs.length
   ? `\n    .ov-role { position: absolute; right: 40px; top: 18px; padding: 4px 14px; border-radius: 16px; font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: 0.08em; color: ${GOLD}; background: rgba(${rgb(INK)},0.08); opacity: 0; white-space: nowrap; }`

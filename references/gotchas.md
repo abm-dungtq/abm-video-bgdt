@@ -136,8 +136,8 @@ A frame drawn with thin strokes on the dark canvas already counts as "empty" at 
 - `templates/fonts` is copied whole into each new project, so the OFL licence files travel with the fonts on purpose.
 - After changing the canvas colour or theme, run `node tools/fixture-check.mjs --blank-probe` to prove `blank-check` still catches
   an empty stage on the new canvas (on Navy #030548 it found 3.27–5.97 s, as expected).
-- Roles are validated only in `script.src.txt` (`###` lines). A hand-edited `- role:` bullet with another value shows up as
-  `undefined` in the overlay chip; edit roles in the script, not in `STORYBOARD.md`.
+- Roles are validated only in `script.src.txt` (`###` lines). A hand-edited `- role:` bullet with another value shows up raw
+  in the overlay chip (no label); edit roles in the script, not in `STORYBOARD.md`.
 
 ## Render and delivery
 
