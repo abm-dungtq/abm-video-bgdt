@@ -20,6 +20,8 @@
 - focal: the three-node loop suy nghĩ → hành động → quan sát with the spark running around it
 - roles: loop ring = foreground subject · spark = supporting · field = background (dim ~40%)
 - shots: kinetic@0-2.22, flow@2.22-11.85, zoom@11.85-16.42
+- layout: custom-word-orbit, ring, custom-lens-zoom   (optional; one token per shot, same order as shots)
+- role: core                              (optional; from ### markers in script.src.txt)
 - sfx: none
 - cues: vòng@2.06, lặp@2.22, suy@4.21, …   (written by retime-and-cue.mjs; do not hand-edit)
 - retimed_from: 16.415s                  (written by retime-and-cue.mjs)
@@ -52,6 +54,12 @@ lines and inline `~N s` hints are rescaled and snapped to cues automatically aft
 | `title` | chapter cards; the trail writes the number | `titlecard-reveal` (Adapt) |
 | `metaphor` | analogies | `compose` |
 | `screen` | a real UI screenshot from `assets/screens/` (gate 2b), or a `MINH HỌA` mockup; pan, zoom and callout on the cue | `tools/worker-screen-addendum.md` |
+| `objective` | [MỤC TIÊU CHƯƠNG]: the chapter's goals, opening a content chapter | `card-objective` (tools/worker-layouts.md) |
+| `principle` | NGUYÊN LÝ CỐT LÕI: one core principle | `card-principle` (tools/worker-layouts.md) |
+| `antipattern` | ❌ the wrong way before ✅ the right way | `card-antipattern` (tools/worker-layouts.md) |
+| `case` | a real situation | `card-case` (tools/worker-layouts.md) |
+| `exercise` | BÀI TẬP quick-win: "pause the video, 5 minutes", an 8–10 s card that keeps moving | `card-exercise` (tools/worker-layouts.md) |
+| `quiz` | a situational question at the end of the module | `card-quiz` (tools/worker-layouts.md) |
 
 The blueprints are described in `~/.agents/skills/faceless-explainer/references/visual-design.md` and `cut-catalog.md`.
 
@@ -78,6 +86,34 @@ These are not linted but are still required:
      used left 480px / top 4px / 1068px wide, pills 340px with radius 22px).
    - The slot numbers are plain digits or SVG badges. The fonts have no ① ② ③.
 
+## Layout library (pieces, not a template)
+
+The `- layout:` bullet records the framing of every shot. The 12 pieces in `layouts.catalog` are **inspiration, not a
+template**: `custom-<name>` is always valid, and the Scene line of that shot describes the layout. Combine pieces, shift
+the axis, stack layers, tilt the frame, lay content along a motion path. The goal is that a learner never sees two
+consecutive shots that look like the same slide. When a custom layout works well, propose it for the library in the
+next skill version.
+
+- The pieces and their suggested boxes are in `tools/worker-layouts.md`: `hero-center`, `split-50`, `split-60-40`,
+  `split-40-60`, `triptych`, `strip-top`, `ring`, `sidebar-left`, `screen-focus`, `screen-steps`, `lower-third`,
+  `full-bleed-quote`.
+- The six DNA cards (`card-objective`, `card-principle`, `card-antipattern`, `card-case`, `card-exercise`, `card-quiz`)
+  lock only their **identity**: label, icon, accent colour and label position. Everything inside the card is free and
+  should change from chapter to chapter. Once the first card of a type is approved, pin its identity with regexes in
+  `guard.layoutPatterns` (`{ "card-exercise": ["…"] }`, an array per key), the same way as `railPatterns`.
+
+| rule | kind | meaning |
+|---|---|---|
+| L1 | error | the number of `layout` tokens equals the number of shots |
+| L2 | error | a token is a library piece, a `card-*` layout, or `custom-<name>` |
+| L5 | error | a DNA card shot uses its `layouts.fixed` token (its identity is checked by `frame-guard`) |
+| L3 | warning | a layout repeats the previous shot |
+| L4 | warning | a chapter has fewer than `layouts.minDistinctPerChapter` layouts |
+| L6 | warning | one layout takes more than `layouts.maxShare` of the shots; a chapter has no `custom-*` layout |
+| D1–D5 | warning (error under `dna.strict`) | DNA order and cards; see script-authoring.md § DNA chapter template |
+
+Warnings never block the pipeline, but read them: they are the anti-boredom check.
+
 ## Video direction block
 
 Add `## Video direction` after the last frame. The block records:
@@ -99,13 +135,14 @@ Add `## Video direction` after the last frame. The block records:
 - On-screen text is motion-graphics copy of 1–5 words (the keyword, a number, a label). It is never a narration sentence;
   the karaoke band already carries every spoken word.
 - Use at least 28 px for readable text. Keep one hero per shot, filling 40–60 % of the frame.
-- Rotate the framing (centered, 50/50 split, 60/40, triptych, strip, ring) and never use the same one twice in a row.
+- Record the framing of every shot in `- layout:`. Rotate, remix and invent: the library is a starting point, and the lint only warns.
 
 ## Design system
 
 - The palette lives in `video.config.json` → `design`: canvas, surface, ink, accent, accent2, warn, muted, hueBase and hueStep.
   `build-design-kit.mjs` writes it into `tokens.json`, the frame skeleton, and the karaoke and overlay colours.
 - Fonts: Be Vietnam Pro (500/600/800) for text, with full Vietnamese diacritics, and JetBrains Mono (400) for terminal text and kickers.
-  Both are bundled locally (OFL) in `assets/fonts/`, so no network fonts are needed.
+  Both are bundled locally (OFL) in `assets/fonts/`, so no network fonts are needed. With `--theme abm-brand` the body font is
+  Montserrat (`design.bodyFont`), and the karaoke uses it too (`karaoke.font`).
 - GSAP loads from the jsDelivr URL in the config, so rendering needs a network connection. To work offline, vendor GSAP into `assets/` and
   point `gsap` at the local path.

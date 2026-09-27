@@ -8,6 +8,8 @@
 ## 1 | title | Tên bài giảng               frame: n | scene_hint | frame title (n renumbered 1..N)
 > visual note for the storyboard            optional; joined into the frame's note
 Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword token, {F-01,F-02} = fact ids
+### core                                    DNA role of the frames that follow: hook|core|case|action (optional;
+                                            resets at every chapter)
 ```
 
 - `scene_hint` must be one of `video.config.json` → `scenes.types`. The first frame of every chapter is `title`, and no other frame is.
@@ -16,6 +18,19 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 - A fact id must exist in `capture/extracted/visible-text.txt` as `[F-NN]`, or `--check` fails.
 - `spokenOverrides` in the config maps a display token, without punctuation, to what the voice should say. Keep
   display text correct (for example `SOUL.md`) and fix only the spoken side.
+
+## DNA chapter template (BGĐT v1.1)
+
+When `dna.enabled` (the default for new projects), a content chapter reads like this:
+
+```
+title → ### hook: objective card, the pain or a callback → ### core: principle, antipattern (wrong before right)
+      → ### case: a real situation → ### action: exercise card (8–10 s, "pause the video, 5 minutes") → anchor recap
+```
+
+- The DNA rules only warn, unless `dna.strict` is on. Content chapters are all chapters except the first and the last.
+- A DNA chapter runs about 40–60 s longer than a plain one; size `budget.targetS` for it.
+- The situational quiz belongs in the last chapter only.
 
 ## Budget math
 

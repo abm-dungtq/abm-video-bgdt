@@ -116,6 +116,29 @@ Stock `blackdetect` finds nothing on these videos because the canvas is dark, no
 A frame drawn with thin strokes on the dark canvas already counts as "empty" at `pix_th=0.20` and `pic_th=0.97`, so keep
 `pic_th` high and rely on the 2 s duration.
 
+## Cards that hold still (skill 0.5.0)
+
+- `check` fails with `sweep_static` only when a composition of 3 s or more shows zero geometry change at **every** sample
+  (9 by default) of the whole `index.html`. `wave-check` never runs `check`.
+- Keep the exercise and quiz cards moving anyway (a ring turning by `strokeDashoffset`, a caret blinking by opacity):
+  a reveal that finishes early and then holds is the documented trap for short compositions.
+- Never hold a frame still for the 5 minutes of a quick-win exercise; the card lasts 8–10 s and asks the learner to pause.
+- `guard.layoutPatterns` values must be arrays of regex strings; a scalar throws when the config loads.
+
+## Themes (skill 0.5.0)
+
+- A theme file (`templates/themes/<name>.json`) has three blocks. `new-project.mjs --theme <name>` merges `design` key by key,
+  replaces `fonts` as a whole, and merges `karaoke` (for `karaoke.font`). `config.theme` only records which theme was used.
+- `abm-brand` uses Montserrat as one variable font (`Montserrat-VF.ttf`, `font-weight: 100 900`) for frames (`design.bodyFont`)
+  and karaoke (`karaoke.font`).
+- `--update-tools` refreshes only `tools/`. An older project that switches to a theme must also copy the theme's font files from
+  the skill's `templates/fonts/` into `assets/fonts/`.
+- `templates/fonts` is copied whole into each new project, so the OFL licence files travel with the fonts on purpose.
+- After changing the canvas colour or theme, run `node tools/fixture-check.mjs --blank-probe` to prove `blank-check` still catches
+  an empty stage on the new canvas (on Navy #030548 it found 3.27–5.97 s, as expected).
+- Roles are validated only in `script.src.txt` (`###` lines). A hand-edited `- role:` bullet with another value shows up as
+  `undefined` in the overlay chip; edit roles in the script, not in `STORYBOARD.md`.
+
 ## Render and delivery
 
 - CSS 3D (`perspective`) forces the slower screenshot capture: the draft took 11 min and the final at 30 fps took 17 min.

@@ -5,7 +5,7 @@ user-invocable: true
 argument-hint: "<topic or project dir> [--from <stage>]"
 metadata:
   author: ABM
-  version: "0.4.0"
+  version: "0.5.0"
   proven-on: "videos/hermes-agent-explainer (612 s, 63 frames, 2026-09-25); videos/claude-intro-explainer (875 s, 79 frames, real screenshots, 2026-09-25)"
 ---
 
@@ -17,6 +17,9 @@ This skill makes a Vietnamese lesson video of 3–15 minutes, 1920×1080:
 - karaoke band: bottom 162 px
 - overlay: progress bar, chapter label, and the courier trail
 - visuals: one HTML frame per storyboard frame, built by parallel workers
+- layouts: a library of pieces to remix, not a template; invented `custom-*` layouts are encouraged so learners never
+  get bored, and DNA BGĐT cards (objective, principle, antipattern, case, exercise, quiz) keep a fixed identity only
+- optional ABM theme: `new-project.mjs --theme abm-brand`
 
 It is built on the installed `faceless-explainer` skill (storyboard → frame-packets → assemble →
 transitions) and **replaces two of its steps**: the TTS step (`audio.mjs`) and the captions step
@@ -72,7 +75,7 @@ Detailed steps, commands and pass conditions are in [references/pipeline-stages.
 | 2 | Facts and script | `visible-text.txt`, `script.src.txt`, `run-pipeline.ps1 -From script -To script` (runs `facts-check.mjs`) | `--check` ok, `overrides=` > 0 when overrides exist; facts-check ok; **Gate 2**; then `script-to-md.mjs script.json` once |
 | 2b | Screenshots (only if the lesson shows real UI) | capture, redact, `capture/screens/INDEX.md`, copy approved files to `assets/screens/` | **Gate 2b** |
 | 3 | Voice | `tts-manifest.mjs --pending` → MCP `text_to_speech` per job → `-From voice -To meta` | QA flagged=0; verify bad=0; the align report lists 0 failed |
-| 4 | Design and storyboard | `build-design-kit.mjs`, `build-frame.mjs --preset`, catalog, `fetch-registry-refs.mjs`, visual fields | `variety-lint.mjs` ok |
+| 4 | Design and storyboard | `build-design-kit.mjs`, `build-frame.mjs --preset`, catalog, `fetch-registry-refs.mjs`, visual fields incl. `- layout:` per shot (`tools/worker-layouts.md`) | `variety-lint.mjs` ok; read its `⚠` anti-boredom warnings |
 | 5 | Frames | `-From cues -To cues`, `frame-packets.mjs`, workers in waves, `wave-check.mjs`, `-From karaoke -To assemble` | each wave: 0 lint errors; **Gate 3**; `transitions verify` |
 | 6 | QA and delivery | `-From check -To check` (runs `privacy-check.mjs`), draft render, `sync-report.mjs`, `-From render -To post` (sync on the render, then the voice master is muxed in, then `blank-check.mjs`) | privacy clean; sync ≤ 0.15 s; **Gate 4**; −16 ±1 LUFS, true peak ≤ −1.5; no empty stage ≥ 2 s |
 | 7 | Cleanup (after delivery) | `node tools/clean-project.mjs` (dry run) → `--apply`; `--level archive` when the project is closed | the dry-run list was reviewed; files go to the Recycle Bin |
@@ -104,6 +107,8 @@ A worker writes exactly one file, `compositions/frames/<id>.html`. After each wa
 - [references/gotchas.md](references/gotchas.md): what broke on the first video and how it was fixed
 - `templates/worker-kit/*.tmpl`: worker brief, delta for CLI 0.7.99, screen addendum, and frame skeleton (filled by `build-design-kit.mjs`;
   the skeleton's `@font-face` lines come from `fonts`, using each entry's `faces` for fonts the skill does not ship)
+- `templates/worker-kit/worker-layouts.md.tmpl`: the layout library and the six DNA cards for workers
+- `templates/themes/abm-brand.json`: the optional ABM theme (Navy/orange-gold/Montserrat); fonts ship with their OFL licences
 
 ## Updating the skill
 

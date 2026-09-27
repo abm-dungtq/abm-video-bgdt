@@ -16,7 +16,9 @@ On the second failure of the same step, spawn `kongming` with the stage, the com
 
 1. Check that the VieNeu API is up: MCP `server_status` must return `"status":"ok"`. If it does not, ask the
    user to run `D:\TQD\Claude-Video\vieneu-mcp\start-api.ps1`.
-2. `node $SKILL/scripts/new-project.mjs videos/<kebab-slug> --title "<Tiêu đề bài giảng>"`.
+2. `node $SKILL/scripts/new-project.mjs videos/<kebab-slug> --title "<Tiêu đề bài giảng>"`. Add `--theme abm-brand` for the
+   ABM brand (Navy #030548, orange-gold #F9B508, Montserrat for frames via `design.bodyFont` and for karaoke via
+   `karaoke.font`). The theme is optional; without it the project keeps the default palette.
    This runs a pinned `init` with skills frozen, then copies `tools/`, `tools/worker-kit/`, the fonts,
    `video.config.json`, `BRIEF.md`, a sample `script.src.txt`, and the capture folders. It also appends an
    override note to the project's `CLAUDE.md` and `AGENTS.md`.
@@ -52,6 +54,8 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    also lower `voice.temperature` slightly. Re-measure after any voice change.
 
 ## Stage 2: Facts and script (about 3 h)
+
+Mark each content chapter's DNA roles with `### hook|core|case|action` lines (script-authoring.md § DNA chapter template).
 
 1. **Facts.** Read only local sources (README, docs, `--help` output, or web pages saved to `capture/sources/`). Write
    `capture/extracted/visible-text.txt` as `[F-NN] one fact — source`, grouped under `##` headings. Save
@@ -130,7 +134,9 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    read-only ideas for the workers.
 4. Add the visual fields to every `## Frame N` block of `STORYBOARD.md`, plus a `## Video direction` block.
    Follow [visual-storyboard.md](visual-storyboard.md).
-5. Run `node tools/variety-lint.mjs STORYBOARD.md`. Verify: `frames=<k> shots=<n> ok`.
+5. Give every frame a `- layout:` bullet, one token per shot (see visual-storyboard.md § Layout library).
+   Run `node tools/variety-lint.mjs STORYBOARD.md`. Verify: the summary ends with ` ok` and shows `layouts=<n> dna=…`.
+   Read every `⚠` warning (repetition, low variety, missing custom layout, DNA order); they do not block the pipeline.
 6. Post a heads-up to the user: a compact table of frame, chapter, shot types and focal. Continue unless the user objects.
 
 ## Stage 5: Frames, karaoke and assembly (about 3–4 h)
@@ -139,7 +145,8 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
    Verify: the output includes `cues ok` and `frames=… ok`.
 2. Run `node tools/build-design-kit.mjs` if it was not run since the last config change.
 3. Run `node $SK/frame-packets.mjs --project "$P" --storyboard "$P/STORYBOARD.md"`. It writes `.hyperframes/frame-packets/`.
-4. Dispatch the workers (see SKILL.md § Frame workers). Each worker gets `tools/worker-brief.md` plus its dispatch
+4. Dispatch the workers (see SKILL.md § Frame workers). Workers whose block has `- layout:` also read
+   `tools/worker-layouts.md`. Each worker gets `tools/worker-brief.md` plus its dispatch
    context. After each wave:
    1. `node tools/wave-check.mjs <nums>`. Verify: `0 errors` and `frame-guard ok`.
    2. Read the snapshots. Use `N@t` to look at a specific cue.
