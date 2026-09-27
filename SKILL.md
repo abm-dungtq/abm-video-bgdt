@@ -59,10 +59,12 @@ VieNeu-TTS venv with torchaudio and uroman. The first alignment downloads the 1.
 - `$SK`: `~/.agents/skills/faceless-explainer/scripts`, or `$HF_SKILLS_DIR/faceless-explainer/scripts`.
 - `video.config.json`: every per-project parameter (title, voice, timing, budget, scene types, palette,
   fonts, karaoke, chapter label format, CLI pin, GSAP URL, render, loudness). Tools never hard-code them.
-- Machine paths come from environment variables, with defaults in `tools/lib/config.mjs`:
-  - `HF_SKILLS_DIR`
-  - `VIENEU_VENV` (default `D:/TQD/Claude-Video/VieNeu-TTS`)
-  - `HF_CACHE_DIR`
+- Machine paths are never hard-coded. `tools/lib/config.mjs` resolves them:
+  - `VIENEU_TTS_DIR`: the VieNeu-TTS checkout. If unset, the nearest `VieNeu-TTS/` folder beside the project or one of its
+    parents is used. If none is found, the audio stages stop with a clear message.
+  - `HF_SKILLS_DIR`: the HeyGen skills root (default `~/.agents/skills`).
+  - `HF_CACHE_DIR`: the render frames cache (default `<project>/.hf-cache`).
+- Installing the skill for a particular agent or OS: see [SETUP.md](SETUP.md).
 
 ## Stages
 

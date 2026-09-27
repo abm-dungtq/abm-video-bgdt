@@ -4,7 +4,7 @@
 #
 # Stages (in order): script, tts, voice, align, meta, cues, karaoke, assemble, check, render, post
 # `tts` cannot run here: narration must be synthesized through the vieneu-tts MCP by the agent.
-# Machine paths come from env vars (defaults match tools/lib/config.mjs): HF_SKILLS_DIR, VIENEU_VENV, HF_CACHE_DIR.
+# Machine paths come from env vars, resolved like tools/lib/config.mjs: VIENEU_TTS_DIR, HF_SKILLS_DIR, HF_CACHE_DIR.
 param(
   [ValidateSet("script","tts","voice","align","meta","cues","karaoke","assemble","check","render","post")]
   [string]$From = "voice",
@@ -14,14 +14,18 @@ param(
 $ErrorActionPreference = "Stop"
 $P = Split-Path -Parent $PSScriptRoot
 $CFG = Get-Content -Raw -Encoding utf8 "$P/video.config.json" | ConvertFrom-Json
-$VENV = $env:VIENEU_VENV ?? "D:/TQD/Claude-Video/VieNeu-TTS"
-$SK = "$($env:HF_SKILLS_DIR ?? "$HOME/.agents/skills")/faceless-explainer/scripts"
 $HF = "hyperframes@$($CFG.cli.pin)"
 $TIMEOUT = $CFG.cli.checkTimeoutMs ?? 240000
-$CACHE = $env:HF_CACHE_DIR ?? (Join-Path $P "../../.hf-cache")
+$CACHE = $env:HF_CACHE_DIR ?? (Join-Path $P ".hf-cache")
 $stages = "script","tts","voice","align","meta","cues","karaoke","assemble","check","render","post"
 $run = $stages[$stages.IndexOf($From)..$stages.IndexOf($To)]
 Set-Location $P
+$SK = "$(node tools/lib/config.mjs --skills-dir)/faceless-explainer/scripts"
+# the VieNeu-TTS venv runs the audio stages; resolve it only when one of them runs
+if ($run | Where-Object { $_ -in "voice", "align", "meta" }) {
+  $VENV = node tools/lib/config.mjs --vieneu-dir
+  if ($LASTEXITCODE -ne 0 -or -not $VENV) { throw "VieNeu-TTS not found: set VIENEU_TTS_DIR" }
+}
 
 function Step([string]$name, [scriptblock]$body) {
   if ($run -contains $name) {

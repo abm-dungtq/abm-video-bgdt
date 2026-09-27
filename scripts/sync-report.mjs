@@ -7,7 +7,7 @@
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
-import { VENV } from "./lib/config.mjs";
+import { vieneuDir } from "./lib/config.mjs";
 import { buildVoiceConcat, storyboardFrames, VOICE_CONCAT } from "./lib/voice-concat.mjs";
 
 if (process.argv.includes("--max")) {
@@ -36,7 +36,7 @@ for (const f of frames) {
 }
 const points = chapters.flatMap((c) => [c.start + 5, (c.start + c.end) / 2, c.end - 5].map((x) => +x.toFixed(2)));
 
-execFileSync("uv", ["run", "--directory", VENV, "python", `${process.cwd()}/tools/xcorr.py`,
+execFileSync("uv", ["run", "--directory", vieneuDir(), "python", `${process.cwd()}/tools/xcorr.py`,
   "--render", `${process.cwd()}/${render}`, "--reference", `${process.cwd()}/${VOICE_CONCAT}`,
   "--at", points.join(","), "--out", `${process.cwd()}/renders/sync.json`], { stdio: "inherit" });
 

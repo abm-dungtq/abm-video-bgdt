@@ -67,83 +67,24 @@ TTS của HeyGen) và phụ đề (karaoke 15 % thay cho phụ đề 180 px). T�
 | GPU NVIDIA (khuyến nghị) | GTX 1080 | TTS chạy được trên CPU nhưng chậm; lần đầu tải model MMS_FA khoảng 1,2 GB |
 | Mạng | – | GSAP tải từ jsDelivr khi render |
 
-## Cài đặt cho một agent
+## Cài đặt
 
-### 1. Cài skill
+Hướng dẫn đầy đủ cho từng agent (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Windsurf/Devin) và từng
+hệ điều hành (Windows, macOS, Linux) nằm trong **[SETUP.md](SETUP.md)**. Tóm tắt năm bước:
 
-Clone repo vào thư mục skill của agent:
+1. **Công cụ nền:** Node ≥ 20, ffmpeg, uv, PowerShell 7, git.
+2. **Skill:** clone vào thư mục chung rồi liên kết cho agent của bạn:
+   ```bash
+   git clone https://github.com/abm-dungtq/abm-video-bgdt.git ~/.agents/skills/abm-video-bgdt
+   ```
+3. **Skill HyperFrames:** `npx -y hyperframes@0.7.99 skills update faceless-explainer`.
+4. **Giọng đọc:** clone [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS), rồi `uv sync` và
+   `uv pip install torchaudio uroman`. Chạy API bằng `mcp/vieneu-tts/start-api.ps1 -Repo <VIENEU_DIR>`, sau đó đăng ký MCP
+   `mcp/vieneu-tts` với agent.
+5. **Kiểm tra:** `new-project.mjs`, rồi `build-design-kit.mjs` và `fixture-check.mjs`, phải in `fixture-check ok`.
 
-```bash
-git clone https://github.com/abm-dungtq/abm-video-bgdt.git ~/.claude/skills/abm-video-bgdt
-```
-
-- **Claude Code:** thư mục như trên. Skill tự được gọi khi bạn nói "làm video bài giảng…", hoặc gọi thẳng `/abm-video-bgdt`.
-- **Agent khác đọc `SKILL.md`:** đặt vào thư mục skill mà agent đó quét (ví dụ `~/.agents/skills/abm-video-bgdt`), hoặc bảo agent
-  đọc `SKILL.md` trước khi làm.
-
-### 2. Cài skill HyperFrames của HeyGen
-
-```bash
-npx -y hyperframes@0.7.99 skills update faceless-explainer
-```
-
-Lệnh này cài `faceless-explainer` và các skill lõi vào `~/.agents/skills`. Skill này chỉ đọc chúng, không sửa.
-
-### 3. Cài VieNeu-TTS và MCP server
-
-```bash
-git clone https://github.com/pnnbao97/VieNeu-TTS.git
-cd VieNeu-TTS
-uv sync --extra cuda          # bỏ --extra cuda nếu chạy CPU
-uv pip install torchaudio uroman
-```
-
-MCP server nằm trong repo này, ở `mcp/vieneu-tts/`. Khởi động API giọng đọc (lần đầu tải model mất khoảng 40 s) và để nó chạy:
-
-```powershell
-$env:VIENEU_REPO = "D:\path\to\VieNeu-TTS"
-pwsh ~/.claude/skills/abm-video-bgdt/mcp/vieneu-tts/start-api.ps1
-```
-
-Đăng ký MCP với agent. Với Claude Code, thêm vào `.mcp.json` của thư mục làm việc:
-
-```json
-{
-  "mcpServers": {
-    "vieneu-tts": {
-      "type": "stdio",
-      "command": "uv",
-      "args": ["run", "--directory", "<đường-dẫn>/abm-video-bgdt/mcp/vieneu-tts", "python", "server.py"],
-      "env": { "VIENEU_API_URL": "http://127.0.0.1:8000", "PYTHONIOENCODING": "utf-8" }
-    }
-  }
-}
-```
-
-MCP có 4 công cụ: `list_voices`, `text_to_speech`, `clone_voice` và `server_status`. Giọng mặc định của skill là **Thanh Bình**.
-
-### 4. Biến môi trường (tùy chọn)
-
-| Biến | Mặc định | Dùng cho |
-|---|---|---|
-| `VIENEU_VENV` | `D:/TQD/Claude-Video/VieNeu-TTS` | thư mục VieNeu-TTS để `uv run` các bước căn thời gian |
-| `VIENEU_REPO` | `../VieNeu-TTS` cạnh `start-api.ps1` | nơi `start-api.ps1` khởi động API |
-| `HF_SKILLS_DIR` | `~/.agents/skills` | nơi đặt skill HyperFrames |
-| `HF_CACHE_DIR` | `<project>/../../.hf-cache` | cache khung hình khi render |
-
-Máy khác máy tác giả thì nên đặt `VIENEU_VENV` trỏ tới bản clone VieNeu-TTS của bạn.
-
-### 5. Kiểm tra cài đặt
-
-```bash
-node ~/.claude/skills/abm-video-bgdt/scripts/new-project.mjs videos/thu-nghiem --title "Bài thử"
-cd videos/thu-nghiem
-node tools/build-design-kit.mjs
-node tools/fixture-check.mjs           # phải in: fixture-check ok
-```
-
-`fixture-check` dựng một dự án 2 khung, chạy `assemble` → `transitions` → `lint` → `check` → `snapshot` với CLI đang ghim, để
-chứng minh máy của bạn dựng được video trước khi làm bài thật.
+Không có đường dẫn nào gắn cứng. Các script tự dò thư mục skill HeyGen, tự tìm `VieNeu-TTS/` cạnh thư mục làm việc, và nhận
+biến `VIENEU_TTS_DIR`, `HF_SKILLS_DIR`, `HF_CACHE_DIR` khi bạn đặt chỗ khác (SETUP.md § 6).
 
 ## Dùng skill
 
@@ -176,6 +117,7 @@ kèm một ảnh xem trước. [`examples/CATALOG.md`](examples/CATALOG.md) xế
 
 ```
 SKILL.md                 hướng dẫn cho agent (điểm vào)
+SETUP.md                 cài đặt theo agent và hệ điều hành
 references/              quy trình từng bước, viết kịch bản, storyboard và bố cục, các lỗi đã gặp
 scripts/                 công cụ; mỗi dự án nhận một bản sao trong tools/
 templates/               cấu hình mẫu, kịch bản mẫu, bộ hướng dẫn cho worker, theme, font (OFL)
@@ -197,7 +139,7 @@ cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates
 
 ## Giới hạn đã biết
 
-- Mới được kiểm chứng trên Windows 11 với Claude Code. Trên macOS/Linux cần PowerShell 7 và phải đặt các biến môi trường ở trên.
+- Mới được kiểm chứng đầy đủ trên Windows 11 với Claude Code. Agent và hệ điều hành khác làm theo SETUP.md; báo lỗi qua Issues.
 - Chỉ hỗ trợ tiếng Việt: căn thời gian và đếm âm tiết đều theo tiếng Việt.
 - CLI ghim ở HyperFrames 0.7.99. Tài liệu HyperFrames mới hơn (0.8.x) có nhiều chỗ khác; xem `templates/worker-kit/worker-delta-0.7.99.md.tmpl`.
 - Render một video 10–15 phút mất 17–25 phút, và cần mạng để tải GSAP.
@@ -217,10 +159,8 @@ cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates
 - motion-graphics frames built in HyperFrames by parallel worker agents.
 
 It adds four human review gates, the DNA BGĐT lesson structure, a layout library meant for remixing, anti-boredom lint, an
-optional ABM brand theme, regression tests, and an example library of 142 real frames with previews. To set it up:
-1. clone into your skills folder;
-2. run `npx -y hyperframes@0.7.99 skills update faceless-explainer`;
-3. install VieNeu-TTS and register `mcp/vieneu-tts`;
-4. run `fixture-check`.
+optional ABM brand theme, regression tests, and an example library of 142 real frames with previews. Setup for Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode and Windsurf/Devin on Windows, macOS and
+Linux is in [SETUP.md](SETUP.md) (in Vietnamese; commands and config snippets are universal). No machine-specific paths:
+scripts discover the HeyGen skills and a `VieNeu-TTS/` folder, or read `VIENEU_TTS_DIR` / `HF_SKILLS_DIR`.
 
 Tested on Windows 11. MIT licensed.

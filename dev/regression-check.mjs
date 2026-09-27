@@ -4,25 +4,28 @@
 // new = this working tree) run the same steps; steps 1–7 must exit 0 on both sides, frame-guard (step 8)
 // must give the same exit code and stdout on both sides, and the listed outputs must be byte-identical.
 //
-//   node dev/regression-check.mjs --baseline v0.4.0 <project-dir>…
+//   node dev/regression-check.mjs --baseline v0.4.0 [--out <scratch-dir>] <project-dir>…
 //
-// Scratch: D:/TQD/Claude-Video/.regress/<name>-old|new (kept for inspection).
+// Scratch: <scratch-dir>/<name>-old|new, default <os temp>/abm-video-bgdt-regress (kept for inspection).
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { execSync, spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SKILL = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const R = "D:/TQD/Claude-Video/.regress";
 const args = process.argv.slice(2);
+const oi = args.indexOf("--out");
+const R = resolve(oi >= 0 ? args[oi + 1] : join(tmpdir(), "abm-video-bgdt-regress"));
 const bi = args.indexOf("--baseline");
 if (bi < 0 || !args[bi + 1]) {
   console.error("usage: regression-check.mjs --baseline <git-rev> <project-dir>…");
   process.exit(1);
 }
 const rev = args[bi + 1];
-const projects = args.filter((a, i) => i !== bi && i !== bi + 1);
+const skip = new Set([bi, bi + 1, ...(oi >= 0 ? [oi, oi + 1] : [])]);
+const projects = args.filter((a, i) => !skip.has(i));
 
 const INPUTS = [
   "video.config.json", "script.src.txt", "script.json", "STORYBOARD.md", "audio_meta.json",

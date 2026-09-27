@@ -6,7 +6,7 @@
   build-voice.py --verify    check offsets against the frame wavs
 
 Run from the project root with the VieNeu venv:
-  uv run --directory $VIENEU_VENV python <project>/tools/build-voice.py
+  uv run --directory <VieNeu-TTS dir> python <project>/tools/build-voice.py
 """
 import argparse
 import json

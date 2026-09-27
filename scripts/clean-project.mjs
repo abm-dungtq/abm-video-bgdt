@@ -49,6 +49,7 @@ const RULES = {
     ["audio/trimmed", "trimmed clips (-From voice rebuilds them from audio/clips)"],
     ["audio/spot", "spot clips"],
     ["snapshots", "lint/check snapshots"],
+    [".hf-cache", "render frames cache (the next render refills it)"],
     [".probe/*.wav", "pronunciation, rate and trim probes (decisions live in pronunciation.md, rate.json)"],
     [".probe/cal", "rate calibration clips"],
     [".probe/STORYBOARD.*", "storyboard backups"],
