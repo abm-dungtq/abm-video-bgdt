@@ -16,6 +16,8 @@ const { parseStoryboard } = await loadStoryboardParser();
 const W = 1920, H = 1080, BAND_TOP = 918, BAND_H = 162;
 const { maxChars: MAX_CHARS, lead: LEAD, linger: LINGER } = cfg.karaoke;
 const INK = cfg.design.ink, GOLD = cfg.design.accent, CANVAS_RGB = rgb(cfg.design.canvas);
+// karaoke face (a theme may set karaoke.font); the default is the shipped Be Vietnam Pro SemiBold
+const KF = cfg.karaoke.font ?? { family: "Be Vietnam Pro", weight: 600, file: "BeVietnamPro-SemiBold.ttf" };
 const r3 = (x) => Number(x.toFixed(3));
 
 const { frames } = parseStoryboard(readFileSync("STORYBOARD.md", "utf8"));
@@ -111,14 +113,14 @@ const html = `<template id="captions-template">
     <div id="cap"></div>
   </div>
   <style>
-    @font-face{font-family:"Be Vietnam Pro";font-weight:600;font-style:normal;font-display:block;src:url("assets/fonts/BeVietnamPro-SemiBold.ttf") format("truetype");}
+    @font-face{font-family:"${KF.family}";font-weight:${KF.weight};font-style:normal;font-display:block;src:url("assets/fonts/${KF.file}") format("truetype");}
     #captions-root { position: absolute; inset: 0; pointer-events: none; }
     #cap-scrim { position: absolute; left: 0; right: 0; top: ${BAND_TOP}px; height: ${BAND_H}px;
       background: linear-gradient(to top, rgba(${CANVAS_RGB},0.92), rgba(${CANVAS_RGB},0)); }
     #cap { position: absolute; left: 0; right: 0; top: ${BAND_TOP}px; height: ${BAND_H}px;
       display: flex; align-items: center; justify-content: center; }
     .caption-line { position: absolute; width: 1640px; left: 140px; text-align: center;
-      font-family: "Be Vietnam Pro", sans-serif; font-weight: 600; font-size: 44px; line-height: 1.3;
+      font-family: "${KF.family}", sans-serif; font-weight: ${KF.weight}; font-size: 44px; line-height: 1.3;
       color: ${INK}; opacity: 0; }
     .caption-word { position: relative; display: inline-block; color: ${INK}; opacity: 0; padding: 0 0.12em; }
     .caption-bar { position: absolute; left: 0.12em; right: 0.12em; bottom: 0.02em; height: 4px; border-radius: 2px;

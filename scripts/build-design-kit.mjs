@@ -45,6 +45,7 @@ const SHIPPED_FACES = {
     { weight: "600", file: "BeVietnamPro-SemiBold.ttf" },
   ],
   "JetBrains Mono": [{ weight: "400", file: "JetBrainsMono-Regular.ttf" }],
+  Montserrat: [{ weight: "100 900", file: "Montserrat-VF.ttf" }],
 };
 const fontFaces = cfg.fonts.flatMap((f) => {
   const faces = f.faces ?? SHIPPED_FACES[f.family];
@@ -64,6 +65,7 @@ const vars = {
   // saturation, lightness, alpha of the ground's radial glow (hsla(HUE, …))
   GLOW: d.glow ?? "70%, 45%, 0.28",
   FONT_FACES: fontFaces.join("\n    "),
+  BODY_FONT: d.bodyFont ?? "Be Vietnam Pro",
   ROLE_CHIP_NOTE: DNA.enabled ? " When the storyboard has `- role:` bullets, the top-right area (x 1440–1880, y 14–50) belongs to the overlay role chip." : "",
 };
 const fill = (s) => s.replace(/\{\{(\w+)\}\}/g, (m, k) => {

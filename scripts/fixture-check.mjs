@@ -5,16 +5,21 @@
 // crossfade), then runs assemble-index → transitions inject/verify → lint → check → snapshot.
 //
 //   node tools/fixture-check.mjs          (from the project root; needs tools/frame-skeleton.html)
+//   node tools/fixture-check.mjs --blank-probe
+//        frame 2 is ground only; renders a draft and runs blank-check on it, which must find exactly one
+//        empty stretch on frame 2 (proves blank-check works on this project's canvas, e.g. a new theme).
+//        Skips lint, check and snapshot: only the pixels matter.
 //
 // Exit 0 = the pin is usable. Any failure prints the failing step; a new pin then needs its own
 // tools/worker-kit/worker-delta-<pin>.md.tmpl written from the lint output.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { cfg, CHECK_TIMEOUT, FE_SCRIPTS as SK, HF, ROOT } from "./lib/config.mjs";
 
 const W = resolve(ROOT, `../.fixture-${cfg.name}-${process.pid}`);
+const BLANK_PROBE = process.argv.includes("--blank-probe");
 const frames = [
   { n: 1, id: "01-fixture-title", dur: 3, transition: "cut", text: "Fixture 1" },
   { n: 2, id: "02-fixture-body", dur: 3, transition: "crossfade", text: "Fixture 2" },
@@ -53,7 +58,7 @@ for (const f of frames) {
     .replaceAll("DURATION", String(f.dur)).replaceAll("HUE", String(cfg.design.hueBase));
   if (!existsSync(fonts)) html = html.replace(/^\s*@font-face.*$/gm, "");
   const pfx = `f${String(f.n).padStart(2, "0")}`;
-  html = html
+  if (!(BLANK_PROBE && f.n === 2)) html = html
     .replace("<!-- shots go here; reveal each element on its cue -->", `<div id="${pfx}-word" style="position:absolute;left:0;top:340px;width:1760px;text-align:center;font-size:96px;font-weight:800;opacity:0">${f.text}</div>`)
     .replace("// build the shot sequence here with gsap.fromTo / tl.set at the cue times", `tl.fromTo("#${pfx}-word", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6 }, 0.3);`);
   writeFileSync(join(W, src), html);
@@ -68,6 +73,21 @@ writeFileSync(join(W, "audio_meta.json"), JSON.stringify({ bgm: null, bgm_pendin
 step("assemble-index", `node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
 step("transitions inject", `node "${SK}/transitions.mjs" inject --storyboard ./STORYBOARD.md --hyperframes .`);
 step("transitions verify", `node "${SK}/transitions.mjs" verify --storyboard ./STORYBOARD.md --index ./index.html`);
+if (BLANK_PROBE) {
+  const probe = join(W, "probe.mp4");
+  step("render", `npx -y ${HF} render --quality draft --output "${probe}"`);
+  const r = spawnSync("node", ["tools/blank-check.mjs", probe], { cwd: ROOT, encoding: "utf8" });
+  const hits = [...r.stdout.matchAll(/✗ stage empty ([\d.]+)–([\d.]+) s/g)].map(([, s, e]) => [Number(s), Number(e)]);
+  const ok = r.status === 1 && hits.length === 1 && hits[0][0] >= 2.4 && hits[0][0] <= 3.6 && hits[0][1] >= 5.9;
+  if (!ok) {
+    console.error(`blank-probe FAIL (exit ${r.status})\n${r.stdout}${r.stderr}`);
+    console.error(`fixture kept for inspection: ${W}`);
+    process.exit(1);
+  }
+  rmSync(W, { recursive: true, force: true });
+  console.log(`blank-probe ok (${hits[0][0].toFixed(2)}–${hits[0][1].toFixed(2)} s)`);
+  process.exit(0);
+}
 const lint = step("lint", `npx -y ${HF} lint`);
 console.log(lint.split("\n").filter((l) => /✗|⚠|error/.test(l)).join("\n"));
 step("check", `npx -y ${HF} check --timeout ${CHECK_TIMEOUT}`);

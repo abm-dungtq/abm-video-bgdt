@@ -5,9 +5,10 @@
 //   - chapter label (top-left, video.config.json `chapterLabel.overlay`, swaps at each chapter start)
 //   - courier trail: at every chapter start a golden S-curve draws across the frame with a
 //     winged spark riding its head (the "Sứ giả" signature motif)
+//   - role chip (top-right, only when the storyboard has - role: bullets; labels from dna.roleLabels)
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { cfg, chapterLabel, loadStoryboardParser, rgb } from "./lib/config.mjs";
+import { cfg, chapterLabel, DNA, loadStoryboardParser, rgb } from "./lib/config.mjs";
 
 const { parseStoryboard } = await loadStoryboardParser();
 
@@ -19,13 +20,31 @@ const titles = new Map(script.chapters.map((c, i) => [c.id, { n: i, title: c.tit
 
 let t = 0, prev = null;
 const chapters = [];
+const roleRuns = [];
 for (const f of frames) {
   const ch = f.extra?.chapter;
   if (ch !== prev) chapters.push({ id: ch, start: r3(t), ...titles.get(ch) });
   prev = ch;
+  const role = f.extra?.role ?? null;
+  if (role !== (roleRuns.at(-1)?.role ?? null)) roleRuns.push({ role, start: r3(t) });
   t += f.durationSeconds ?? parseFloat(f.duration);
 }
 const total = r3(t);
+
+// role chip: one run per stretch of frames sharing a role; absent roles leave the overlay unchanged
+const runs = roleRuns
+  .map((r, i) => ({ ...r, end: i + 1 < roleRuns.length ? roleRuns[i + 1].start : total }))
+  .filter((r) => r.role);
+const roleHtml = runs.length
+  ? `\n    <div id="ov-roles">${runs.map((r, i) => `<div class="ov-role" id="ov-role-${i}">${DNA.roleLabels[r.role]}</div>`).join("")}</div>`
+  : "";
+const roleCss = runs.length
+  ? `\n    .ov-role { position: absolute; right: 40px; top: 18px; padding: 4px 14px; border-radius: 16px; font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: 0.08em; color: ${GOLD}; background: rgba(${rgb(INK)},0.08); opacity: 0; white-space: nowrap; }`
+  : "";
+const roleScript = runs
+  .map((r, i) => `\n      tl.fromTo("#ov-role-${i}", { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3 }, ${r.start});` +
+    `\n      tl.to("#ov-role-${i}", { opacity: 0, duration: 0.3 }, ${r3(Math.max(r.start + 0.4, r.end - 0.3))});`)
+  .join("");
 const pct = (x) => ((x / total) * 100).toFixed(3);
 
 const ticks = chapters.slice(1).map((c) => `<i class="ov-tick" style="left:${pct(c.start)}%"></i>`).join("");
@@ -69,7 +88,7 @@ const html = `<template id="overlay-template">
     </div>
     <div id="ov-trails">
       ${trails}
-    </div>
+    </div>${roleHtml}
   </div>
   <style>
     @font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:block;src:url("assets/fonts/JetBrainsMono-Regular.ttf") format("truetype");}
@@ -79,7 +98,7 @@ const html = `<template id="overlay-template">
     .ov-tick { position: absolute; top: 0; width: 3px; height: 10px; margin-left: -1px; background: ${INK}; opacity: 0.7; }
     .ov-label { position: absolute; left: 40px; top: 22px; font-family: "JetBrains Mono", monospace; font-size: 22px;
       letter-spacing: 0.04em; color: ${INK}; opacity: 0; white-space: nowrap; }
-    .ov-trail { position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 10px rgba(${rgb(GOLD)},0.7)); }
+    .ov-trail { position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 10px rgba(${rgb(GOLD)},0.7)); }${roleCss}
   </style>
   <script src="${cfg.gsap}"></script>
   <script>
@@ -103,7 +122,7 @@ const html = `<template id="overlay-template">
         tl.to(path, { opacity: 0, duration: 0.35 }, t0 + 0.9);
         tl.set(spark, { opacity: 0 }, t0 + 0.9);
       }
-      ${trailScript}
+      ${trailScript}${roleScript}
       tl.to({}, { duration: ${total} }, 0);
       window.__timelines = window.__timelines || {};
       window.__timelines["overlay"] = tl;

@@ -1,0 +1,12 @@
+{
+  "design": {
+    "canvas": "#030548", "surface": "#0C1263", "ink": "#FFFFFF", "accent": "#F9B508",
+    "accent2": "#7EB6FF", "warn": "#FF6B6B", "muted": "#A9B0D6",
+    "hueBase": 236, "hueStep": 4, "glow": "60%, 42%, 0.22", "bodyFont": "Montserrat"
+  },
+  "fonts": [
+    { "family": "Montserrat", "weights": [500, 600, 800] },
+    { "family": "JetBrains Mono", "weights": [400, 700] }
+  ],
+  "karaoke": { "font": { "family": "Montserrat", "weight": 600, "file": "Montserrat-VF.ttf" } }
+}

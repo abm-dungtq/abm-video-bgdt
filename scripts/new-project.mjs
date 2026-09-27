@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // new-project.mjs — scaffold a lesson-video project from the abm-video-bgdt skill.
 //
-//   node <skill>/scripts/new-project.mjs <project-dir> [--title "Tiêu đề bài giảng"]
+//   node <skill>/scripts/new-project.mjs <project-dir> [--title "Tiêu đề bài giảng"] [--theme abm-brand]
 //   node <skill>/scripts/new-project.mjs <project-dir> --update-tools
 //
 // New project: HyperFrames init (pinned CLI, skills left untouched), then the skill's scripts are
 // copied into <project>/tools/ (the project keeps its own copy, like the CLI pin) together with
 // tools/worker-kit/ templates, video.config.json, BRIEF.md, script.src.txt and the capture folders.
 // --update-tools refreshes only <project>/tools/ from the skill (never the config or content).
+// --theme <name> merges templates/themes/<name>.json (design, fonts, karaoke) into the new config; optional.
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
@@ -16,10 +17,11 @@ import { fileURLToPath } from "node:url";
 
 const SKILL = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
-const dir = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--title");
+const dir = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--title" && args[i - 1] !== "--theme");
 const title = args.includes("--title") ? args[args.indexOf("--title") + 1] : null;
+const theme = args.includes("--theme") ? args[args.indexOf("--theme") + 1] : null;
 if (!dir) {
-  console.error('usage: new-project.mjs <project-dir> [--title "…"] [--update-tools]');
+  console.error('usage: new-project.mjs <project-dir> [--title "…"] [--theme abm-brand] [--update-tools]');
   process.exit(1);
 }
 const P = resolve(dir);
@@ -48,6 +50,18 @@ if (existsSync(join(P, "video.config.json"))) {
 const config = JSON.parse(readFileSync(join(SKILL, "templates/video.config.json"), "utf8"));
 config.name = name;
 if (title) config.title = title;
+if (theme) {
+  const themePath = join(SKILL, "templates/themes", `${theme}.json`);
+  if (!existsSync(themePath)) {
+    console.error(`✗ theme "${theme}" not found in templates/themes`);
+    process.exit(1);
+  }
+  const t = JSON.parse(readFileSync(themePath, "utf8"));
+  Object.assign(config.design, t.design);
+  if (t.fonts) config.fonts = t.fonts;
+  if (t.karaoke) Object.assign(config.karaoke, t.karaoke);
+  config.theme = theme;
+}
 
 execSync(
   `npx -y hyperframes@${config.cli.pin} init "${P}" --non-interactive --example=blank --skill=faceless-explainer --resolution landscape`,
