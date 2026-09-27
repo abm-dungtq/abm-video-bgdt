@@ -25,6 +25,22 @@ export const CHECK_TIMEOUT = cfg.cli.checkTimeoutMs ?? 240000;
 export const GUARD = {
   missingGlyphs: cfg.guard?.missingGlyphs ?? "①②③✳✕✓→",
   railPatterns: (cfg.guard?.railPatterns ?? []).map((p) => new RegExp(p)),
+  layoutPatterns: Object.fromEntries(Object.entries(cfg.guard?.layoutPatterns ?? {}).map(([k, v]) => [k, v.map((p) => new RegExp(p))])),
+};
+// layout library (all optional): catalog = inspiration pieces, never a closed list; custom-<name> is always valid
+export const LAYOUTS = {
+  catalog: cfg.layouts?.catalog ?? [],
+  fixed: cfg.layouts?.fixed ?? {},
+  minDistinctPerChapter: cfg.layouts?.minDistinctPerChapter ?? 3,
+  maxShare: cfg.layouts?.maxShare ?? 0.25,
+  requireCustomPerChapter: cfg.layouts?.requireCustomPerChapter ?? true,
+};
+// DNA BGĐT v1.1 roles (Hook → Core → Case → Action); off unless the config enables it
+export const ROLES = ["hook", "core", "case", "action"];
+export const DNA = {
+  enabled: cfg.dna?.enabled ?? false,
+  strict: cfg.dna?.strict ?? false,
+  roleLabels: { hook: "Hook", core: "Core", case: "Case", action: "Action", ...(cfg.dna?.roleLabels ?? {}) },
 };
 
 /** "#0B1026" → "11,16,38" */

@@ -5,6 +5,8 @@
 //   # <chapter-id> | <title> | <level>          chapter
 //   ## <n> | <scene_hint> | <title>             frame (ids are renumbered 1..N in file order)
 //   > note text                                  optional frame note (visual intent)
+//   ### hook|core|case|action                  sets the DNA role of the frames that follow (optional;
+//                                                reset at every chapter)
 //   Sentence with *keyword* tokens. {F-01,F-07}  sentence; *x* marks a keyword, {..} cites facts
 //
 // spoken == display for every token, except entries in video.config.json `spokenOverrides`
@@ -15,7 +17,7 @@
 //   node tools/src-to-script.mjs script.src.txt script.json
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { cfg } from "./lib/config.mjs";
+import { cfg, ROLES } from "./lib/config.mjs";
 
 const SPOKEN_OVERRIDES = cfg.spokenOverrides ?? {};
 
@@ -25,18 +27,25 @@ const prev = existsSync(outPath) ? JSON.parse(readFileSync(outPath, "utf8")) : n
 
 const chapters = [];
 let ch = null, fr = null, frameCount = 0;
+let role = null;
 const pad3 = (n) => String(n).padStart(3, "0");
 
 for (const [i, raw] of lines.entries()) {
   const line = raw.trim();
   if (!line || line.startsWith("//")) continue;
   let m;
-  if ((m = line.match(/^#\s+([^|]+)\|([^|]+)\|(.+)$/)) && !line.startsWith("##")) {
+  if (line.startsWith("###")) {
+    const r = line.slice(3).trim().toLowerCase();
+    if (!ROLES.includes(r)) throw new Error(`line ${i + 1}: role "${line.slice(3).trim()}" must be one of ${ROLES.join(", ")}`);
+    role = r;
+  } else if ((m = line.match(/^#\s+([^|]+)\|([^|]+)\|(.+)$/)) && !line.startsWith("##")) {
     ch = { id: m[1].trim(), title: m[2].trim(), level: m[3].trim(), frames: [] };
+    role = null;
     chapters.push(ch);
   } else if ((m = line.match(/^##\s+(\d+)\s*\|([^|]+)\|(.+)$/))) {
     if (!ch) throw new Error(`line ${i + 1}: frame before chapter`);
     fr = { id: ++frameCount, scene_hint: m[2].trim(), title: m[3].trim(), sentences: [] };
+    if (role) fr.role = role;
     ch.frames.push(fr);
   } else if (line.startsWith(">")) {
     fr.notes = ((fr.notes ? fr.notes + " " : "") + line.slice(1).trim()).trim();

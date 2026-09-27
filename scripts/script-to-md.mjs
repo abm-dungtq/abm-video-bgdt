@@ -103,7 +103,7 @@ function writeReview() {
     for (const f of ch.frames) {
       const refs = [...new Set(f.sentences.flatMap((s) => s.facts ?? []))];
       refs.forEach((r) => footnotes.set(r, true));
-      out.push(`**[${pad2(f.id)}] ${f.title}** — _${f.scene_hint}_  `);
+      out.push(`**[${pad2(f.id)}] ${f.title}** — _${f.scene_hint}_${f.role ? ` · ${f.role}` : ""}  `);
       out.push(f.sentences.map(displayText).join(" ") + (refs.length ? ` <sub>${refs.join(", ")}</sub>` : ""), "");
     }
   }
@@ -161,6 +161,7 @@ for (const f of frames) {
     `- transition_in: ${transition}`,
     `- scene: ${f.scene_hint}`,
     `- chapter: ${f.chapter.id}`,
+    ...(f.role ? [`- role: ${f.role}`] : []),
     `- voiceover: ${quote(text)}`, "",
     `${f.chapter.title} · ${f.chapter.level}. ${f.notes ?? ""}`.trim(), "");
   t += est;
