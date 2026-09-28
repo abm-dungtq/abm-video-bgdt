@@ -282,8 +282,11 @@ export const BUILD = {
     return { slots: { image: img, ...(steps.length ? { steps } : {}) }, reveals: {} };
   },
   "card-objective": (c) => {
-    const it = c.sents.map((s) => fit(s.text, 48)).filter(Boolean).slice(0, 3);
-    return it.length ? { slots: { items: it }, reveals: Object.fromEntries(c.sents.slice(0, it.length).map((s, i) => [`items.${i}`, `sent:${s.k}.start`])) } : null;
+    // each objective is its sentence, or the sentence's keyword phrase when the sentence is longer than an item;
+    // each item is revealed with its own sentence
+    const it = c.sents.map((s) => ({ s, t: fit(s.text, 48) ?? fit(c.ph.find((p) => p.sent === s.k)?.text, 48) }))
+      .filter((x) => x.t).slice(0, 3);
+    return it.length ? { slots: { items: it.map((x) => x.t) }, reveals: Object.fromEntries(it.map((x, i) => [`items.${i}`, `sent:${x.s.k}.start`])) } : null;
   },
   "card-principle": (c) => {
     const s = c.sents.find((x) => [...x.text].length <= 90);
@@ -324,7 +327,10 @@ export const BUILD = {
     const task = fit(c.sents[0]?.text, 80);
     if (!task) return null;
     const steps = c.sents.slice(1).map((s) => fit(s.text, 40)).filter(Boolean).slice(0, 3);
-    return { slots: { task, minutes: c.nums[0]?.value && c.nums[0].value <= 60 ? c.nums[0].value : 5, ...(steps.length ? { steps } : {}) },
+    // the minutes are the ones the narration names ("5 phút"); any other number (e.g. "6 phần") is not a duration,
+    // and without one the card keeps its quick-exercise default
+    const said = Number(c.text.match(/(\d+)\s*phút/u)?.[1]);
+    return { slots: { task, ...(said >= 1 && said <= 60 ? { minutes: said } : {}), ...(steps.length ? { steps } : {}) },
       reveals: { task: `sent:${c.sents[0].k}.start` } };
   },
   "card-quiz": (c) => {

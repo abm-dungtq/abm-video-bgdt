@@ -141,5 +141,17 @@ test("quiz: options follow the question at once, the answer is cued where it is 
   eq(b.reveals, { question: "sent:1.start", "options.0": "sent:1.end+0.4", "options.1": "sent:1.end+0.9", answer: "kw:một" });
 });
 
+test("objective: a long sentence becomes its keyword phrase and keeps its own reveal", () => {
+  const b = BUILD["card-objective"](shot(
+    [sent(1, "Mục tiêu là hiểu lực lượng lao động mới trong doanh nghiệp."), sent(2, "Và biết khi nào AI giúp bạn thật sự.")],
+    [kw(1, "lực lượng lao động mới"), kw(2, "giúp bạn thật sự")]));
+  eq([b.slots.items, b.reveals], [["Lực lượng lao động mới", "Và biết khi nào AI giúp bạn thật sự"], { "items.0": "sent:1.start", "items.1": "sent:2.start" }]);
+});
+test("exercise: minutes come only from a number said with \"phút\"", () => {
+  const six = BUILD["card-exercise"]({ ...shot([sent(1, "Hãy dừng video và mở công cụ AI."), sent(2, "Viết câu lệnh đủ 6 phần.")], []), nums: [{ value: 6 }] });
+  const five = BUILD["card-exercise"]({ ...shot([sent(1, "Bạn hãy tạm dừng video trong 5 phút.")], []), nums: [{ value: 5 }] });
+  eq([six.slots.minutes, five.slots.minutes], [undefined, 5]);
+});
+
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);
