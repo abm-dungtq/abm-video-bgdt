@@ -8,12 +8,7 @@
     "id": "Thanh Bình",
     "temperature": 0.55,
     "sampleRate": 48000,
-    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu.",
-    "strictTerms": true,
-    "maxWer": 0.2,
-    "maxHeadDb": -40,
-    "maxTailDb": -40,
-    "retakes": 10
+    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu."
   },
   "spokenOverrides": {},
   "timing": {
@@ -94,11 +89,6 @@
     "maxShare": 0.25,
     "requireCustomPerChapter": false
   },
-  "structure": {
-    "maxExercise": 1,
-    "distinctChapterArcs": true,
-    "maxChapterHintOverlap": 0.5
-  },
   "dna": {
     "enabled": false,
     "strict": false,
@@ -119,11 +109,7 @@
     "muted": "#8E93B5",
     "hueBase": 230,
     "hueStep": 12,
-    "glow": "70%, 45%, 0.28",
-    "motif": "trail",
-    "motion": "rise",
-    "motionRotate": false,
-    "radius": 18
+    "glow": "70%, 45%, 0.28"
   },
   "fonts": [
     {
@@ -176,5 +162,9 @@
       "pixTh": 0.25,
       "picTh": 0.999
     }
+  },
+  "structure": {
+    "maxExercise": 1,
+    "distinctChapterArcs": true
   }
 }

@@ -237,6 +237,23 @@ writeFileSync(join(D, "script.json"), JSON.stringify(scriptC, null, 1));
 rGate = await cliIn(D, "gate", "2", "--check");
 check("gate 2 --check fails on repeated consecutive scene_hint", rGate.code === 1 && (rGate.out + rGate.err).includes("frame"), rGate.out + rGate.err);
 
+// Ca C2: dự án có `structure` (từ 0.8.0). Hai khung exercise và hai chương dùng chung hint thì gate 2 --check thoát 1,
+// output nêu số khung exercise và cặp chương trùng; bỏ `structure` thì hai luật này không chạy.
+const cfgD = JSON.parse(readFileSync(join(D, "video.config.json"), "utf8"));
+const scriptC2 = JSON.parse(readFileSync(join(SRC, "script.json"), "utf8"));
+const content = scriptC2.chapters.slice(1, -1);
+content.slice(0, 2).forEach((c) => c.frames.forEach((f, i) => { f.scene_hint = i === 0 ? "title" : ["exercise", "cards", "flow", "hub", "zoom", "stat"][(i - 1) % 6]; }));
+writeFileSync(join(D, "script.json"), JSON.stringify(scriptC2, null, 1));
+writeFileSync(join(D, "video.config.json"), JSON.stringify({ ...cfgD, structure: { maxExercise: 1, distinctChapterArcs: true, maxChapterHintOverlap: 0.5 } }, null, 2));
+rGate = await cliIn(D, "gate", "2", "--check");
+const outC2 = rGate.out + rGate.err;
+check("gate 2 --check enforces structure (exercise cap, chapter overlap)",
+  rGate.code === 1 && outC2.includes("exercise frames, max 1") && outC2.includes(`${content[0].id} and ${content[1].id} share scene hints`), outC2);
+writeFileSync(join(D, "video.config.json"), JSON.stringify(cfgD, null, 2));
+rGate = await cliIn(D, "gate", "2", "--check");
+check("gate 2 --check ignores structure rules without `structure`", !(rGate.out + rGate.err).includes("exercise frames"), rGate.out + rGate.err);
+cpSync(join(SRC, "script.json"), join(D, "script.json"));
+
 // Ca D: tools/facts-check.mjs là stub không kiểm tra URLs. gate 2 --check thoát 1 và output chứa does not check URLs.
 const Dstub = join(dirname(R), "cli-gate-verifiers-stub");
 rmSync(Dstub, { recursive: true, force: true });

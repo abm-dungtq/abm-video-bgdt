@@ -54,12 +54,12 @@ lines and inline `~N s` hints are rescaled and snapped to cues automatically aft
 | `title` | chapter cards; the trail writes the number | `titlecard-reveal` (Adapt) |
 | `metaphor` | analogies | `compose` |
 | `screen` | a real UI screenshot from `assets/screens/` (gate 2b), or a `MINH HỌA` mockup; pan, zoom and callout on the cue | `tools/worker-screen-addendum.md` |
-| `objective` | [MỤC TIÊU CHƯƠNG]: the chapter's goals, opening a content chapter | `card-objective` (tools/worker-layouts.md) |
+| `objective` | [MỤC TIÊU CHƯƠNG]: goals, where the learner needs them (optional, not every chapter) | `card-objective` (tools/worker-layouts.md) |
 | `principle` | NGUYÊN LÝ CỐT LÕI: one core principle | `card-principle` (tools/worker-layouts.md) |
 | `antipattern` | ❌ the wrong way before ✅ the right way | `card-antipattern` (tools/worker-layouts.md) |
 | `case` | a real situation | `card-case` (tools/worker-layouts.md) |
-| `exercise` | BÀI TẬP quick-win: "pause the video, 5 minutes", an 8–10 s card that keeps moving | `card-exercise` (tools/worker-layouts.md) |
-| `quiz` | a situational question at the end of the module | `card-quiz` (tools/worker-layouts.md) |
+| `exercise` | BÀI TẬP quick-win: "pause the video, 5 minutes", an 8–10 s card that keeps moving; optional, at most once per video (`structure.maxExercise`) | `card-exercise` (tools/worker-layouts.md) |
+| `quiz` | a situational question (optional) | `card-quiz` (tools/worker-layouts.md) |
 
 The blueprints are described in `~/.agents/skills/faceless-explainer/references/visual-design.md` and `cut-catalog.md`.
 
@@ -97,8 +97,8 @@ next skill version.
 - The pieces and their suggested boxes are in `tools/worker-layouts.md`: `hero-center`, `split-50`, `split-60-40`,
   `split-40-60`, `triptych`, `strip-top`, `ring`, `sidebar-left`, `screen-focus`, `screen-steps`, `lower-third`,
   `full-bleed-quote`.
-- The six DNA cards (`card-objective`, `card-principle`, `card-antipattern`, `card-case`, `card-exercise`, `card-quiz`)
-  lock only their **identity**: label, icon, accent colour and label position. Everything inside the card is free and
+- The six cards (`card-objective`, `card-principle`, `card-antipattern`, `card-case`, `card-exercise`, `card-quiz`)
+  are optional scenes, not a required chapter skeleton. They lock only their **identity**: label, icon, accent colour and label position. Everything inside the card is free and
   should change from chapter to chapter. Once the first card of a type is approved, pin its identity with regexes in
   `guard.layoutPatterns` (`{ "card-exercise": ["…"] }`, an array per key), the same way as `railPatterns`.
 
@@ -110,7 +110,9 @@ next skill version.
 | L3 | warning | a layout repeats the previous shot |
 | L4 | warning | a chapter has fewer than `layouts.minDistinctPerChapter` layouts |
 | L6 | warning | one layout takes more than `layouts.maxShare` of the shots; a chapter has no `custom-*` layout |
-| D1–D5 | warning (error under `dna.strict`) | DNA order and cards; see script-authoring.md § DNA chapter template |
+| D1–D5 | warning (error under `dna.strict`) | DNA order and cards; only when the project turns `dna.enabled` on (off by default since 0.8.0) |
+| S1 | error | more `exercise` shots in the video than `structure.maxExercise` (1) |
+| S2 | warning | two content chapters run the same sequence of shot types; see script-authoring.md § Chapter arcs |
 
 Warnings never block the pipeline, but read them: they are the anti-boredom check.
 

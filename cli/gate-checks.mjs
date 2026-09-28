@@ -4,6 +4,8 @@ import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { chapterOverlap } from "../compiler/scorecard.mjs";
+
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function findTool(P, f) {
@@ -148,6 +150,20 @@ export function gateChecks(P, n) {
               }
             }
           });
+        }
+
+        // free structure (projects made from 0.8.0 on): at most `maxExercise` exercise frames, and no two content
+        // chapters built from mostly the same scene hints
+        if (cfg.structure) {
+          const maxEx = cfg.structure.maxExercise ?? 1;
+          const ex = frames.filter((f) => f.scene_hint === "exercise").length;
+          if (ex > maxEx) problems.push(`${ex} exercise frames, max ${maxEx}: keep one at most, or none`);
+          const limit = cfg.structure.maxChapterHintOverlap ?? 0.5;
+          if (cfg.structure.distinctChapterArcs !== false) {
+            for (const p of chapterOverlap(script.chapters ?? []).pairs.filter((x) => x.j > limit)) {
+              problems.push(`${p.a} and ${p.b} share scene hints ${p.shared.join(", ")} (overlap ${p.j} > ${limit}): give one of them a different arc from script-authoring.md § Chapter arcs`);
+            }
+          }
         }
 
         for (const w of dnaWarnings) {

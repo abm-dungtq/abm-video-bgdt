@@ -2,6 +2,8 @@
 // run-lint-tests.mjs — run scripts/variety-lint.mjs on the fixtures in dev/lint-fixtures and check its verdicts.
 //   ok/   a DNA-shaped storyboard with layouts: must pass with no warning
 //   bad/  the same storyboard with four defects: must fail and name each one
+//   free-ok/   no DNA, `structure` on, distinct chapter arcs, one exercise: must pass with no warning
+//   free-bad/  two exercises (S1 error) and two chapters on the same arc (S2 warning)
 //
 //   node dev/run-lint-tests.mjs
 
@@ -34,6 +36,22 @@ const cases = [
         "frame 7: exercise frame should have role action",
         "ch1: role core (frame 7) comes after case",
       ].map((s) => stderr.includes(s) || `missing: ${s}`),
+    ],
+  },
+  {
+    name: "free-ok",
+    check: ({ status, stdout, stderr }) => [
+      status === 0 || `exit ${status}`,
+      stdout.includes("dna=off") || "no dna=off",
+      !/[⚠✗]/.test(stderr) || `unexpected stderr: ${stderr.trim()}`,
+    ],
+  },
+  {
+    name: "free-bad",
+    check: ({ status, stderr }) => [
+      status === 1 || `exit ${status}`,
+      ...["2 exercise shots in the video (max 1) (S1)", "ch1 and ch2 run the same scene sequence (S2)"]
+        .map((s) => stderr.includes(s) || `missing: ${s}`),
     ],
   },
 ];

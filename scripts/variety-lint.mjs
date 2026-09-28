@@ -21,11 +21,13 @@
 // first and the last: D1 roles in hook → core → case → action order, none missing · D2 the second frame opens
 // with `objective` · D3 at least one `antipattern` and one `exercise` shot · D4 `quiz` only in the last
 // chapter · D5 an `exercise` frame has role `action`.
+// Structure (only when video.config.json has `structure`): S1 error, more `exercise` shots in the whole video than
+// `structure.maxExercise` · S2 warning, two content chapters run the same sequence of shot types.
 //
 //   node tools/variety-lint.mjs STORYBOARD.md
 
 import { readFileSync } from "node:fs";
-import { cfg, DNA, LAYOUTS, loadStoryboardParser, ROLES } from "./lib/config.mjs";
+import { cfg, DNA, LAYOUTS, loadStoryboardParser, ROLES, STRUCTURE } from "./lib/config.mjs";
 
 const { parseStoryboard } = await loadStoryboardParser();
 
@@ -158,6 +160,19 @@ if (DNA.enabled) {
       if (f.shots.some((s) => s.type === "quiz") && f.chapter !== last) dna(`${f.id}: quiz belongs in the last chapter`);
       if (f.shots.some((s) => s.type === "exercise") && f.role !== "action") dna(`${f.id}: exercise frame should have role action`);
     }
+  }
+}
+
+// ── free structure: exercise cap, no two chapters on the same arc ─────────────
+if (STRUCTURE) {
+  const ex = flat.filter((s) => s.type === "exercise").length;
+  if (ex > STRUCTURE.maxExercise) errors.push(`${ex} exercise shots in the video (max ${STRUCTURE.maxExercise}) (S1)`);
+  if (STRUCTURE.distinctChapterArcs) {
+    const content = chapterOrder.slice(1, -1);
+    const seq = new Map(content.map((c) => [c, flat.filter((s) => s.chapter === c).map((s) => s.type).join(">")]));
+    content.forEach((a, i) => content.slice(i + 1).forEach((b) => {
+      if (seq.get(a) && seq.get(a) === seq.get(b)) warnings.push(`${a} and ${b} run the same scene sequence (S2)`);
+    }));
   }
 }
 

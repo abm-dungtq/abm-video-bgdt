@@ -46,6 +46,10 @@ export const LAYOUTS = {
   maxShare: cfg.layouts?.maxShare ?? 0.25,
   requireCustomPerChapter: cfg.layouts?.requireCustomPerChapter ?? true,
 };
+// free chapter structure (optional; absent in projects made before 0.8.0): exercise cap and distinct chapter arcs
+export const STRUCTURE = cfg.structure
+  ? { maxExercise: cfg.structure.maxExercise ?? 1, distinctChapterArcs: cfg.structure.distinctChapterArcs ?? true }
+  : null;
 // DNA BGĐT v1.1 roles (Hook → Core → Case → Action); off unless the config enables it
 export const ROLES = ["hook", "core", "case", "action"];
 export const DNA = {

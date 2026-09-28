@@ -8,8 +8,8 @@
 ## 1 | title | Tên bài giảng               frame: n | scene_hint | frame title (n renumbered 1..N)
 > visual note for the storyboard            optional; joined into the frame's note
 Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword token, {F-01,F-02} = fact ids
-### core                                    DNA role of the frames that follow: hook|core|case|action (optional;
-                                            resets at every chapter)
+### core                                    optional, legacy: DNA role of the frames that follow
+                                            (hook|core|case|action; only used when dna.enabled)
 ```
 
 - `scene_hint` must be one of `video.config.json` → `scenes.types`. The first frame of every chapter is `title`, and no other frame is.
@@ -30,18 +30,58 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 - `spokenOverrides` in the config maps a display token, without punctuation, to what the voice should say. Keep
   display text correct (for example `SOUL.md`) and fix only the spoken side.
 
-## DNA chapter template (BGĐT v1.1)
+## Chapter arcs: every chapter its own rhythm
 
-When `dna.enabled` (the default for new projects), a content chapter reads like this:
+Learners get bored when every chapter walks the same beats. Give each content chapter (all but the first and the last)
+its own arc, and pick its frames' `scene_hint`s from that arc. Mix freely; these are starting points, not a checklist.
+
+| Arc | Frames after the `title` (suggested hints) |
+|---|---|
+| Question first | `kinetic` (the question) → `typewriter` or `principle` (the answer) → `metaphor` (an everyday example) → `stat` |
+| Story | `case` (the situation) → `journey` (what happened, step by step) → `principle` (the lesson) |
+| Myth and fact | `antipattern` (what people believe vs what is true) → `stat` (the evidence) → `cards` (what to do instead) |
+| Before and after | `split` (before / after) → `hub` (why it changed) → `flow` (how to get there) |
+| Step by step | `flow` (the steps) → `zoom` (the step people get wrong) → `cards` (tips) |
+| Shocking number | `stat` (the number) → `hub` (what drives it) → `split` (consequence vs opportunity) |
+| Two voices | `case` with `chat` (a short exchange) → `principle` → `typewriter` (the takeaway line) |
+| Picture it | `metaphor` (an image from daily life) → `split` (image ↔ reality) → `cards` (what to do) |
+
+Rules, checked when the project config has `structure` (every project made from 0.8.0 on):
+
+- No two content chapters share most of their scene hints: gate 2 fails when two chapters' hint sets overlap above
+  `structure.maxChapterHintOverlap` (0.5, Jaccard, `title` ignored), and names the pair and the shared hints.
+- Use at least 3 different hints in a chapter, and never the same hint on two frames in a row.
+- `exercise` ("pause the video and try it") is optional and appears **at most once in the whole video**
+  (`structure.maxExercise`, default 1). Leave it out when the lesson has no natural hands-on moment.
+- `objective`, `principle`, `antipattern`, `case`, `quiz` and `anchor` are ordinary scenes: use them where they help,
+  not in every chapter. A recap (`anchor`) at the end of every chapter is not needed; one at the end of the lesson is.
+- `### hook|core|case|action` role markers still parse, but they are not needed; the DNA rules run only when a
+  project turns `dna.enabled` on.
+
+A worked example of two chapters on different arcs:
 
 ```
-title → ### hook: objective card, the pain or a callback → ### core: principle, antipattern (wrong before right)
-      → ### case: a real situation → ### action: exercise card (8–10 s, "pause the video, 5 minutes") → anchor recap
-```
+# ch1 | Vì sao dự án AI thất bại | basic
+## 5 | title | Vì sao dự án AI thất bại
+Chương một: *vì* *sao* *dự* *án* *AI* *thất* *bại*.
+## 6 | kinetic | Câu hỏi đáng giá
+Nếu AI giỏi đến thế, vì sao *7* *trên* *10* *dự* *án* vẫn dừng giữa chừng? {F-04}
+## 7 | case | Một tháng với AI
+Công ty mua tài khoản, nhân viên học *mẹo* *viết* *câu* *lệnh*. {F-01}
+Sau một tháng, văn bản vẫn *chung* *chung*. {F-02}
+## 8 | principle | Người kiến trúc sư
+Hãy coi mình là *kiến* *trúc* *sư* *trưởng* của cách làm việc. {F-05}
 
-- The DNA rules only warn, unless `dna.strict` is on. Content chapters are all chapters except the first and the last.
-- A DNA chapter runs about 40–60 s longer than a plain one; size `budget.targetS` for it.
-- The situational quiz belongs in the last chapter only.
+# ch2 | Nhân sự số | intermediate
+## 9 | title | Nhân sự số
+Chương hai: *nhân* *sự* *số*.
+## 10 | stat | Một người, ba trợ lý
+Một nhân viên có thể điều phối *3* *trợ* *lý* *AI* cùng lúc. {F-07}
+## 11 | hub | Ai làm việc gì
+Người đặt *mục* *tiêu,* trợ lý *soạn* *thảo,* người *kiểm* *tra* *cuối*. {F-07}
+## 12 | flow | Bắt đầu từ đâu
+Chọn *một* *việc* *lặp* *lại,* viết *quy* *trình,* rồi *giao* *cho* *AI*. {F-08}
+```
 
 ## Budget math
 
@@ -75,13 +115,14 @@ After the voice stage, `--check` prints `real=` and `ratio=` (real ÷ estimate).
 
 | Chapter | Content | Frames |
 |---------|---------|--------|
-| ch0 Mở đầu | hook, what it is, why it matters, learning objectives (a checklist) | 4 |
+| ch0 Mở đầu | hook, what it is, why it matters, what the learner will take away | 4 |
 | ch1 Khái niệm cơ bản | the core idea, compared with what the learner already knows, an everyday example | 6–7 |
 | ch2–ch5 Trung cấp | one capability per chapter: install and first use, main features, how it learns, where it runs | 7–11 each |
 | ch6 Nâng cao | the standout points using the analyze pattern: feature → vì sao nổi bật → bạn được gì | 8–11 |
 | ch7 An toàn và tổng kết | safe use, recap, next steps | 5–6 |
 
-Every chapter after ch0 ends with a short recap frame (`anchor`) before the next title card.
+Give each chapter from ch1 on a different arc (§ Chapter arcs). End the lesson with one recap (`anchor`); inside
+the lesson, close a chapter however its arc ends best.
 
 ## Language for beginners
 
