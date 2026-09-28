@@ -27,7 +27,10 @@ const SCENES_SCHEMA = {
       type: "object", required: ["frame"], additionalProperties: false,
       properties: {
         frame: { type: "integer", minimum: 1 }, custom: { type: "boolean" }, seed: { type: "integer" },
-        rail: { type: ["object", "null"] }, role: { type: "string" },
+        rail: { type: ["object", "null"], required: ["slots", "at"], additionalProperties: false, properties: {
+          slots: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", minLength: 1, maxLength: 18 } },
+          at: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" } } } },
+        role: { type: "string" },
         shots: { type: "array", minItems: 1, maxItems: 6, items: {
           type: "object", required: ["template", "window", "slots"], additionalProperties: false,
           properties: {
@@ -76,14 +79,25 @@ function revealTimes(keys, schema, spec, ctx, a, b) {
     let t;
     if (spec.reveals?.[key]) {
       t = rule.range ? resolveRange(spec.reveals[key], ctx, a) : resolve(spec.reveals[key], ctx, a);
+      const [from, to] = Array.isArray(t) ? t : [t, t];
+      if (from < a - 0.05 || to > b - (Array.isArray(t) ? 0 : 0.3)) {
+        throw new Error(`reveal ${key} = ${Array.isArray(t) ? t.join("..") : t} s is outside the shot [${a}, ${b}]`);
+      }
     } else if (rule.default === "kw" && k < kws.length) {
       while (k < kws.length && kws[k] < prev) k++;
       t = k < kws.length ? kws[k++] : null;
     }
     if (t == null) t = r2(Math.min(b - 0.6, Math.max(a + 0.25 + i * step, prev + (i ? 0.35 : 0))));
+    if (rule.range && !Array.isArray(t)) t = [t, r2(Math.max(t + 0.6, b - 0.4))];
     out[key] = t;
     prev = Array.isArray(t) ? t[0] : t;
   });
+  // "after": a key that must not appear before another (e.g. the right way after the wrong way)
+  const first = (v) => (Array.isArray(v) ? v[0] : v);
+  for (const key of keys) {
+    const after = ruleFor(schema, key)?.after;
+    if (after && after in out && first(out[key]) < first(out[after])) throw new Error(`reveal ${key} (${first(out[key])} s) must come after ${after} (${first(out[after])} s)`);
+  }
   for (const key of Object.keys(spec.reveals ?? {})) if (!keys.includes(key)) throw new Error(`reveal key "${key}" is not used by this shot (keys: ${keys.join(", ")})`);
   return out;
 }
@@ -92,7 +106,7 @@ function revealTimes(keys, schema, spec, ctx, a, b) {
  * Resolve every frame. Returns { frames: [{ no, custom, duration, shots: [{ spec, schema, mod, variant, a, b, times }] }],
  * errors, warnings, stats }.
  */
-export async function analyze({ P, cfg, estimated = false, legacy = false }) {
+export async function analyze({ P, cfg, estimated = false, legacy = false, variety = true }) {
   const errors = [], warnings = [];
   const read = (f) => JSON.parse(readFileSync(join(P, f), "utf8"));
   const scenes = read("scenes.json");
@@ -154,7 +168,8 @@ export async function analyze({ P, cfg, estimated = false, legacy = false }) {
       const len = r2(b - a), d = tpl.schema.duration ?? {};
       if (d.min != null && len < d.min - 0.01) errors.push(`${at}: ${len} s is shorter than the template minimum ${d.min} s`);
       if (d.max != null && len > d.max + 0.01) errors.push(`${at}: ${len} s is longer than the template maximum ${d.max} s`);
-      if (prevShot && prevShot.template === s.template && prevShot.variant === variant) errors.push(`${at}: same template and variant as the previous shot`);
+      if (!variety) { /* template CI puts variants side by side on purpose */ }
+      else if (prevShot && prevShot.template === s.template && prevShot.variant === variant) errors.push(`${at}: same template and variant as the previous shot`);
       else if (prevShot && prevShot.family === tpl.schema.family) errors.push(`${at}: same family "${tpl.schema.family}" as the previous shot`);
       let times = {};
       const valid = !validate(tpl.schema.slots, s.slots).length;
@@ -168,7 +183,14 @@ export async function analyze({ P, cfg, estimated = false, legacy = false }) {
       prevEnd = b;
     }
     if (prevEnd != null && Math.abs(prevEnd - duration) > TOL) errors.push(`${where}: the last shot ends at ${prevEnd}, the frame lasts ${duration}`);
-    out.push({ no: bf.no, custom: false, duration, board: bf, ctx, shots });
+    let rail = null;
+    if (spec.rail) {
+      if (spec.rail.slots.length !== spec.rail.at.length) errors.push(`${where}: rail has ${spec.rail.slots.length} slots but ${spec.rail.at.length} cues`);
+      else {
+        try { rail = { slots: spec.rail.slots, times: spec.rail.at.map((c) => resolve(c, ctx, 0)) }; } catch (e) { errors.push(`${where} rail: ${e.message}`); }
+      }
+    }
+    out.push({ no: bf.no, custom: false, duration, board: bf, ctx, shots, rail });
   }
   const custom = out.filter((f) => f.custom).length;
   const budget = cfg.scenes?.customBudget ?? 0.15;

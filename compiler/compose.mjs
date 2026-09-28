@@ -14,14 +14,16 @@ const FADE = 0.3;
  * @param skeleton  text of tools/frame-skeleton.html
  * @param frame     { id: composition id, no: frame number, duration, hue, pfx }
  * @param shots     [{ css, html, motions, window: { a, b } }]
- * @param opts      { missingGlyphs: string, fadeOutLast: boolean }
+ * @param opts      { missingGlyphs: string, fadeOutLast: boolean, rail: { css, html, motions } | null,
+ *                    motif: { css, html, motions } | null }   (the background motif sits under every layer)
  */
-export function compose(skeleton, frame, shots, { missingGlyphs = "", fadeOutLast = false } = {}) {
+export function compose(skeleton, frame, shots, { missingGlyphs = "", fadeOutLast = false, rail = null, motif = null } = {}) {
   const { id, duration, hue, pfx: P } = frame;
-  const layers = shots.map((s, i) => `      <div class="${P}-layer" id="${P}-L${i + 1}">\n${s.html}\n      </div>`).join("\n");
+  const layers = (motif ? `${motif.html}\n` : "") + shots.map((s, i) => `      <div class="${P}-layer" id="${P}-L${i + 1}">\n${s.html}\n      </div>`).join("\n")
+    + (rail ? `\n${rail.html}` : "");
   const css = [`#${P}-stage .${P}-layer { position: absolute; inset: 0; }`,
     ...shots.slice(1).map((_, i) => `#${P}-L${i + 2} { opacity: 0; }`),
-    ...shots.map((s) => s.css)].join("\n");
+    ...(motif ? [motif.css] : []), ...shots.map((s) => s.css), ...(rail ? [rail.css] : [])].join("\n");
   shots.forEach((s, i) => {
     const first = Math.min(...s.motions.map((m) => m.at));
     if (!s.motions.length || first - s.window.a > MAX_IDLE) {
@@ -31,12 +33,13 @@ export function compose(skeleton, frame, shots, { missingGlyphs = "", fadeOutLas
   const motions = shots.flatMap((s, i) => {
     const layer = `#${P}-L${i + 1}`;
     const m = [...s.motions];
-    if (i > 0) m.push({ prim: "reveal", target: layer, at: s.window.a, dur: FADE, from: { opacity: 0 }, ease: "power1.out" });
+    // the next layer fades in while the previous one fades out: a crossfade, never a dip to the bare ground
+    if (i > 0) m.push({ prim: "reveal", target: layer, at: Math.max(0.05, s.window.a - FADE), dur: FADE, from: { opacity: 0 }, ease: "power1.out" });
     if (i < shots.length - 1 || (fadeOutLast && i === shots.length - 1)) {
       m.push({ prim: "layerOut", target: layer, at: Math.max(s.window.a + FADE, s.window.b - FADE), dur: FADE });
     }
     return m;
-  });
+  }).concat(rail ? rail.motions : [], motif ? motif.motions : []);
   const base = skeleton.replaceAll("FRAME_ID", id).replaceAll("PFX", P).replaceAll("DURATION", String(duration)).replaceAll("HUE", String(hue));
   let html = base
     .replace(/\/\* frame-specific styles below[^*]*\*\//, (c) => `${c}\n${css}`)

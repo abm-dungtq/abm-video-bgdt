@@ -35,8 +35,8 @@ export function render(ctx) {
       { prim: "draw", target: `#${S}-barp`, at: w.a + 0.1, dur: Math.max(0.4, Math.min(1.2, last - w.a)) },
       ...words.map((_, i) => ({ prim: "reveal", target: `#${S}-w${i + 1}`, at: t[i], dur: 0.5, from: { opacity: 0, x: -90 } })),
     ];
-    const drift = last + 0.5 + ctx.gap;
-    if (w.b - drift > 0.6) m.push({ prim: "slide", target: `#${S}-stack`, at: drift, dur: w.b - drift - 0.05, from: { y: 0 }, to: { y: -18 }, ease: "none" });
+    const drift = ctx.drift(`#${S}-stack`, last + 0.5 + ctx.gap, 18);
+    if (drift) m.push(drift);
     if (slots.sub) m.push({ prim: "reveal", target: `#${S}-sub`, at: ctx.at("sub"), dur: 0.5, from: { opacity: 0, y: 20 } });
     return { css, html, motions: m };
   }

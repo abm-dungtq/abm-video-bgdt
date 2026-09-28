@@ -13,6 +13,11 @@ import { analyze, report } from "./lint.mjs";
 import { compose } from "./compose.mjs";
 import { ZONES, CARD } from "./zones.mjs";
 import { GAP } from "./emitter-0.7.99.mjs";
+import { renderRail } from "./rail.mjs";
+import { renderMotif } from "./motif.mjs";
+
+const MOTION = { rise: { opacity: 0, y: 24 }, pop: { opacity: 0, scale: 0.85 }, slide: { opacity: 0, x: -40 } };
+const ROTATE = ["rise", "pop", "slide"];
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -59,8 +64,8 @@ export function setBullets(md, no, kv) {
   return parts.join("");
 }
 
-export async function compile({ P, cfg, estimated = false, only = null, legacy = false }) {
-  const res = await analyze({ P, cfg, estimated, legacy });
+export async function compile({ P, cfg, estimated = false, only = null, legacy = false, variety = true }) {
+  const res = await analyze({ P, cfg, estimated, legacy, variety });
   if (res.errors.length) { report(res); return { ok: false }; }
   const skeletonPath = join(P, "tools/frame-skeleton.html");
   if (!existsSync(skeletonPath)) throw new Error("tools/frame-skeleton.html missing: run node tools/build-design-kit.mjs");
@@ -81,12 +86,21 @@ export async function compile({ P, cfg, estimated = false, only = null, legacy =
     const id = src.split("/").pop().replace(/\.html$/, "");
     const pfx = `f${String(f.no).padStart(2, "0")}`;
     const seed = (res.scenes.frames.find((x) => x.frame === f.no).seed ?? res.scenes.seed ?? 1) + f.no * 1009;
+    const chapterIndex = chapterOf.get(f.no) ?? 0;
+    // per-chapter motion personality: the reveal "from" (design.motion, rotated by chapter when motionRotate) and the ease
+    const motionName = cfg.design.motionRotate ? ROTATE[chapterIndex % 3] : (cfg.design.motion ?? "rise");
+    const motionFrom = MOTION[motionName] ?? MOTION.rise;
+    const ease = chapterIndex % 2 ? "back.out(1.4)" : "power3.out";
     const shots = f.shots.map((s, i) => {
       const S = `${pfx}-s${i + 1}`;
       const ctx = {
         P: pfx, S, slots: s.spec.slots, variant: s.variant, params: s.spec.params ?? {}, theme,
         window: { a: s.a, b: s.b }, rng: mulberry32(seed + i * 7919), icon, esc, zones: { ...ZONES, CARD }, gap: GAP,
-        frame: { no: f.no, duration: f.duration, chapter: titleOf.get(f.no) },
+        frame: { no: f.no, duration: f.duration, chapter: titleOf.get(f.no), chapterIndex },
+        motionFrom: () => ({ ...motionFrom }), ease,
+        // slow drift of a finished group until the shot ends (one of the three planes: motif, content, accent)
+        drift: (target, from, amount = 14) => (s.b - from > 0.6
+          ? { prim: "slide", target, at: from, dur: r2(s.b - from - 0.05), from: { y: 0 }, to: { y: -amount }, ease: "none" } : null),
         at: (key) => {
           if (!(key in s.times)) throw new Error(`frame ${f.no} shot ${i + 1}: template asked for reveal "${key}" it did not list`);
           return s.times[key];
@@ -103,7 +117,9 @@ export async function compile({ P, cfg, estimated = false, only = null, legacy =
     let html;
     try {
       html = compose(skeleton, { id, no: f.no, duration: f.duration, hue, pfx }, shots,
-        { missingGlyphs: cfg.guard?.missingGlyphs ?? "①②③✳✕✓→", fadeOutLast: f.no === lastNo });
+        { missingGlyphs: cfg.guard?.missingGlyphs ?? "①②③✳✕✓→", fadeOutLast: f.no === lastNo,
+          rail: f.rail ? renderRail(f.rail, pfx, { esc, icon }) : null,
+          motif: renderMotif(cfg.design.motif ?? "trail", pfx, { duration: f.duration, chapterIndex, rng: mulberry32(seed + 31) }) });
     } catch (e) { throw new Error(`frame ${f.no}: ${e.message}`); }
     mkdirSync(dirname(join(P, src)), { recursive: true });
     if (!existsSync(join(P, src)) || readFileSync(join(P, src), "utf8") !== html) changed.push(f.no);

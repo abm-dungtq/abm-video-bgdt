@@ -109,7 +109,11 @@
     "muted": "#8E93B5",
     "hueBase": 230,
     "hueStep": 12,
-    "glow": "70%, 45%, 0.28"
+    "glow": "70%, 45%, 0.28",
+    "motif": "trail",
+    "motion": "rise",
+    "motionRotate": false,
+    "radius": 18
   },
   "fonts": [
     {
