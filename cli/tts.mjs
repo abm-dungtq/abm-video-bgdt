@@ -63,18 +63,110 @@ export async function one(P, text, out) {
 }
 
 /**
+ * RMS in dBFS of the last `ms` of a 16-bit PCM WAV.
+ * Parses the RIFF header and finds the "data" chunk (does not assume a 44-byte header).
+ */
+export function tailDb(wavPath, ms = 40) {
+  const buf = readFileSync(wavPath);
+  if (buf.length < 12) return -Infinity;
+  if (buf.subarray(0, 4).toString("latin1") !== "RIFF" || buf.subarray(8, 12).toString("latin1") !== "WAVE") {
+    throw new Error(`Not a valid RIFF/WAVE file: ${wavPath}`);
+  }
+  let offset = 12;
+  let sampleRate = 48000;
+  let channels = 1;
+  let bitsPerSample = 16;
+  let dataOffset = -1;
+  let dataSize = 0;
+
+  while (offset + 8 <= buf.length) {
+    const chunkId = buf.subarray(offset, offset + 4).toString("latin1");
+    const chunkSize = buf.readUInt32LE(offset + 4);
+    const chunkData = offset + 8;
+    if (chunkId === "fmt " && chunkSize >= 16) {
+      channels = buf.readUInt16LE(chunkData + 2);
+      sampleRate = buf.readUInt32LE(chunkData + 4);
+      bitsPerSample = buf.readUInt16LE(chunkData + 14);
+    } else if (chunkId === "data") {
+      dataOffset = chunkData;
+      dataSize = Math.min(chunkSize, buf.length - chunkData);
+    }
+    offset = chunkData + chunkSize + (chunkSize % 2);
+  }
+
+  if (dataOffset === -1 || dataSize <= 0) return -Infinity;
+
+  const bytesPerSample = (bitsPerSample || 16) / 8;
+  const bytesPerFrame = (channels || 1) * bytesPerSample;
+  const totalFrames = Math.floor(dataSize / bytesPerFrame);
+  if (totalFrames <= 0) return -Infinity;
+
+  const framesToRead = Math.min(totalFrames, Math.round((sampleRate * ms) / 1000));
+  if (framesToRead <= 0) return -Infinity;
+
+  const startFrame = totalFrames - framesToRead;
+  const startByte = dataOffset + startFrame * bytesPerFrame;
+  const endByte = dataOffset + totalFrames * bytesPerFrame;
+
+  let sumSq = 0;
+  let sampleCount = 0;
+  for (let pos = startByte; pos + 2 <= endByte; pos += 2) {
+    const s = buf.readInt16LE(pos);
+    const norm = s / 32768.0;
+    sumSq += norm * norm;
+    sampleCount++;
+  }
+
+  if (sampleCount === 0 || sumSq === 0) return -Infinity;
+  const rms = Math.sqrt(sumSq / sampleCount);
+  return 20 * Math.log10(rms);
+}
+
+function isBetter(a, b, maxTailDb) {
+  const aTailOk = typeof a.tail_db === "number" && a.tail_db <= maxTailDb;
+  const bTailOk = typeof b.tail_db === "number" && b.tail_db <= maxTailDb;
+  if (aTailOk !== bTailOk) return aTailOk;
+
+  const aEdgeOk = !a.edge;
+  const bEdgeOk = !b.edge;
+  if (aEdgeOk !== bEdgeOk) return aEdgeOk;
+
+  const aWer = typeof a.wer === "number" ? a.wer : Infinity;
+  const bWer = typeof b.wer === "number" ? b.wer : Infinity;
+  return aWer < bWer;
+}
+
+/**
  * Speech check of every clip. `asr(ids)` transcribes those clips and returns [{ id, wer, expected, heard }].
  * Returns the clips still wrong after the retakes: `warn` (maxWer < WER ≤ 2 × maxWer) and `fail` (worse, or missing);
  * ids listed in audio/qa-accepted.txt are never failed. Writes audio/asr-report.json.
  */
-export async function verify(P, asr, rounds = 2) {
+export async function verify(P, asr, rounds) {
   const cfg = JSON.parse(readFileSync(join(P, "video.config.json"), "utf8"));
-  const maxWer = cfg.voice.maxWer ?? 0.2;
+  const maxWer = cfg.voice?.maxWer ?? 0.2;
+  const maxTailDb = cfg.voice?.maxTailDb ?? -40;
+  const totalRounds = rounds ?? cfg.voice?.retakes ?? 4;
   const jobs = new Map(JSON.parse(readFileSync(join(P, "audio/tts-jobs.json"), "utf8")).map((j) => [j.id, j]));
-  const good = (r) => typeof r.wer === "number" && r.wer <= maxWer;
-  const best = new Map(asr([...jobs.keys()]).map((r) => [r.id, r]));
-  for (let round = 1; round <= rounds; round++) {
-    const bad = [...best.values()].filter((r) => !good(r) && existsSync(jobs.get(r.id).output_path));
+
+  const enrich = (r) => {
+    const j = jobs.get(r.id);
+    const wavPath = j && existsSync(j.output_path) ? j.output_path : (j && existsSync(join(P, j.output_path)) ? join(P, j.output_path) : null);
+    if (wavPath) {
+      const t = tailDb(wavPath);
+      r.tail_db = Number.isFinite(t) ? Number(t.toFixed(1)) : -100;
+    } else {
+      r.tail_db = r.tail_db ?? -100;
+    }
+    r.edge = Boolean(r.edge);
+    return r;
+  };
+
+  const good = (r) => typeof r.wer === "number" && r.wer <= maxWer && !r.edge && (typeof r.tail_db !== "number" || r.tail_db <= maxTailDb);
+
+  const best = new Map(asr([...jobs.keys()]).map((r) => [r.id, enrich(r)]));
+
+  for (let round = 1; round <= totalRounds; round++) {
+    const bad = [...best.values()].filter((r) => !good(r) && existsSync(jobs.get(r.id)?.output_path));
     if (!bad.length) break;
     console.log(`tts: speech check, retake ${round}: ${bad.length} clip(s)`);
     for (const r of bad) {
@@ -84,18 +176,30 @@ export async function verify(P, asr, rounds = 2) {
     }
     for (const r of asr(bad.map((x) => x.id))) {
       const j = jobs.get(r.id);
-      if (typeof r.wer === "number" && r.wer < best.get(r.id).wer) best.set(r.id, r);
-      else copyFileSync(`${j.output_path}.best`, j.output_path);
+      enrich(r);
+      if (isBetter(r, best.get(r.id), maxTailDb)) {
+        best.set(r.id, r);
+      } else {
+        copyFileSync(`${j.output_path}.best`, j.output_path);
+      }
       rmSync(`${j.output_path}.best`, { force: true });
     }
   }
+
   const list = [...best.values()];
   writeFileSync(join(P, "audio/asr-report.json"), JSON.stringify(list, null, 1));
   const accepted = existsSync(join(P, "audio/qa-accepted.txt")) ? readFileSync(join(P, "audio/qa-accepted.txt"), "utf8") : "";
-  const warn = list.filter((r) => !good(r) && r.wer <= 2 * maxWer);
-  const fail = list.filter((r) => !good(r) && !(r.wer <= 2 * maxWer) && !accepted.includes(r.id));
+
+  // After the rounds, a clip whose best take still has a cut tail or an edge error is a FAIL (not a warn) unless its id is in audio/qa-accepted.txt.
+  const hasFatalDefect = (r) => Boolean(r.missing || typeof r.wer !== "number" || r.wer > 2 * maxWer || r.edge || (typeof r.tail_db === "number" && r.tail_db > maxTailDb));
+
+  const fail = list.filter((r) => !good(r) && hasFatalDefect(r) && !accepted.includes(r.id));
+  const warn = list.filter((r) => !good(r) && !fail.includes(r));
+
   for (const r of [...warn, ...fail]) {
-    console.log(`${fail.includes(r) ? "✗" : "⚠"} ${r.id}: WER ${r.wer ?? "?"}${r.missing ? ` (missing ${r.missing})` : ""}`);
+    const tailStr = typeof r.tail_db === "number" ? `, tail ${r.tail_db} dBFS` : "";
+    const edgeStr = r.edge ? ", edge error" : "";
+    console.log(`${fail.includes(r) ? "✗" : "⚠"} ${r.id}: WER ${r.wer ?? "?"}${tailStr}${edgeStr}${r.missing ? ` (missing ${r.missing})` : ""}`);
     if (r.heard) console.log(`    script: ${r.expected}\n    heard:  ${r.heard}`);
   }
   const scored = list.filter((r) => typeof r.wer === "number");

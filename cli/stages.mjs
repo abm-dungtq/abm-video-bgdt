@@ -158,7 +158,8 @@ export const STAGES = [
       // lint + snapshot only the frames whose html changed (wave-check mounts them in a scratch project)
       return r.changed.length ? sh(c.P, [process.execPath, tool(c, "wave-check.mjs"), ...r.changed.map(String)]) : 0;
     } },
-  { name: "karaoke", needs: { stages: ["compile"], gates: [] }, inputs: ["audio_meta.json", "compositions/frames"], gate: "3",
+  // assemble rewrites compositions/frames, so they are not an input; a frame rebuild still re-runs karaoke through its compile dependency.
+  { name: "karaoke", needs: { stages: ["compile"], gates: [] }, inputs: ["audio_meta.json", "STORYBOARD.md", "script.json"], gate: "3",
     run: (c) => seq(
       () => sh(c.P, [process.execPath, tool(c, "build-karaoke.mjs")]),
       () => sh(c.P, [process.execPath, tool(c, "build-karaoke.mjs"), "--check"]),

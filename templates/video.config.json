@@ -10,7 +10,9 @@
     "sampleRate": 48000,
     "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu.",
     "strictTerms": true,
-    "maxWer": 0.2
+    "maxWer": 0.2,
+    "maxTailDb": -40,
+    "retakes": 4
   },
   "spokenOverrides": {},
   "timing": {

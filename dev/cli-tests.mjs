@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { hashes, isStale, load, markStage, save } from "../cli/state.mjs";
 import { gateStatus, GATES } from "../cli/gates.mjs";
 import { activeStages } from "../cli/stages.mjs";
+import { tailDb } from "../cli/tts.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2);
@@ -248,6 +249,99 @@ mkdirSync(join(Dstub, "tools"), { recursive: true });
 writeFileSync(join(Dstub, "tools/facts-check.mjs"), 'console.log("facts-check ok");\n');
 rGate = await cliIn(Dstub, "gate", "2", "--check");
 check("gate 2 --check fails when facts-check lacks --urls", rGate.code === 1 && (rGate.out + rGate.err).includes("does not check URLs"), rGate.out + rGate.err);
+
+// ── (a) tailDb ──────────────────────────────────────────────────────────────
+function makeTestWav(pcm, sampleRate = 48000, extraChunk = false) {
+  const fmt = Buffer.alloc(24);
+  fmt.write("fmt ", 0);
+  fmt.writeUInt32LE(16, 4);
+  fmt.writeUInt16LE(1, 8); // PCM
+  fmt.writeUInt16LE(1, 10); // mono
+  fmt.writeUInt32LE(sampleRate, 12);
+  fmt.writeUInt32LE(sampleRate * 2, 16);
+  fmt.writeUInt16LE(2, 20); // block align
+  fmt.writeUInt16LE(16, 22); // bits per sample
+
+  const chunks = [fmt];
+  if (extraChunk) {
+    const junk = Buffer.alloc(20);
+    junk.write("JUNK", 0);
+    junk.writeUInt32LE(12, 4);
+    junk.write("extra-header", 8);
+    chunks.push(junk);
+  }
+  const data = Buffer.alloc(8);
+  data.write("data", 0);
+  data.writeUInt32LE(pcm.length, 4);
+  chunks.push(data, pcm);
+
+  const totalSize = chunks.reduce((a, b) => a + b.length, 0);
+  const riff = Buffer.alloc(12);
+  riff.write("RIFF", 0);
+  riff.writeUInt32LE(4 + totalSize, 4);
+  riff.write("WAVE", 8);
+
+  return Buffer.concat([riff, ...chunks]);
+}
+
+const pcmSilence = Buffer.alloc(4800 * 2);
+for (let i = 0; i < 2880; i++) {
+  const s = Math.round(32767 * Math.sin(2 * Math.PI * 1000 * i / 48000));
+  pcmSilence.writeInt16LE(s, i * 2);
+}
+const wavSilencePath = join(R, "test-tail-silence.wav");
+writeFileSync(wavSilencePath, makeTestWav(pcmSilence, 48000, true));
+const dbSilence = tailDb(wavSilencePath, 40);
+check("tailDb on a generated WAV that ends in silence < -60", dbSilence < -60, `dbSilence=${dbSilence}`);
+
+const pcmSine = Buffer.alloc(4800 * 2);
+for (let i = 0; i < 4800; i++) {
+  const s = Math.round(32767 * Math.sin(2 * Math.PI * 1000 * i / 48000));
+  pcmSine.writeInt16LE(s, i * 2);
+}
+const wavSinePath = join(R, "test-tail-sine.wav");
+writeFileSync(wavSinePath, makeTestWav(pcmSine, 48000, true));
+const dbSine = tailDb(wavSinePath, 40);
+check("tailDb on a generated WAV that ends with a full-scale sine > -20", dbSine > -20, `dbSine=${dbSine}`);
+
+// ── (b) asr-check --self-test ───────────────────────────────────────────────
+const py = spawnSync("python", [join(S, "scripts/asr-check.py"), "--self-test"], { encoding: "utf8" });
+if (py.error && py.error.code === "ENOENT") {
+  console.log("skip: python scripts/asr-check.py --self-test (no python on PATH)");
+  check("spawn python scripts/asr-check.py --self-test -> exit 0 (skipped: no python)", true, "");
+} else {
+  check("spawn python scripts/asr-check.py --self-test -> exit 0", py.status === 0, (py.stdout || "") + (py.stderr || ""));
+}
+
+// ── (c) karaoke stage inputs ────────────────────────────────────────────────
+const Kdir = join(dirname(R), "cli-karaoke-inputs");
+rmSync(Kdir, { recursive: true, force: true });
+mkdirSync(Kdir, { recursive: true });
+for (const f of ["video.config.json", "script.json", "SCRIPT-REVIEW.md"]) cpSync(join(SRC, f), join(Kdir, f));
+writeFileSync(join(Kdir, "STORYBOARD.md"), "# Storyboard\n");
+writeFileSync(join(Kdir, "audio_meta.json"), "{}\n");
+mkdirSync(join(Kdir, "compositions/frames"), { recursive: true });
+writeFileSync(join(Kdir, "compositions/frames/01-test.html"), "frame 1\n");
+
+const stK = load(Kdir);
+const compileStage = activeStages(cfg).find((x) => x.name === "compile");
+const karaokeStage = activeStages(cfg).find((x) => x.name === "karaoke");
+markStage(stK, Kdir, "compile", compileStage.inputs);
+markStage(stK, Kdir, "karaoke", karaokeStage.inputs);
+save(Kdir, stK);
+
+writeFileSync(join(Kdir, "compositions/frames/01-test.html"), "frame 1 modified\n");
+const stFrameChanged = load(Kdir);
+const karaokeStaleAfterFrame = isStale(stFrameChanged, Kdir, "karaoke", karaokeStage.inputs, karaokeStage.needs.stages);
+
+writeFileSync(join(Kdir, "STORYBOARD.md"), "# Storyboard modified\n");
+const stSbChanged = load(Kdir);
+const karaokeStaleAfterSb = isStale(stSbChanged, Kdir, "karaoke", karaokeStage.inputs, karaokeStage.needs.stages);
+
+check("karaoke: mark compile+karaoke done, change a file under compositions/frames -> karaoke not stale",
+  !karaokeStaleAfterFrame, "karaoke became stale after changing compositions/frames");
+check("karaoke: change STORYBOARD.md -> stale",
+  karaokeStaleAfterSb, "karaoke did not become stale after changing STORYBOARD.md");
 
 srv.close();
 

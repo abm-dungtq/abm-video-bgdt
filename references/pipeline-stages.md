@@ -103,12 +103,12 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
 
 1. Run `abm-video run tts`. It speaks every pending sentence through the speech API in parallel batches, resuming
    after an interruption, then runs the **speech check**:
-   - every clip is transcribed by `scripts/asr-check.py` (PhoWhisper, downloaded once, about 1 GB) and compared
-     with its text;
-   - a clip whose word error rate is above `voice.maxWer` (0.2) is spoken again, twice at most, keeping the best take;
-   - foreign words without a `spokenOverrides` reading count as matched, since the voice may say them its own way.
-   The stage fails when a clip is still above 2 × `maxWer`. It prints the script text and what was heard. Fix the
-   sentence or its `spokenOverrides` reading, or listen and add the id to `audio/qa-accepted.txt`.
+   - clips are transcribed by `scripts/asr-check.py` (PhoWhisper) and checked for tail RMS > `voice.maxTailDb` (-40 dBFS);
+   - edge rule: first/last non-wildcard expected word must match, with no extra heard words at the end;
+   - retakes: up to 4 rounds (`voice.retakes`), keeping the best take by tail ok first, then edge ok, then lower WER;
+   - foreign words without `spokenOverrides` match as wildcards;
+   - fail rule: a clip whose best take still has a cut tail, an edge error, or WER > 2 × `maxWer` is a FAIL (not warn)
+     unless its id is in `audio/qa-accepted.txt`. Prints script text, heard words, WER, tail dBFS, and edge status.
    Verify: the last line reports `0 failed`. The clips it lists as "to listen to" go to the user with gate 3.
 2. Forced alignment (next step) aligns any audio to its text, so it cannot catch a garbled word; the speech check can.
 3. Run `R -From voice -To meta`. This runs:

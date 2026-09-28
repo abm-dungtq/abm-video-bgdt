@@ -17,9 +17,6 @@ import sys
 import unicodedata
 from pathlib import Path
 
-import torch
-import torchaudio
-
 MODEL = os.environ.get("ABM_ASR_MODEL", "vinai/PhoWhisper-small")
 SR = 16000
 _pipe = None
@@ -51,6 +48,16 @@ def read_int(n: int) -> str:
 
 SYLLABLE = re.compile(r"^(ngh|ng|nh|ch|gh|gi|kh|ph|qu|th|tr|b|c|d|đ|g|h|k|l|m|n|p|r|s|t|v|x)?(uyê|uya|uyu|oeo|oao|oai|oay|uây|uôi|ươi|ươu|iêu|yêu|oa|oe|oă|uâ|uê|uy|uô|ươ|iê|yê|ai|ao|au|ay|âu|ây|eo|êu|ia|iu|oi|ôi|ơi|ua|ui|ưa|ưi|ưu|a|ă|â|e|ê|i|o|ô|ơ|u|ư|y)(ch|ng|nh|c|m|n|p|t)?$")
 TONES = dict.fromkeys(map(ord, "\u0300\u0301\u0303\u0309\u0323"))
+CANONICAL_OA_OE = re.compile(r"o([̣̀́̃̉])([ae])")
+CANONICAL_UY = re.compile(r"u([̣̀́̃̉])y")
+
+
+def canonical_tone(word: str) -> str:
+    """Normalize tone placement to new style (hoá, thuỷ, khoẻ, quý) so old/new styles compare equal."""
+    nfd = unicodedata.normalize("NFD", word)
+    nfd = CANONICAL_OA_OE.sub(r"o\2\1", nfd)
+    nfd = CANONICAL_UY.sub(r"uy\1", nfd)
+    return unicodedata.normalize("NFC", nfd)
 
 
 def vietnamese(word: str) -> bool:
@@ -68,7 +75,7 @@ def _words(text: str) -> list:
     text = unicodedata.normalize("NFC", text.lower())
     text = re.sub(r"(\d+)[.,](\d+)", lambda m: f"{m.group(1)} chấm {m.group(2)}", text)
     text = re.sub(r"\d+", lambda m: f" {read_int(int(m.group()))} ", text)
-    return re.findall(r"[\w]+", text)
+    return [canonical_tone(w) for w in re.findall(r"[\w]+", text)]
 
 
 def wer(ref: list, hyp: list) -> float:
@@ -88,8 +95,36 @@ def wer(ref: list, hyp: list) -> float:
     return prev[n] / max(1, sum(w != "*" for w in ref))
 
 
+def edge_error(expected_words, heard_words) -> bool:
+    """True when first or last non-wildcard expected word is missing/different, or extra words after last expected word."""
+    if isinstance(expected_words, str):
+        expected_words = words(expected_words, wildcard=True)
+    if isinstance(heard_words, str):
+        heard_words = words(heard_words)
+
+    non_wildcard = [w for w in expected_words if w != "*"]
+    if not non_wildcard:
+        return False
+    if not heard_words:
+        return True
+
+    # First non-wildcard expected word
+    if expected_words[0] != "*":
+        if heard_words[0] != expected_words[0]:
+            return True
+
+    # Last non-wildcard expected word
+    if expected_words[-1] != "*":
+        if heard_words[-1] != expected_words[-1]:
+            return True
+
+    return False
+
+
 def transcribe(path: Path) -> str:
     global _pipe
+    import torch
+    import torchaudio
     if _pipe is None:
         from transformers import pipeline
         _pipe = pipeline("automatic-speech-recognition", model=MODEL, device=0 if torch.cuda.is_available() else -1)
@@ -108,7 +143,26 @@ def main():
     ap.add_argument("--voice-dir", default="assets/voice")
     ap.add_argument("--out", default="audio/asr-report.json")
     ap.add_argument("--max-wer", type=float, default=0.2)
+    ap.add_argument("--self-test", action="store_true", help="run unit tests and exit 0")
     a = ap.parse_args()
+
+    if a.self_test:
+        assert edge_error("thiết lập hành động", "tiếp lập hành động") is True
+        assert edge_error("của lác", "của lát") is True
+        assert edge_error("trong bảng", "trong bảng sao yami") is True
+        assert edge_error("gửi tin nhắn", "gửi tin nhắn") is False
+        assert edge_error(["*"], ["bất", "kỳ"]) is False
+        assert edge_error(["*"], ["tiếp", "lập"]) is False
+        assert edge_error(["*"], ["gửi", "tin", "nhắn"]) is False
+        assert edge_error(["*"], []) is False
+        assert edge_error(["*"], "bất kỳ") is False
+        assert edge_error("tự động hóa", "tự động hoá") is False
+        assert edge_error("quy trình thủy", "quy trình thuỷ") is False
+        assert edge_error("hòa bình", "hoà bình") is False
+        assert edge_error("sức khỏe", "sức khoẻ") is False
+        assert wer(words("tự động hóa", wildcard=True), words("tự động hoá")) == 0
+        print("self-test ok")
+        sys.exit(0)
 
     items = []
     if a.jobs:
@@ -128,17 +182,21 @@ def main():
     report, flagged = [], 0
     for id_, path, text in items:
         if not path.exists():
-            report.append({"id": id_, "missing": str(path)})
+            report.append({"id": id_, "missing": str(path), "edge": False})
             print(f"asr {id_}: missing {path}")
             flagged += 1
             continue
         heard = transcribe(path)
-        w = round(wer(words(text, wildcard=True), words(heard)), 3)
-        bad = w > a.max_wer
+        exp_words = words(text, wildcard=True)
+        hrd_words = words(heard)
+        w = round(wer(exp_words, hrd_words), 3)
+        edge = edge_error(exp_words, hrd_words)
+        bad = w > a.max_wer or edge
         flagged += bad
-        report.append({"id": id_, "wer": w, "flagged": bad, "expected": text, "heard": heard})
+        report.append({"id": id_, "wer": w, "edge": edge, "flagged": bad, "expected": text, "heard": heard})
         if bad:
-            print(f"asr {id_}: WER {w}\n  expected: {text}\n  heard:    {heard}")
+            reason = f"WER {w}" + (", edge error" if edge else "")
+            print(f"asr {id_}: {reason}\n  expected: {text}\n  heard:    {heard}")
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     scored = [r["wer"] for r in report if "wer" in r]
