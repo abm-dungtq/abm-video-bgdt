@@ -49,6 +49,12 @@ for (const [i, raw] of lines.entries()) {
     fr = { id: ++frameCount, scene_hint: m[2].trim(), title: m[3].trim(), sentences: [] };
     if (role) fr.role = role;
     ch.frames.push(fr);
+  } else if (line.startsWith("|")) {
+    if (!fr) throw new Error(`line ${i + 1}: labels outside a frame`);
+    const labels = line.slice(1).split("/").map((x) => x.trim()).filter(Boolean);
+    const long = labels.find((x) => [...x].length > 32);
+    if (long) throw new Error(`line ${i + 1}: label longer than 32 chars: "${long}"`);
+    fr.labels = [...(fr.labels ?? []), ...labels];
   } else if (line.startsWith(">")) {
     fr.notes = ((fr.notes ? fr.notes + " " : "") + line.slice(1).trim()).trim();
   } else {

@@ -6,10 +6,11 @@
 import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { validate } from "../compiler/schema.mjs";
+import { chapterOverlap } from "../compiler/scorecard.mjs";
 import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
-import { BUILD, numbers } from "../compiler/solver.mjs";
+import { BUILD, numbers, withLabels } from "../compiler/solver.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -151,6 +152,25 @@ test("exercise: minutes come only from a number said with \"phút\"", () => {
   const six = BUILD["card-exercise"]({ ...shot([sent(1, "Hãy dừng video và mở công cụ AI."), sent(2, "Viết câu lệnh đủ 6 phần.")], []), nums: [{ value: 6 }] });
   const five = BUILD["card-exercise"]({ ...shot([sent(1, "Bạn hãy tạm dừng video trong 5 phút.")], []), nums: [{ value: 5 }] });
   eq([six.slots.minutes, five.slots.minutes], [undefined, 5]);
+});
+
+test("labels override keyword items", () => {
+  const c = withLabels(shot([sent(1, "Người đặt mục tiêu, trợ lý soạn thảo."), sent(2, "Người kiểm tra cuối.")],
+    [kw(1, "mục tiêu"), kw(1, "soạn thảo")]), ["A", "B", "C"]);
+  const b = BUILD.cards(c);
+  eq([b.slots.items.map((x) => x.label), b.reveals], [["A", "B", "C"], { "items.0": "kw:mục", "items.1": "kw:soạn", "items.2": "sent:2.start" }]);
+});
+test("labels become the objectives, one per label", () => {
+  const c = withLabels(shot([sent(1, "Mục tiêu là hiểu lực lượng lao động mới trong doanh nghiệp.")], [kw(1, "lực lượng lao động mới")]),
+    ["Nhận ra cái bẫy", "Hiểu nguyên nhân gốc"]);
+  eq(BUILD["card-objective"](c).slots.items, ["Nhận ra cái bẫy", "Hiểu nguyên nhân gốc"]);
+});
+
+const chap = (id, hints) => ({ id, frames: ["title", ...hints].map((scene_hint) => ({ scene_hint })) });
+test("chapter overlap: Jaccard on 3+ hints, equality on smaller sets", () => {
+  const o = chapterOverlap([chap("ch0", []), chap("ch1", ["kinetic", "stat", "cards"]), chap("ch2", ["kinetic", "stat", "flow"]),
+    chap("ch3", ["kinetic", "stat"]), chap("ch4", ["kinetic", "stat"]), chap("ch5", [])]);
+  eq(o.pairs.map((p) => `${p.a}-${p.b}:${p.j}`), ["ch1-ch2:0.5", "ch1-ch3:0", "ch1-ch4:0", "ch2-ch3:0", "ch2-ch4:0", "ch3-ch4:1"]);
 });
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);

@@ -7,6 +7,7 @@
 # ch0 | Mở đầu | basic                     chapter: id | title | level (basic|intermediate|advanced)
 ## 1 | title | Tên bài giảng               frame: n | scene_hint | frame title (n renumbered 1..N)
 > visual note for the storyboard            optional; joined into the frame's note
+| Nhãn một / Nhãn hai / Nhãn ba              optional on-screen labels for the frame's list scene (not spoken)
 Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword token, {F-01,F-02} = fact ids
 ### core                                    optional, legacy: DNA role of the frames that follow
                                             (hook|core|case|action; only used when dna.enabled)
@@ -20,6 +21,13 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
   phrase: `*ghi* *nhớ,* *tìm* *lại,* *kỹ* *năng*` gives three labels. Numbers worth a big counter are written
   with digits (`64.000`, `hơn 20`); a year or a version is never a counter. The script stage warns when more than half of the phrases are a single word.
   Aim for 2–5 per frame.
+- **Labels (`|` lines) say exactly what a list shows.** For a frame whose scene is a list (`cards`, `flow`, `hub`,
+  `journey`, `anchor`, `split`, `kinetic`, `metaphor`, `objective`, `quiz`), write its items on a `|` line, split by
+  `/`: `| Đặt mục tiêu / Soạn thảo / Kiểm tra cuối`. Each label is 2–5 words, at most 32 characters, and the labels of
+  one list are about the same length. The labels are not read aloud; each one appears on the keyword phrase of the same
+  position (the first label on the first `*keyword*` phrase), or on its sentence when there are fewer phrases. Without
+  a `|` line the keyword phrases are the labels, as before. Use labels whenever the spoken sentences are long, so no
+  list item is empty or a cut-off sentence.
 - A fact id must exist in `capture/extracted/visible-text.txt` as `[F-NN]`, or `--check` fails.
 - **Numbers are written with digits** (`10 hàm`, `bản 7.75`, `64.000 dòng`). They stay digits on screen and are
   spoken in Vietnamese words automatically (`mười`, `bảy chấm bảy mươi lăm`). Write dates as words around digits

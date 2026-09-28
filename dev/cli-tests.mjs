@@ -409,6 +409,21 @@ check("karaoke: mark compile+karaoke done, change a file under compositions/fram
 check("karaoke: change STORYBOARD.md -> stale",
   karaokeStaleAfterSb, "karaoke did not become stale after changing STORYBOARD.md");
 
+// src-to-script: a `| a / b / c` line gives the frame its on-screen labels; a label over 32 characters is refused
+const Ldir = join(dirname(R), "cli-labels");
+rmSync(Ldir, { recursive: true, force: true });
+mkdirSync(Ldir, { recursive: true });
+cpSync(join(S, "templates/video.config.json"), join(Ldir, "video.config.json"));
+mkdirSync(join(Ldir, ".probe"), { recursive: true });
+writeFileSync(join(Ldir, ".probe/rate.json"), JSON.stringify({ syllables_per_s: 4.3 }));
+writeFileSync(join(Ldir, "script.src.txt"), "# ch0 | Mở đầu | basic\n## 1 | cards | Ba việc\n| A / B\n| C\nMột câu có *từ* *khóa*.\n");
+const rLab = spawnSync(process.execPath, [join(S, "scripts/src-to-script.mjs"), "script.src.txt", "script.json"], { cwd: Ldir, encoding: "utf8" });
+const labs = rLab.status === 0 ? JSON.parse(readFileSync(join(Ldir, "script.json"), "utf8")).chapters[0].frames[0].labels : null;
+check("src-to-script: | lines become frame.labels", JSON.stringify(labs) === '["A","B","C"]', `${rLab.stderr}${JSON.stringify(labs)}`);
+writeFileSync(join(Ldir, "script.src.txt"), `# ch0 | Mở đầu | basic\n## 1 | cards | Ba việc\n| ${"x".repeat(33)}\nMột câu.\n`);
+const rLong = spawnSync(process.execPath, [join(S, "scripts/src-to-script.mjs"), "script.src.txt", "script.json"], { cwd: Ldir, encoding: "utf8" });
+check("src-to-script: a label over 32 characters fails", rLong.status !== 0 && rLong.stderr.includes("label longer than 32"), rLong.stderr);
+
 srv.close();
 
 console.log(passed === cases.length ? `cli-tests ok (${passed}/${cases.length})` : `cli-tests FAILED (${passed}/${cases.length})`);

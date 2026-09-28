@@ -180,6 +180,7 @@ for (const f of frames) {
     `- scene: ${f.scene_hint}`,
     `- chapter: ${f.chapter.id}`,
     ...(f.role ? [`- role: ${f.role}`] : []),
+    ...(f.labels?.length ? [`- labels: ${f.labels.join(" / ")}`] : []),
     `- voiceover: ${quote(text)}`, "",
     `${f.chapter.title} · ${f.chapter.level}. ${f.notes ?? ""}`.trim(), "");
   t += est;

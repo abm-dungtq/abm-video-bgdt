@@ -166,6 +166,21 @@ const items = (ps, max, lo, hi) => {
 };
 const cueOf = (x) => x.p.cue;
 
+// Builders that take a list of short labels; a frame's explicit `| a / b / c` labels (script.json frame.labels) replace
+// their keyword phrases, once per frame: on the shot of the frame's scene_hint template when that is one of these,
+// else on the first of these shots.
+export const LABELED = new Set(["kinetic", "cards", "hub", "flow", "journey", "anchor", "split", "pictogram-scene", "card-objective", "card-quiz"]);
+
+/** the shot context with its keyword phrases replaced by the frame's labels (cue: phrase i, else sentence i's start) */
+export function withLabels(c, labels) {
+  const ph = labels.map((text, i) => {
+    if (c.ph[i]) return { ...c.ph[i], text };
+    const s = c.sents[Math.min(i, c.sents.length - 1)];
+    return s ? { text, sent: s.k, time: s.start, cue: `sent:${s.k}.start` } : { text, sent: 0, time: 0, cue: "start+0.35" };
+  });
+  return { ...c, ph, labelled: true };
+}
+
 export const BUILD = {
   title: (c) => {
     const title = fit(c.frame.title, 40) ?? fit(c.chapter.title, 40);
@@ -282,6 +297,10 @@ export const BUILD = {
     return { slots: { image: img, ...(steps.length ? { steps } : {}) }, reveals: {} };
   },
   "card-objective": (c) => {
+    if (c.labelled) {
+      const it = c.ph.map((p) => ({ p, t: fit(p.text, 48) })).filter((x) => x.t).slice(0, 3);
+      return it.length ? { slots: { items: it.map((x) => x.t) }, reveals: Object.fromEntries(it.map((x, i) => [`items.${i}`, cueOf(x)])) } : null;
+    }
     // each objective is its sentence, or the sentence's keyword phrase when the sentence is longer than an item;
     // each item is revealed with its own sentence
     const it = c.sents.map((s) => ({ s, t: fit(s.text, 48) ?? fit(c.ph.find((p) => p.sent === s.k)?.text, 48) }))
@@ -456,6 +475,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         i === 0 ? "start" : "prev.end",
         i === edges.length - 2 ? "end" : cutCues[i].cue,
       ]);
+      let labelsUsed = false;
       const shots = [];
       for (let i = 0; i < windows.length; i++) {
         const a = edges[i], b = edges[i + 1];
@@ -480,8 +500,11 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           const max = wholeHint && d.max != null ? Math.max(d.max, WHOLE_FRAME_MAX_S) : d.max;
           if ((d.min != null && len < d.min - 0.01) || (max != null && len > max + 0.01)) continue;
           if (!wholeHint && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
-          const built = BUILD[t](c);
+          const lab = Boolean(frame.labels?.length && !labelsUsed && LABELED.has(t)
+            && (t === hintT || !LABELED.has(hintT) || i === windows.length - 1));
+          const built = BUILD[t](lab ? withLabels(c, frame.labels) : c);
           if (!built || validate(schema.slots, built.slots).length) continue;
+          if (lab) labelsUsed = true;
           // reveals must fall inside the window: drop explicit cues that do not, the lint default then takes over
           for (const [k, cue] of Object.entries(built.reveals)) {
             try {

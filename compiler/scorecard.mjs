@@ -25,7 +25,8 @@ function walk(v, acc) {
 
 /**
  * How much the content chapters (all but the first and the last, which are the intro and the outro) repeat each other:
- * Jaccard of their scene_hint sets (title excluded), per pair. Returns {max, mean, pairs: [{a, b, j, shared}]}.
+ * Jaccard of their scene_hint sets (title excluded), per pair; with fewer than 3 hints on either side, 1 when the
+ * sets are equal, else 0. Returns {max, mean, pairs: [{a, b, j, shared}]}.
  */
 export function chapterOverlap(chapters) {
   const content = chapters.slice(1, -1).map((c) => ({ id: c.id, set: new Set((c.frames ?? []).map((f) => f.scene_hint).filter((h) => h && h !== "title")) }));
@@ -33,7 +34,11 @@ export function chapterOverlap(chapters) {
   content.forEach((a, i) => content.slice(i + 1).forEach((b) => {
     const shared = [...a.set].filter((h) => b.set.has(h));
     const union = new Set([...a.set, ...b.set]).size;
-    pairs.push({ a: a.id, b: b.id, j: union ? r2(shared.length / union) : 0, shared });
+    // Jaccard is too coarse on tiny sets ({kinetic, stat} ⊂ {kinetic, stat, cards} = 0.67): a short chapter only
+    // counts as a repeat when its set is the same as the other one
+    const small = a.set.size < 3 || b.set.size < 3;
+    const j = small ? (shared.length === union && union > 0 ? 1 : 0) : union ? r2(shared.length / union) : 0;
+    pairs.push({ a: a.id, b: b.id, j, shared });
   }));
   const js = pairs.map((p) => p.j);
   return { max: js.length ? Math.max(...js) : 0, mean: js.length ? r2(js.reduce((x, y) => x + y, 0) / js.length) : 0, pairs };
