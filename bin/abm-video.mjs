@@ -67,7 +67,12 @@ async function runStage(name) {
     }
     for (const g of st.needs.gates) if (!gateOk(s, Pd, g)) die(`${name} needs gate ${g} approved on the current files`);
   }
-  const code = await st.run(await ctx(Pd, cfg));
+  let code;
+  try {
+    code = await st.run(await ctx(Pd, cfg));
+  } catch (e) {
+    die(`stage ${name} failed: ${e.message}`);
+  }
   if (code) die(`stage ${name} failed (exit ${code})`);
   const after = load(Pd);
   markStage(after, Pd, name, st.inputs);
@@ -144,7 +149,7 @@ switch (cmd) {
     const Pd = needProject();
     if (argv.includes("--text")) {
       const out = opt("--out") ?? die("tts --text needs --out <wav>");
-      const d = await one(Pd, opt("--text"), out);
+      const d = await one(Pd, opt("--text"), out).catch((e) => die(`tts: ${e.message}`));
       console.log(`tts: ${out} ${d.toFixed(2)} s`);
     } else {
       await runStage("tts");

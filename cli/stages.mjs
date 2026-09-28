@@ -37,7 +37,8 @@ function probeHelp() {
 export const STAGES = [
   { name: "doctor", needs: { stages: [], gates: [] }, inputs: [],
     run: (c) => sh(c.P, [process.execPath, `${SKILL_ROOT}/setup/doctor.mjs`]) },
-  { name: "init", needs: { stages: ["doctor"], gates: [] }, inputs: [], run: () => 0 },
+  // doctor freshness is checked on its own (7 days); init must not go stale each time doctor reruns
+  { name: "init", needs: { stages: [], gates: [] }, inputs: [], run: () => 0 },
   { name: "probe", needs: { stages: ["init"], gates: [] }, inputs: [".probe/rate.json", ".probe/pronunciation.md"], gate: "1",
     run: (c) => seq(
       () => sh(c.P, [process.execPath, `${c.SC}/build-design-kit.mjs`]),

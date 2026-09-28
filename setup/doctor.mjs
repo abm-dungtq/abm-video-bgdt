@@ -19,6 +19,7 @@ import { registerMcp } from "./register-mcp.mjs";
 const win = process.platform === "win32";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const installer = win ? "setup/install.ps1" : "setup/install.sh";
+const PIN = JSON.parse(readFileSync(join(HERE, "../templates/video.config.json"), "utf8")).cli.pin;
 const checks = [];
 const add = (name, level, detail, fix) => checks.push({ name, level, detail, fix });
 // one command line through the shell (Windows needs it for .cmd shims such as npx); quote arguments with spaces
@@ -42,10 +43,9 @@ const skillsDir = findSkillsDir();
 const fe = existsSync(join(skillsDir, "faceless-explainer/scripts/lib/storyboard.mjs"));
 const hfCount = existsSync(skillsDir) ? readdirSync(skillsDir).filter((d) => existsSync(join(skillsDir, d, "SKILL.md"))).length : 0;
 add("hyperframes skills", fe ? "ok" : "fail", fe ? `${skillsDir} (${hfCount} skills)` : "faceless-explainer not found",
-  "npx -y hyperframes@0.7.99 skills   (or set HF_SKILLS_DIR)");
+  `npx -y hyperframes@${PIN} skills   (or set HF_SKILLS_DIR)`);
 
 // upstream scripts the pipeline calls (kept as a dependency, never vendored): import-probe each one
-const PIN = JSON.parse(readFileSync(join(HERE, "../templates/video.config.json"), "utf8")).cli.pin;
 const FIX = `node ${resolve(HERE, "doctor.mjs").replace(/\\/g, "/")} --fix`;
 const feDir = join(skillsDir, "faceless-explainer/scripts");
 async function probeUpstream() {

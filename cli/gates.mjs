@@ -77,7 +77,8 @@ export function approve(P, n, note) {
   if (String(n) === "2" && existsSync(join(P, "script.json"))) {
     // src-to-script keeps meta.approved on later runs, so recording it here does not change the script again
     const script = JSON.parse(readFileSync(join(P, "script.json"), "utf8"));
-    script.meta.approved = `${new Date().toISOString().slice(0, 10)} by user`;
+    // keep an earlier approval date, so approving the same script again leaves script.json (and tts) untouched
+    script.meta.approved ??= `${new Date().toISOString().slice(0, 10)} by user`;
     writeFileSync(join(P, "script.json"), JSON.stringify(script, null, 1));
   }
   s.gates[n] = { ...(s.gates[n] ?? {}), status: "approved", approvedAt: new Date().toISOString(), note,

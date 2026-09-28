@@ -10,7 +10,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { load, markStage, save } from "../cli/state.mjs";
+import { isStale, load, markStage, save } from "../cli/state.mjs";
 import { activeStages } from "../cli/stages.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -55,6 +55,15 @@ check("status shows the stale gate", r.out.includes("2  approved (stale)"), r.ou
 
 r = cli("next");
 check("next prints one NEXT line", r.code === 0 && r.out.split("\n").filter((l) => l.startsWith("NEXT:")).length === 1, r.out + r.err);
+
+// rerunning doctor (it expires after 7 days) must not make the whole pipeline stale
+const s2 = load(R);
+const initAt = s2.stages.init.at;
+await new Promise((r) => setTimeout(r, 5));
+markStage(s2, R, "doctor", []);
+save(R, s2);
+const init = activeStages(cfg).find((x) => x.name === "init");
+check("a fresh doctor run leaves init current", !isStale(load(R), R, "init", init.inputs, init.needs.stages) && load(R).stages.init.at === initAt, "init went stale");
 
 console.log(passed === cases.length ? `cli-tests ok (${passed}/${cases.length})` : `cli-tests FAILED (${passed}/${cases.length})`);
 process.exit(passed === cases.length ? 0 : 1);
