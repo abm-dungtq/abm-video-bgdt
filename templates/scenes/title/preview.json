@@ -1,0 +1,6 @@
+{
+  "template": "title",
+  "variant": "number-draw",
+  "window": ["start", "end"],
+  "slots": { "chapterNo": 1, "title": "Những khái niệm cơ bản", "kicker": "Chương một" }
+}

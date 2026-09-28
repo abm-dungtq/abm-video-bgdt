@@ -1,0 +1,6 @@
+{
+  "template": "kinetic",
+  "variant": "center-punch",
+  "window": ["start", "end"],
+  "slots": { "words": ["Học", "một lần", "dùng mãi"], "sub": "Agent nhớ kỹ năng qua từng lần làm" }
+}

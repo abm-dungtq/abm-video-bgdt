@@ -1,0 +1,13 @@
+{
+  "template": "cards",
+  "variant": "grid-3",
+  "window": ["start", "end"],
+  "slots": {
+    "heading": "Ba cách dùng Hermes",
+    "items": [
+      { "icon": "person", "label": "Trợ lý cá nhân", "note": "Trả lời, nhắc việc, ghi chú" },
+      { "icon": "folder", "label": "Quản lý tệp", "note": "Đọc và sắp xếp thư mục" },
+      { "icon": "timer", "label": "Tự động hóa", "note": "Chạy việc theo lịch" }
+    ]
+  }
+}

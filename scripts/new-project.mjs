@@ -35,7 +35,7 @@ function copyTools() {
   }
   cpSync(join(SKILL, "templates/worker-kit"), join(P, "tools/worker-kit"), { recursive: true });
   // the abm-video CLI runs from the project copy; setup/ stays in the skill, found through skill-root.txt
-  for (const d of ["bin", "cli"]) cpSync(join(SKILL, d), join(P, "tools", d), { recursive: true });
+  for (const d of ["bin", "cli", "compiler", "templates/scenes"]) cpSync(join(SKILL, d), join(P, "tools", d), { recursive: true });
   writeFileSync(join(P, "tools/skill-root.txt"), SKILL.replace(/\\/g, "/") + "\n");
 }
 

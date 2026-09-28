@@ -1,0 +1,22 @@
+{
+  "id": "title",
+  "family": "title",
+  "variants": ["number-draw", "big-type"],
+  "zone": { "number-draw": "hero-center", "big-type": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["chapterNo", "title"],
+    "additionalProperties": false,
+    "properties": {
+      "chapterNo": { "type": "integer", "minimum": 0, "maximum": 20 },
+      "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+      "kicker": { "type": "string", "maxLength": 24 }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "number": { "default": "spread", "range": false },
+    "title": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2, "max": 10 }
+}

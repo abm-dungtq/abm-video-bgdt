@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { pathToFileURL } from "node:url";
 import { MCP, SKILL_ROOT } from "./paths.mjs";
 import { apiUp, batch } from "./tts.mjs";
 
@@ -17,6 +18,8 @@ export function sh(P, ...parts) {
   console.log(`$ ${line}`);
   return spawnSync(line, { cwd: P, stdio: "inherit", shell: true }).status ?? 1;
 }
+/** the compiler next to the scripts in use: P/tools/compiler in a project, else the skill's compiler/ */
+const compilerDir = (c) => (existsSync(`${c.SC}/compiler/compile.mjs`) ? `${c.SC}/compiler` : `${SKILL_ROOT}/compiler`);
 const seq = (...steps) => { for (const s of steps) { const c = s(); if (c) return c; } return 0; };
 
 const sha = (p) => (existsSync(p) ? createHash("sha1").update(readFileSync(p)).digest("hex") : null);
@@ -82,14 +85,25 @@ export const STAGES = [
         () => sh(c.P, [process.execPath, `${c.SK}/audio.mjs`, "sync-durations", "--audio-meta", "./audio_meta.json", "--storyboard", "./STORYBOARD.md"]),
       );
     } },
-  { name: "storyboard", needs: { stages: ["voice"], gates: [] }, inputs: ["audio_meta.json"],
-    run: (c) => seq(
+  { name: "storyboard", needs: { stages: ["voice"], gates: [] }, inputs: ["audio_meta.json", "scenes.json"],
+    // with scenes.json the compiler resolves cues itself; retime-and-cue only serves hand-built (legacy) storyboards
+    run: (c) => (existsSync(join(c.P, "scenes.json"))
+      ? sh(c.P, [process.execPath, `${compilerDir(c)}/lint.mjs`])
+      : seq(
       () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`]),
       () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`, "--check"]),
       () => sh(c.P, [process.execPath, `${c.SC}/variety-lint.mjs`, "STORYBOARD.md"]),
-    ) },
-  { name: "compile", needs: { stages: ["storyboard"], gates: [] }, inputs: ["STORYBOARD.md"],
-    run: () => { console.log("compile: legacy project, frames are hand-built"); return 0; } },
+    )) },
+  { name: "compile", needs: { stages: ["storyboard"], gates: [] }, inputs: ["scenes.json", "audio_meta.json"],
+    run: async (c) => {
+      if (!existsSync(join(c.P, "scenes.json"))) { console.log("compile: legacy project, frames are hand-built"); return 0; }
+      const { compile } = await import(pathToFileURL(`${compilerDir(c)}/compile.mjs`).href);
+      const legacy = JSON.parse(existsSync(join(c.P, ".abm/state.json")) ? readFileSync(join(c.P, ".abm/state.json"), "utf8") : "{}").legacy === true;
+      const r = await compile({ P: c.P, cfg: c.cfg, legacy });
+      if (!r.ok) return 1;
+      // lint + snapshot only the frames whose html changed (wave-check mounts them in a scratch project)
+      return r.changed.length ? sh(c.P, [process.execPath, `${c.SC}/wave-check.mjs`, ...r.changed.map(String)]) : 0;
+    } },
   { name: "karaoke", needs: { stages: ["compile"], gates: [] }, inputs: ["audio_meta.json", "compositions/frames"], gate: "3",
     run: (c) => seq(
       () => sh(c.P, [process.execPath, `${c.SC}/build-karaoke.mjs`]),

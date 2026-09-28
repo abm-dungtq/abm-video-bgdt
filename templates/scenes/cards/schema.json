@@ -1,0 +1,30 @@
+{
+  "id": "cards",
+  "family": "cards",
+  "variants": ["grid-3", "grid-4"],
+  "zone": { "grid-3": "triptych", "grid-4": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["items"],
+    "additionalProperties": false,
+    "properties": {
+      "heading": { "type": "string", "maxLength": 40 },
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["icon", "label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "note": { "type": "string", "maxLength": 40 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "heading": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}
