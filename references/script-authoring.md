@@ -24,7 +24,7 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 - **Labels (`|` lines) say exactly what a list shows.** For a frame whose scene is a list (`cards`, `flow`, `hub`,
   `journey`, `anchor`, `split`, `kinetic`, `metaphor`, `objective`, `quiz`, and the shaped scenes in § Chapter arcs:
   `question`, `myth`, `matrix`, `table`, `pyramid`, `funnel`, `iceberg`, `balance`, `layers`), write its items on a `|` line, split by
-  `/`: `| Đặt mục tiêu / Soạn thảo / Kiểm tra cuối`. Each label is 2–5 words, at most 32 characters, and the labels of
+  ` / ` (a slash with a space beside it, so `CI/CD` stays one label): `| Đặt mục tiêu / Soạn thảo / Kiểm tra cuối`. Each label is 2–5 words, at most 32 characters, and the labels of
   one list are about the same length. The labels are not read aloud; each one appears on the keyword phrase of the same
   position (the first label on the first `*keyword*` phrase), or on its sentence when there are fewer phrases. Without
   a `|` line the keyword phrases are the labels, as before. Use labels whenever the spoken sentences are long, so no

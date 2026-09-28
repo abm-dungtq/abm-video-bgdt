@@ -41,7 +41,9 @@ let longSingle = 0, hintShown = 0, hintLate = 0;
 const byChapter = new Map(); // chapter index → Map(template → Set(variant))
 for (const f of scenes.frames) {
   const info = frameInfo.get(f.frame);
-  if (dur.get(f.frame) > tpl.minShotsLongFrame.overS && f.shots.length === 1 && !/^card-(exercise|quiz|case)$/.test(f.shots[0].template)) longSingle++;
+  // one shot of the frame's own hint, or a whole-frame card, is one shot by design up to 16 s
+  if (dur.get(f.frame) > tpl.minShotsLongFrame.overS && f.shots.length === 1
+    && !((/^card-(exercise|quiz|case)$/.test(f.shots[0].template) || f.shots[0].template === info.hint) && dur.get(f.frame) <= 16)) longSingle++;
   const at = f.shots.findIndex((s) => s.template === info.hint);
   if (at >= 0 && info.hint !== "title") { hintShown++; if (at === f.shots.length - 1 || f.shots.length === 1) hintLate++; }
   if (!byChapter.has(info.ci)) byChapter.set(info.ci, new Map());
@@ -56,6 +58,11 @@ for (const f of scenes.frames) {
   const h = frameInfo.get(f.frame).hint;
   if (/^card-(exercise|quiz)$/.test(h) && !f.shots.some((s) => s.template === h)) problems.push(`frame ${f.frame}: its ${h} does not show`);
 }
+// the director may not lose more scene hints than the plain solver does on the same lesson
+const lost = (sc) => sc.frames.filter((f) => { const h = frameInfo.get(f.frame).hint; return h !== "title" && f.shots && !f.shots.some((s) => s.template === h); }).length;
+const legacy = JSON.parse(readFileSync(join(SRC, "scenes.json"), "utf8"));
+const lostD = lost(scenes), lostL = lost(legacy);
+if (lostD > lostL) problems.push(`the director loses ${lostD} scene hints, the plain solver ${lostL}`);
 if (longSingle) problems.push(`${longSingle} frame(s) over ${tpl.minShotsLongFrame.overS} s with one shot`);
 if (hintShown && hintLate / hintShown < 0.6) problems.push(`the hint closes only ${hintLate} of ${hintShown} frames that show it`);
 let repeats = 0;
@@ -68,6 +75,6 @@ if (repeats) problems.push(`${repeats} card family(ies) reuse last chapter's var
 if (!scenes.scorecard || typeof scenes.scorecard.seed !== "number") problems.push("scenes.json has no scorecard with a seed");
 
 for (const p of problems) console.log(`✗ ${p}`);
-console.log(`director: ${scenes.frames.length} frames, ${scenes.frames.reduce((n, f) => n + f.shots.length, 0)} shots, hint closes ${hintLate}/${hintShown}, scorecard ${scenes.scorecard?.ok ? "ok" : `${scenes.scorecard?.violations?.length ?? "?"} violation(s)`}`);
+console.log(`director: ${scenes.frames.length} frames, ${scenes.frames.reduce((n, f) => n + f.shots.length, 0)} shots, hints lost ${lostD} (plain ${lostL}), hint closes ${hintLate}/${hintShown}, scorecard ${scenes.scorecard?.ok ? "ok" : `${scenes.scorecard?.violations?.length ?? "?"} violation(s)`}`);
 console.log(problems.length ? `director-check FAILED (${problems.length} problem(s))` : "director-check ok");
 process.exit(problems.length ? 1 : 0);

@@ -3,6 +3,7 @@
   "family": "quiz",
   "card": "card-quiz",
   "variants": ["abc", "true-false", "spotlight-pick"],
+  "directorOnly": ["spotlight-pick"],
   "signatures": ["abc"],
   "zone": { "abc": "split-60-40", "true-false": "triptych", "spotlight-pick": "strip-top" },
   "slots": {

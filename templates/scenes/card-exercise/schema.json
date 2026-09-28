@@ -3,6 +3,7 @@
   "family": "exercise",
   "card": "card-exercise",
   "variants": ["timer-ring", "steps", "sticky-note"],
+  "directorOnly": ["sticky-note"],
   "signatures": ["timer-ring"],
   "zone": { "timer-ring": "split-40-60", "steps": "strip-top", "sticky-note": "split-60-40" },
   "slots": {

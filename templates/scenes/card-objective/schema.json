@@ -3,6 +3,7 @@
   "family": "objective",
   "card": "card-objective",
   "variants": ["list", "spotlight", "target-rings"],
+  "directorOnly": ["target-rings"],
   "signatures": ["list"],
   "zone": { "list": "split-40-60", "spotlight": "triptych", "target-rings": "split-40-60" },
   "slots": {

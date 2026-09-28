@@ -97,7 +97,10 @@ ${block("right")}
     // the strikes fall between the two cues; the swap waits for them
     const x1 = tW + Math.min(0.6, Math.max(0.25, (tR - tW) * 0.4));
     const x2 = x1 + 0.3;
-    const swapAt = Math.max(tR, x2 + 0.5);
+    // the swap waits for the wrong side's glow and cross to finish coming in, and still leaves room to play out before
+    // the shot ends; a late cue that leaves no room skips the fade-out of the glow and cross (the right side covers them)
+    const swapAt = Math.min(Math.max(tR, x2 + 0.5), w.b - 1.2);
+    const fadeOut = swapAt >= tW + 0.85 && swapAt + 0.5 <= w.b - 0.02;
     const m = [
       { prim: "reveal", target: `#${S}-idi`, at: tLabel, dur: 0.45, from: { opacity: 0, scale: 0.4 }, ease: "back.out(2)" },
       { prim: "reveal", target: `#${S}-idl`, at: tLabel + 0.08, dur: 0.45, from: { opacity: 0, x: -18 } },
@@ -105,7 +108,7 @@ ${block("right")}
       { prim: "reveal", target: `#${S}-ph`, at: Math.max(tW, w.a + 0.52), dur: 0.25, from: { opacity: 1 }, to: { opacity: 0 }, ease: "power1.out" },
       { prim: "reveal", target: `#${S}-gw`, at: tW, dur: 0.6, from: { opacity: 0 } },
       { prim: "reveal", target: `#${S}-xw`, at: tW + 0.1, dur: 0.7, from: { opacity: 0, scale: 0.7, rotation: -12 }, ease: "back.out(1.6)" },
-      { prim: "reveal", target: `#${S}-xw`, at: swapAt, dur: 0.4, from: { opacity: 1 }, to: { opacity: 0 } },
+      ...(fadeOut ? [{ prim: "reveal", target: `#${S}-xw`, at: swapAt, dur: 0.4, from: { opacity: 1 }, to: { opacity: 0 } }] : []),
       { prim: "reveal", target: `#${S}-vw`, at: swapAt + 0.3, dur: 0.7, from: { opacity: 0, scale: 0.7 }, ease: "back.out(1.6)" },
       { prim: "reveal", target: `#${S}-wrongh`, at: tW, dur: 0.5, from: { opacity: 0, y: 40 }, ease: ctx.ease },
       { prim: "reveal", target: `#${S}-wrongb`, at: tW + 0.12, dur: 0.5, from: ctx.motionFrom(), ease: ctx.ease },
@@ -113,7 +116,7 @@ ${block("right")}
       { prim: "draw", target: `#${S}-st2`, at: x2, dur: 0.45, ease: "power1.inOut" },
       { prim: "slide", target: `#${S}-wrong`, at: swapAt, dur: 0.6, from: { x: 0, y: 0, scale: 1 }, to: MINI, ease: "power3.inOut" },
       { prim: "dim", targets: [`#${S}-wrong`], at: swapAt + 0.4, to: 0.5 },
-      { prim: "reveal", target: `#${S}-gw`, at: swapAt, dur: 0.5, from: { opacity: 1 }, to: { opacity: 0 } },
+      ...(fadeOut ? [{ prim: "reveal", target: `#${S}-gw`, at: swapAt, dur: 0.5, from: { opacity: 1 }, to: { opacity: 0 } }] : []),
       { prim: "reveal", target: `#${S}-gr`, at: swapAt + 0.1, dur: 0.7, from: { opacity: 0 } },
       { prim: "reveal", target: `#${S}-right`, at: swapAt + 0.15, dur: 0.65, from: { opacity: 0, y: 160 }, ease: "power3.out" },
       { prim: "draw", target: `#${S}-ckp`, at: swapAt + 0.5, dur: 0.5 },

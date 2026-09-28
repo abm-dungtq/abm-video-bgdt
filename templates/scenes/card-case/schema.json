@@ -3,6 +3,7 @@
   "family": "case",
   "card": "card-case",
   "variants": ["story", "chat", "polaroid"],
+  "directorOnly": ["polaroid"],
   "signatures": ["chat"],
   "zone": { "story": "split-40-60", "chat": "hero-center", "polaroid": "triptych" },
   "slots": {

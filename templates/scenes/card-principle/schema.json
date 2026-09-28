@@ -3,6 +3,7 @@
   "family": "principle",
   "card": "card-principle",
   "variants": ["quote", "keyword", "monolith"],
+  "directorOnly": ["monolith"],
   "signatures": ["keyword"],
   "zone": { "quote": "full-bleed-quote", "keyword": "hero-center", "monolith": "screen-focus" },
   "slots": {

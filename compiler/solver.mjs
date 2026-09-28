@@ -242,12 +242,15 @@ export const BUILD = {
       const it = items(ps, 28, 1, 4);
       if (!it) return null;
       const title = fit(it[0].p.text, 24);
-      return title ? { slots: { title, items: it.slice(1, 4).map((x) => x.t), icon: iconFor(it[0].t, c.sentOf(it[0].p)) }, cue: cueOf(it[0]) } : null;
+      const its = it.slice(1, 4).map((x) => x.t);
+      // under the director a side with nothing under its title leaves `items` out instead of an empty list
+      return title ? { slots: { title, ...(its.length || c.hintHere === undefined ? { items: its } : {}), icon: iconFor(it[0].t, c.sentOf(it[0].p)) }, cue: cueOf(it[0]) } : null;
     };
     const L = side(c.ph.filter((p) => p.sent < mid)), R = side(c.ph.filter((p) => p.sent >= mid));
     if (!L || !R) return null;
-    // under the director a half with a title and nothing under it reads as a gap: leave the shot to another template
-    if (c.hintHere !== undefined && !c.relaxed && (!L.slots.items.length || !R.slots.items.length)) return null;
+    // under the director a half with a title and nothing under it reads as a gap: leave such a shot to another template,
+    // unless it is the frame's own split hint (keeping the hint matters more)
+    if (c.hintHere === false && !c.relaxed && (!L.slots.items?.length || !R.slots.items?.length)) return null;
     return { slots: { left: L.slots, right: R.slots }, reveals: { left: L.cue, right: R.cue } };
   },
   stat: (c) => {
@@ -346,12 +349,15 @@ export const BUILD = {
   },
   dialogue: (c) => {
     // turns: sentences (or labels); "Tên: lời" names the speaker, else speakers alternate
-    const SPK = /^([^:]{1,24}):\s*(.+)$/u;
+    // a speaker is a short name (≤ 3 words, no digits), not a lead-in like "Câu hỏi:", "Lưu ý:", "Bước 2:" or "Lúc 10:30"
+    const SPK = /^([^:\d]{1,24}):\s*(.+)$/u;
+    const NOT_NAME = /^(câu hỏi|lưu ý|ví dụ|bước|lúc|chú ý|kết luận|tóm lại|mẹo|gợi ý|nhớ|tip)(\s|$)/u;
     const raw = c.labelled ? c.ph.map((p) => ({ text: p.text, cue: p.cue })) : c.sents.map((s) => ({ text: s.text, cue: `sent:${s.k}.start` }));
     const names = [], turns = [], reveals = {};
     for (const r of raw) {
       if (turns.length === 4) break;
-      const m = r.text.match(SPK);
+      const m0 = r.text.match(SPK);
+      const m = m0 && m0[1].trim().split(/\s+/).length <= 3 && !NOT_NAME.test(norm(m0[1])) ? m0 : null;
       let who = turns.length ? 1 - turns.at(-1).who : 0;
       if (m) {
         const nm = fit(m[1].replace(/\s+(?:hỏi|nói|đáp|trả lời)$/iu, ""), 14);
@@ -367,7 +373,7 @@ export const BUILD = {
     }
     if (turns.length < 2 || !turns.some((x) => x.who === 0) || !turns.some((x) => x.who === 1)) return null;
     // two plain sentences are not a conversation: without "Tên: lời" turns, only a frame hinted `dialogue` becomes one
-    if (!names.length && c.frame.scene_hint !== "dialogue") return null;
+    if (names.length < 2 && c.frame.scene_hint !== "dialogue") return null;
     const def = ["Người hỏi", "Người đáp"];
     return { slots: { speakers: [0, 1].map((i) => ({ name: names[i] ?? def[i] })), turns }, reveals };
   },
@@ -388,7 +394,7 @@ export const BUILD = {
     // a number said in a stage's sentence becomes its value; kept only when every stage has its own and they never grow
     const used = new Set();
     const val = it.map((x) => { const n = c.nums.find((v) => v.sent === x.p.sent && !used.has(v)); if (n) used.add(n); return n; });
-    const withNum = val.every(Boolean) && val.every((n, i) => !i || n.value <= val[i - 1].value);
+    const withNum = val.every((n) => n && n.value <= 999999) && val.every((n, i) => !i || n.value <= val[i - 1].value);
     return { slots: { stages: it.map((x, i) => ({ label: x.t, ...(withNum ? { value: val[i].value, ...(val[i].suffix ? { suffix: val[i].suffix } : {}) } : {}) })) },
       reveals: Object.fromEntries(it.map((x, i) => [`stages.${i}`, cueOf(x)])) };
   },
@@ -424,7 +430,7 @@ export const BUILD = {
   "question-hook": (c) => {
     const q = c.sents.find((s) => /[?？]\s*$/.test(s.text) && [...s.text.trim()].length <= 90);
     if (!q) return null;
-    const t = q.text.trim().replace(/\s+([?？])$/, "$1");
+    const t = q.text.trim().replace(/\s*[?？]$/, "?");
     const question = t.charAt(0).toUpperCase() + t.slice(1);
     const f = c.ph.find((p) => p.sent === q.k && norm(question).includes(norm(p.text)) && [...p.text].length <= 24);
     const opts = items(c.ph.filter((p) => p.sent > q.k), 24, 2, 3);
@@ -453,8 +459,8 @@ export const BUILD = {
     const L = side(A), R = side(B);
     if (!L || !R) return null;
     const POS = /lợi|tốt|nên|hiệu quả|nhanh|đúng|thắng|nặng hơn|vượt/g, NEG = /hại|xấu|chậm|tốn|rủi ro|sai|thua|nhẹ hơn/g;
-    const score = (s) => (s.text.match(POS)?.length ?? 0) - (s.text.match(NEG)?.length ?? 0);
-    const d = score(L) - score(R);
+    const tone = (s) => (s.text.match(POS)?.length ?? 0) - (s.text.match(NEG)?.length ?? 0);
+    const d = tone(L) - tone(R);
     const tail = c.sents.find((s) => s.k > Math.max(L.last.sent, R.last.sent));
     const rv = (k, s) => Object.fromEntries(s.cues.map((cue, i) => [i ? `${k}.items.${i - 1}` : k, cue]));
     return { slots: { left: L.slots, right: R.slots, winner: d > 0 ? "left" : d < 0 ? "right" : "even" },
@@ -659,35 +665,35 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         const built = BUILD[hintT]?.(c);
         return Boolean(built && !validate(hintSchema.slots, built.slots).length);
       };
-      const whole = !long && Boolean(hintSchema && frame.scene_hint !== "title" && hintSchema.family !== prevFamily
+      const whole0 = !long && Boolean(hintSchema && frame.scene_hint !== "title" && hintSchema.family !== prevFamily
         && hintSchema.family !== nextHintFamily && duration >= (hintSchema.duration?.min ?? 0) - 0.01
         && duration <= Math.max(hintSchema.duration?.max ?? maxShot, WHOLE_FRAME_MAX_S) + 0.01 && wholeFits());
-      const cuts = whole ? [] : (long && splitShots(allSents, 0, duration, maxShot, 2.5, longRule.min))
-        || splitShots(allSents, 0, duration, maxShot) || [];
-      // cut just before the next group's first keyword phrase (not at its sentence start), so a new shot never waits
-      // long on bare structure; fall back to the sentence start when that would break a shot's length limits
-      const cutCues = cuts.map((k, j) => {
-        const next = cuts[j + 1] ?? Infinity;
-        const p = allPh.find((x) => x.sent >= k && x.sent < next);
-        const sentEdge = allSents[k - 1].start - 0.3;
-        const kwEdge = p ? r2(p.time - 0.6) : null;
-        return kwEdge && kwEdge > sentEdge ? { t: kwEdge, cue: `${p.cue}-0.6`, alt: { t: sentEdge, cue: `sent:${k}.start-0.3` } }
-          : { t: sentEdge, cue: `sent:${k}.start-0.3` };
-      });
-      const lens = (ts) => [0, ...ts, duration].slice(1).map((x, j, arr) => x - (j ? arr[j - 1] : 0));
-      let ts = cutCues.map((c) => c.t);
-      const ok = (xs) => lens(xs).every((l) => l <= maxShot + 0.01 && l >= 2.5);
-      cutCues.forEach((c, j) => {
-        if (c.alt && !ok(ts)) { ts[j] = c.alt.t; Object.assign(c, c.alt); }
-      });
-      const edges = [0, ...cutCues.map((c) => c.t), duration];
-      const windows = edges.slice(1).map((b, i) => [
-        i === 0 ? "start" : "prev.end",
-        i === edges.length - 2 ? "end" : cutCues[i].cue,
-      ]);
-      let labelsUsed = false;
-      const shots = [];
-      const shotCtx = (i) => {
+      // the frame's windows for a list of sentence cuts: cut just before the next group's first keyword phrase (not at
+      // its sentence start), so a new shot never waits long on bare structure; fall back to the sentence start when that
+      // would break a shot's length limits
+      const cutWindows = (cuts) => {
+        const cutCues = cuts.map((k, j) => {
+          const next = cuts[j + 1] ?? Infinity;
+          const p = allPh.find((x) => x.sent >= k && x.sent < next);
+          const sentEdge = allSents[k - 1].start - 0.3;
+          const kwEdge = p ? r2(p.time - 0.6) : null;
+          return kwEdge && kwEdge > sentEdge ? { t: kwEdge, cue: `${p.cue}-0.6`, alt: { t: sentEdge, cue: `sent:${k}.start-0.3` } }
+            : { t: sentEdge, cue: `sent:${k}.start-0.3` };
+        });
+        const lens = (ts) => [0, ...ts, duration].slice(1).map((x, j, arr) => x - (j ? arr[j - 1] : 0));
+        const ts = cutCues.map((c) => c.t);
+        const ok = (xs) => lens(xs).every((l) => l <= maxShot + 0.01 && l >= 2.5);
+        cutCues.forEach((c, j) => {
+          if (c.alt && !ok(ts)) { ts[j] = c.alt.t; Object.assign(c, c.alt); }
+        });
+        const edges = [0, ...cutCues.map((c) => c.t), duration];
+        const windows = edges.slice(1).map((b, i) => [
+          i === 0 ? "start" : "prev.end",
+          i === edges.length - 2 ? "end" : cutCues[i].cue,
+        ]);
+        return { edges, windows };
+      };
+      const shotCtxIn = (edges, i) => {
         const a = edges[i], b = edges[i + 1];
         const inWin = (t) => t >= a - 0.05 && t < b - 0.35;
         const anchor = (s) => allPh.find((p) => p.sent === s.k)?.time ?? s.start;
@@ -698,21 +704,44 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           text: sents.map((s) => s.text).join(" "), sentOf: (p) => allSents[p.sent - 1]?.text ?? "",
         };
       };
-      // director: the hint's shot is the latest window whose content can build the hint's template (a title stays first)
+      // director: the hint's shot is the latest window whose content can build the hint's template (a title stays first);
+      // window 0 does not count when the previous frame closed on the hint's family, which would block it
+      const probeHint = (edges, windows) => {
+        for (let i = windows.length - 1; i >= 0; i--) {
+          if (i === 0 && hintSchema.family === prevFamily) continue;
+          const probe = { ...shotCtxIn(edges, i), hintHere: true };
+          const built = BUILD[hintT](frame.labels?.length && LABELED.has(hintT) ? withLabels(probe, frame.labels) : probe);
+          if (built && !validate(hintSchema.slots, built.slots).length) return i;
+        }
+        return -1;
+      };
+      let whole = whole0;
+      let { edges, windows } = cutWindows(whole ? [] : (long && splitShots(allSents, 0, duration, maxShot, 2.5, longRule.min))
+        || splitShots(allSents, 0, duration, maxShot) || []);
       let hintShot = 0;
       if (D && hintT !== "title" && hintSchema && BUILD[hintT]) {
-        hintShot = windows.length - 1;
-        for (let i = windows.length - 1; i >= 0; i--) {
-          const probe = shotCtx(i);
-          const built = BUILD[hintT](frame.labels?.length && LABELED.has(hintT) ? withLabels(probe, frame.labels) : probe);
-          if (built && !validate(hintSchema.slots, built.slots).length) { hintShot = i; break; }
+        hintShot = probeHint(edges, windows);
+        // no window of the forced cut can show the hint: fall back to the plain cut, then to one whole-frame shot
+        if (hintShot < 0 && long) {
+          ({ edges, windows } = cutWindows(splitShots(allSents, 0, duration, maxShot) || []));
+          hintShot = probeHint(edges, windows);
         }
+        if (hintShot < 0 && !whole && duration <= WHOLE_FRAME_MAX_S && hintSchema.family !== prevFamily && wholeFits()) {
+          whole = true;
+          ({ edges, windows } = cutWindows([]));
+          hintShot = 0;
+        }
+        if (hintShot < 0) hintShot = windows.length - 1;
       }
+      let labelsUsed = false;
+      const shots = [];
+      const shotCtx = (i) => shotCtxIn(edges, i);
       for (let i = 0; i < windows.length; i++) {
         const a = edges[i], b = edges[i + 1];
         const c = {
           ...shotCtx(i),
-          ...(D ? { hintHere: i === hintShot, labelsLeft: frame.labels?.length && !labelsUsed ? frame.labels.length : 0 } : {}),
+          ...(D ? { hintHere: i === hintShot,
+            labelsLeft: frame.labels?.length && !labelsUsed && (!LABELED.has(hintT) || i === hintShot) ? frame.labels.length : 0 } : {}),
         };
         const nextHint = fi + 1 < fs.length ? (HINT[fs[fi + 1].scene_hint] ?? fs[fi + 1].scene_hint) : null;
         const nextLong = D && nextHint && nextHint !== "title" && durationOf(fs[fi + 1]) > longRule.overS;
@@ -759,7 +788,8 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
             const early = `${i === 0 ? "start" : "prev.end"}+0.35`;
             built.reveals[k0] = rule0.range && String(built.reveals[k0] ?? "").includes("..") ? `${early}..${String(built.reveals[k0]).split("..")[1]}` : early;
           }
-          const variants = schema.variants;
+          // looks added for the director (schema directorOnly) stay out of projects solved without it, so they re-solve as before
+          const variants = D ? schema.variants : schema.variants.filter((v) => !(schema.directorOnly ?? []).includes(v));
           const fresh = variants.filter((v) => !recent.slice(-5).includes(`${t}/${v}`));
           let pool = fresh.length ? fresh : variants;
           if (D) {
@@ -815,7 +845,9 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
       // keep the best try (fewest violations, then the smallest summed relative excess, then the most distinct looks)
       const script = JSON.parse(readFileSync(join(P, "script.json"), "utf8"));
       const judge = (sc, st) => {
-        const metrics = score({ scenes: sc, script, durations: st.durations, longS: cfg.scenes.minShotsLongFrame?.overS ?? 12 });
+        const hints = new Map(script.chapters.flatMap((ch) => ch.frames.map((f) => [f.id, HINT[f.scene_hint] ?? f.scene_hint])));
+        const metrics = score({ scenes: sc, script, durations: st.durations, longS: cfg.scenes.minShotsLongFrame?.overS ?? 12,
+          wholeMaxS: WHOLE_FRAME_MAX_S, hints });
         const v = violations(metrics, card);
         const excess = v.reduce((n, x) => n + Math.abs(x.value - x.bound) / (x.bound || 1), 0);
         return { metrics, v, excess };

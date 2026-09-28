@@ -49,24 +49,26 @@ export function chapterOverlap(chapters) {
  * @param script    script.json ({chapters: [{frames: [{id, scene_hint}]}]}) or null
  * @param durations Map frame id → seconds, or null when the voice is not built yet
  */
-export function score({ scenes, script = null, durations = null, longS = 12, wholeMaxS = 16 }) {
+export function score({ scenes, script = null, durations = null, longS = 12, wholeMaxS = 16, hints = null, hintsLost = null }) {
   const frames = scenes.frames;
   const shots = frames.flatMap((f) => (f.shots ?? [{ template: "custom", variant: "-", slots: {} }]).map((s) => ({ ...s, frame: f.frame })));
   const perTemplate = new Map(), perPair = new Map();
   for (const s of shots) {
     if (s.template !== "title") perTemplate.set(s.template, (perTemplate.get(s.template) ?? 0) + 1);
-    const k = `${s.template}/${s.variant}`;
-    perPair.set(k, (perPair.get(k) ?? 0) + 1);
+    // chapter titles repeat by nature (one per chapter, three looks): they do not count against variety
+    if (s.template !== "title") perPair.set(`${s.template}/${s.variant}`, (perPair.get(`${s.template}/${s.variant}`) ?? 0) + 1);
   }
   const [maxTemplate, maxCount] = [...perTemplate].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
   const acc = { empty: 0, lists: [] };
   shots.forEach((s) => walk(s.slots ?? {}, acc));
   let longSingleShot = null;
   if (durations) {
-    // a whole-frame card (exercise, quiz, case) is one shot by design up to wholeMaxS
+    // one shot of the frame's own scene hint (hints: Map frame → template) or a whole-frame card (exercise, quiz, case)
+    // is one shot by design up to wholeMaxS: the frame keeps what the script asked for
     const WHOLE = /^card-(exercise|quiz|case)$/;
+    const byDesign = (f) => { const t = f.shots?.[0]?.template ?? ""; return WHOLE.test(t) || hints?.get(f.frame) === t; };
     longSingleShot = frames.filter((f) => (f.shots?.length ?? 1) === 1 && (durations.get(f.frame) ?? 0) > longS
-      && !(WHOLE.test(f.shots?.[0]?.template ?? "") && durations.get(f.frame) <= wholeMaxS)).length;
+      && !(byDesign(f) && durations.get(f.frame) <= wholeMaxS)).length;
   }
   const overlap = script?.chapters ? chapterOverlap(script.chapters) : null;
   let identicalChapterSeqPairs = null;
@@ -83,7 +85,7 @@ export function score({ scenes, script = null, durations = null, longS = 12, who
     maxTemplate,
     maxTemplateShare: r2(maxCount / Math.max(1, shots.length)),
     maxPairReuse: Math.max(0, ...perPair.values()),
-    distinctPairRatio: r2(perPair.size / Math.max(1, shots.length)),
+    distinctPairRatio: r2(perPair.size / Math.max(1, shots.filter((s) => s.template !== "title").length)),
     templatesUsed: perTemplate.size + (shots.some((s) => s.template === "title") ? 1 : 0),
     chapterHintOverlap: overlap?.max ?? null,
     chapterHintOverlapMean: overlap?.mean ?? null,
@@ -91,6 +93,7 @@ export function score({ scenes, script = null, durations = null, longS = 12, who
     exerciseShots: shots.filter((s) => s.template === "card-exercise").length,
     emptyRequiredSlots: acc.empty,
     labelLengthCV: r2(Math.max(0, ...acc.lists.map(cv))),
+    ...(hintsLost != null ? { hintsLost } : {}),
   };
 }
 

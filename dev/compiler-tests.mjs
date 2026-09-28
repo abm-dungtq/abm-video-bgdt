@@ -216,6 +216,21 @@ test("balance: two sides from the halves; one sentence is not a balance", () => 
     [kw(1, "tự làm"), kw(1, "tốn thời gian"), kw(2, "dùng AI"), kw(2, "hiệu quả hơn")])));
   eq(BUILD.balance(one), null);
 });
+test("fit cues do not match look-alike words", () => {
+  const says = (text) => ({ ...shot([sent(1, text)], [kw(1, "a b"), kw(1, "c d"), kw(1, "e f")]), frame: { title: "Khung thử" } });
+  const cue = (id, text) => fitOk(schemaOf(id).fit, says(text));
+  eq([cue("pyramid", "Nhà cung cấp gửi hàng đúng hẹn."), cue("funnel", "Chuyển đổi số bắt đầu từ con người."),
+    cue("layers", "Lớp học bắt đầu lúc tám giờ."), cue("pyramid", "Xây từ nền tảng dữ liệu."), cue("layers", "Bóc tách từng lớp của vấn đề.")],
+  [false, false, false, true, true]);
+});
+test("dialogue: lead-ins and clock times are not speakers", () => {
+  eq([BUILD.dialogue(shot([sent(1, "Câu hỏi: vì sao dự án dừng?"), sent(2, "Lưu ý: dữ liệu phải sạch.")], [])),
+    BUILD.dialogue(shot([sent(1, "Lúc 10:30 đội họp."), sent(2, "Sau đó mọi người về.")], []))], [null, null]);
+});
+test("funnel: a stage over 999 999 drops the numbers, not the funnel", () => {
+  const c = { ...three, nums: [{ value: 2000000, sent: 1 }, { value: 1000000, sent: 2 }, { value: 500000, sent: 3 }] };
+  const b = BUILD.funnel(c); valid("funnel", b); eq(b.slots.stages.some((s) => "value" in s), false);
+});
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

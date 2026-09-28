@@ -3,6 +3,7 @@
   "family": "antipattern",
   "card": "card-antipattern",
   "variants": ["side-by-side", "flip", "strike"],
+  "directorOnly": ["strike"],
   "signatures": ["flip"],
   "zone": { "side-by-side": "split-50", "flip": "hero-center", "strike": "strip-top" },
   "slots": {

@@ -51,7 +51,8 @@ for (const [i, raw] of lines.entries()) {
     ch.frames.push(fr);
   } else if (line.startsWith("|")) {
     if (!fr) throw new Error(`line ${i + 1}: labels outside a frame`);
-    const labels = line.slice(1).split("/").map((x) => x.trim()).filter(Boolean);
+    // labels are split on a slash with a space beside it, so "CI/CD" or "A/B testing" stay whole
+    const labels = line.slice(1).split(/\s+\/\s*|\s*\/\s+/).map((x) => x.trim()).filter(Boolean);
     const long = labels.find((x) => [...x].length > 32);
     if (long) throw new Error(`line ${i + 1}: label longer than 32 chars: "${long}"`);
     fr.labels = [...(fr.labels ?? []), ...labels];
