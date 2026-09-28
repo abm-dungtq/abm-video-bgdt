@@ -20,7 +20,10 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 ```
 
 - One entry per storyboard frame. Shots tile the frame: the first window starts at `start`, each next one at
-  `prev.end`, the last ends at `end`. A shot lasts within its template's length range (catalog below) and ≤ 10 s.
+  `prev.end`, the last ends at `end`. A shot lasts within its template's length range (catalog below) and ≤ 10 s,
+  except a frame made of one shot of its own `scene_hint` template, which may last up to 16 s: a comparison, a case,
+  an exercise or a quiz needs all of its sentences, and cutting it in two leaves that shot with half of them.
+  The solver makes such a frame one shot when the template can be built from the whole frame, else cuts it as usual.
 - `slots` must match the template's slots exactly (lint names the field that is wrong). Text is on-screen copy: short
   labels in Vietnamese with full diacritics, never whole narration sentences (the karaoke band shows those).
 - `reveals` is optional: a key you leave out lands on the next keyword phrase of the window (`kw` keys) or is spread

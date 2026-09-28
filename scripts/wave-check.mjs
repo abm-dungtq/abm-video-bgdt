@@ -38,7 +38,9 @@ if (renderOut && nums.some((n, i) => n !== i + 1)) throw new Error("--render nee
 rmSync(W, { recursive: true, force: true });
 mkdirSync(join(W, "compositions/frames"), { recursive: true });
 mkdirSync(join(W, "assets/voice"), { recursive: true });
-for (const f of ["hyperframes.json", "meta.json", "package.json", "frame.md", "index.html", "video.config.json"]) cpSync(join(P, f), join(W, f));
+for (const f of ["hyperframes.json", "meta.json", "package.json", "index.html", "video.config.json"]) cpSync(join(P, f), join(W, f));
+// frame.md is the design brief of hand-built frames; a project whose frames are all compiled has none
+if (existsSync(join(P, "frame.md"))) cpSync(join(P, "frame.md"), join(W, "frame.md"));
 // every asset folder except the voice (only the wave's clips are copied below): fonts, screens, images…
 for (const d of readdirSync(join(P, "assets"))) {
   if (d !== "voice") cpSync(join(P, "assets", d), join(W, "assets", d), { recursive: true });

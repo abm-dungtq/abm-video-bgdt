@@ -9,7 +9,7 @@ import { validate } from "../compiler/schema.mjs";
 import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
-import { numbers } from "../compiler/solver.mjs";
+import { BUILD, numbers } from "../compiler/solver.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -102,6 +102,36 @@ test("counters: a version, a date and a year are not counters", () => eq(
   numbers(numCtx("Bản 7.75 tháng 8/2026 năm 2026 có 10 hàm và 64.000 dòng")).map((x) => x.value), [10, 64000]));
 test("counters: a spoken year is not a counter", () => eq(
   numbers(numCtx("tháng tám năm hai nghìn không trăm hai mươi sáu có hơn hai mươi nền tảng")).map((x) => `${x.value}${x.suffix}`), ["20+"]));
+
+// builders: spoken sentences are longer than slots, and a comparison may put its right way second of three
+const sent = (k, text) => ({ k, text, start: k * 3 });
+const kw = (sentK, text) => ({ sent: sentK, text, cue: `kw:${text.split(" ")[0]}`, time: sentK * 3 + 1 });
+const shot = (sents, ph) => ({ sents, ph, nums: [], text: sents.map((s) => s.text).join(" "), sentOf: (p) => sents[p.sent - 1]?.text ?? "",
+  frame: { title: "Khung thử" } });
+test("antipattern: the right side starts at the sentence that says the right way", () => {
+  const b = BUILD["card-antipattern"](shot(
+    [sent(1, "Cách làm sai là coi AI như một khóa học phần mềm."), sent(2, "Cách làm đúng là tái cấu trúc cách cả công ty làm việc."),
+      sent(3, "Công cụ không có lỗi, lỗi nằm ở cách định vị.")],
+    [kw(1, "khóa học phần mềm"), kw(2, "tái cấu trúc"), kw(3, "cách định vị")]));
+  eq(b.slots, { wrong: { label: "Cách làm sai", items: ["Khóa học phần mềm"] }, right: { label: "Cách làm đúng", items: ["Tái cấu trúc", "Cách định vị"] } });
+});
+test("antipattern: \"không đúng\" does not start the right side", () => {
+  const b = BUILD["card-antipattern"](shot(
+    [sent(1, "Hô hào là sai."), sent(2, "Làm vậy là không đúng."), sent(3, "Hãy tự giao việc.")],
+    [kw(1, "hô hào"), kw(2, "không đúng"), kw(3, "tự giao việc")]));
+  eq(b.slots.right.items, ["Hãy tự giao việc"]);
+});
+test("case: the detail is the first later sentence that fits", () => {
+  const b = BUILD["card-case"](shot(
+    [sent(1, "Một tổng giám đốc điều hành 45 nhân sự."), sent(2, "Mỗi ngày ông ấy mất 1,5 tiếng duyệt báo giá và 1 tiếng đôn đốc tiến độ."),
+      sent(3, "Mọi quyết định đều chờ ông ấy.")], [kw(2, "duyệt báo giá")]));
+  eq([b.slots.detail, b.reveals.detail], ["Mọi quyết định đều chờ ông ấy", "sent:3.start"]);
+});
+test("split: a side with one keyword phrase is a title without items", () => {
+  const b = BUILD.split(shot([sent(1, "Cách nhìn thứ nhất coi AI là phần mềm văn phòng."), sent(2, "Cách nhìn thứ hai coi AI là lực lượng lao động mới.")],
+    [kw(1, "phần mềm văn phòng"), kw(2, "lực lượng lao động mới")]));
+  eq([b.slots.left.title, b.slots.left.items, b.slots.right.title], ["Phần mềm văn phòng", [], "Lực lượng lao động mới"]);
+});
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

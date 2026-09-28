@@ -16,6 +16,9 @@ import { endsPhrase, frameCtx, resolve, resolveRange } from "./cues.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES = resolvePath(HERE, "../templates/scenes");
+// A frame made of one shot of its own scene_hint template may last this long: a comparison, a case, an exercise or a
+// quiz needs all of its sentences, and cutting a 12 s frame in two leaves the hint shot with half of them.
+export const WHOLE_FRAME_MAX_S = 16;
 const TOL = 0.2;
 const r2 = (x) => Math.round(x * 100) / 100;
 
@@ -120,6 +123,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   const read = (f) => JSON.parse(readFileSync(join(P, f), "utf8"));
   const scenes = read("scenes.json");
   const script = read("script.json");
+  const hintOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.scene_hint])));
   const audioMeta = estimated ? null : read("audio_meta.json");
   const board = readStoryboard(readFileSync(join(P, "STORYBOARD.md"), "utf8"));
   const rate = existsSync(join(P, ".probe/rate.json")) ? read(".probe/rate.json").syllables_per_s : script.meta?.rate ?? 4.3;
@@ -176,8 +180,10 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       if (prevEnd != null && Math.abs(a - prevEnd) > TOL) errors.push(`${at}: gap or overlap: starts at ${a}, previous shot ends at ${prevEnd}`);
       if (b <= a) { errors.push(`${at}: window end ${b} is not after its start ${a}`); continue; }
       const len = r2(b - a), d = tpl.schema.duration ?? {};
+      const wholeHint = spec.shots.length === 1 && hintOf.get(bf.no) === tpl.schema.family;
+      const max = wholeHint && d.max != null ? Math.max(d.max, WHOLE_FRAME_MAX_S) : d.max;
       if (d.min != null && len < d.min - 0.01) errors.push(`${at}: ${len} s is shorter than the template minimum ${d.min} s`);
-      if (d.max != null && len > d.max + 0.01) errors.push(`${at}: ${len} s is longer than the template maximum ${d.max} s`);
+      if (max != null && len > max + 0.01) errors.push(`${at}: ${len} s is longer than the template maximum ${max} s`);
       if (!variety) { /* template CI puts variants side by side on purpose */ }
       else if (prevShot && prevShot.template === s.template && prevShot.variant === variant) errors.push(`${at}: same template and variant as the previous shot`);
       else if (prevShot && prevShot.family === tpl.schema.family) errors.push(`${at}: same family "${tpl.schema.family}" as the previous shot`);
@@ -207,7 +213,6 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     warnings.push(...varietyWarnings({ flat, out, script, byNo }));
     (legacy ? warnings : errors).push(...varietyErrors(flat));
     // the first shot of a frame follows the scene_hint the script chose for it
-    const hintOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.scene_hint])));
     for (const f of out) {
       const first = flat.find((s) => s.frame === f.no);
       if (!f.custom && first && hintOf.get(f.no) && first.family !== hintOf.get(f.no))

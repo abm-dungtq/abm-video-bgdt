@@ -17,7 +17,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { endsPhrase, frameCtx, norm, resolve } from "./cues.mjs";
-import { analyze, loadTemplate, readStoryboard, TEMPLATES } from "./lint.mjs";
+import { analyze, loadTemplate, readStoryboard, TEMPLATES, WHOLE_FRAME_MAX_S } from "./lint.mjs";
 import { mulberry32 } from "./compile.mjs";
 import { validate } from "./schema.mjs";
 
@@ -166,7 +166,7 @@ const items = (ps, max, lo, hi) => {
 };
 const cueOf = (x) => x.p.cue;
 
-const BUILD = {
+export const BUILD = {
   title: (c) => {
     const title = fit(c.frame.title, 40) ?? fit(c.chapter.title, 40);
     if (!title || !c.first) return null;
@@ -220,7 +220,7 @@ const BUILD = {
     const mid = c.sents.length > 1 ? c.sents[Math.floor(c.sents.length / 2)].k : null;
     if (!mid) return null;
     const side = (ps) => {
-      const it = items(ps, 28, 2, 4);
+      const it = items(ps, 28, 1, 4);
       if (!it) return null;
       const title = fit(it[0].p.text, 24);
       return title ? { slots: { title, items: it.slice(1, 4).map((x) => x.t), icon: iconFor(it[0].t, c.sentOf(it[0].p)) }, cue: cueOf(it[0]) } : null;
@@ -293,24 +293,32 @@ const BUILD = {
   },
   "card-antipattern": (c) => {
     if (c.sents.length < 2) return null;
-    const half = Math.ceil(c.sents.length / 2);
-    const side = (ss) => {
-      const lab = fit(c.ph.find((p) => ss.some((s) => s.k === p.sent))?.text, 20);
+    // the right side starts at the sentence that announces the right way ("cách làm đúng là…"), else at the half
+    const turn = c.sents.findIndex((s, i) => i > 0 && /(?:^|\s)(?<!không\s)(?:đúng|thay vào đó|ngược lại)(?=\s|$)/u.test(norm(s.text)));
+    const half = turn > 0 ? turn : Math.ceil(c.sents.length / 2);
+    const side = (ss, plain) => {
+      const ps = c.ph.filter((p) => ss.some((s) => s.k === p.sent));
+      const lab = fit(ps[0]?.text, 20);
       const its = ss.map((s) => fit(s.text, 40)).filter(Boolean).slice(0, 3);
-      return lab && its.length ? { label: lab, items: its } : null;
+      if (lab && its.length) return { label: lab, items: its };
+      // spoken sentences are often longer than an item: show the side's keyword phrases under a plain label
+      const kws = ps.map((p) => fit(p.text, 40)).filter(Boolean).slice(0, 3);
+      return kws.length ? { label: plain, items: kws } : null;
     };
-    const wrong = side(c.sents.slice(0, half)), right = side(c.sents.slice(half));
+    const wrong = side(c.sents.slice(0, half), "Cách làm sai"), right = side(c.sents.slice(half), "Cách làm đúng");
     if (!wrong || !right) return null;
     return { slots: { wrong, right }, reveals: { wrong: `sent:${c.sents[0].k}.start`, right: `sent:${c.sents[half].k}.start` } };
   },
   "card-case": (c) => {
     const [s1, s2, ...rest] = c.sents;
-    const situation = fit(s1?.text, 90), detail = fit(s2?.text, 60);
+    const situation = fit(s1?.text, 90);
+    const later = c.sents.slice(1).find((s) => fit(s.text, 60));
+    const detail = later ? fit(later.text, 60) : fit(c.ph.find((p) => p.sent === s2?.k)?.text, 60);
     if (!situation || !detail) return null;
     const q = rest.find((s) => /\?$/.test(s.text.trim()));
     const question = q ? fit(q.text, 60) : null;
     return { slots: { situation, detail, ...(question ? { question } : {}) },
-      reveals: { situation: `sent:${s1.k}.start`, detail: `sent:${s2.k}.start`, ...(question ? { question: `sent:${q.k}.start` } : {}) } };
+      reveals: { situation: `sent:${s1.k}.start`, detail: `sent:${(later ?? s2).k}.start`, ...(question ? { question: `sent:${q.k}.start` } : {}) } };
   },
   "card-exercise": (c) => {
     const task = fit(c.sents[0]?.text, 80);
@@ -399,10 +407,23 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
       const ctx = frameCtx(frame.id, script, audioMeta, duration, { estimated, timing: cfg.timing, rate });
       const allPh = phrases(ctx), allSents = sentences(ctx), allNums = numbers(ctx);
       const rng = mulberry32(seed + frame.id);
-      // a frame whose scene_hint names a template that can hold the whole frame is one shot of that template (a
-      // case, an exercise or a comparison needs all of its sentences); otherwise the frame is cut into shots
-      const hintSchema = schemas[HINT[frame.scene_hint] ?? frame.scene_hint];
-      const whole = hintSchema && frame.scene_hint !== "title" && duration <= (hintSchema.duration?.max ?? maxShot) + 0.01;
+      // a frame whose scene_hint names a template that can hold the whole frame is one shot of that template, up to
+      // WHOLE_FRAME_MAX_S (a case, an exercise or a comparison needs all of its sentences); otherwise, or when the
+      // template cannot be built from the whole frame, the frame is cut into shots
+      const hintT = HINT[frame.scene_hint] ?? frame.scene_hint;
+      const hintSchema = schemas[hintT];
+      const nextHintFamily = fi + 1 < fs.length ? schemas[HINT[fs[fi + 1].scene_hint] ?? fs[fi + 1].scene_hint]?.family : null;
+      const wholeFits = () => {
+        const inWin = (t) => t < duration - 0.35;
+        const c = { P, frame, chapter: ch, chapterIndex: ci, first: true, titleLead, ph: allPh.filter((p) => inWin(p.time)),
+          nums: allNums.filter((n) => inWin(n.time)), sents: allSents, text: allSents.map((s) => s.text).join(" "),
+          sentOf: (p) => allSents[p.sent - 1]?.text ?? "" };
+        const built = BUILD[hintT]?.(c);
+        return Boolean(built && !validate(hintSchema.slots, built.slots).length);
+      };
+      const whole = Boolean(hintSchema && frame.scene_hint !== "title" && hintSchema.family !== prevFamily
+        && hintSchema.family !== nextHintFamily && duration >= (hintSchema.duration?.min ?? 0) - 0.01
+        && duration <= Math.max(hintSchema.duration?.max ?? maxShot, WHOLE_FRAME_MAX_S) + 0.01 && wholeFits());
       const cuts = whole ? [] : splitShots(allSents, 0, duration, maxShot) ?? [];
       // cut just before the next group's first keyword phrase (not at its sentence start), so a new shot never waits
       // long on bare structure; fall back to the sentence start when that would break a shot's length limits
@@ -445,8 +466,10 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           // the last shot must not share a family with the next frame's hint, which that frame will open with
           if (i === windows.length - 1 && nextHint && schemas[nextHint]?.family === schema.family && fs[fi + 1]) continue;
           const len = b - a, d = schema.duration ?? {};
-          if ((d.min != null && len < d.min - 0.01) || (d.max != null && len > d.max + 0.01)) continue;
-          if (t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
+          const wholeHint = whole && t === hintT;
+          const max = wholeHint && d.max != null ? Math.max(d.max, WHOLE_FRAME_MAX_S) : d.max;
+          if ((d.min != null && len < d.min - 0.01) || (max != null && len > max + 0.01)) continue;
+          if (!wholeHint && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
           const built = BUILD[t](c);
           if (!built || validate(schema.slots, built.slots).length) continue;
           // reveals must fall inside the window: drop explicit cues that do not, the lint default then takes over
