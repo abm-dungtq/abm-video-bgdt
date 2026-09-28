@@ -2,12 +2,13 @@
 // Walks the stage table in order: the first stage that never ran or is stale, or the first gate that is
 // not approved on the current files, wins. Agent-authored inputs (facts, script) are checked before their stage.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { gateOk, gateStatus } from "./gates.mjs";
 import { MCP } from "./paths.mjs";
 import { activeStages, untouched } from "./stages.mjs";
 import { isStale, load } from "./state.mjs";
+import { readStoryboard } from "../compiler/lint.mjs";
 import { apiUp } from "./tts.mjs";
 
 export const DOCTOR_MAX_AGE_MS = 7 * 24 * 3600e3;
@@ -51,9 +52,22 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
         return gateAction(s, P, g, owner, cli);
       }
     }
+    if (["karaoke", "assemble"].includes(st.name)) {
+      const missing = customWithoutHtml(P);
+      if (missing.length) {
+        const [f] = missing;
+        return { next: `build compositions/frames/${f.src.split("/").pop()} by hand (frame ${f.no} is custom), following references/custom-frame.md`,
+          run: `node tools/wave-check.mjs ${f.no}`,
+          why: `scenes.json marks frame${missing.length > 1 ? `s ${missing.map((x) => x.no).join(", ")}` : ` ${f.no}`} custom and its HTML does not exist yet` };
+      }
+    }
     if (isStale(s, P, st.name, st.inputs, st.needs.stages)) {
-      if (st.name === "tts" && !(await apiUp())) {
-        return { next: "start the speech API and keep it running", run: `node ${MCP}/start-api.mjs`, why: "tts needs the VieNeu API" };
+      if ((st.name === "tts" || st.name === "probe") && !(await apiUp())) {
+        return { next: "start the speech API and keep it running", run: `node ${MCP}/start-api.mjs`,
+          why: `${st.name === "probe" ? "the probe clips" : "tts"} need the VieNeu API` };
+      }
+      if (st.name === "clean") {
+        return { next: "remove the regenerable files (renders are kept)", run: `${cli} run clean --apply`, why: "the final video is done" };
       }
       if (st.name === "compile" && existsSync(join(P, "scenes.json")) && !s.stages.compile) {
         return { next: "review scenes.json (optional edits, see references/scene-spec.md), then compile", run: `${cli} run compile`,
@@ -65,9 +79,19 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
     if (st.gate && !gateOk(s, P, st.gate)) return gateAction(s, P, st.gate, st.name, cli);
   }
   const out = `renders/${cfg.name}.mp4`;
-  return { next: `deliver ${existsSync(join(P, out)) ? out : "renders/"}, renders/chapters.txt and the QA report`,
-    run: `${cli} run clean --apply`,
+  return { next: `deliver ${existsSync(join(P, out)) ? out : "the video in renders/"}, renders/chapters.txt and renders/qa-report.md to the user`,
+    run: "(nothing left to run)",
     why: "every stage and gate is done" };
+}
+
+/** custom frames in scenes.json whose storyboard `src` has no HTML yet */
+export function customWithoutHtml(P) {
+  if (!existsSync(join(P, "scenes.json")) || !existsSync(join(P, "STORYBOARD.md"))) return [];
+  const custom = JSON.parse(readFileSync(join(P, "scenes.json"), "utf8")).frames.filter((f) => f.custom).map((f) => f.frame);
+  if (!custom.length) return [];
+  return readStoryboard(readFileSync(join(P, "STORYBOARD.md"), "utf8"))
+    .filter((f) => custom.includes(f.no) && f.bullets.src && !existsSync(join(P, f.bullets.src)))
+    .map((f) => ({ no: f.no, src: f.bullets.src }));
 }
 
 export const print = (a) => console.log(`NEXT: ${a.next}\nRUN: ${a.run}\nWHY: ${a.why}`);

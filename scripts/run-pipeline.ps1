@@ -1,3 +1,4 @@
+# deprecated: use node tools/bin/abm-video.mjs run <stage> (kept for projects made before 0.6.0)
 # run-pipeline.ps1 — re-run the lesson video pipeline from any stage (parameters: video.config.json).
 #
 #   pwsh tools/run-pipeline.ps1 -From voice -To assemble

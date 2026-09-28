@@ -9,6 +9,7 @@
 //   abm-video gate <n> --request | --approve "<user's words>" | --reject "<changes>"
 //   abm-video tts [--concurrency N]                pending narration clips (same as run tts)
 //   abm-video tts --text "<text>" --out <wav>      one clip (probes)
+//   abm-video migrate                              bring a project made before this CLI under it (all frames custom)
 //
 // Stages: doctor init probe script [screens] tts voice storyboard compile karaoke assemble draft final clean.
 // A stage refuses to run until the stages and gates it needs are done on the current files.
@@ -24,6 +25,7 @@ import { findProject, scriptsDir, SKILL_ROOT, TOOLS_ROOT } from "../cli/paths.mj
 import { activeStages, STAGES } from "../cli/stages.mjs";
 import { isStale, load, markStage, save } from "../cli/state.mjs";
 import { batch, one } from "../cli/tts.mjs";
+import { migrate } from "../cli/migrate.mjs";
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];
@@ -41,7 +43,8 @@ function doctor(extra = []) {
 
 async function ctx(Pd, cfg) {
   const SC = scriptsDir(Pd);
-  const machine = await import(pathToFileURL(join(SC, "lib/machine.mjs")).href);
+  // machine discovery (skills dir, VieNeu checkout) is not pinned per project: always the skill's own module
+  const machine = await import(pathToFileURL(join(SKILL_ROOT, "scripts/lib/machine.mjs")).href);
   return {
     P: Pd, cfg, SC, args: argv, opt,
     SK: `${machine.findSkillsDir()}/faceless-explainer/scripts`,
@@ -156,12 +159,21 @@ switch (cmd) {
     }
     break;
   }
+  case "migrate": {
+    try {
+      const r = migrate(needProject());
+      console.log(`migrate: ${r.frames} frames marked custom, stages done: ${r.stamped.join(" ")}, gates historic`);
+    } catch (e) {
+      die(`migrate: ${e.message}`);
+    }
+    break;
+  }
   case undefined:
   case "--help":
   case "-h":
     console.log(readFileSync(new URL(import.meta.url), "utf8").split("\n").slice(1, 16).map((l) => l.replace(/^\/\/ ?/, "")).join("\n"));
-    console.log("commands: doctor init status next run gate tts");
+    console.log("commands: doctor init status next run gate tts migrate");
     break;
   default:
-    die(`unknown command "${cmd}" (commands: doctor init status next run gate tts)`);
+    die(`unknown command "${cmd}" (commands: doctor init status next run gate tts migrate)`);
 }

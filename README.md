@@ -36,23 +36,30 @@ Hình được dựng bằng [HyperFrames](https://hyperframes.heygen.com) (HTML
 
 ## Cách hoạt động
 
+Skill là một dây chuyền sản xuất, không phải một bản hướng dẫn: CLI `abm-video` giữ trạng thái từng giai đoạn và các cổng
+duyệt, còn khung hình được **biên dịch** từ thư viện 20 template cảnh (54 biến thể), không phải do model tự viết HTML.
+
 ```mermaid
 flowchart LR
-  A[script.src.txt<br/>kịch bản + fact sheet] -->|Gate 2| B[vieneu-tts MCP<br/>1 clip mỗi câu]
+  A[script.src.txt<br/>kịch bản + fact sheet] -->|Gate 2| B[TTS theo lô<br/>API VieNeu]
   B --> C[trim + ghép theo khung<br/>MMS_FA căn từng từ]
   C --> D[audio_meta.json]
-  A --> E[STORYBOARD.md<br/>cảnh, bố cục, cue]
-  D --> E
-  E --> F[worker song song<br/>1 khung HTML mỗi agent]
+  D --> E[solver<br/>scenes.json]
+  E --> F[trình biên dịch template<br/>emitter luật 0.7.99]
   D --> G[karaoke 162 px<br/>+ overlay chương]
-  F --> H[assemble + transitions<br/>lint · check · snapshot]
-  G --> H
+  F --> H[assemble + transitions<br/>lint · check]
+  G -->|Gate 3| H
   H -->|Gate 4| I[render → ghép giọng gốc<br/>−16 LUFS → MP4]
 ```
 
+- **Model chỉ viết:** fact sheet, kịch bản, và (tùy chọn) chỉnh `scenes.json`. Tối đa 15 % khung được tự dựng tay (`custom`).
+- **Script làm phần còn lại:** giọng đọc, căn thời gian, chọn template và điền nội dung, karaoke, ghép, render, QA, dọn dẹp.
+- **Cổng duyệt gắn với file:** câu trả lời của người dùng được ghi bằng `abm-video gate`; file đổi sau khi duyệt thì cổng
+  mất hiệu lực và giai đoạn sau từ chối chạy.
+
 Skill dựa trên workflow `faceless-explainer` của HeyGen HyperFrames và thay hai bước của nó: giọng đọc (VieNeu thay cho
 TTS của HeyGen) và phụ đề (karaoke 15 % thay cho phụ đề 180 px). Tất cả thông số riêng của một bài nằm trong
-`video.config.json`, nên không script nào chứa giá trị cứng.
+`video.config.json`.
 
 ## Yêu cầu
 
@@ -101,20 +108,27 @@ Nói với agent, ví dụ:
 
 > Làm video bài giảng 10 phút giới thiệu về *<chủ đề>* cho học viên mới, giọng Thanh Bình, theo chuẩn DNA BGĐT.
 
-Agent sẽ đi theo `SKILL.md`:
+Agent chỉ lặp một việc: chạy `abm-video next` rồi làm đúng việc nó in ra.
 
-| # | Giai đoạn | Kết quả |
+```
+node <thư-mục-skill>/bin/abm-video.mjs next      trước khi có dự án (nó bảo chạy init)
+node tools/bin/abm-video.mjs next                trong dự án
+```
+
+| # | Giai đoạn (`abm-video run …`) | Kết quả |
 |---|---|---|
-| 0 | Tạo dự án | `new-project.mjs` (thêm `--theme abm-brand` nếu muốn nhận diện ABM) |
-| 1 | Thử giọng | **Gate 1**: phát âm thuật ngữ, nhịp đọc |
-| 2 | Nguồn và kịch bản | fact sheet `[F-NN]`, `script.src.txt`; **Gate 2**: duyệt kịch bản |
-| 3 | Giọng đọc | TTS qua MCP, căn thời gian từng từ, `audio_meta.json` |
-| 4 | Thiết kế và storyboard | `frame.md`, loại cảnh, bố cục từng shot, lint chống nhàm |
-| 5 | Dựng khung | worker song song, kiểm từng đợt; **Gate 3**: xem thử karaoke |
-| 6 | QA và giao hàng | lint/check, bản nháp, đo độ khớp; **Gate 4**: duyệt nháp; render cuối, −16 LUFS |
-| 7 | Dọn dẹp | `clean-project.mjs`: chuyển khoảng 400 MB file trung gian vào Thùng rác |
+| 0 | `doctor`, `init` | kiểm máy (`doctor --fix` tự cài skill HeyGen thiếu); tạo dự án, `--theme abm-brand` nếu cần |
+| 1 | `probe` | thử giọng; **Gate 1**: phát âm thuật ngữ, nhịp đọc |
+| 2 | `script` | fact sheet `[F-NN]`, `script.src.txt`; **Gate 2**: duyệt kịch bản |
+| 3 | `tts`, `voice` | TTS theo lô qua API, căn thời gian từng từ, `audio_meta.json` |
+| 4 | `storyboard`, `compile` | solver viết `scenes.json`; biên dịch mọi khung từ template, lint + snapshot |
+| 5 | `karaoke` | phụ đề karaoke; **Gate 3**: xem thử karaoke |
+| 6 | `assemble`, `draft` | ghép, lint/check; bản nháp, đo độ khớp; **Gate 4**: duyệt nháp |
+| 7 | `final`, `clean` | render cuối, −16 LUFS; dọn khoảng 400 MB file trung gian vào Thùng rác |
 
-Các lệnh chi tiết và điều kiện đạt của từng bước nằm trong [references/pipeline-stages.md](references/pipeline-stages.md).
+Dự án làm trước bản 0.6.0 chuyển sang CLI bằng `abm-video migrate` (mọi khung giữ nguyên, đánh dấu `custom`). Chi tiết từng
+giai đoạn nằm trong [references/pipeline-stages.md](references/pipeline-stages.md); cách chỉnh cảnh trong
+[references/scene-spec.md](references/scene-spec.md).
 
 ## Thư viện mẫu
 

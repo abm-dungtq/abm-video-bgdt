@@ -14,6 +14,11 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 
 - `scene_hint` must be one of `video.config.json` → `scenes.types`. The first frame of every chapter is `title`, and no other frame is.
 - Mark a multi-word keyword token by token: `*kinh* *nghiệm*`. Keywords get on-screen reveals cued to the voice.
+- **Keywords are the on-screen labels.** The solver turns each run of marked tokens (a *keyword phrase*) into a card,
+  step or node label, so mark 2–4 word noun phrases that read well alone on screen: `*tự* *rút* *kinh* *nghiệm*`,
+  `*máy* *chủ* *riêng*`. Do not mark pronouns (`bạn`, `nó`), bare counts (`hai`, `ba`) or lone verbs. A comma ends a
+  phrase: `*ghi* *nhớ,* *tìm* *lại,* *kỹ* *năng*` gives three labels. Numbers worth a big counter are spoken fully
+  (`sáu mươi tư nghìn`, `hơn hai mươi`). The script stage warns when more than half of the phrases are a single word.
   Aim for 2–5 per frame.
 - A fact id must exist in `capture/extracted/visible-text.txt` as `[F-NN]`, or `--check` fails.
 - `spokenOverrides` in the config maps a display token, without punctuation, to what the voice should say. Keep

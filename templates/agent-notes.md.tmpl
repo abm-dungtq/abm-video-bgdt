@@ -1,0 +1,13 @@
+## abm-video-bgdt project (overrides the notes above)
+
+This project is built with the abm-video-bgdt pipeline. Run `node tools/bin/abm-video.mjs next` and do exactly what it prints.
+- It prints NEXT (the task), RUN (the command) and WHY. Run it, then ask `next` again. Never invent a step.
+- You write only: the facts (`capture/extracted/visible-text.txt`), the script (`script.src.txt`, see the skill's
+  references/script-authoring.md), optional edits to `scenes.json` (references/scene-spec.md) and the user's gate answers.
+- Gates: show the user the file `next` names, then record their own words with `abm-video gate <n> --approve "…"` or
+  `--reject "…"`. Never approve a gate yourself.
+- Never edit `index.html` or a compiled frame's HTML; change `scenes.json` and run `abm-video run compile`.
+- The HyperFrames CLI stays pinned at `hyperframes@{{PIN}}`: never run `upgrade`, `skills update` or `add` here.
+- Narration comes from the VieNeu-TTS API (`abm-video run tts`) and captions from `tools/build-karaoke.mjs`; do not use
+  faceless-explainer's own TTS or captions.
+- Machine problems: `node tools/bin/abm-video.mjs doctor --fix`.

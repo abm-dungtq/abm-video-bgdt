@@ -55,6 +55,14 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 - **Start over:** `abm-video run storyboard --regenerate` (the old file is kept as `scenes.json.bak-<time>`), or a
   different `--seed` in the solver for another variant mix.
 
+## Review checklist (read the solver's scenes.json once, frame by frame)
+
+1. Each label reads well alone on screen (a noun phrase, not a pronoun, a count or half a sentence); rewrite weak ones.
+2. Icons match their labels (see the icon list); a stat's number is a real figure worth a big counter.
+3. The template tells the frame's idea: a list → cards/anchor, steps → flow/journey, one idea → kinetic/zoom, a
+   comparison → split, a number → stat. Swap it when it does not.
+4. At most one custom frame per chapter, for its opening hook or one special metaphor.
+
 ## Check your edits
 
 ```

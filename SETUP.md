@@ -270,14 +270,17 @@ Khởi động lại agent sau khi khai báo. MCP có 4 công cụ: `list_voices
 
 ## 9. Khác biệt giữa các agent khi chạy quy trình
 
-| Khả năng skill cần | Vì sao | Agent hỗ trợ (theo tài liệu) |
-|---|---|---|
-| Gọi subagent song song | mỗi khung hình do một worker dựng; khoảng 60–80 khung mỗi video | Claude Code, Codex CLI, Gemini CLI (≥ 0.36), OpenCode, Copilot (VS Code multi-agent, Copilot CLI `/fleet`), Devin Desktop. Cursor có subagent, nhưng tài liệu chưa nói rõ có chạy song song không |
-| Hỏi người dùng giữa chừng | 4 cổng duyệt | mọi agent có hội thoại tương tác |
-| Chạy lệnh shell dài | render 17–25 phút | chạy nền nếu agent cho phép, hoặc để người dùng tự chạy lệnh render |
+Từ bản 0.6.0, mọi agent chạy cùng một vòng lặp `abm-video next`, nên không còn cần subagent song song hay gọi MCP cho
+từng câu. `new-project` ghi cùng một khối hướng dẫn vào `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex và các agent đọc
+AGENTS.md), `GEMINI.md` (Gemini CLI) và `.cursor/rules/abm-video.mdc` (Cursor).
 
-Agent không gọi được subagent vẫn làm được. Khi đó agent dựng lần lượt từng khung, đúng theo `tools/worker-brief.md`, và chạy
-`tools/wave-check.mjs` sau mỗi vài khung. Cách này chậm hơn nhưng kết quả như nhau.
+| Khả năng skill cần | Vì sao | Ghi chú |
+|---|---|---|
+| Chạy lệnh shell | mọi giai đoạn là một lệnh `abm-video` | render mất 17–25 phút: chạy nền nếu agent cho phép, hoặc để người dùng tự chạy lệnh `RUN` |
+| Hỏi người dùng giữa chừng | 4 cổng duyệt (+2b khi có ảnh chụp màn hình) | agent cho người dùng xem file mà `next` nêu, rồi ghi câu trả lời bằng `abm-video gate` |
+| Giữ API VieNeu chạy nền | giai đoạn `probe` và `tts` | `next` in lệnh khởi động khi API chưa chạy |
+
+MCP server `vieneu-tts` vẫn dùng được để thử giọng hay nhân bản giọng, nhưng không bắt buộc.
 
 ## 10. Xử lý sự cố
 

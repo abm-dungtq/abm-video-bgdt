@@ -84,20 +84,16 @@ cpSync(join(SKILL, "templates/COVERAGE.md"), join(P, "capture/COVERAGE.md"));
 cpSync(join(SKILL, "templates/screens-INDEX.md"), join(P, "capture/screens/INDEX.md"));
 for (const d of ["capture/assets/fonts", "assets/fonts"]) cpSync(join(SKILL, "templates/fonts"), join(P, d), { recursive: true });
 
-// The init-generated agent notes tell agents to upgrade the pin and to route through
-// /faceless-explainer's own audio and captions; this project overrides both.
-const override = `
-
-## abm-video-bgdt project (overrides the notes above)
-
-This is an e-learning lesson built with the \`abm-video-bgdt\` skill. Load that skill before any work here.
-- The CLI stays pinned at \`hyperframes@${config.cli.pin}\` (video.config.json \`cli.pin\`). Never run \`upgrade\`, \`skills update\` or \`add\`; bump the pin only after \`node tools/fixture-check.mjs\` passes on the new version.
-- Narration comes from the vieneu-tts MCP and captions from \`tools/build-karaoke.mjs\`. Do not use faceless-explainer's \`audio.mjs\` TTS or \`captions.mjs\`.
-- Re-run stages with \`pwsh tools/run-pipeline.ps1 -From <stage> -To <stage>\`.
-`;
-for (const f of ["CLAUDE.md", "AGENTS.md"]) {
+// The init-generated agent notes tell agents to upgrade the pin and to route through /faceless-explainer's own audio
+// and captions; this project overrides both. The same block goes to every agent's project notes: Claude Code (CLAUDE.md),
+// Codex and others (AGENTS.md), Gemini CLI (GEMINI.md) and Cursor (.cursor/rules/abm-video.mdc).
+const notes = readFileSync(join(SKILL, "templates/agent-notes.md.tmpl"), "utf8").replaceAll("{{PIN}}", config.cli.pin);
+for (const f of ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]) {
   const p = join(P, f);
-  if (existsSync(p)) writeFileSync(p, readFileSync(p, "utf8") + override);
+  writeFileSync(p, (existsSync(p) ? `${readFileSync(p, "utf8").trimEnd()}\n\n` : "") + notes);
 }
+mkdirSync(join(P, ".cursor/rules"), { recursive: true });
+writeFileSync(join(P, ".cursor/rules/abm-video.mdc"),
+  `---\ndescription: abm-video-bgdt lesson project\nalwaysApply: true\n---\n\n${notes}`);
 console.log(`\nproject ready: ${P}
-next: edit video.config.json (title, message, audience, arc, palette), then follow the skill's stage 1.`);
+next: edit video.config.json (title, message, audience, arc, palette), then run node tools/bin/abm-video.mjs next`);
