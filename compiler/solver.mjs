@@ -20,6 +20,7 @@ import { endsPhrase, frameCtx, norm, resolve } from "./cues.mjs";
 import { analyze, loadTemplate, readStoryboard, TEMPLATES, WHOLE_FRAME_MAX_S } from "./lint.mjs";
 import { mulberry32 } from "./compile.mjs";
 import { validate } from "./schema.mjs";
+import { score, violations } from "./scorecard.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -242,6 +243,8 @@ export const BUILD = {
     };
     const L = side(c.ph.filter((p) => p.sent < mid)), R = side(c.ph.filter((p) => p.sent >= mid));
     if (!L || !R) return null;
+    // under the director a half with a title and nothing under it reads as a gap: leave the shot to another template
+    if (c.hintHere !== undefined && !c.relaxed && (!L.slots.items.length || !R.slots.items.length)) return null;
     return { slots: { left: L.slots, right: R.slots }, reveals: { left: L.cue, right: R.cue } };
   },
   stat: (c) => {
@@ -371,9 +374,14 @@ export const BUILD = {
  * stat, a comparison → split), then every other template, least used in the video so far first, so no template takes
  * over the lesson.
  */
-function candidates(c, types, videoUsed) {
+function candidates(c, types, videoUsed, dir = null) {
   const hint = HINT[c.frame.scene_hint] ?? c.frame.scene_hint;
   const content = [];
+  // director: every template whose `fit` matches what the shot says is a content candidate, least used first
+  if (dir) {
+    content.push(...Object.entries(dir.schemas).filter(([t, s]) => s.fit && t !== hint && fitOk(s.fit, c))
+      .map(([t]) => t).sort((x, y) => (videoUsed.get(x) ?? 0) - (videoUsed.get(y) ?? 0)));
+  }
   if (c.nums.length) content.push("stat");
   if (/thay vì|khác với|so với|ngược lại|trước đây/.test(norm(c.text)) && c.sents.length > 1) content.push("split");
   const general = c.ph.length >= 3
@@ -381,13 +389,28 @@ function candidates(c, types, videoUsed) {
     : ["kinetic", "zoom", "pictogram-scene", "typewriter", "cards", "flow", "hub", "journey", "terminal"];
   const rest = general.map((t, k) => ({ t, k })).sort((x, y) => (videoUsed.get(x.t) ?? 0) - (videoUsed.get(y.t) ?? 0) || x.k - y.k)
     .map((x) => x.t);
-  const list = c.first ? [hint, ...content, ...rest] : [...content, ...rest];
-  return [...new Set(list)].filter((t) => BUILD[t] && (t !== "title" || c.first && hint === "title"));
+  const hintHere = dir ? c.hintHere : c.first;
+  const list = hintHere ? [hint, ...content, ...rest] : [...content, ...rest];
+  return [...new Set(list)].filter((t) => BUILD[t] && (t !== "title" || c.first && hint === "title")
+    && (!dir || !dir.schemas[t]?.fit || t === hint && hintHere || fitOk(dir.schemas[t].fit, c)));
 }
 
-function splitShots(sents, a, b, maxShot, minShot = 2.5) {
+/**
+ * Does a shot's content suit a template? schema.json `fit` (all optional): minItems/maxItems — keyword phrases (or the
+ * frame's labels) the shot holds; needsNumber — a counter is said; cue — a regex the shot's normalized text matches.
+ */
+export function fitOk(fit, c) {
+  const n = Math.max(c.ph.length, c.labelsLeft ?? 0);
+  if (fit.minItems != null && n < fit.minItems) return false;
+  if (fit.maxItems != null && n > fit.maxItems) return false;
+  if (fit.needsNumber && !c.nums.length) return false;
+  if (fit.cue && !new RegExp(fit.cue, "u").test(norm(`${c.frame.title} ${c.text}`))) return false;
+  return true;
+}
+
+function splitShots(sents, a, b, maxShot, minShot = 2.5, minN = 1) {
   const dur = b - a;
-  let n = Math.max(1, Math.min(3, Math.ceil(dur / maxShot), sents.length));
+  let n = Math.max(minN, Math.min(3, Math.ceil(dur / maxShot), sents.length));
   for (; n <= Math.min(3, sents.length); n++) {
     // boundaries just before the first sentence of each later group, chosen nearest to an even split
     const cuts = [];
@@ -421,21 +444,35 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
     if (!types.size || types.has(s.family)) schemas[id] = s;
   }
   const chapters = script.chapters.map((ch, ci) => ({ ch, ci, frames: ch.frames }));
+  const durationOf = (frame) => {
+    const bf = board.find((b) => b.no === frame.id);
+    return Number((estimated ? bf?.bullets.est_duration : bf?.bullets.duration ?? bf?.bullets.est_duration)?.replace("s", ""));
+  };
   const recent = []; // last (template/variant) pairs
   const videoUsed = new Map(); // template → shots in the whole video
   let prevFamily = null;
   const frames = [];
-  const stats = { shots: 0, fallbacks: 0 };
+  const stats = { shots: 0, fallbacks: 0, longSingle: 0, durations: new Map() };
+  // director mode (scenes.director, projects from 0.8.0 on): long frames get several shots with the scene_hint's
+  // template closing the frame, templates whose `fit` matches the content join the candidates, and a card family
+  // changes its variant from one chapter to the next
+  const D = cfg.scenes?.director === true;
+  const longRule = cfg.scenes?.minShotsLongFrame ?? { overS: 12, min: 2 };
+  const dir = D ? { schemas } : null;
+  let prevChapterVariants = new Map(); // family → variants used in the previous chapter
+  const videoPairs = new Set();
 
   for (const { ch, ci, frames: fs } of chapters) {
     const used = new Map();
     let signature = false;
+    const chapterVariants = new Map();
     for (const [fi, frame] of fs.entries()) {
-      const bf = board.find((b) => b.no === frame.id);
-      const duration = Number((estimated ? bf?.bullets.est_duration : bf?.bullets.duration ?? bf?.bullets.est_duration)?.replace("s", ""));
+      const duration = durationOf(frame);
       const ctx = frameCtx(frame.id, script, audioMeta, duration, { estimated, timing: cfg.timing, rate });
       const allPh = phrases(ctx), allSents = sentences(ctx), allNums = numbers(ctx);
       const rng = mulberry32(seed + frame.id);
+      stats.durations.set(frame.id, duration);
+      const long = D && duration > longRule.overS;
       // a frame whose scene_hint names a template that can hold the whole frame is one shot of that template, up to
       // WHOLE_FRAME_MAX_S (a case, an exercise or a comparison needs all of its sentences); otherwise, or when the
       // template cannot be built from the whole frame, the frame is cut into shots
@@ -450,10 +487,11 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         const built = BUILD[hintT]?.(c);
         return Boolean(built && !validate(hintSchema.slots, built.slots).length);
       };
-      const whole = Boolean(hintSchema && frame.scene_hint !== "title" && hintSchema.family !== prevFamily
+      const whole = !long && Boolean(hintSchema && frame.scene_hint !== "title" && hintSchema.family !== prevFamily
         && hintSchema.family !== nextHintFamily && duration >= (hintSchema.duration?.min ?? 0) - 0.01
         && duration <= Math.max(hintSchema.duration?.max ?? maxShot, WHOLE_FRAME_MAX_S) + 0.01 && wholeFits());
-      const cuts = whole ? [] : splitShots(allSents, 0, duration, maxShot) ?? [];
+      const cuts = whole ? [] : (long && splitShots(allSents, 0, duration, maxShot, 2.5, longRule.min))
+        || splitShots(allSents, 0, duration, maxShot) || [];
       // cut just before the next group's first keyword phrase (not at its sentence start), so a new shot never waits
       // long on bare structure; fall back to the sentence start when that would break a shot's length limits
       const cutCues = cuts.map((k, j) => {
@@ -477,31 +515,57 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
       ]);
       let labelsUsed = false;
       const shots = [];
-      for (let i = 0; i < windows.length; i++) {
+      const shotCtx = (i) => {
         const a = edges[i], b = edges[i + 1];
         const inWin = (t) => t >= a - 0.05 && t < b - 0.35;
         const anchor = (s) => allPh.find((p) => p.sent === s.k)?.time ?? s.start;
         const sents = allSents.filter((s) => anchor(s) >= a - 0.05 && anchor(s) < b);
-        const c = {
+        return {
           P, frame, chapter: ch, chapterIndex: ci, first: i === 0, titleLead,
           ph: allPh.filter((p) => inWin(p.time)), nums: allNums.filter((n) => inWin(n.time)), sents,
           text: sents.map((s) => s.text).join(" "), sentOf: (p) => allSents[p.sent - 1]?.text ?? "",
         };
+      };
+      // director: the hint's shot is the latest window whose content can build the hint's template (a title stays first)
+      let hintShot = 0;
+      if (D && hintT !== "title" && hintSchema && BUILD[hintT]) {
+        hintShot = windows.length - 1;
+        for (let i = windows.length - 1; i >= 0; i--) {
+          const probe = shotCtx(i);
+          const built = BUILD[hintT](frame.labels?.length && LABELED.has(hintT) ? withLabels(probe, frame.labels) : probe);
+          if (built && !validate(hintSchema.slots, built.slots).length) { hintShot = i; break; }
+        }
+      }
+      for (let i = 0; i < windows.length; i++) {
+        const a = edges[i], b = edges[i + 1];
+        const c = {
+          ...shotCtx(i),
+          ...(D ? { hintHere: i === hintShot, labelsLeft: frame.labels?.length && !labelsUsed ? frame.labels.length : 0 } : {}),
+        };
         const nextHint = fi + 1 < fs.length ? (HINT[fs[fi + 1].scene_hint] ?? fs[fi + 1].scene_hint) : null;
+        const nextLong = D && nextHint && nextHint !== "title" && durationOf(fs[fi + 1]) > longRule.overS;
         let chosen = null;
-        const cands = candidates(c, types, videoUsed).filter((t) => schemas[t]);
+        const cands = candidates(c, types, videoUsed, dir).filter((t) => schemas[t]);
+        // the director's preferences (keep the hint's family for the closing shot, no half-empty split) give way when
+        // nothing else fits the shot
+        for (const relaxed of D ? [false, true] : [false]) {
+        if (chosen) break;
+        if (D) c.relaxed = relaxed;
         for (const [rank, t] of cands.entries()) {
           const schema = schemas[t];
           if (schema.family === prevFamily) continue;
-          // the last shot must not share a family with the next frame's hint, which that frame will open with
-          if (i === windows.length - 1 && nextHint && schemas[nextHint]?.family === schema.family && fs[fi + 1]) continue;
+          // director: the hint's family is kept for the frame's closing shot
+          if (D && !c.relaxed && i < hintShot && hintSchema && hintT !== "title" && schema.family === hintSchema.family) continue;
+          // the last shot must not share a family with the next frame's hint, which that frame will open with (under the
+          // director a long next frame closes with its hint instead, unless it is a title)
+          if (i === windows.length - 1 && nextHint && schemas[nextHint]?.family === schema.family && fs[fi + 1] && !nextLong) continue;
           const len = b - a, d = schema.duration ?? {};
           const wholeHint = whole && t === hintT;
           const max = wholeHint && d.max != null ? Math.max(d.max, WHOLE_FRAME_MAX_S) : d.max;
           if ((d.min != null && len < d.min - 0.01) || (max != null && len > max + 0.01)) continue;
-          if (!wholeHint && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
+          if (!wholeHint && !(D && c.hintHere && t === hintT) && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
           const lab = Boolean(frame.labels?.length && !labelsUsed && LABELED.has(t)
-            && (t === hintT || !LABELED.has(hintT) || i === windows.length - 1));
+            && (t === hintT || !LABELED.has(hintT) || i === (D ? hintShot : windows.length - 1)));
           const built = BUILD[t](lab ? withLabels(c, frame.labels) : c);
           if (!built || validate(schema.slots, built.slots).length) continue;
           if (lab) labelsUsed = true;
@@ -525,7 +589,14 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           }
           const variants = schema.variants;
           const fresh = variants.filter((v) => !recent.slice(-5).includes(`${t}/${v}`));
-          const pool = fresh.length ? fresh : variants;
+          let pool = fresh.length ? fresh : variants;
+          if (D) {
+            // a family changes its look from one chapter to the next, and a look not yet seen in the video comes first
+            const notPrev = pool.filter((v) => !prevChapterVariants.get(schema.family)?.has(v));
+            if (notPrev.length) pool = notPrev;
+            const unseen = pool.filter((v) => !videoPairs.has(`${t}/${v}`));
+            if (unseen.length) pool = unseen;
+          }
           const sig = !signature && t !== "title" ? pool.filter((v) => (schema.signatures ?? []).includes(v)) : [];
           const variant = (sig.length ? sig : pool)[Math.floor(rng() * (sig.length ? sig.length : pool.length))];
           chosen = { template: t, variant, window: windows[i], slots: built.slots, ...(Object.keys(built.reveals).length ? { reveals: built.reveals } : {}) };
@@ -534,15 +605,24 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           prevFamily = schema.family;
           break;
         }
+        }
         if (!chosen) throw new Error(`frame ${frame.id} shot ${i + 1}: no template fits (${cands.join(", ")})`);
+        if (D) {
+          videoPairs.add(`${chosen.template}/${chosen.variant}`);
+          const fam = schemas[chosen.template].family;
+          if (!chapterVariants.has(fam)) chapterVariants.set(fam, new Set());
+          chapterVariants.get(fam).add(chosen.variant);
+        }
         used.set(chosen.template, (used.get(chosen.template) ?? 0) + 1);
         videoUsed.set(chosen.template, (videoUsed.get(chosen.template) ?? 0) + 1);
         recent.push(`${chosen.template}/${chosen.variant}`);
         shots.push(chosen);
         stats.shots++;
       }
+      if (long && shots.length === 1) stats.longSingle++;
       frames.push({ frame: frame.id, shots });
     }
+    prevChapterVariants = chapterVariants;
   }
   return { scenes: { version: 1, seed, frames }, stats };
 }
@@ -556,7 +636,30 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   const seed = Number(opt("--seed", cfg.scenes?.seed ?? 20260928));
   const estimated = argv.includes("--estimated");
   try {
-    const { scenes, stats } = await solve({ P, cfg, estimated, seed });
+    let { scenes, stats } = await solve({ P, cfg, estimated, seed });
+    const card = cfg.scenes?.director === true ? cfg.scenes.scorecard ?? {} : null;
+    if (card) {
+      // the director's scorecard: the seed only moves variants, so reseed only while a seed-dependent limit is broken;
+      // keep the best try (fewest violations, then the smallest summed relative excess, then the most distinct looks)
+      const script = JSON.parse(readFileSync(join(P, "script.json"), "utf8"));
+      const judge = (sc, st) => {
+        const metrics = score({ scenes: sc, script, durations: st.durations, longS: cfg.scenes.minShotsLongFrame?.overS ?? 12 });
+        const v = violations(metrics, card);
+        const excess = v.reduce((n, x) => n + Math.abs(x.value - x.bound) / (x.bound || 1), 0);
+        return { metrics, v, excess };
+      };
+      const SEEDED = new Set(["maxPairReuse", "distinctPairRatio"]);
+      let best = { scenes, stats, seed, ...judge(scenes, stats) };
+      const better = (x, y) => x.v.length - y.v.length || x.excess - y.excess || y.metrics.distinctPairRatio - x.metrics.distinctPairRatio;
+      for (let k = 1; k <= (card.reseeds ?? 8) && best.v.some((x) => SEEDED.has(x.key)); k++) {
+        const r = await solve({ P, cfg, estimated, seed: seed + k });
+        const t = { ...r, seed: seed + k, ...judge(r.scenes, r.stats) };
+        if (better(t, best) < 0) best = t;
+      }
+      ({ scenes, stats } = best);
+      scenes.scorecard = { ok: !best.v.length, seed: best.seed, metrics: best.metrics, violations: best.v };
+      for (const x of best.v) console.log(`solver: scorecard FAIL ${x.key}=${x.value} (${x.limit})`);
+    }
     const out = opt("--out", "scenes.json");
     writeFileSync(join(P, out), JSON.stringify(scenes, null, 1) + "\n");
     const res = await analyze({ P: P, cfg, estimated });
@@ -564,7 +667,7 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
     const templates = new Set(scenes.frames.flatMap((f) => f.shots.map((s) => s.template))).size;
     for (const w of res.warnings) console.log(`⚠ ${w}`);
     for (const e of res.errors) console.log(`✗ ${e}`);
-    console.log(`solver: ${scenes.frames.length} frames, ${stats.shots} shots, ${templates} templates used, seed ${seed}, ${res.errors.length} lint error(s), ${res.warnings.length} warning(s)`);
+    console.log(`solver: ${scenes.frames.length} frames, ${stats.shots} shots, ${templates} templates used, seed ${scenes.scorecard?.seed ?? seed}, ${res.errors.length} lint error(s), ${res.warnings.length} warning(s)${scenes.scorecard?.ok ? ", scorecard ok" : ""}`);
     process.exit(res.errors.length ? 1 : 0);
   } catch (e) {
     console.error(`✗ ${e.message}`);

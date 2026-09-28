@@ -10,7 +10,7 @@ import { chapterOverlap } from "../compiler/scorecard.mjs";
 import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
-import { BUILD, numbers, withLabels } from "../compiler/solver.mjs";
+import { BUILD, fitOk, numbers, withLabels } from "../compiler/solver.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -171,6 +171,12 @@ test("chapter overlap: Jaccard on 3+ hints, equality on smaller sets", () => {
   const o = chapterOverlap([chap("ch0", []), chap("ch1", ["kinetic", "stat", "cards"]), chap("ch2", ["kinetic", "stat", "flow"]),
     chap("ch3", ["kinetic", "stat"]), chap("ch4", ["kinetic", "stat"]), chap("ch5", [])]);
   eq(o.pairs.map((p) => `${p.a}-${p.b}:${p.j}`), ["ch1-ch2:0.5", "ch1-ch3:0", "ch1-ch4:0", "ch2-ch3:0", "ch2-ch4:0", "ch3-ch4:1"]);
+});
+test("fit: item counts, a number and a cue decide whether a template suits a shot", () => {
+  const two = shot([sent(1, "Người đặt mục tiêu, trợ lý soạn thảo.")], [kw(1, "mục tiêu"), kw(1, "soạn thảo")]);
+  eq([fitOk({ minItems: 3 }, two), fitOk({ minItems: 2, maxItems: 4 }, two), fitOk({ needsNumber: true }, two),
+    fitOk({ cue: "mục tiêu" }, two), fitOk({ cue: "tảng băng" }, two), fitOk({ minItems: 3 }, { ...two, labelsLeft: 3 })],
+  [false, true, false, true, false, true]);
 });
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);

@@ -212,10 +212,14 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   if (variety) {
     warnings.push(...varietyWarnings({ flat, out, script, byNo }));
     (legacy ? warnings : errors).push(...varietyErrors(flat));
-    // the first shot of a frame follows the scene_hint the script chose for it
+    // the first shot of a frame follows the scene_hint the script chose for it; under the director (scenes.director)
+    // the hint closes a long frame, so any shot of the frame may carry it
     for (const f of out) {
       const first = flat.find((s) => s.frame === f.no);
-      if (!f.custom && first && hintOf.get(f.no) && first.family !== hintOf.get(f.no))
+      if (cfg.scenes?.director === true) {
+        if (!f.custom && first && hintOf.get(f.no) && !flat.some((s) => s.frame === f.no && s.family === hintOf.get(f.no)))
+          warnings.push(`frame ${f.no}: no shot shows its scene_hint ${hintOf.get(f.no)}`);
+      } else if (!f.custom && first && hintOf.get(f.no) && first.family !== hintOf.get(f.no))
         warnings.push(`frame ${f.no}: opens with ${first.template} (${first.family}), not its scene_hint ${hintOf.get(f.no)}`);
     }
   }

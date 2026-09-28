@@ -94,8 +94,8 @@ export function score({ scenes, script = null, durations = null, longS = 12 }) {
 /** threshold violations of a score: [{key, value, limit}] */
 export function violations(m, t) {
   const v = [];
-  const over = (key, limit) => m[key] != null && limit != null && m[key] > limit && v.push({ key, value: m[key], limit: `≤ ${limit}` });
-  const under = (key, limit) => m[key] != null && limit != null && m[key] < limit && v.push({ key, value: m[key], limit: `≥ ${limit}` });
+  const over = (key, limit) => m[key] != null && limit != null && m[key] > limit && v.push({ key, value: m[key], limit: `≤ ${limit}`, bound: limit });
+  const under = (key, limit) => m[key] != null && limit != null && m[key] < limit && v.push({ key, value: m[key], limit: `≥ ${limit}`, bound: limit });
   over("maxTemplateShare", t.maxTemplateShare);
   over("maxPairReuse", t.maxPairReuse);
   under("distinctPairRatio", t.minDistinctPairRatio);

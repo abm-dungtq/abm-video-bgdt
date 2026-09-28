@@ -65,7 +65,21 @@
       "quiz"
     ],
     "terminalChapters": [],
-    "maxShotS": 10
+    "maxShotS": 10,
+    "director": true,
+    "minShotsLongFrame": {
+      "overS": 10,
+      "min": 2
+    },
+    "scorecard": {
+      "maxTemplateShare": 0.12,
+      "maxPairReuse": 2,
+      "minDistinctPairRatio": 0.6,
+      "maxLongSingleShot": 0,
+      "maxChapterHintOverlap": 0.5,
+      "maxEmptySlots": 0,
+      "reseeds": 8
+    }
   },
   "layouts": {
     "catalog": [
