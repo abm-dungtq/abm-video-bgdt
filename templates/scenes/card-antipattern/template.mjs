@@ -5,8 +5,11 @@
 //   across the gap and the wrong panel steps back.
 // flip: one wide panel shows the wrong way beside a 240 px cross; on "right" it flips (scaleX to 0) and comes back as
 //   the right way beside a 240 px check, while a struck-through chip keeps the wrong label in the corner.
+// strike (open, no card box): the wrong way is set large in the body on a warm glow; a red hand-drawn stroke crosses out
+//   its label, then a second slashes the whole block; on "right" the struck block shrinks up into the top strip and dims,
+//   and the right way slides up into its place beside a drawn check on a cool glow.
 
-import { dnaCard } from "../_shared/dna-card.mjs";
+import { dnaCard, keepInside } from "../_shared/dna-card.mjs";
 
 export const revealKeys = () => ["label", "wrong", "right"];
 
@@ -22,6 +25,105 @@ export function render(ctx) {
   const tW = ctx.at("wrong"), tR = ctx.at("right");
   const r = theme.radius ?? 18;
   const items = (side) => slots[side].items.map((x) => `<li><i></i><span>${esc(x)}</span></li>`).join("");
+
+  if (ctx.variant === "strike") {
+    const Z = ctx.zones["strip-top"];
+    const BX = 120, BY = 300, BW = 1520, BH = 440; // the block in the body; the struck one shrinks into the strip
+    const headFs = 92, itemFs = 50, rowH = Math.round(itemFs * 1.3) + 16;
+    const len = (s) => [...String(s)].length;
+    const headW = Math.min(BW, Math.round(len(slots.wrong.label) * headFs * 0.6));
+    const itemW = Math.min(BW, Math.max(...slots.wrong.items.map((x) => Math.round(len(x) * itemFs * 0.56) + 36)));
+    const maxW = Math.max(headW, itemW);
+    const hy = Math.round(headFs * 0.62);
+    const listBottom = 140 + slots.wrong.items.length * rowH;
+    // hand-drawn strokes: a wobbly line through the label, then a slash across the whole block
+    const s1 = `M-20 ${hy + 8} C${Math.round(headW * 0.3)} ${hy - 12}, ${Math.round(headW * 0.62)} ${hy + 18}, ${headW + 30} ${hy - 6}`;
+    const s2 = `M-16 ${listBottom - 10} C${Math.round(maxW * 0.3)} ${Math.round(listBottom * 0.62)}, ${Math.round(maxW * 0.62)} ${Math.round(listBottom * 0.3)}, ${maxW + 30} 6 l-26 22`;
+    const MINI = { x: 500 - BX, y: 34 - BY, scale: 0.45 };
+    const tLabel = ctx.at("label");
+    const css = `
+#${S}-id { position: absolute; left: ${Z.strip.x}px; top: ${Z.strip.y + 8}px; height: 36px; display: flex; align-items: center; gap: 14px; }
+#${S}-idi { width: 36px; height: 36px; color: var(--gold); }
+#${S}-idi svg { width: 36px; height: 36px; display: block; }
+#${S}-idl { font-family: "${theme.mono}", monospace; font-size: 24px; line-height: 36px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold); white-space: nowrap; }
+.${S}-glow { position: absolute; left: 80px; top: 230px; width: 1600px; height: 590px; border-radius: 50%; }
+#${S}-gw { background: radial-gradient(ellipse at 40% 45%, color-mix(in srgb, var(--warn) 15%, transparent), transparent 65%); }
+#${S}-gr { background: radial-gradient(ellipse at 40% 45%, color-mix(in srgb, var(--cyan) 14%, transparent), transparent 65%); }
+#${S}-open { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+.${S}-blk { position: absolute; left: ${BX}px; top: ${BY}px; width: ${BW}px; height: ${BH}px; }
+.${S}-wrong { --c: ${MIX.wrong}; transform-origin: 0 0; }
+.${S}-right { --c: ${MIX.right}; }
+.${S}-head { position: absolute; left: var(--l); top: 0; width: ${BW}px; font-size: ${headFs}px; font-weight: 800; line-height: 1.1;
+  color: var(--c); white-space: nowrap; }
+.${S}-list { position: absolute; left: var(--l); top: 140px; width: ${BW - 40}px; margin: 0; padding: 0; list-style: none; }
+.${S}-list li { display: flex; align-items: baseline; gap: 20px; font-size: ${itemFs}px; font-weight: 600; line-height: 1.3;
+  color: var(--ink); margin-bottom: 16px; }
+.${S}-list i { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--c); }
+.${S}-wrong .${S}-list li { color: color-mix(in srgb, var(--ink) 80%, transparent); }
+#${S}-wrong { --l: 0px; }
+#${S}-right { --l: 160px; }
+.${S}-wm { position: absolute; left: 1250px; top: 300px; width: 420px; height: 420px; }
+.${S}-wm svg { width: 420px; height: 420px; display: block; }
+#${S}-xw { color: color-mix(in srgb, var(--warn) 13%, transparent); }
+#${S}-vw { color: color-mix(in srgb, var(--cyan) 13%, transparent); }
+#${S}-st { position: absolute; left: 0; top: 0; width: ${BW}px; height: ${BH}px; overflow: visible; }
+#${S}-st path { fill: none; stroke: var(--warn); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; }
+#${S}-st1 { stroke-width: 10; }
+#${S}-st2 { stroke-width: 13; }
+#${S}-ck { position: absolute; left: 0; top: -8px; width: 120px; height: 120px; overflow: visible; }
+#${S}-ck circle { fill: none; stroke: color-mix(in srgb, var(--cyan) 40%, transparent); stroke-width: 3; }
+#${S}-ck path { fill: none; stroke: var(--cyan); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; }
+#${S}-ph { position: absolute; left: ${BX}px; top: ${BY + 14}px; width: 900px; }
+#${S}-ph i { display: block; height: 56px; width: 60%; border-radius: 12px; margin-bottom: 60px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+#${S}-ph i + i { height: 18px; width: 84%; border-radius: 9px; margin-bottom: 40px; }`;
+    const block = (side) => `      <div class="${S}-blk ${S}-${side}" id="${S}-${side}">
+        <div class="${S}-head" id="${S}-${side}h">${esc(slots[side].label)}</div>
+        <ul class="${S}-list" id="${S}-${side}b">${items(side)}</ul>
+${side === "wrong"
+    ? `        <svg id="${S}-st" viewBox="0 0 ${BW} ${BH}"><path id="${S}-st1" pathLength="1000" d="${s1}"/><path id="${S}-st2" pathLength="1000" d="${s2}"/></svg>`
+    : `        <svg id="${S}-ck" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/><path id="${S}-ckp" pathLength="1000" d="${CHECK}"/></svg>`}
+      </div>`;
+    const html = `    <div id="${S}-id"><div id="${S}-idi">${icon}</div><div id="${S}-idl">${esc("CÁCH SAI · CÁCH ĐÚNG")}</div></div>
+    <div class="${S}-glow" id="${S}-gw"></div>
+    <div class="${S}-glow" id="${S}-gr"></div>
+    <div class="${S}-wm" id="${S}-xw">${ctx.icon("cross")}</div>
+    <div class="${S}-wm" id="${S}-vw">${ctx.icon("check")}</div>
+    <div id="${S}-open">
+      <div id="${S}-ph"><i></i>${slots.wrong.items.map(() => "<i></i>").join("")}</div>
+${block("wrong")}
+${block("right")}
+    </div>`;
+    // the strikes fall between the two cues; the swap waits for them
+    const x1 = tW + Math.min(0.6, Math.max(0.25, (tR - tW) * 0.4));
+    const x2 = x1 + 0.3;
+    const swapAt = Math.max(tR, x2 + 0.5);
+    const m = [
+      { prim: "reveal", target: `#${S}-idi`, at: tLabel, dur: 0.45, from: { opacity: 0, scale: 0.4 }, ease: "back.out(2)" },
+      { prim: "reveal", target: `#${S}-idl`, at: tLabel + 0.08, dur: 0.45, from: { opacity: 0, x: -18 } },
+      { prim: "reveal", target: `#${S}-ph`, at: w.a + 0.1, dur: 0.4, from: { opacity: 0, y: 16 } },
+      { prim: "reveal", target: `#${S}-ph`, at: Math.max(tW, w.a + 0.52), dur: 0.25, from: { opacity: 1 }, to: { opacity: 0 }, ease: "power1.out" },
+      { prim: "reveal", target: `#${S}-gw`, at: tW, dur: 0.6, from: { opacity: 0 } },
+      { prim: "reveal", target: `#${S}-xw`, at: tW + 0.1, dur: 0.7, from: { opacity: 0, scale: 0.7, rotation: -12 }, ease: "back.out(1.6)" },
+      { prim: "reveal", target: `#${S}-xw`, at: swapAt, dur: 0.4, from: { opacity: 1 }, to: { opacity: 0 } },
+      { prim: "reveal", target: `#${S}-vw`, at: swapAt + 0.3, dur: 0.7, from: { opacity: 0, scale: 0.7 }, ease: "back.out(1.6)" },
+      { prim: "reveal", target: `#${S}-wrongh`, at: tW, dur: 0.5, from: { opacity: 0, y: 40 }, ease: ctx.ease },
+      { prim: "reveal", target: `#${S}-wrongb`, at: tW + 0.12, dur: 0.5, from: ctx.motionFrom(), ease: ctx.ease },
+      { prim: "draw", target: `#${S}-st1`, at: x1, dur: 0.35, ease: "power1.inOut" },
+      { prim: "draw", target: `#${S}-st2`, at: x2, dur: 0.45, ease: "power1.inOut" },
+      { prim: "slide", target: `#${S}-wrong`, at: swapAt, dur: 0.6, from: { x: 0, y: 0, scale: 1 }, to: MINI, ease: "power3.inOut" },
+      { prim: "dim", targets: [`#${S}-wrong`], at: swapAt + 0.4, to: 0.5 },
+      { prim: "reveal", target: `#${S}-gw`, at: swapAt, dur: 0.5, from: { opacity: 1 }, to: { opacity: 0 } },
+      { prim: "reveal", target: `#${S}-gr`, at: swapAt + 0.1, dur: 0.7, from: { opacity: 0 } },
+      { prim: "reveal", target: `#${S}-right`, at: swapAt + 0.15, dur: 0.65, from: { opacity: 0, y: 160 }, ease: "power3.out" },
+      { prim: "draw", target: `#${S}-ckp`, at: swapAt + 0.5, dur: 0.5 },
+    ];
+    const swingAt = swapAt + 1.05;
+    if (w.b - swingAt > 0.8) m.push({ prim: "slide", target: `#${S}-vw`, at: swingAt, dur: w.b - swingAt - 0.05, from: { rotation: 0 }, to: { rotation: 10 }, ease: "sine.inOut" });
+    const d = ctx.drift(`#${S}-open`, swapAt + 1.05);
+    if (d) m.push(d);
+    return { css, html, motions: keepInside(m, w.b) };
+  }
 
   if (ctx.variant === "flip") {
     const face = (side) => `    <div class="${S}-face ${S}-${side}" id="${S}-${side}">

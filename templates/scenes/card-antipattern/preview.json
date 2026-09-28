@@ -5,5 +5,9 @@
   "slots": {
     "wrong": { "label": "Hỏi chung chung", "items": ["Viết giúp tôi một bài", "Không nói cho ai, để làm gì"] },
     "right": { "label": "Hỏi cụ thể", "items": ["Bài 300 chữ cho khách hàng mới", "Giọng thân thiện, có lời kêu gọi"] }
+  },
+  "stress": {
+    "wrong": { "label": "Hỏi quá chung chung", "items": ["Viết giúp tôi một bài thật hay, dài vào", "Không nói cho ai đọc, đọc để làm gì cả", "Không cho biết giọng văn hay độ dài bài"] },
+    "right": { "label": "Hỏi cụ thể, rõ ràng", "items": ["Bài 300 chữ cho khách hàng mới của shop", "Giọng thân thiện, gần gũi, kêu gọi mua", "Nêu rõ độ dài, người đọc và mục tiêu bài"] }
   }
 }

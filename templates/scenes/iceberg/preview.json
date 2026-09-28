@@ -1,0 +1,52 @@
+{
+  "template": "iceberg",
+  "variant": "waterline",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "tip": {
+      "icon": "chat",
+      "label": "Câu trả lời sai"
+    },
+    "hidden": [
+      {
+        "icon": "doc",
+        "label": "Thiếu ngữ cảnh"
+      },
+      {
+        "icon": "question",
+        "label": "Câu hỏi mơ hồ"
+      },
+      {
+        "icon": "gear",
+        "label": "Không có bước kiểm tra"
+      }
+    ]
+  },
+  "stress": {
+    "tip": {
+      "icon": "terminal",
+      "label": "Agent xóa nhầm tệp tin"
+    },
+    "hidden": [
+      {
+        "icon": "key",
+        "label": "Quyền truy cập mở quá rộng"
+      },
+      {
+        "icon": "doc",
+        "label": "Tài liệu dự án đã lỗi thời"
+      },
+      {
+        "icon": "people",
+        "label": "Không ai rà soát đầu ra cả"
+      },
+      {
+        "icon": "timer",
+        "label": "Hạn chót giao hàng quá gấp"
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "myth-fact",
+  "family": "myth",
+  "variants": ["stamp", "flip-cards", "tear"],
+  "signatures": ["stamp"],
+  "zone": { "stamp": "split-50", "flip-cards": "triptych", "tear": "sidebar-left" },
+  "slots": {
+    "type": "object",
+    "required": ["pairs"],
+    "additionalProperties": false,
+    "properties": {
+      "pairs": {
+        "type": "array", "minItems": 1, "maxItems": 3,
+        "items": {
+          "type": "object", "required": ["myth", "fact"], "additionalProperties": false,
+          "properties": {
+            "myth": { "type": "string", "minLength": 1, "maxLength": 48 },
+            "fact": { "type": "string", "minLength": 1, "maxLength": 64 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "myth.*": { "default": "kw", "range": false },
+    "fact.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3.5, "max": 10 },
+  "fit": { "minItems": 2, "maxItems": 8, "cue": "lầm tưởng|hiểu lầm|ngộ nhận|sự thật|thực ra|thật ra" }
+}

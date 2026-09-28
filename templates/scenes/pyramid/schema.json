@@ -1,0 +1,29 @@
+{
+  "id": "pyramid",
+  "family": "pyramid",
+  "variants": ["stack-up", "inverted", "side-labels"],
+  "signatures": ["stack-up"],
+  "zone": { "stack-up": "screen-focus", "inverted": "screen-focus", "side-labels": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["levels"],
+    "additionalProperties": false,
+    "properties": {
+      "levels": {
+        "type": "array", "minItems": 3, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "levels.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3.5, "max": 10 },
+  "fit": { "minItems": 3, "maxItems": 6, "cue": "kim tự tháp|thứ bậc|cấp độ|nền tảng|tầng đáy|trên đỉnh|đỉnh cao" }
+}

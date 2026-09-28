@@ -1,0 +1,46 @@
+{
+  "template": "balance",
+  "variant": "scale-tilt",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "left": {
+      "label": "Tự viết code",
+      "icon": "terminal",
+      "items": [
+        "Chậm, dễ sai sót"
+      ]
+    },
+    "right": {
+      "label": "Dùng agent",
+      "icon": "rocket",
+      "items": [
+        "Nhanh, tự kiểm thử"
+      ]
+    },
+    "winner": "right"
+  },
+  "stress": {
+    "left": {
+      "label": "Làm tay từng bước",
+      "icon": "person",
+      "items": [
+        "Tốn thời gian mỗi tuần",
+        "Dễ bỏ sót bước nhỏ lẻ",
+        "Khó mở rộng cả nhóm"
+      ]
+    },
+    "right": {
+      "label": "Tự động hóa hết cả",
+      "icon": "gear",
+      "items": [
+        "Làm lại bất kỳ lúc nào",
+        "Giảm lỗi do con người",
+        "Tốn công dựng ban đầu"
+      ]
+    },
+    "winner": "left"
+  }
+}

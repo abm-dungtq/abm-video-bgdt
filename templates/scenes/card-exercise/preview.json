@@ -1,10 +1,26 @@
 {
   "template": "card-exercise",
   "variant": "timer-ring",
-  "window": ["start", "end"],
+  "window": [
+    "start",
+    "end"
+  ],
   "slots": {
     "task": "Nhờ Hermes tạo một kỹ năng tóm tắt email mỗi sáng",
     "minutes": 5,
-    "steps": ["Gõ hermes để bắt đầu trò chuyện", "Mô tả việc bạn muốn tự động", "Kiểm tra kỹ năng vừa tạo"]
+    "steps": [
+      "Gõ hermes để bắt đầu trò chuyện",
+      "Mô tả việc bạn muốn tự động",
+      "Kiểm tra kỹ năng vừa tạo"
+    ]
+  },
+  "stress": {
+    "task": "Nhờ Hermes tạo một kỹ năng tóm tắt email quan trọng mỗi sáng và gửi vào Telegram",
+    "minutes": 10,
+    "steps": [
+      "Gõ lệnh hermes để bắt đầu trò chuyện",
+      "Mô tả thật rõ việc bạn muốn tự động hóa",
+      "Chạy thử và kiểm tra kỹ năng vừa tạo"
+    ]
   }
 }

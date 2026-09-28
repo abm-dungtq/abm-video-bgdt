@@ -1,0 +1,32 @@
+{
+  "id": "matrix",
+  "family": "matrix",
+  "variants": ["quadrant", "heat", "plot"],
+  "signatures": ["quadrant"],
+  "zone": { "quadrant": "screen-focus", "heat": "split-40-60", "plot": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["items"],
+    "additionalProperties": false,
+    "properties": {
+      "x": { "type": "string", "minLength": 1, "maxLength": 20 },
+      "y": { "type": "string", "minLength": 1, "maxLength": 20 },
+      "items": {
+        "type": "array", "minItems": 4, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "axes": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3.5, "max": 10 },
+  "fit": { "minItems": 4, "maxItems": 6, "cue": "ma trận|hai trục|góc phần tư|trục dọc|trục ngang" }
+}

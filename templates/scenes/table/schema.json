@@ -1,0 +1,37 @@
+{
+  "id": "table",
+  "family": "table",
+  "variants": ["rows-reveal", "scorecard", "checkmarks"],
+  "signatures": ["rows-reveal"],
+  "zone": { "rows-reveal": "screen-focus", "scorecard": "sidebar-left", "checkmarks": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["columns", "rows"],
+    "additionalProperties": false,
+    "properties": {
+      "columns": {
+        "type": "array", "minItems": 2, "maxItems": 3,
+        "items": { "type": "string", "minLength": 1, "maxLength": 16 }
+      },
+      "rows": {
+        "type": "array", "minItems": 2, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["label", "cells"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "cells": {
+              "type": "array", "minItems": 2, "maxItems": 3,
+              "items": { "type": ["string", "boolean"], "minLength": 1, "maxLength": 16 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "columns": { "default": "spread", "range": false },
+    "rows.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 },
+  "fit": { "minItems": 2, "maxItems": 6, "cue": "so sánh|khác nhau|khác biệt|đối chiếu|(^| )vs( |$)|hơn hay kém" }
+}

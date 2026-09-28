@@ -64,3 +64,22 @@ ${html}
     },
   };
 }
+
+/** the card identity without the box: icon + uppercase mono gold label at stage (x, y), lit on the `label` cue */
+export function openLabel(ctx, { label, icon, x, y }) {
+  const { S, esc, theme } = ctx;
+  const t = ctx.at("label");
+  return {
+    css: `
+#${S}-id { position: absolute; left: ${x}px; top: ${y}px; height: 36px; display: flex; align-items: center; gap: 14px; }
+#${S}-idi { width: 36px; height: 36px; color: var(--gold); }
+#${S}-idi svg { width: 36px; height: 36px; display: block; }
+#${S}-idl { font-family: "${theme.mono}", monospace; font-size: 24px; line-height: 36px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gold); white-space: nowrap; }`,
+    html: `    <div id="${S}-id"><div id="${S}-idi">${icon}</div><div id="${S}-idl">${esc(label)}</div></div>`,
+    motions: [
+      { prim: "reveal", target: `#${S}-idi`, at: t, dur: 0.45, from: { opacity: 0, scale: 0.4 }, ease: "back.out(2)" },
+      { prim: "reveal", target: `#${S}-idl`, at: t + 0.08, dur: 0.45, from: { opacity: 0, x: -18 } },
+    ],
+  };
+}

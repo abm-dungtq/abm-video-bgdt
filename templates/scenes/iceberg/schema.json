@@ -1,0 +1,37 @@
+{
+  "id": "iceberg",
+  "family": "iceberg",
+  "variants": ["waterline", "sonar", "cutaway"],
+  "signatures": ["waterline"],
+  "zone": { "waterline": "hero-center", "sonar": "strip-top", "cutaway": "sidebar-left" },
+  "slots": {
+    "type": "object",
+    "required": ["tip", "hidden"],
+    "additionalProperties": false,
+    "properties": {
+      "tip": {
+        "type": "object", "required": ["label"], "additionalProperties": false,
+        "properties": {
+          "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 22 }
+        }
+      },
+      "hidden": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 26 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "tip": { "default": "kw", "range": false },
+    "hidden.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 },
+  "fit": { "minItems": 3, "maxItems": 5, "cue": "bề nổi|bên dưới|(^| )ẩn( |$)|che giấu|gốc rễ|tảng băng|sâu xa|nguyên nhân sâu" }
+}

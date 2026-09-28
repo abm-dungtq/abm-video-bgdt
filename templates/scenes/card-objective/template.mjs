@@ -3,8 +3,11 @@
 //   hits the bullseye with the last objective; the objectives are numbered rows at the right whose check is drawn on cue.
 // spotlight: the objectives stand side by side under oversized outline numerals; on its cue a numeral fills gold,
 //   the text rises, a soft spotlight slides onto that column and the earlier column dims.
+// target-rings (open, no card box): a 540 px target of three concentric rings fills the left; on its cue each objective
+//   flies in from the right as a text row while its numbered dart flies along a leader line and lands in its ring
+//   (outer ring first), which then lights gold; the bullseye lands after the last one and the ring halos breathe slowly.
 
-import { dnaCard, fit } from "../_shared/dna-card.mjs";
+import { dnaCard, fit, keepInside } from "../_shared/dna-card.mjs";
 
 export const revealKeys = (slots) => ["label", ...slots.items.map((_, i) => `items.${i}`)];
 
@@ -16,6 +19,104 @@ export function render(ctx) {
   const t = items.map((_, i) => ctx.at(`items.${i}`));
   const last = Math.max(...t);
   const mono = `"${theme.mono}", monospace`;
+
+  if (ctx.variant === "target-rings") {
+    const Z = ctx.zones["split-40-60"].a;
+    const cx = 330, cy = 450, R = [270, 185, 100];
+    const AX = 748; // leader lines end at the row anchors, x AX
+    const sp = n === 3 ? 200 : 260;
+    const rowY = items.map((_, i) => Math.round(cy + (i - (n - 1) / 2) * sp));
+    // each dart lands on its ring where the ray from the centre to its row anchor crosses it, so leaders never cross
+    const land = rowY.map((y, i) => {
+      const a = Math.atan2(y - cy, AX - cx);
+      return [Math.round(cx + R[i] * Math.cos(a)), Math.round(cy + R[i] * Math.sin(a))];
+    });
+    const longest = items.reduce((a, b) => ([...a].length >= [...b].length ? a : b));
+    const txtFs = n === 1 ? fit(longest, [[24, 60], [36, 54], [48, 48]]) : fit(longest, [[24, 52], [36, 48], [48, 44]]);
+    const tLabel = ctx.at("label");
+    const css = `
+#${S}-id { position: absolute; left: ${Z.x}px; top: ${Z.y + 8}px; height: 36px; display: flex; align-items: center; gap: 14px; }
+#${S}-idi { width: 36px; height: 36px; color: var(--gold); }
+#${S}-idi svg { width: 36px; height: 36px; display: block; }
+#${S}-idl { font-family: ${mono}; font-size: 24px; line-height: 36px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold); white-space: nowrap; }
+#${S}-open { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; }
+#${S}-glow { position: absolute; left: ${cx - 340}px; top: ${cy - 340}px; width: 680px; height: 680px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 68%); }
+#${S}-tg { position: absolute; left: ${cx - 300}px; top: ${cy - 300}px; width: 600px; height: 600px; overflow: visible; }
+#${S}-tg circle { fill: none; stroke-dasharray: 1000; }
+#${S}-tg .${S}-trk { stroke: color-mix(in srgb, var(--ink) 18%, transparent); stroke-width: 4; }
+#${S}-tg .${S}-ring { stroke: var(--gold); stroke-width: 10; }
+.${S}-halo { position: absolute; box-sizing: border-box; border-radius: 50%; border: 18px solid color-mix(in srgb, var(--gold) 16%, transparent); }
+${R.map((r, k) => `#${S}-h${k + 1} { left: ${cx - r - 9}px; top: ${cy - r - 9}px; width: ${2 * r + 18}px; height: ${2 * r + 18}px; }`).join("\n")}
+#${S}-eye { position: absolute; left: ${cx - 22}px; top: ${cy - 22}px; width: 44px; height: 44px; border-radius: 50%; background: var(--gold); }
+#${S}-ld { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
+#${S}-ld path { fill: none; stroke: color-mix(in srgb, var(--gold) 55%, transparent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1000; }
+.${S}-sock { position: absolute; width: 64px; height: 64px; box-sizing: border-box; border-radius: 50%;
+  border: 3px dashed color-mix(in srgb, var(--ink) 30%, transparent); }
+.${S}-dart { position: absolute; width: 64px; height: 64px; box-sizing: border-box; border-radius: 50%; border: 4px solid var(--gold);
+  background: var(--surface); display: flex; align-items: center; justify-content: center;
+  font-family: ${mono}; font-size: 24px; font-weight: 700; color: var(--gold); }
+.${S}-dot { position: absolute; left: ${AX - 8}px; width: 16px; height: 16px; border-radius: 50%; background: var(--gold); }
+.${S}-ph { position: absolute; left: 790px; width: 560px; height: 16px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.${S}-row { position: absolute; left: 790px; width: 940px; height: 180px; display: flex; align-items: center;
+  font-size: ${txtFs}px; font-weight: 700; line-height: 1.22; color: var(--ink); }
+${items.map((_, i) => `#${S}-s${i + 1}, #${S}-d${i + 1} { left: ${land[i][0] - 32}px; top: ${land[i][1] - 32}px; }
+#${S}-o${i + 1} { top: ${rowY[i] - 8}px; }
+#${S}-p${i + 1} { top: ${rowY[i] - 8}px; }
+#${S}-r${i + 1} { top: ${rowY[i] - 90}px; }`).join("\n")}`;
+    const html = `    <div id="${S}-id"><div id="${S}-idi">${ctx.icon("target")}</div><div id="${S}-idl">${esc("MỤC TIÊU CHƯƠNG")}</div></div>
+    <div id="${S}-open">
+      <div id="${S}-glow"></div>
+${items.map((_, i) => `      <div class="${S}-halo" id="${S}-h${i + 1}"></div>`).join("\n")}
+      <svg id="${S}-tg" viewBox="0 0 600 600">
+${R.map((r, k) => `        <circle class="${S}-trk" id="${S}-k${k + 1}" pathLength="1000" cx="300" cy="300" r="${r}" transform="rotate(-90 300 300)"/>`).join("\n")}
+${items.map((_, i) => `        <circle class="${S}-ring" id="${S}-g${i + 1}" pathLength="1000" cx="300" cy="300" r="${R[i]}" transform="rotate(-90 300 300)"/>`).join("\n")}
+      </svg>
+      <div id="${S}-eye"></div>
+      <svg id="${S}-ld" viewBox="0 0 1760 820">
+${items.map((_, i) => `        <path id="${S}-l${i + 1}" pathLength="1000" d="M${AX} ${rowY[i]} L${land[i][0]} ${land[i][1]}"/>`).join("\n")}
+      </svg>
+${items.map((it, i) => `      <div class="${S}-sock" id="${S}-s${i + 1}"></div>
+      <div class="${S}-dart" id="${S}-d${i + 1}">${String(i + 1).padStart(2, "0")}</div>
+      <div class="${S}-dot" id="${S}-o${i + 1}"></div>
+      <div class="${S}-ph" id="${S}-p${i + 1}"></div>
+      <div class="${S}-row" id="${S}-r${i + 1}">${esc(it)}</div>`).join("\n")}
+    </div>`;
+    const m = [
+      { prim: "reveal", target: `#${S}-idi`, at: tLabel, dur: 0.45, from: { opacity: 0, scale: 0.4 }, ease: "back.out(2)" },
+      { prim: "reveal", target: `#${S}-idl`, at: tLabel + 0.08, dur: 0.45, from: { opacity: 0, x: -18 } },
+      { prim: "reveal", target: `#${S}-glow`, at: w.a + 0.05, dur: 0.8, from: { opacity: 0 } },
+      ...R.map((_, k) => ({ prim: "draw", target: `#${S}-k${k + 1}`, at: w.a + 0.05 + k * 0.12, dur: 0.8 })),
+    ];
+    items.forEach((_, i) => {
+      const e = w.a + 0.25 + i * 0.08;
+      m.push(
+        { prim: "reveal", target: `#${S}-s${i + 1}`, at: e, dur: 0.4, from: { opacity: 0, scale: 0.5 }, ease: "back.out(2)" },
+        { prim: "reveal", target: `#${S}-p${i + 1}`, at: e, dur: 0.4, from: { opacity: 0, x: -20 } },
+        { prim: "reveal", target: `#${S}-p${i + 1}`, at: Math.max(t[i], e + 0.42), dur: 0.25, from: { opacity: 1 }, to: { opacity: 0 }, ease: "power1.out" },
+        { prim: "reveal", target: `#${S}-r${i + 1}`, at: t[i], dur: 0.55, from: { opacity: 0, x: 260 }, ease: "power3.out" },
+        { prim: "reveal", target: `#${S}-o${i + 1}`, at: t[i], dur: 0.3, from: { opacity: 0, scale: 0.3 } },
+        // the dart flies from its row anchor along the leader and lands on its ring
+        { prim: "reveal", target: `#${S}-d${i + 1}`, at: t[i], dur: 0.6, from: { opacity: 0, x: AX - land[i][0], y: rowY[i] - land[i][1], scale: 0.5 }, ease: "power3.out" },
+        { prim: "draw", target: `#${S}-l${i + 1}`, at: t[i] + 0.05, dur: 0.5 },
+        { prim: "draw", target: `#${S}-g${i + 1}`, at: t[i] + 0.4, dur: 0.6 },
+        { prim: "reveal", target: `#${S}-h${i + 1}`, at: t[i] + 0.6, dur: 0.5, from: { opacity: 0 } },
+      );
+    });
+    const hit = Math.min(last + 0.7, w.b - 0.6);
+    m.push({ prim: "reveal", target: `#${S}-eye`, at: hit, dur: 0.35, from: { opacity: 0, scale: 0.3 }, ease: "back.out(3)" });
+    // the lit rings breathe one after another until the shot ends
+    const tp = last + 1.2;
+    items.forEach((_, i) => {
+      const at = tp + i * 0.3;
+      const dur = w.b - 0.05 - at;
+      if (dur > 0.8) m.push({ prim: "pulse", target: `#${S}-h${i + 1}`, at, dur });
+    });
+    const d = ctx.drift(`#${S}-open`, Math.max(last + 1.2, hit + 0.4));
+    if (d) m.push(d);
+    return { css, html, motions: keepInside(m, w.b) };
+  }
 
   if (ctx.variant === "spotlight") {
     const gap = 48;

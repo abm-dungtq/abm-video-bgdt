@@ -1,10 +1,27 @@
 {
   "template": "card-quiz",
   "variant": "abc",
-  "window": ["start", "end"],
+  "window": [
+    "start",
+    "end"
+  ],
   "slots": {
     "question": "Hermes gặp một lệnh chưa rõ an toàn hay nguy hiểm. Nó sẽ làm gì?",
-    "options": ["Chạy luôn cho nhanh", "Hỏi bạn trước khi chạy", "Tự xóa lệnh đó đi"],
+    "options": [
+      "Chạy luôn cho nhanh",
+      "Hỏi bạn trước khi chạy",
+      "Tự xóa lệnh đó đi"
+    ],
+    "answer": 1
+  },
+  "stress": {
+    "question": "Hermes gặp một lệnh chưa rõ là an toàn hay nguy hiểm trong thư mục dự án. Nó sẽ làm gì?",
+    "options": [
+      "Chạy luôn lệnh đó cho nhanh gọn hơn",
+      "Hỏi ý kiến bạn trước khi chạy lệnh",
+      "Tự động xóa lệnh đó khỏi hàng đợi",
+      "Bỏ qua lệnh và chuyển sang việc khác"
+    ],
     "answer": 1
   }
 }

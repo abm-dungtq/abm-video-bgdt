@@ -1,0 +1,39 @@
+{
+  "id": "dialogue",
+  "family": "dialogue",
+  "variants": ["chat-bubbles", "two-portraits", "script-lines"],
+  "signatures": ["chat-bubbles"],
+  "zone": { "chat-bubbles": "screen-focus", "two-portraits": "triptych", "script-lines": "sidebar-left" },
+  "slots": {
+    "type": "object",
+    "required": ["speakers", "turns"],
+    "additionalProperties": false,
+    "properties": {
+      "speakers": {
+        "type": "array", "minItems": 2, "maxItems": 2,
+        "items": {
+          "type": "object", "required": ["name"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "name": { "type": "string", "minLength": 1, "maxLength": 14 }
+          }
+        }
+      },
+      "turns": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["who", "text"], "additionalProperties": false,
+          "properties": {
+            "who": { "type": "integer", "minimum": 0, "maximum": 1 },
+            "text": { "type": "string", "minLength": 1, "maxLength": 72 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "turns.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3.5, "max": 10 },
+  "fit": { "minItems": 2, "maxItems": 10, "cue": "hỏi|trả lời|(^| )đáp( |$)|hội thoại|trò chuyện|cuộc gọi" }
+}

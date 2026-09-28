@@ -5,7 +5,7 @@ user-invocable: true
 argument-hint: "<topic or project dir>"
 metadata:
   author: ABM
-  version: "0.7.0"
+  version: "0.8.0"
   proven-on: "videos/hermes-agent-explainer (612 s, 63 frames) rebuilt from templates; videos/claude-intro-explainer (875 s, 79 frames)"
 ---
 
@@ -26,7 +26,9 @@ If the machine is not ready it says `doctor`; `abm-video doctor --fix` installs 
 
 1. **Facts:** `capture/extracted/visible-text.txt`, one `[F-NN] fact — source` per line, from real sources only.
 2. **Script:** `script.src.txt`, following [references/script-authoring.md](references/script-authoring.md). Mark 2–4 word
-   noun phrases as `*keywords*`; they become the on-screen labels.
+   noun phrases as `*keywords*`; they become the on-screen labels. Give every chapter its own arc (§ Chapter arcs: no
+   two chapters on the same scene hints), write a list's items on a `| a / b / c` line, and use `exercise` at most once
+   in the whole video.
 3. **Scenes (optional edits):** the storyboard stage writes `scenes.json` from templates. Review and adjust it with
    [references/scene-spec.md](references/scene-spec.md). At most 15 % of frames may be `custom` (hand-built with
    [references/custom-frame.md](references/custom-frame.md)).

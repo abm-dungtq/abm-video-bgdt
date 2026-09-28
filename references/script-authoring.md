@@ -22,7 +22,8 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
   with digits (`64.000`, `hơn 20`); a year or a version is never a counter. The script stage warns when more than half of the phrases are a single word.
   Aim for 2–5 per frame.
 - **Labels (`|` lines) say exactly what a list shows.** For a frame whose scene is a list (`cards`, `flow`, `hub`,
-  `journey`, `anchor`, `split`, `kinetic`, `metaphor`, `objective`, `quiz`), write its items on a `|` line, split by
+  `journey`, `anchor`, `split`, `kinetic`, `metaphor`, `objective`, `quiz`, and the shaped scenes in § Chapter arcs:
+  `question`, `myth`, `matrix`, `table`, `pyramid`, `funnel`, `iceberg`, `balance`, `layers`), write its items on a `|` line, split by
   `/`: `| Đặt mục tiêu / Soạn thảo / Kiểm tra cuối`. Each label is 2–5 words, at most 32 characters, and the labels of
   one list are about the same length. The labels are not read aloud; each one appears on the keyword phrase of the same
   position (the first label on the first `*keyword*` phrase), or on its sentence when there are fewer phrases. Without
@@ -45,14 +46,31 @@ its own arc, and pick its frames' `scene_hint`s from that arc. Mix freely; these
 
 | Arc | Frames after the `title` (suggested hints) |
 |---|---|
-| Question first | `kinetic` (the question) → `typewriter` or `principle` (the answer) → `metaphor` (an everyday example) → `stat` |
+| Question first | `question` (the hook question) → `typewriter` or `principle` (the answer) → `metaphor` (an everyday example) |
 | Story | `case` (the situation) → `journey` (what happened, step by step) → `principle` (the lesson) |
-| Myth and fact | `antipattern` (what people believe vs what is true) → `stat` (the evidence) → `cards` (what to do instead) |
+| Myth and fact | `myth` (what people believe vs what is true) → `stat` (the evidence) → `cards` (what to do instead) |
 | Before and after | `split` (before / after) → `hub` (why it changed) → `flow` (how to get there) |
-| Step by step | `flow` (the steps) → `zoom` (the step people get wrong) → `cards` (tips) |
-| Shocking number | `stat` (the number) → `hub` (what drives it) → `split` (consequence vs opportunity) |
-| Two voices | `case` with `chat` (a short exchange) → `principle` → `typewriter` (the takeaway line) |
-| Picture it | `metaphor` (an image from daily life) → `split` (image ↔ reality) → `cards` (what to do) |
+| Step by step | `flow` (the steps) → `zoom` (the step people get wrong) → `antipattern` (wrong way, right way) |
+| Shocking number | `stat` (the number) → `iceberg` (the hidden causes) → `balance` (what you gain, what it costs) |
+| Two voices | `dialogue` (a short exchange) → `principle` → `typewriter` (the takeaway line) |
+| Picture it | `metaphor` (an image from daily life) → `layers` (what it is made of) → `cards` (what to do) |
+| Sort it out | `matrix` (four cases on two axes) → `table` (compare the options) → `pyramid` (what to build first) |
+| Narrow it down | `funnel` (from many to few) → `split` (who stays, who drops) → `flow` (how to improve each stage) |
+
+Scenes for a specific shape of content (write their items on a `|` line):
+
+| Hint | Use it for | Labels |
+|---|---|---|
+| `question` | one question that opens a topic (the sentence ends with `?`) | optional 2–3 answer options |
+| `myth` | a common belief, then the truth | myth / fact / myth / fact (1–3 pairs) |
+| `dialogue` | a short exchange; write each turn as `Tên: lời` | — |
+| `matrix` | four cases sorted on two axes | vertical axis / horizontal axis / 4 cases |
+| `table` | 2–3 things compared on 2–5 criteria; title the frame `A và B` | the criteria |
+| `pyramid` | 3–5 levels, the base first | the levels, base first |
+| `funnel` | 3–5 stages narrowing (numbers optional) | the stages |
+| `iceberg` | what shows vs 2–4 hidden causes | the visible part first, then the hidden ones |
+| `balance` | two sides weighed against each other | left side items / right side items |
+| `layers` | 3–5 layers from outer to inner | the layers |
 
 Rules, checked when the project config has `structure` (every project made from 0.8.0 on):
 

@@ -1,0 +1,31 @@
+{
+  "id": "layers",
+  "family": "layers",
+  "variants": ["exploded", "slices", "onion"],
+  "signatures": ["exploded"],
+  "zone": { "exploded": "split-40-60", "slices": "split-50", "onion": "split-50" },
+  "slots": {
+    "type": "object",
+    "required": ["layers"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "layers": {
+        "type": "array", "minItems": 3, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "note": { "type": "string", "minLength": 1, "maxLength": 36 },
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "layers.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 },
+  "fit": { "minItems": 3, "maxItems": 5, "cue": "các lớp|từng lớp|lớp ngoài|lớp trong|nhiều tầng|từng tầng|bóc tách" }
+}

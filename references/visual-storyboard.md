@@ -60,6 +60,16 @@ lines and inline `~N s` hints are rescaled and snapped to cues automatically aft
 | `case` | a real situation | `card-case` (tools/worker-layouts.md) |
 | `exercise` | BÀI TẬP quick-win: "pause the video, 5 minutes", an 8–10 s card that keeps moving; optional, at most once per video (`structure.maxExercise`) | `card-exercise` (tools/worker-layouts.md) |
 | `quiz` | a situational question (optional) | `card-quiz` (tools/worker-layouts.md) |
+| `question` | one hook question (the sentence ends with `?`) | `question-hook` |
+| `myth` | a common belief, then the truth | `myth-fact` |
+| `dialogue` | a short exchange, turns written `Tên: lời` | `dialogue` |
+| `matrix` | four cases on two axes | `matrix` |
+| `table` | 2–3 things compared on 2–5 criteria | `table` |
+| `pyramid` | 3–5 levels, base first | `pyramid` |
+| `funnel` | 3–5 stages narrowing | `funnel` |
+| `iceberg` | what shows vs hidden causes | `iceberg` |
+| `balance` | two sides weighed | `balance` |
+| `layers` | 3–5 layers, outer to inner | `layers` |
 
 The blueprints are described in `~/.agents/skills/faceless-explainer/references/visual-design.md` and `cut-catalog.md`.
 

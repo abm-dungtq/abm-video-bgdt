@@ -1,0 +1,26 @@
+{
+  "template": "question-hook",
+  "variant": "big-question",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "question": "Vì sao agent quên mọi thứ sau mỗi phiên làm việc?",
+    "focus": "quên mọi thứ",
+    "options": [
+      "Thiếu bộ nhớ",
+      "Hết ngữ cảnh",
+      "Lỗi mô hình"
+    ]
+  },
+  "stress": {
+    "question": "Làm sao để một trợ lý ảo luôn ghi nhớ đúng thói quen làm việc của từng người dùng mới?",
+    "focus": "ghi nhớ đúng thói quen",
+    "options": [
+      "Lưu hồ sơ người dùng lâu",
+      "Tự tạo kỹ năng mới dần",
+      "Hỏi lại mỗi lần làm việc"
+    ]
+  }
+}

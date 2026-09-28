@@ -2,9 +2,9 @@
   "id": "card-principle",
   "family": "principle",
   "card": "card-principle",
-  "variants": ["quote", "keyword"],
+  "variants": ["quote", "keyword", "monolith"],
   "signatures": ["keyword"],
-  "zone": { "quote": "full-bleed-quote", "keyword": "hero-center" },
+  "zone": { "quote": "full-bleed-quote", "keyword": "hero-center", "monolith": "screen-focus" },
   "slots": {
     "type": "object",
     "required": ["text"],

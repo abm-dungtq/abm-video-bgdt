@@ -2,9 +2,9 @@
   "id": "card-case",
   "family": "case",
   "card": "card-case",
-  "variants": ["story", "chat"],
+  "variants": ["story", "chat", "polaroid"],
   "signatures": ["chat"],
-  "zone": { "story": "split-40-60", "chat": "hero-center" },
+  "zone": { "story": "split-40-60", "chat": "hero-center", "polaroid": "triptych" },
   "slots": {
     "type": "object",
     "required": ["situation", "detail"],

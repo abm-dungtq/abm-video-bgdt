@@ -1,0 +1,59 @@
+{
+  "template": "layers",
+  "variant": "exploded",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Kiến trúc một agent",
+    "layers": [
+      {
+        "label": "Giao diện trò chuyện",
+        "icon": "chat"
+      },
+      {
+        "label": "Bộ nhớ dài hạn",
+        "icon": "book"
+      },
+      {
+        "label": "Kỹ năng",
+        "icon": "gear"
+      },
+      {
+        "label": "Mô hình ngôn ngữ",
+        "icon": "lightbulb"
+      }
+    ]
+  },
+  "stress": {
+    "title": "Các tầng của một hệ thống agent",
+    "layers": [
+      {
+        "label": "Giao diện nhiều kênh",
+        "note": "Telegram, Discord, Slack và email",
+        "icon": "chat"
+      },
+      {
+        "label": "Cổng điều phối yêu cầu",
+        "note": "Nhận tin, xác thực và định tuyến",
+        "icon": "server"
+      },
+      {
+        "label": "Bộ nhớ và hồ sơ riêng",
+        "note": "Ghi nhớ thói quen từng người dùng",
+        "icon": "book"
+      },
+      {
+        "label": "Kho kỹ năng tự học dần",
+        "note": "Tự tạo kỹ năng mới sau mỗi lần làm",
+        "icon": "gear"
+      },
+      {
+        "label": "Mô hình ngôn ngữ lớn",
+        "note": "Suy luận, lập kế hoạch và viết mã",
+        "icon": "lightbulb"
+      }
+    ]
+  }
+}

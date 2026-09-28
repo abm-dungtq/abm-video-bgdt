@@ -1,0 +1,30 @@
+{
+  "id": "funnel",
+  "family": "funnel",
+  "variants": ["pour", "stages", "drop-off"],
+  "signatures": ["pour"],
+  "zone": { "pour": "split-60-40", "stages": "screen-focus", "drop-off": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["stages"],
+    "additionalProperties": false,
+    "properties": {
+      "stages": {
+        "type": "array", "minItems": 3, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+            "suffix": { "type": "string", "minLength": 1, "maxLength": 3 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "stages.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 },
+  "fit": { "minItems": 3, "maxItems": 5, "cue": "phễu|tỷ lệ chuyển đổi|rơi rụng|rớt lại|sàng lọc|lọc dần|thu hẹp dần" }
+}

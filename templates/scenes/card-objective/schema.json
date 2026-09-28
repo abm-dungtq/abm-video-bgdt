@@ -2,9 +2,9 @@
   "id": "card-objective",
   "family": "objective",
   "card": "card-objective",
-  "variants": ["list", "spotlight"],
+  "variants": ["list", "spotlight", "target-rings"],
   "signatures": ["list"],
-  "zone": { "list": "split-40-60", "spotlight": "triptych" },
+  "zone": { "list": "split-40-60", "spotlight": "triptych", "target-rings": "split-40-60" },
   "slots": {
     "type": "object",
     "required": ["items"],

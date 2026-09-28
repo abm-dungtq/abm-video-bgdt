@@ -1,0 +1,22 @@
+{
+  "template": "pyramid",
+  "variant": "stack-up",
+  "window": ["start", "end"],
+  "slots": {
+    "levels": [
+      { "icon": "shield", "label": "An toàn" },
+      { "icon": "people", "label": "Kết nối" },
+      { "icon": "target", "label": "Được công nhận" },
+      { "icon": "rocket", "label": "Tự hoàn thiện" }
+    ]
+  },
+  "stress": {
+    "levels": [
+      { "icon": "server", "label": "Dữ liệu sạch và đầy đủ" },
+      { "icon": "gear", "label": "Quy trình được tự động" },
+      { "icon": "chart", "label": "Đo lường minh bạch rõ" },
+      { "icon": "lightbulb", "label": "Quyết định dựa dữ liệu" },
+      { "icon": "rocket", "label": "Đổi mới sáng tạo đều" }
+    ]
+  }
+}

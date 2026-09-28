@@ -1,0 +1,93 @@
+{
+  "template": "table",
+  "variant": "rows-reveal",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "columns": [
+      "Chatbot",
+      "Agent AI"
+    ],
+    "rows": [
+      {
+        "label": "Trả lời câu hỏi",
+        "cells": [
+          true,
+          true
+        ]
+      },
+      {
+        "label": "Tự dùng công cụ",
+        "cells": [
+          false,
+          true
+        ]
+      },
+      {
+        "label": "Nhớ qua nhiều phiên",
+        "cells": [
+          false,
+          true
+        ]
+      },
+      {
+        "label": "Chi phí mỗi tháng",
+        "cells": [
+          "Thấp",
+          "Cao hơn"
+        ]
+      }
+    ]
+  },
+  "stress": {
+    "columns": [
+      "Trợ lý viết code",
+      "Agent AI tự chạy",
+      "Làm tay thủ công"
+    ],
+    "rows": [
+      {
+        "label": "Tốc độ hoàn thành việc",
+        "cells": [
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "label": "Độ tin cậy của kết quả",
+        "cells": [
+          "Cao nếu có mẫu",
+          "Cao nếu kiểm tra",
+          "Phụ thuộc người"
+        ]
+      },
+      {
+        "label": "Chi phí vận hành tháng",
+        "cells": [
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "label": "Cần người theo dõi sát",
+        "cells": [
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "label": "Tự rút kinh nghiệm lỗi",
+        "cells": [
+          false,
+          true,
+          true
+        ]
+      }
+    ]
+  }
+}

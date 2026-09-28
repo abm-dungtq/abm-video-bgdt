@@ -13,6 +13,7 @@ import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { HINT } from "../compiler/solver.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REG = resolve(process.env.ABM_REGRESS_DIR ?? "D:/TQD/Claude-Video/.regress");
@@ -34,8 +35,6 @@ const scenes = JSON.parse(readFileSync(join(W, "scenes.json"), "utf8"));
 const script = JSON.parse(readFileSync(join(W, "script.json"), "utf8"));
 const meta = JSON.parse(readFileSync(join(W, "audio_meta.json"), "utf8"));
 const dur = new Map(meta.voices.map((v) => [v.frame, v.duration_s]));
-const HINT = { metaphor: "pictogram-scene", objective: "card-objective", principle: "card-principle", antipattern: "card-antipattern",
-  case: "card-case", exercise: "card-exercise", quiz: "card-quiz" };
 const frameInfo = new Map(script.chapters.flatMap((c, ci) => c.frames.map((f) => [f.id, { ci, hint: HINT[f.scene_hint] ?? f.scene_hint }])));
 
 let longSingle = 0, hintShown = 0, hintLate = 0;

@@ -5,5 +5,9 @@
   "slots": {
     "text": "Kỹ năng là trí nhớ về cách làm: làm một lần, lần sau agent tự làm tốt hơn",
     "keyword": "trí nhớ"
+  },
+  "stress": {
+    "text": "Kỹ năng là trí nhớ về cách làm việc hiệu quả: làm một lần, lần sau agent tự làm tốt hơn",
+    "keyword": "làm việc hiệu quả"
   }
 }

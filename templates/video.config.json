@@ -62,7 +62,17 @@
       "antipattern",
       "case",
       "exercise",
-      "quiz"
+      "quiz",
+      "matrix",
+      "myth",
+      "dialogue",
+      "pyramid",
+      "funnel",
+      "iceberg",
+      "table",
+      "question",
+      "balance",
+      "layers"
     ],
     "terminalChapters": [],
     "maxShotS": 10,

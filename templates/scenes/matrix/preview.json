@@ -1,0 +1,25 @@
+{
+  "template": "matrix",
+  "variant": "quadrant",
+  "window": ["start", "end"],
+  "slots": {
+    "y": "Mức quan trọng",
+    "x": "Mức khẩn cấp",
+    "items": [
+      { "icon": "calendar", "label": "Lên lịch làm" },
+      { "icon": "rocket", "label": "Làm ngay" },
+      { "icon": "cross", "label": "Bỏ qua" },
+      { "icon": "people", "label": "Giao người khác" }
+    ]
+  },
+  "stress": {
+    "y": "Giá trị cho học viên",
+    "x": "Công sức cần bỏ ra",
+    "items": [
+      { "icon": "target", "label": "Ưu tiên hàng đầu" },
+      { "icon": "lightbulb", "label": "Thắng nhanh dễ làm" },
+      { "icon": "timer", "label": "Dời sang tháng sau" },
+      { "icon": "cross", "label": "Loại khỏi kế hoạch" }
+    ]
+  }
+}

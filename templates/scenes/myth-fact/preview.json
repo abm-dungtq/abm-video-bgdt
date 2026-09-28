@@ -1,0 +1,18 @@
+{
+  "template": "myth-fact",
+  "variant": "stamp",
+  "window": ["start", "end"],
+  "slots": {
+    "pairs": [
+      { "myth": "AI tự biết mọi thứ về công ty bạn", "fact": "AI chỉ biết những gì bạn đưa vào ngữ cảnh" },
+      { "myth": "Prompt càng dài càng tốt", "fact": "Prompt rõ ràng, đủ ý mới là prompt tốt" }
+    ]
+  },
+  "stress": {
+    "pairs": [
+      { "myth": "Mô hình lớn hơn luôn cho câu trả lời đúng hơn ạ", "fact": "Chất lượng dữ liệu và ngữ cảnh quyết định phần lớn kết quả cuối" },
+      { "myth": "Agent chạy tự động nên không cần ai kiểm tra lại", "fact": "Người dùng vẫn phải duyệt từng bước quan trọng trước khi chạy nó" },
+      { "myth": "Càng nhiều công cụ thì agent càng thông minh hơn", "fact": "Ít công cụ nhưng mô tả rõ ràng giúp agent chọn đúng hơn hẳn" }
+    ]
+  }
+}

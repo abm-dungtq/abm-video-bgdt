@@ -2,9 +2,9 @@
   "id": "card-antipattern",
   "family": "antipattern",
   "card": "card-antipattern",
-  "variants": ["side-by-side", "flip"],
+  "variants": ["side-by-side", "flip", "strike"],
   "signatures": ["flip"],
-  "zone": { "side-by-side": "split-50", "flip": "hero-center" },
+  "zone": { "side-by-side": "split-50", "flip": "hero-center", "strike": "strip-top" },
   "slots": {
     "type": "object",
     "required": ["wrong", "right"],

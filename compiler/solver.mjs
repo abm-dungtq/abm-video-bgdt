@@ -26,8 +26,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const r2 = (x) => Math.round(x * 100) / 100;
 const ICONS = JSON.parse(readFileSync(join(HERE, "icon-words.json"), "utf8"));
 const STOP = new Set(["một", "các", "những", "của", "và", "thì", "là", "cho", "với", "được", "này", "đó", "nó", "rồi", "cũng"]);
-const HINT = { metaphor: "pictogram-scene", objective: "card-objective", principle: "card-principle", antipattern: "card-antipattern",
-  case: "card-case", exercise: "card-exercise", quiz: "card-quiz" };
+export const HINT = { metaphor: "pictogram-scene", objective: "card-objective", principle: "card-principle", antipattern: "card-antipattern",
+  case: "card-case", exercise: "card-exercise", quiz: "card-quiz", myth: "myth-fact", question: "question-hook" };
 // families of cards that are built from a whole frame (the director keeps such a frame in one shot)
 export const WHOLE_FAMILIES = new Set(["exercise", "quiz", "case"]);
 const PRIVATE = /[A-Za-z]:\\Users\\|\/Users\/|\/home\/|@[\w.-]+\.\w+/;
@@ -172,7 +172,8 @@ const cueOf = (x) => x.p.cue;
 // Builders that take a list of short labels; a frame's explicit `| a / b / c` labels (script.json frame.labels) replace
 // their keyword phrases, once per frame: on the shot of the frame's scene_hint template when that is one of these,
 // else on the first of these shots.
-export const LABELED = new Set(["kinetic", "cards", "hub", "flow", "journey", "anchor", "split", "pictogram-scene", "card-objective", "card-quiz"]);
+export const LABELED = new Set(["kinetic", "cards", "hub", "flow", "journey", "anchor", "split", "pictogram-scene", "card-objective", "card-quiz",
+  "matrix", "myth-fact", "pyramid", "funnel", "iceberg", "table", "balance", "layers", "question-hook"]);
 
 /** the shot context with its keyword phrases replaced by the frame's labels (cue: phrase i, else sentence i's start) */
 export function withLabels(c, labels) {
@@ -300,6 +301,172 @@ export const BUILD = {
     if (!img || !existsSync(join(c.P, img))) return null;
     const steps = c.ph.map((p) => fit(p.text, 30)).filter(Boolean).slice(0, 4);
     return { slots: { image: img, ...(steps.length ? { steps } : {}) }, reveals: {} };
+  },
+  matrix: (c) => {
+    // frame labels "| trục dọc / trục ngang / a / b / c / d" give the axes; else "trục dọc là …" in the text
+    const lab = c.labelled && c.ph.length >= 6;
+    const axis = (re) => fit(c.text.match(re)?.[1], 20);
+    const y = lab ? fit(c.ph[0].text, 20) : axis(/trục (?:dọc|tung)(?: là|:)?\s+([^,.;:!?]+)/iu);
+    const x = lab ? fit(c.ph[1].text, 20) : axis(/trục (?:ngang|hoành)(?: là|:)?\s+([^,.;:!?]+)/iu);
+    const it = items(lab ? c.ph.slice(2) : c.ph.filter((p) => !/^trục\b/iu.test(p.text)), 18, 4, 4);
+    if (!it || (lab && (!x || !y))) return null;
+    const icons = iconsFor(it.map((q) => [q.t, c.sentOf(q.p)]));
+    const axes = x && y;
+    return { slots: { ...(axes ? { y, x } : {}), items: it.map((q, i) => ({ icon: icons[i], label: q.t })) },
+      reveals: { ...(axes ? { axes: "start+0.35" } : {}), ...Object.fromEntries(it.map((q, i) => [`items.${i}`, cueOf(q)])) } };
+  },
+  "myth-fact": (c) => {
+    // pairs: labels in order myth, fact, myth, fact…; else a sentence that states a belief, then the next one that corrects it
+    const MYTH = /lầm tưởng|hiểu lầm|ngộ nhận|nhiều người (?:nghĩ|tin|cho rằng)|tưởng rằng/u;
+    const FACT = /sự thật|thực ra|thật ra|thực tế/u;
+    const lead = /^.*?(?:lầm tưởng|hiểu lầm|ngộ nhận|nhiều người (?:nghĩ|tin|cho rằng)|tưởng rằng|sự thật|thực ra|thật ra|thực tế)(?:\s+(?:thứ\s+\S+|đầu tiên))?(?:\s+(?:là|rằng|thì))*\s*[:,]?\s*/iu;
+    const say = (s, max) => fit(s.text.replace(lead, ""), max)
+      ?? c.ph.filter((p) => p.sent === s.k).map((p) => fit(p.text, max)).filter(Boolean).sort((a, b) => b.length - a.length)[0] ?? null;
+    const pairs = [], reveals = {};
+    const add = (myth, fact, cm, cf) => { reveals[`myth.${pairs.length}`] = cm; reveals[`fact.${pairs.length}`] = cf; pairs.push({ myth, fact }); };
+    if (c.labelled) {
+      for (let i = 0; i + 1 < c.ph.length && pairs.length < 3; i += 2) {
+        const myth = fit(c.ph[i].text, 48), fact = fit(c.ph[i + 1].text, 64);
+        if (!myth || !fact) return null;
+        add(myth, fact, c.ph[i].cue, c.ph[i + 1].cue);
+      }
+    } else {
+      const ss = c.sents;
+      for (let i = 0; i < ss.length && pairs.length < 3; i++) {
+        if (!MYTH.test(norm(ss[i].text))) continue;
+        const j = ss.findIndex((s, k) => k > i && FACT.test(norm(s.text)));
+        const f = ss[j > 0 ? j : i + 1];
+        if (!f) break;
+        const myth = say(ss[i], 48), fact = say(f, 64);
+        if (myth && fact) add(myth, fact, `sent:${ss[i].k}.start`, `sent:${f.k}.start`);
+        i = ss.indexOf(f);
+      }
+    }
+    return pairs.length ? { slots: { pairs }, reveals } : null;
+  },
+  dialogue: (c) => {
+    // turns: sentences (or labels); "Tên: lời" names the speaker, else speakers alternate
+    const SPK = /^([^:]{1,24}):\s*(.+)$/u;
+    const raw = c.labelled ? c.ph.map((p) => ({ text: p.text, cue: p.cue })) : c.sents.map((s) => ({ text: s.text, cue: `sent:${s.k}.start` }));
+    const names = [], turns = [], reveals = {};
+    for (const r of raw) {
+      if (turns.length === 4) break;
+      const m = r.text.match(SPK);
+      let who = turns.length ? 1 - turns.at(-1).who : 0;
+      if (m) {
+        const nm = fit(m[1].replace(/\s+(?:hỏi|nói|đáp|trả lời)$/iu, ""), 14);
+        if (!nm) continue;
+        who = names.findIndex((x) => norm(x) === norm(nm));
+        if (who < 0) { if (names.length === 2) continue; who = names.push(nm) - 1; }
+      }
+      let text = fit(m ? m[2] : r.text, 72);
+      if (!text) continue;
+      if (/\?\s*$/.test(r.text) && [...text].length < 72) text += "?";
+      reveals[`turns.${turns.length}`] = r.cue;
+      turns.push({ who, text });
+    }
+    if (turns.length < 2 || !turns.some((x) => x.who === 0) || !turns.some((x) => x.who === 1)) return null;
+    // two plain sentences are not a conversation: without "Tên: lời" turns, only a frame hinted `dialogue` becomes one
+    if (!names.length && c.frame.scene_hint !== "dialogue") return null;
+    const def = ["Người hỏi", "Người đáp"];
+    return { slots: { speakers: [0, 1].map((i) => ({ name: names[i] ?? def[i] })), turns }, reveals };
+  },
+  pyramid: (c) => {
+    const it = items(c.ph, 22, 3, 5);
+    if (!it) return null;
+    const icons = iconsFor(it.map((x) => [x.t, c.sentOf(x.p)]));
+    let lv = it.map((x, i) => ({ x, icon: icons[i] }));
+    // levels[0] is the base: a list spoken from the top ("trên đỉnh là …") is turned over
+    const first = norm(c.sentOf(it[0].p));
+    if (/đỉnh|cao nhất|trên cùng/u.test(first) && !/nền|đáy|dưới cùng|cơ bản/u.test(first)) lv = lv.reverse();
+    return { slots: { levels: lv.map((l) => ({ icon: l.icon, label: l.x.t })) },
+      reveals: Object.fromEntries(lv.map((l, i) => [`levels.${i}`, cueOf(l.x)])) };
+  },
+  funnel: (c) => {
+    const it = items(c.ph, 22, 3, 5);
+    if (!it) return null;
+    // a number said in a stage's sentence becomes its value; kept only when every stage has its own and they never grow
+    const used = new Set();
+    const val = it.map((x) => { const n = c.nums.find((v) => v.sent === x.p.sent && !used.has(v)); if (n) used.add(n); return n; });
+    const withNum = val.every(Boolean) && val.every((n, i) => !i || n.value <= val[i - 1].value);
+    return { slots: { stages: it.map((x, i) => ({ label: x.t, ...(withNum ? { value: val[i].value, ...(val[i].suffix ? { suffix: val[i].suffix } : {}) } : {}) })) },
+      reveals: Object.fromEntries(it.map((x, i) => [`stages.${i}`, cueOf(x)])) };
+  },
+  iceberg: (c) => {
+    const it = items(c.ph, 26, 3, 5);
+    const tip = it && fit(it[0].p.text, 22);
+    if (!tip) return null;
+    const hid = it.slice(1);
+    const icons = iconsFor([[tip, c.sentOf(it[0].p)], ...hid.map((x) => [x.t, c.sentOf(x.p)])]);
+    return { slots: { tip: { icon: icons[0], label: tip }, hidden: hid.map((x, i) => ({ icon: icons[i + 1], label: x.t })) },
+      reveals: { tip: cueOf(it[0]), ...Object.fromEntries(hid.map((x, i) => [`hidden.${i}`, cueOf(x)])) } };
+  },
+  table: (c) => {
+    // the compared things come from the frame title ("A và B", "A vs B", "A hay B"), the criteria from keyword phrases
+    const cols = String(c.frame.title ?? "").split(/\s+(?:vs\.?|và|với|hay|so với)\s+/iu).map((s) => fit(s, 16));
+    if (cols.length < 2 || cols.length > 3 || cols.some((x) => !x)) return null;
+    const keys = cols.map((x) => norm(x));
+    const NEG = /(^| )(không|chưa|chẳng|kém)( |$)/u;
+    const rows = [];
+    for (const p of c.ph) {
+      const label = fit(p.text, 22);
+      if (!label || keys.some((k) => norm(label).includes(k) || k.includes(norm(label)))) continue;
+      // a cell is true when a clause of the row's sentence names the column without a negation
+      const clauses = c.sentOf(p).split(/[,;]|\s(?:nhưng|còn|trong khi)\s/iu).map(norm);
+      if (!keys.some((k) => clauses.some((cl) => cl.includes(k)))) continue;
+      rows.push({ p, label, cells: keys.map((k) => clauses.some((cl) => cl.includes(k) && !NEG.test(cl))) });
+      if (rows.length === 5) break;
+    }
+    if (rows.length < 2 || rows.every((r) => r.cells.every((v) => v === r.cells[0]))) return null;
+    return { slots: { columns: cols, rows: rows.map(({ label, cells }) => ({ label, cells })) },
+      reveals: { columns: "start+0.35", ...Object.fromEntries(rows.map((r, i) => [`rows.${i}`, r.p.cue])) } };
+  },
+  "question-hook": (c) => {
+    const q = c.sents.find((s) => /[?？]\s*$/.test(s.text) && [...s.text.trim()].length <= 90);
+    if (!q) return null;
+    const t = q.text.trim().replace(/\s+([?？])$/, "$1");
+    const question = t.charAt(0).toUpperCase() + t.slice(1);
+    const f = c.ph.find((p) => p.sent === q.k && norm(question).includes(norm(p.text)) && [...p.text].length <= 24);
+    const opts = items(c.ph.filter((p) => p.sent > q.k), 24, 2, 3);
+    return {
+      slots: { question, ...(f ? { focus: f.text } : {}), ...(opts ? { options: opts.map((x) => x.t) } : {}) },
+      reveals: { question: `sent:${q.k}.start`, ...(f ? { focus: f.cue } : {}),
+        ...(opts ? Object.fromEntries(opts.map((x, i) => [`options.${i}`, cueOf(x)])) : {}) },
+    };
+  },
+  balance: (c) => {
+    let A, B;
+    if (c.labelled) { const h = Math.ceil(c.ph.length / 2); A = c.ph.slice(0, h); B = c.ph.slice(h); }
+    else {
+      const mid = c.sents.length > 1 ? c.sents[Math.floor(c.sents.length / 2)].k : null;
+      if (!mid) return null;
+      A = c.ph.filter((p) => p.sent < mid); B = c.ph.filter((p) => p.sent >= mid);
+    }
+    const sentText = (p) => c.sents.find((s) => s.k === p.sent)?.text ?? "";
+    const side = (ps) => {
+      const it = items(ps, 22, 2, 4);
+      const label = it && fit(it[0].p.text, 18);
+      if (!label) return null;
+      return { slots: { label, icon: iconFor(label, sentText(it[0].p)), items: it.slice(1).map((x) => x.t) },
+        cues: it.map(cueOf), text: norm(ps.map((p) => `${p.text} ${sentText(p)}`).join(" ")), last: it.at(-1).p };
+    };
+    const L = side(A), R = side(B);
+    if (!L || !R) return null;
+    const POS = /lợi|tốt|nên|hiệu quả|nhanh|đúng|thắng|nặng hơn|vượt/g, NEG = /hại|xấu|chậm|tốn|rủi ro|sai|thua|nhẹ hơn/g;
+    const score = (s) => (s.text.match(POS)?.length ?? 0) - (s.text.match(NEG)?.length ?? 0);
+    const d = score(L) - score(R);
+    const tail = c.sents.find((s) => s.k > Math.max(L.last.sent, R.last.sent));
+    const rv = (k, s) => Object.fromEntries(s.cues.map((cue, i) => [i ? `${k}.items.${i - 1}` : k, cue]));
+    return { slots: { left: L.slots, right: R.slots, winner: d > 0 ? "left" : d < 0 ? "right" : "even" },
+      reveals: { ...rv("left", L), ...rv("right", R), tip: tail ? `sent:${tail.k}.start` : `${R.cues.at(-1)}+0.6` } };
+  },
+  layers: (c) => {
+    const it = items(c.ph, 22, 3, 5);
+    if (!it) return null;
+    const title = c.first ? fit(c.frame.title, 32) : null;
+    const icons = iconsFor(it.map((x) => [x.t, c.sents.find((s) => s.k === x.p.sent)?.text ?? ""]));
+    return { slots: { ...(title ? { title } : {}), layers: it.map((x, i) => ({ label: x.t, icon: icons[i] })) },
+      reveals: Object.fromEntries(it.map((x, i) => [`layers.${i}`, cueOf(x)])) };
   },
   "card-objective": (c) => {
     if (c.labelled) {

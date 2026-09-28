@@ -1,0 +1,27 @@
+{
+  "id": "question-hook",
+  "family": "question",
+  "variants": ["big-question", "blank-fill", "poll"],
+  "signatures": ["big-question"],
+  "zone": { "big-question": "hero-center", "blank-fill": "full-bleed-quote", "poll": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["question"],
+    "additionalProperties": false,
+    "properties": {
+      "question": { "type": "string", "minLength": 6, "maxLength": 90, "pattern": "\\?$" },
+      "focus": { "type": "string", "minLength": 1, "maxLength": 24 },
+      "options": {
+        "type": "array", "minItems": 2, "maxItems": 3,
+        "items": { "type": "string", "minLength": 1, "maxLength": 24 }
+      }
+    }
+  },
+  "reveals": {
+    "question": { "default": "spread", "range": false },
+    "focus": { "default": "kw", "range": false },
+    "options.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 },
+  "fit": { "minItems": 0, "maxItems": 4, "cue": "vì sao|tại sao|làm sao|làm thế nào|như thế nào|có phải|là gì|bao nhiêu|hay không|được không|đâu là" }
+}

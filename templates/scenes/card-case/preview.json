@@ -1,10 +1,18 @@
 {
   "template": "card-case",
   "variant": "story",
-  "window": ["start", "end"],
+  "window": [
+    "start",
+    "end"
+  ],
   "slots": {
     "situation": "Bạn nhờ Hermes dọn thư mục dự án, và nó định chạy một lệnh xóa hàng loạt",
     "detail": "Bạn không trả lời trong năm phút, lệnh tự động bị từ chối",
     "question": "Bạn sẽ duyệt lệnh này hay chặn nó?"
+  },
+  "stress": {
+    "situation": "Bạn nhờ Hermes dọn dẹp thư mục dự án cũ, và nó chuẩn bị chạy một lệnh xóa hàng loạt tệp",
+    "detail": "Bạn đi họp và không trả lời trong năm phút, lệnh bị từ chối",
+    "question": "Bạn sẽ duyệt lệnh xóa này ngay hay chặn nó lại để xem xét?"
   }
 }

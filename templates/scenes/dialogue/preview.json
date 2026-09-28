@@ -1,0 +1,22 @@
+{
+  "template": "dialogue",
+  "variant": "chat-bubbles",
+  "window": ["start", "end"],
+  "slots": {
+    "speakers": [ { "icon": "person", "name": "Học viên" }, { "icon": "lightbulb", "name": "Claude" } ],
+    "turns": [
+      { "who": 0, "text": "Tóm tắt giúp tôi báo cáo này nhé?" },
+      { "who": 1, "text": "Bạn muốn tóm tắt cho ai đọc, và dài bao nhiêu?" },
+      { "who": 0, "text": "Cho sếp, năm gạch đầu dòng." }
+    ]
+  },
+  "stress": {
+    "speakers": [ { "icon": "person", "name": "Nguyễn Văn Hải" }, { "icon": "people", "name": "Kỹ sư hệ thống" } ],
+    "turns": [
+      { "who": 0, "text": "Tại sao agent của tôi cứ gọi sai công cụ mỗi khi có nhiều lựa chọn vậy?" },
+      { "who": 1, "text": "Vì mô tả công cụ còn mơ hồ, nên mô hình không biết khi nào dùng cái nào." },
+      { "who": 0, "text": "Vậy tôi cần viết lại phần mô tả cho từng công cụ theo cách nào mới đúng?" },
+      { "who": 1, "text": "Nêu rõ công cụ làm gì, khi nào nên dùng và khi nào tuyệt đối không dùng." }
+    ]
+  }
+}

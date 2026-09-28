@@ -178,6 +178,44 @@ test("fit: item counts, a number and a cue decide whether a template suits a sho
     fitOk({ cue: "mục tiêu" }, two), fitOk({ cue: "tảng băng" }, two), fitOk({ minItems: 3 }, { ...two, labelsLeft: 3 })],
   [false, true, false, true, false, true]);
 });
+// the ten newer templates: enough content gives slots their schema accepts, too little gives null
+const schemaOf = (id) => JSON.parse(readFileSync(new URL(`../templates/scenes/${id}/schema.json`, import.meta.url), "utf8"));
+const valid = (id, b) => { if (!b) throw new Error(`${id}: null`); const e = validate(schemaOf(id).slots, b.slots); if (e.length) throw new Error(`${id}: ${e.join("; ")}`); };
+const three = shot([sent(1, "Nền tảng là dữ liệu sạch."), sent(2, "Tầng giữa là quy trình."), sent(3, "Trên đỉnh là trợ lý AI.")],
+  [kw(1, "dữ liệu sạch"), kw(2, "quy trình chuẩn"), kw(3, "trợ lý AI")]);
+const one = shot([sent(1, "Một câu thôi.")], [kw(1, "một ý")]);
+for (const id of ["pyramid", "funnel", "iceberg", "layers"]) {
+  test(`${id}: three phrases build it, one phrase does not`, () => { valid(id, BUILD[id](three)); eq(BUILD[id](one), null); });
+}
+test("pyramid: a list said from the top is turned over, the base first", () =>
+  eq(BUILD.pyramid(three).slots.levels.map((l) => l.label), ["Dữ liệu sạch", "Quy trình chuẩn", "Trợ lý AI"]));
+test("matrix: four labels after two axis labels", () => {
+  const c = withLabels(shot([sent(1, "Xếp việc theo hai trục.")], []), ["Mức khẩn", "Mức quan trọng", "Làm ngay", "Lên lịch", "Giao việc", "Bỏ qua"]);
+  valid("matrix", BUILD.matrix(c)); eq(BUILD.matrix(three), null);
+});
+test("myth-fact: a belief, then its correction", () => {
+  valid("myth-fact", BUILD["myth-fact"](shot([sent(1, "Nhiều người nghĩ AI sẽ thay thế nhân viên."), sent(2, "Thực ra AI thay đổi cách nhân viên làm việc.")], [])));
+  eq(BUILD["myth-fact"](three), null);
+});
+test("dialogue: named turns build it; plain sentences need the dialogue hint", () => {
+  valid("dialogue", BUILD.dialogue(shot([sent(1, "Khách: Giá bao nhiêu vậy?"), sent(2, "Trợ lý: Dạ, gói cơ bản là 2 triệu.")], [])));
+  eq(BUILD.dialogue(three), null);
+  valid("dialogue", BUILD.dialogue({ ...three, frame: { title: "Hỏi đáp", scene_hint: "dialogue" } }));
+});
+test("table: columns from the title, rows from phrases that name them", () => {
+  const c = { ...shot([sent(1, "Tốc độ: AI nhanh, còn người không nhanh bằng."), sent(2, "Độ chính xác: người chắc chắn hơn, AI chưa chắc.")],
+    [kw(1, "tốc độ"), kw(2, "độ chính xác")]), frame: { title: "AI và người" } };
+  valid("table", BUILD.table(c)); eq(BUILD.table(three), null);
+});
+test("question-hook: the question sentence; none without a question", () => {
+  valid("question-hook", BUILD["question-hook"](shot([sent(1, "Vì sao dự án AI dừng giữa chừng?")], [kw(1, "dừng giữa chừng")])));
+  eq(BUILD["question-hook"](three), null);
+});
+test("balance: two sides from the halves; one sentence is not a balance", () => {
+  valid("balance", BUILD.balance(shot([sent(1, "Tự làm tốn thời gian, rủi ro cao."), sent(2, "Dùng AI nhanh hơn, hiệu quả hơn.")],
+    [kw(1, "tự làm"), kw(1, "tốn thời gian"), kw(2, "dùng AI"), kw(2, "hiệu quả hơn")])));
+  eq(BUILD.balance(one), null);
+});
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);
