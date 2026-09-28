@@ -8,6 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { hashes, load, save } from "./state.mjs";
+import { runGateChecks } from "./gate-checks.mjs";
 
 export const GATES = {
   1: { artifacts: [".probe/rate.wav", ".probe/pronunciation.md"], extra: [".probe/terms-raw.wav", ".probe/terms-candidates.wav"],
@@ -58,6 +59,8 @@ ${g.question}
 Các file cần xem:
 ${files.map((f) => `- ${join(P, f).replace(/\\/g, "/")}`).join("\n")}
 
+Kiểm tra máy trước khi duyệt: ${cli} gate ${n} --check
+
 Ghi câu trả lời của người dùng:
 - Duyệt:   ${cli} gate ${n} --approve "<nguyên văn lời người dùng>"
 - Cần sửa: ${cli} gate ${n} --reject "<các thay đổi người dùng yêu cầu>"
@@ -75,6 +78,9 @@ export function approve(P, n, note) {
   const s = load(P);
   const miss = missing(P, g.artifacts);
   if (miss.length && !s.legacy) throw new Error(`gate ${n}: missing ${miss.join(", ")}; nothing to approve`);
+  const passed = runGateChecks(P, String(n));
+  if (!passed && !s.legacy) throw new Error(`gate ${n}: checks failed; fix them or reject the gate`);
+  if (!passed && s.legacy) console.warn(`gate ${n}: checks failed (legacy project, approving anyway)`);
   if (String(n) === "2" && existsSync(join(P, "script.json"))) {
     // src-to-script keeps meta.approved on later runs, so recording it here does not change the script again
     const script = JSON.parse(readFileSync(join(P, "script.json"), "utf8"));

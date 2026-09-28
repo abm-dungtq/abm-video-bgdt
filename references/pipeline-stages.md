@@ -255,6 +255,18 @@ What the script never touches:
 4. Re-dispatch workers **only** for frames whose `duration` moved more than 0.1 s or whose `cues` changed.
 5. Run `R -From karaoke -To check`, then render the draft again.
 
+## Gate verifiers
+
+Before approval, mechanical verifiers ensure gate prerequisites pass. Run `abm-video gate <n> --check` to verify current files (exits 0 on success). `abm-video gate <n> --approve` runs the same verifiers and refuses approval if any fail (legacy projects warn and proceed).
+
+| Gate | Verifiers |
+|---|---|
+| `1` | (none; human listening only) |
+| `2` | `facts-check --urls` (sources defined, URLs return 200), `script-to-md --check`, `hints` (no consecutive repeated `scene_hint`, required DNA hints in content chapters) |
+| `2b` | `privacy-check` (if present in tools) |
+| `3` | `asr` (`audio/asr-report.json` present, no clip with WER > 2× `maxWer` unless in `audio/qa-accepted.txt`) |
+| `4` | `lint` (compiler lint exits 0), `asr` (same as gate 3) |
+
 ## Stage map of `run-pipeline.ps1`
 
 | Stage | Runs |

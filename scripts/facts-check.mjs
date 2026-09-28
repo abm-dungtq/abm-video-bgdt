@@ -34,7 +34,33 @@ if (sourcesIndex) {
     else if (!slugs.has(src)) problems.push(`${id}: source "${src}" has no row in capture/sources/INDEX.md`);
   }
 }
+const checkUrls = process.argv.includes("--urls");
+let urlsChecked = 0;
+if (checkUrls) {
+  const visible = read("capture/extracted/visible-text.txt");
+  const urls = [...new Set([...visible.matchAll(/https?:\/\/[^\s)>\]]+/g)].map((m) => m[0]))];
+  urlsChecked = urls.length;
+  await Promise.all(
+    urls.map(async (url) => {
+      try {
+        const res = await fetch(url, {
+          redirect: "follow",
+          headers: { "user-agent": "Mozilla/5.0 abm-video facts-check" },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (res.status !== 200) {
+          problems.push(`URL ${res.status} ${url}`);
+        }
+      } catch (err) {
+        problems.push(`URL ${err?.message || err} ${url}`);
+      }
+    })
+  );
+}
+
 for (const p of problems) console.log(`✗ ${p}`);
 const scope = sourcesIndex ? "facts → sources" : "facts (no capture/sources/INDEX.md)";
-console.log(problems.length ? `facts-check: ${problems.length} problem(s)` : `facts-check ok (${facts.size} facts, ${used.size} used, ${scope})`);
+const urlPart = checkUrls ? `, ${urlsChecked} URL(s) checked` : "";
+console.log(problems.length ? `facts-check: ${problems.length} problem(s)` : `facts-check ok (${facts.size} facts, ${used.size} used, ${scope}${urlPart})`);
 process.exit(problems.length ? 1 : 0);
+

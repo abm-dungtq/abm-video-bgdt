@@ -7,7 +7,8 @@
 // SCRIPT-REVIEW.md in the source (default: the Hermes lesson beside the skill's workspace, or $ABM_REGRESS_SOURCE).
 
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashes, isStale, load, markStage, save } from "../cli/state.mjs";
@@ -24,6 +25,13 @@ rmSync(R, { recursive: true, force: true });
 mkdirSync(R, { recursive: true });
 for (const f of ["video.config.json", "script.json", "SCRIPT-REVIEW.md"]) cpSync(join(SRC, f), join(R, f));
 const cfg = JSON.parse(readFileSync(join(R, "video.config.json"), "utf8"));
+const rScript = JSON.parse(readFileSync(join(R, "script.json"), "utf8"));
+const rFacts = new Set();
+for (const sent of rScript.chapters.flatMap((c) => c.frames.flatMap((f) => f.sentences))) {
+  for (const id of sent.facts ?? []) rFacts.add(id);
+}
+mkdirSync(join(R, "capture/extracted"), { recursive: true });
+writeFileSync(join(R, "capture/extracted/visible-text.txt"), [...rFacts].map((id) => `[${id}] fixture fact`).join("\n"));
 const s = load(R);
 for (const name of ["doctor", "init", "probe", "script"]) markStage(s, R, name, activeStages(cfg).find((x) => x.name === name).inputs);
 save(R, s);
@@ -128,6 +136,99 @@ spawnSync(process.execPath, [join(S, "scripts/new-project.mjs"), M, "--minutes",
 const budget = existsSync(join(M, "video.config.json")) ? JSON.parse(readFileSync(join(M, "video.config.json"), "utf8")).budget : null;
 check("init --minutes 3 scales the budget", budget?.targetS.join() === "171,189" && budget.frames.join() === "14,20"
   && budget.syllables.total === 615, JSON.stringify(budget));
+
+// ── gate 2 verifiers ──────────────────────────────────────────────────────────
+const cliIn = (cwd, ...a) => new Promise((res) => {
+  const p = spawn(process.execPath, [join(S, "bin/abm-video.mjs"), ...a], { cwd });
+  let out = "", err = "";
+  p.stdout.on("data", (d) => { out += d; });
+  p.stderr.on("data", (d) => { err += d; });
+  p.on("close", (code) => res({ code, out, err }));
+});
+
+const srv = createServer((req, res) => {
+  if (req.url === "/ok") {
+    res.writeHead(200, { "content-type": "text/plain" });
+    res.end("ok");
+  } else if (req.url === "/gone") {
+    res.writeHead(404, { "content-type": "text/plain" });
+    res.end("not found");
+  } else {
+    res.writeHead(404);
+    res.end("not found");
+  }
+});
+await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+const port = srv.address().port;
+
+const D = join(dirname(R), "cli-gate-verifiers");
+rmSync(D, { recursive: true, force: true });
+mkdirSync(D, { recursive: true });
+for (const f of ["video.config.json", "script.json", "SCRIPT-REVIEW.md"]) cpSync(join(SRC, f), join(D, f));
+
+const dScript = JSON.parse(readFileSync(join(D, "script.json"), "utf8"));
+delete dScript.meta.approved;
+writeFileSync(join(D, "script.json"), JSON.stringify(dScript, null, 1));
+save(D, load(D));
+
+const usedFacts = new Set();
+for (const s of dScript.chapters.flatMap((c) => c.frames.flatMap((f) => f.sentences))) {
+  for (const id of s.facts ?? []) usedFacts.add(id);
+}
+
+mkdirSync(join(D, "capture/extracted"), { recursive: true });
+const writeFacts = (corruptId = null) => {
+  const lines = [...usedFacts].map((id) =>
+    `[${id}] fact description http://127.0.0.1:${port}${id === corruptId ? "/gone" : "/ok"}`
+  );
+  writeFileSync(join(D, "capture/extracted/visible-text.txt"), lines.join("\n"));
+};
+writeFacts();
+
+// Ca A: dùng bản chép nguyên vẹn của SRC. gate 2 --check thoát 0.
+let rGate = await cliIn(D, "gate", "2", "--check");
+check("gate 2 --check passes on clean project", rGate.code === 0, rGate.out + rGate.err);
+
+// Ca B: đổi một fact sang /gone. gate 2 --check thoát 1 và output chứa URL 404. Sau đó gate 2 --approve "x" phải thoát khác 0, và cả hai điều sau phải đúng:
+// - JSON.parse(readFileSync(join(D, ".abm/state.json"), "utf8")).gates?.["2"]?.status !== "approved";
+// - script.json trong D chưa có meta.approved.
+const badFact = [...usedFacts][0];
+writeFacts(badFact);
+rGate = await cliIn(D, "gate", "2", "--check");
+check("gate 2 --check fails on 404 URL", rGate.code === 1 && (rGate.out + rGate.err).includes("URL 404"), rGate.out + rGate.err);
+
+const rApprove = await cliIn(D, "gate", "2", "--approve", "x");
+const stateB = JSON.parse(readFileSync(join(D, ".abm/state.json"), "utf8"));
+const scriptB = JSON.parse(readFileSync(join(D, "script.json"), "utf8"));
+const approveB = rApprove.code !== 0
+  && stateB.gates?.["2"]?.status !== "approved"
+  && !scriptB.meta?.approved;
+check("gate 2 --approve refuses when check fails", approveB, rApprove.out + rApprove.err);
+
+// Ca C: đặt scene_hint của hai khung liền nhau giống nhau. gate 2 --check thoát 1 và output chứa frame.
+writeFacts();
+const scriptC = JSON.parse(readFileSync(join(D, "script.json"), "utf8"));
+const allFrames = scriptC.chapters.flatMap((c) => c.frames);
+allFrames[1].scene_hint = allFrames[0].scene_hint;
+writeFileSync(join(D, "script.json"), JSON.stringify(scriptC, null, 1));
+rGate = await cliIn(D, "gate", "2", "--check");
+check("gate 2 --check fails on repeated consecutive scene_hint", rGate.code === 1 && (rGate.out + rGate.err).includes("frame"), rGate.out + rGate.err);
+
+// Ca D: tools/facts-check.mjs là stub không kiểm tra URLs. gate 2 --check thoát 1 và output chứa does not check URLs.
+const Dstub = join(dirname(R), "cli-gate-verifiers-stub");
+rmSync(Dstub, { recursive: true, force: true });
+mkdirSync(Dstub, { recursive: true });
+for (const f of ["video.config.json", "script.json", "SCRIPT-REVIEW.md"]) cpSync(join(SRC, f), join(Dstub, f));
+const stubScript = JSON.parse(readFileSync(join(Dstub, "script.json"), "utf8"));
+delete stubScript.meta.approved;
+writeFileSync(join(Dstub, "script.json"), JSON.stringify(stubScript, null, 1));
+cpSync(join(D, "capture"), join(Dstub, "capture"), { recursive: true });
+mkdirSync(join(Dstub, "tools"), { recursive: true });
+writeFileSync(join(Dstub, "tools/facts-check.mjs"), 'console.log("facts-check ok");\n');
+rGate = await cliIn(Dstub, "gate", "2", "--check");
+check("gate 2 --check fails when facts-check lacks --urls", rGate.code === 1 && (rGate.out + rGate.err).includes("does not check URLs"), rGate.out + rGate.err);
+
+srv.close();
 
 console.log(passed === cases.length ? `cli-tests ok (${passed}/${cases.length})` : `cli-tests FAILED (${passed}/${cases.length})`);
 process.exit(passed === cases.length ? 0 : 1);
