@@ -22,7 +22,7 @@ export function render(ctx) {
     const css = `
 #${S}-root { position: absolute; inset: 0; }
 #${S}-ghost { position: absolute; left: 980px; top: 60px; width: 780px; text-align: right; font-family: "${theme.mono}", monospace;
-  font-weight: 700; font-size: 520px; line-height: 1; color: transparent; -webkit-text-stroke: 2px color-mix(in srgb, var(--ink) 10%, transparent); }
+  font-weight: 700; font-size: 520px; line-height: 1; color: color-mix(in srgb, var(--ink) 4%, transparent); -webkit-text-stroke: 2px color-mix(in srgb, var(--ink) 10%, transparent); }
 #${S}-label { position: absolute; left: 120px; top: 190px; font-family: "${theme.mono}", monospace; font-size: 32px;
   letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
 #${S}-title { position: absolute; left: 120px; top: 250px; width: 1480px; font-size: ${fs}px; font-weight: 800;
@@ -31,7 +31,7 @@ export function render(ctx) {
 #${S}-bar path { stroke: var(--gold); stroke-width: 8; stroke-linecap: round; fill: none; stroke-dasharray: 1000; }
 #${S}-kicker { position: absolute; left: 120px; top: 650px; font-size: 40px; font-weight: 600; color: var(--muted); }`;
     const html = `<div id="${S}-root">
-  <div id="${S}-ghost">${slots.chapterNo > 0 ? no : ""}</div>
+  <div id="${S}-ghost" data-layout-allow-overlap>${slots.chapterNo > 0 ? no : ""}</div>
   ${label ? `<div id="${S}-label">${esc(label)}</div>` : ""}
   <div id="${S}-title">${title}</div>
   <svg id="${S}-bar" viewBox="0 0 560 16"><path id="${S}-barp" pathLength="1000" d="M4 8 L556 8"/></svg>
@@ -60,9 +60,9 @@ export function render(ctx) {
   border-bottom: 2px solid color-mix(in srgb, var(--gold) 45%, transparent); }
 #${S}-block { position: absolute; left: 0; top: 250px; width: 460px; height: 320px; box-sizing: border-box; background: var(--surface);
   border-left: 12px solid var(--gold); border-right: 3px solid color-mix(in srgb, var(--gold) 60%, transparent); }
-#${S}-cap { position: absolute; left: 0; top: 34px; width: 445px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 30px;
+#${S}-cap { position: absolute; left: 0; top: 0px; width: 445px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 30px;
   letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); }
-#${S}-num { position: absolute; left: 0; top: 70px; width: 445px; height: 230px; display: flex; align-items: center; justify-content: center;
+#${S}-num { position: absolute; left: 0; top: 95px; width: 445px; height: 230px; display: flex; align-items: center; justify-content: center;
   font-family: "${theme.mono}", monospace; font-weight: 700; font-size: 210px; line-height: 1; color: var(--gold); }
 #${S}-num svg { width: 150px; height: 150px; }
 #${S}-kicker { position: absolute; left: 540px; top: 180px; font-family: "${theme.mono}", monospace; font-size: 30px; letter-spacing: 0.18em;

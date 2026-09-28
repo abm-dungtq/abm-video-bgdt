@@ -75,7 +75,7 @@ test("emit valid output", () => {
     { prim: "layerOut", target: "#f01-s1-a", at: 4, dur: 0.4 },
   ], opts);
   for (const s of ["immediateRender\":false", "window.__timelines = window.__timelines || {};", 'window.__timelines["01-t"] = tl;',
-    'gsap.set("#f01-s1-a", {"opacity":0,"y":24});', "tl.to({}, { duration: 5 }, 0);"]) {
+    'gsap.set("#f01-s1-a", {"autoAlpha":0,"y":24});', "tl.to({}, { duration: 5 }, 0);"]) {
     if (!out.includes(s)) throw new Error(`missing ${s}`);
   }
   if (/tl\.set\([^)]*, 0\)/.test(out)) throw new Error("tl.set at 0 in output");

@@ -8,6 +8,8 @@
 // Scratch project: <workspace>/.regress/template-ci ($ABM_REGRESS_DIR), created once with hyperframes init and reused.
 // The synthetic voice: 0.35 s per token w1 w2 …, every 4th token a keyword, sentences of 8 tokens, silent wav. Each shot
 // uses its preview.json slots and variant with window start → end and default reveals (the solver's path).
+// Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %; its errors count too —
+// the assemble stage runs the same check on a real lesson, so a template must be check-clean, not only lint-clean.
 // Last line: template-ci: <t> templates, <v> variants, <n> frames, <e> lint errors  (exit 1 when e > 0).
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -106,21 +108,50 @@ if (compiled.length) {
     const c = compiled.find((x) => line.includes(`${x.fid}.html`));
     (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line.trim()}`);
   }
-  // snapshots of the middle duration, at 20 % and 85 % of each frame
+  // layout / runtime / contrast check, three samples per frame
+  {
+    let t0 = 0;
+    const at = compiled.flatMap((c) => { const s = t0; t0 += c.dur; return [0.2, 0.55, 0.9].map((f) => (s + f * c.dur).toFixed(2)); });
+    const r = shTry(`npx -y ${HF} check --json --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --max-issues 400 --at ${at.join(",")}`);
+    let report = null;
+    try { report = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1)); } catch { errs.set("_project", [...(errs.get("_project") ?? []), `check did not return JSON: ${r.out.slice(-300)}`]); }
+    for (const section of ["runtime", "layout", "contrast"]) {
+      for (const f of report?.[section]?.findings ?? []) {
+        if (f.severity !== "error") continue;
+        const n = Number((f.selector ?? "").match(/[#.]f(\d+)-/)?.[1]);
+        const c = compiled.find((x) => x.n === n);
+        const line = `check ${f.code} ${f.selector}${f.text ? ` "${f.text}"` : ""} at ${f.time}s`;
+        (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line}`);
+      }
+    }
+  }
+  // previews of the middle duration, at 20 % and 85 % of each frame. The renderer's page load has a fixed 10 s navigation
+  // deadline, so the snapshots run in batches of 18 frames, each on an index assembled from that batch alone.
   const snaps = compiled.filter((c) => c.snap);
-  let t = 0;
-  const at = [];
-  for (const c of compiled) { if (c.snap) at.push((t + 0.2 * c.dur).toFixed(2), (t + 0.85 * c.dur).toFixed(2)); t += c.dur; }
-  const r = shTry(`npx -y ${HF} snapshot --no-end --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --at ${at.join(",")}`);
-  if (!r.ok) console.error(`⚠ snapshot failed: ${r.out.slice(-400)}`);
-  const files = existsSync(join(W, "snapshots")) ? readdirSync(join(W, "snapshots")).filter((f) => /^frame-\d+-at-/.test(f))
-    .sort((x, y) => Number(x.match(/^frame-(\d+)/)[1]) - Number(y.match(/^frame-(\d+)/)[1])) : []; // numeric: frame-100 after frame-99
-  snaps.forEach((c, k) => {
-    const [a, b] = [files[2 * k], files[2 * k + 1]];
-    if (!a || !b) return;
-    spawnSync("ffmpeg", ["-v", "error", "-y", "-i", join(W, "snapshots", a), "-i", join(W, "snapshots", b), "-filter_complex",
-      "[0]scale=480:-2[l];[1]scale=480:-2[r];[l][r]hstack=inputs=2", "-q:v", "4", join(TPL, c.id, `${c.variant}.jpg`)]);
-  });
+  const header = md.join("\n").split(/(?=^## Frame \d+ )/m)[0];
+  const blocks = new Map(md.join("\n").split(/(?=^## Frame \d+ )/m).filter((b) => /^## Frame \d+ /.test(b))
+    .map((b) => [Number(b.match(/^## Frame (\d+) /)[1]), b]));
+  for (let s = 0; s < snaps.length; s += 18) {
+    const batch = snaps.slice(s, s + 18);
+    writeFileSync(join(W, "STORYBOARD.md"), header + batch.map((c) => blocks.get(c.n)).join(""));
+    const a = shTry(`node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
+    if (!a.ok) { (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`assemble for previews failed: ${a.out.slice(-300)}`); break; }
+    let t = 0;
+    const at = batch.flatMap((c) => { const x = t; t += c.dur; return [(x + 0.2 * c.dur).toFixed(2), (x + 0.85 * c.dur).toFixed(2)]; });
+    rmSync(join(W, "snapshots"), { recursive: true, force: true });
+    const snap = () => shTry(`npx -y ${HF} snapshot --no-end --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --at ${at.join(",")}`);
+    let r = snap();
+    if (!r.ok) r = snap();
+    if (!r.ok) { (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`snapshot failed twice: ${r.out.slice(-300)}`); continue; }
+    const files = existsSync(join(W, "snapshots")) ? readdirSync(join(W, "snapshots")).filter((f) => /^frame-\d+-at-/.test(f))
+      .sort((x, y) => Number(x.match(/^frame-(\d+)/)[1]) - Number(y.match(/^frame-(\d+)/)[1])) : []; // numeric order
+    batch.forEach((c, k) => {
+      const [l, rr] = [files[2 * k], files[2 * k + 1]];
+      if (!l || !rr) return;
+      spawnSync("ffmpeg", ["-v", "error", "-y", "-i", join(W, "snapshots", l), "-i", join(W, "snapshots", rr), "-filter_complex",
+        "[0]scale=480:-2[l];[1]scale=480:-2[r];[l][r]hstack=inputs=2", "-q:v", "4", join(TPL, c.id, `${c.variant}.jpg`)]);
+    });
+  }
 }
 
 // ── report ────────────────────────────────────────────────────────────────────

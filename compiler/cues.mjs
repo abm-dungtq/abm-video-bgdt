@@ -11,6 +11,8 @@
 // With estimated: true (no voice yet) times come from timing + rate, like the script budget estimate.
 
 const r2 = (x) => Math.round(x * 100) / 100;
+/** a token that ends a keyword phrase: its display ends with punctuation ("nhớ," in "*ghi* *nhớ,* *tìm* *lại*") */
+export const endsPhrase = (display) => /[.,!?;:…]["”')]*$/.test(display);
 export const norm = (s) => s.normalize("NFC").toLowerCase().replace(/[.,!?;:…"“”()'‘’]/g, "").trim();
 const syl = (t) => t.spoken.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length || 1;
 const fail = (msg) => { throw new Error(`cue: ${msg}`); };
@@ -70,7 +72,7 @@ export function resolve(expr, ctx, prevEnd) {
   }
   if (t === undefined) t = base(expr, ctx, prevEnd);
   t = r2(t);
-  if (t < 0 || t > ctx.duration + 0.005) fail(`${expr} = ${t} s is outside [0, ${ctx.duration}] in frame ${ctx.frame}`);
+  if (t < 0 || t > r2(ctx.duration) + 0.001) fail(`${expr} = ${t} s is outside [0, ${ctx.duration}] in frame ${ctx.frame}`);
   return t;
 }
 

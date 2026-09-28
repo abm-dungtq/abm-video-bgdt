@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { validate } from "./schema.mjs";
-import { frameCtx, resolve, resolveRange } from "./cues.mjs";
+import { endsPhrase, frameCtx, resolve, resolveRange } from "./cues.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES = resolvePath(HERE, "../templates/scenes");
@@ -68,9 +68,18 @@ export async function loadTemplate(id) {
 const ruleFor = (schema, key) => schema.reveals?.[key] ?? schema.reveals?.[key.replace(/\.\d+$/, ".*")];
 const strings = (v) => (typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(strings) : v && typeof v === "object" ? Object.values(v).flatMap(strings) : []);
 
+/** frame-relative start times of the keyword phrases of a frame */
+export function phraseStarts(ctx) {
+  return ctx.tokens.flatMap((t, i) => (t.keyword && !(i > 0 && ctx.tokens[i - 1].keyword && ctx.tokens[i - 1].sent === t.sent
+    && !endsPhrase(ctx.tokens[i - 1].display))
+    ? [r2(ctx.times[i].start)] : []));
+}
+
 /** Reveal times: explicit cue, else the next keyword in the window ("kw"), else spread; always in key order. */
 function revealTimes(keys, schema, spec, ctx, a, b) {
-  const kws = ctx.tokens.map((t, i) => [t, ctx.times[i].start]).filter(([t, s]) => t.keyword && s >= a - 0.05 && s < b - 0.3).map(([, s]) => r2(s));
+  // "kw" defaults land on the start of each keyword phrase (a run of keyword tokens in one sentence), not on every
+  // syllable: "*không* *bao* *giờ* *quên*" is one phrase
+  const kws = phraseStarts(ctx).filter((s) => s >= a - 0.05 && s < b - 0.3);
   const step = Math.min(0.8, Math.max(0.3, (b - a - 1.2) / Math.max(1, keys.length)));
   const out = {};
   let prev = a, k = 0;
@@ -129,6 +138,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   if (scenes.frames.length !== byNo.size) errors.push("scenes.json: a frame number appears twice");
 
   const out = [];
+  const flat = []; // every compiled shot in order, for the variety warnings
   let prevShot = null;
   for (const bf of board) {
     const spec = byNo.get(bf.no);
@@ -180,6 +190,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       if (Number.isFinite(firstKey) && firstKey - a > 2.0) warnings.push(`${at}: the first reveal comes ${r2(firstKey - a)} s after the shot starts: move the window start nearer its first keyword`);
       shots.push({ spec: s, schema: tpl.schema, mod: tpl.mod, variant, a, b, times });
       prevShot = { template: s.template, variant, family: tpl.schema.family };
+      flat.push({ frame: bf.no, template: s.template, variant, family: tpl.schema.family, signature: (tpl.schema.signatures ?? []).includes(variant) && s.template !== "title" });
       prevEnd = b;
     }
     if (prevEnd != null && Math.abs(prevEnd - duration) > TOL) errors.push(`${where}: the last shot ends at ${prevEnd}, the frame lasts ${duration}`);
@@ -192,6 +203,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     }
     out.push({ no: bf.no, custom: false, duration, board: bf, ctx, shots, rail });
   }
+  if (variety) warnings.push(...varietyWarnings({ flat, out, script, byNo }));
   const custom = out.filter((f) => f.custom).length;
   const budget = cfg.scenes?.customBudget ?? 0.15;
   if (out.length && custom / out.length > budget + 1e-9) {
@@ -215,4 +227,48 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   const res = await analyze({ P, cfg, estimated: process.argv.includes("--estimated"), legacy });
   report(res);
   process.exit(res.errors.length ? 1 : 0);
+}
+
+/**
+ * Variety and DNA warnings (never errors):
+ *   V1 a (template, variant) pair repeats within 6 shots · V2 a chapter uses fewer than 5 templates (3 when it has ≤ 4
+ *   frames) · V3 a chapter has no signature shot (title excluded) or custom frame.
+ *   DNA, only when some frame has a role (script.src.txt `### hook|core|case|action`); content chapters = all but the
+ *   first and last: D1 roles in hook → core → case → action order, none missing · D2 the chapter's second frame opens
+ *   with objective · D3 an antipattern and an exercise shot · D4 quiz only in the last content chapter · D5 an exercise
+ *   frame has role action.
+ */
+function varietyWarnings({ flat, out, script, byNo }) {
+  const w = [];
+  flat.forEach((s, i) => {
+    const j = flat.slice(Math.max(0, i - 5), i).findIndex((x) => x.template === s.template && x.variant === s.variant);
+    if (j >= 0) w.push(`frame ${s.frame}: ${s.template}/${s.variant} repeats within 6 shots`);
+  });
+  const chapters = script.chapters.map((c) => ({ id: c.id, frames: c.frames.map((f) => f.id), roles: c.frames.map((f) => f.role) }));
+  for (const c of chapters) {
+    const shots = flat.filter((s) => c.frames.includes(s.frame));
+    const custom = out.some((f) => f.custom && c.frames.includes(f.no));
+    const distinct = new Set(shots.map((s) => s.template)).size + (custom ? 1 : 0);
+    const need = c.frames.length <= 4 ? 3 : 5;
+    if (distinct < need) w.push(`${c.id}: ${distinct} templates, fewer than ${need}`);
+    if (!custom && !shots.some((s) => s.signature)) w.push(`${c.id}: no signature shot`);
+  }
+  const roleOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.role])));
+  if (![...roleOf.values()].some(Boolean)) return w; // dna: off
+  const ORDER = ["hook", "core", "case", "action"];
+  const content = chapters.slice(1, -1);
+  content.forEach((c, ci) => {
+    const seq = c.roles.filter(Boolean);
+    const firstIdx = ORDER.map((r) => seq.indexOf(r));
+    if (firstIdx.some((x) => x < 0) || firstIdx.some((x, k) => k && x < firstIdx[k - 1])) w.push(`${c.id}: DNA roles not in hook → core → case → action order (D1)`);
+    const second = c.frames[1];
+    if (second && flat.find((s) => s.frame === second)?.family !== "objective") w.push(`${c.id}: the second frame does not open with objective (D2)`);
+    const fams = new Set(flat.filter((s) => c.frames.includes(s.frame)).map((s) => s.family));
+    if (!fams.has("antipattern") || !fams.has("exercise")) w.push(`${c.id}: no antipattern or no exercise shot (D3)`);
+    if (fams.has("quiz") && ci !== content.length - 1) w.push(`${c.id}: quiz outside the last content chapter (D4)`);
+    for (const s of flat.filter((x) => c.frames.includes(x.frame) && x.family === "exercise")) {
+      if (roleOf.get(s.frame) !== "action") w.push(`frame ${s.frame}: exercise frame without role action (D5)`);
+    }
+  });
+  return w;
 }

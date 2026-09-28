@@ -86,8 +86,8 @@ ${items.map((it, i) => `    <div class="${S}-card" id="${S}-c${i + 1}">
       : { prim: "reveal", target: `#${S}-c${i + 1}`, at: enter, dur: 0.5, from: wide ? { opacity: 0, x: i % 2 ? 60 : -60 } : { opacity: 0, y: 50 }, ease: ctx.ease };
     return [
       move,
-      { prim: "reveal", target: `#${S}-n${i + 1}`, at: enter + 0.15, dur: 0.4, from: { opacity: 0, x: 12 } },
-      ...(ghost ? [{ prim: "reveal", target: `#${S}-i${i + 1}`, at: enter + 0.15, dur: 0.35, from: { opacity: 0, scale: 0.8 }, to: { opacity: 0.3, scale: 0.8 } }] : []),
+      { prim: "reveal", target: `#${S}-n${i + 1}`, at: fan ? t[i] + 0.15 : enter + 0.15, dur: 0.4, from: { opacity: 0, x: 12 } },
+      ...(ghost && !fan ? [{ prim: "reveal", target: `#${S}-i${i + 1}`, at: enter + 0.15, dur: 0.35, from: { opacity: 0, scale: 0.8 }, to: { opacity: 0.3, scale: 0.8 } }] : []),
       { prim: "reveal", target: `#${S}-i${i + 1}`, at: t[i], dur: 0.45, from: ghost ? { opacity: 0.3, scale: 0.8 } : { opacity: 0, scale: 0.5 }, ease: "back.out(2)" },
       { prim: "reveal", target: `#${S}-l${i + 1}`, at: t[i], dur: 0.4, from: { scaleX: 0 }, ease: "power2.out" },
       { prim: "reveal", target: `#${S}-b${i + 1}`, at: t[i] + 0.1, dur: 0.45, from: { opacity: 0, y: 18 } },

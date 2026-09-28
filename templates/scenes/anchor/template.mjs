@@ -55,7 +55,7 @@ export function render(ctx) {
 #${S}-halo { fill: none; stroke: color-mix(in srgb, var(--gold) 16%, transparent); stroke-width: 2; stroke-dasharray: 5 12; }
 #${S}-cnt { position: absolute; left: ${cx - 150}px; top: ${cy - 86}px; width: 300px; text-align: center; font-family: ${mono}; font-size: 140px;
   font-weight: 700; line-height: 1; color: var(--gold); }
-#${S}-of { position: absolute; left: ${cx - 150}px; top: ${cy + 60}px; width: 300px; text-align: center; font-family: ${mono}; font-size: 32px; color: var(--muted); }
+#${S}-of { position: absolute; left: ${cx - 150}px; top: ${cy + 95}px; width: 300px; text-align: center; font-family: ${mono}; font-size: 32px; color: var(--muted); }
 .${S}-dot { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink);
   box-shadow: 0 0 20px color-mix(in srgb, var(--gold) 80%, transparent); }
 .${S}-anc { position: absolute; width: 0; height: 0; }

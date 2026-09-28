@@ -78,14 +78,15 @@ export function render(ctx) {
 .${S}-chev { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
 #${S}-core { position: absolute; left: ${C.x - 90}px; top: ${C.y - 90}px; width: 180px; height: 180px; color: var(--muted); }
 #${S}-core svg { width: 180px; height: 180px; }
-.${S}-node { position: absolute; width: 340px; height: 96px; margin: -48px 0 0 -170px; box-sizing: border-box; border-radius: 48px;
-  background: var(--surface); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+.${S}-slot { position: absolute; width: 800px; height: 96px; margin: -48px 0 0 -400px; display: flex; justify-content: center; }
+.${S}-node { position: relative; flex: none; height: 96px; display: flex; align-items: center; padding: 0 34px 0 22px; box-sizing: border-box;
+  border-radius: 48px; background: var(--surface); border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent); }
 .${S}-lit { position: absolute; inset: -2px; border-radius: 48px; border: 4px solid var(--gold);
   box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 35%, transparent); }
-.${S}-num { position: absolute; left: 22px; top: 30px; font-family: "${theme.mono}", monospace; font-size: 28px; color: var(--cyan); }
-.${S}-ico { position: absolute; left: 76px; top: 22px; width: 52px; height: 52px; color: var(--gold); }
+.${S}-num { margin-right: 20px; font-family: "${theme.mono}", monospace; font-size: 28px; color: var(--cyan); }
+.${S}-ico { flex: none; width: 52px; height: 52px; margin-right: 14px; color: var(--gold); }
 .${S}-ico svg { width: 52px; height: 52px; }
-.${S}-lab { position: absolute; left: 142px; top: 24px; font-size: 36px; font-weight: 800; color: var(--ink); white-space: nowrap; }
+.${S}-lab { font-size: ${n >= 5 ? 30 : 36}px; font-weight: 800; color: var(--ink); white-space: nowrap; }
 ${sparkCss}`;
     const html = `<div id="${S}-root">
   <div id="${S}-grp">
@@ -95,9 +96,9 @@ ${sparkCss}`;
       <g id="${S}-chevs">${chev.join("")}</g>
     </svg>
     <div id="${S}-core">${ctx.icon("gear")}</div>
-    ${steps.map((s, i) => `<div class="${S}-node" id="${S}-n${i + 1}" style="left: ${pos[i][0]}px; top: ${pos[i][1]}px">
+    ${steps.map((s, i) => `<div class="${S}-slot" style="left: ${pos[i][0]}px; top: ${pos[i][1]}px"><div class="${S}-node" id="${S}-n${i + 1}">
       <div class="${S}-lit" id="${S}-k${i + 1}"></div><div class="${S}-num">${num(i)}</div>
-      <div class="${S}-ico" id="${S}-i${i + 1}">${ctx.icon(s.icon)}</div><div class="${S}-lab" id="${S}-l${i + 1}">${esc(s.label)}</div></div>`).join("\n    ")}
+      <div class="${S}-ico" id="${S}-i${i + 1}">${ctx.icon(s.icon)}</div><div class="${S}-lab" id="${S}-l${i + 1}">${esc(s.label)}</div></div></div>`).join("\n    ")}
     ${spark}
   </div>
 </div>`;
@@ -139,12 +140,13 @@ ${sparkCss}`;
 #${S}-web { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
 .${S}-trk { fill: none; stroke: color-mix(in srgb, var(--ink) 9%, transparent); stroke-width: 3; }
 .${S}-cv { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 1000; }
-#${S}-n1 { position: absolute; left: ${src.x - 150}px; top: ${src.y - 150}px; width: 300px; height: 300px; box-sizing: border-box; border-radius: 50%;
+#${S}-n1 { position: absolute; left: ${src.x - 150}px; top: ${src.y - 208}px; width: 300px; height: 358px; }
+#${S}-d1 { position: absolute; left: 0; top: 58px; width: 300px; height: 300px; box-sizing: border-box; border-radius: 50%;
   background: var(--surface); border: 3px solid color-mix(in srgb, var(--ink) 14%, transparent); }
 #${S}-k1 { position: absolute; inset: -3px; border-radius: 50%; border: 6px solid var(--gold); box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 35%, transparent); }
 #${S}-i1 { position: absolute; left: 75px; top: 75px; width: 150px; height: 150px; color: var(--gold); }
 #${S}-i1 svg { width: 150px; height: 150px; }
-#${S}-num1 { position: absolute; left: 0; top: -58px; width: 300px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 32px; color: var(--cyan); }
+#${S}-num1 { position: absolute; left: 0; top: 0; width: 300px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 32px; color: var(--cyan); }
 #${S}-l1 { position: absolute; left: ${src.x - 280}px; top: ${src.y + 175}px; width: 560px; text-align: center; font-size: 54px; font-weight: 800; color: var(--ink); }
 .${S}-card { position: absolute; left: 1000px; width: 680px; height: 124px; margin-top: -62px; box-sizing: border-box; border-radius: ${R}px;
   background: var(--surface); border: 2px solid color-mix(in srgb, var(--ink) 10%, transparent); }
@@ -159,7 +161,7 @@ ${sparkCss}`;
     <svg id="${S}-web" viewBox="0 0 1760 820">
       ${br.map((_, j) => { const [a, b, c, d] = curve(j); return `<path class="${S}-trk" d="M${a} C${b} ${c} ${d}"/><path class="${S}-cv" id="${S}-cv${j + 2}" pathLength="1000" d="M${a} C${b} ${c} ${d}"/>`; }).join("")}
     </svg>
-    <div id="${S}-n1"><div id="${S}-k1"></div><div id="${S}-num1">${num(0)}</div><div id="${S}-i1">${ctx.icon(steps[0].icon)}</div></div>
+    <div id="${S}-n1"><div id="${S}-num1">${num(0)}</div><div id="${S}-d1"><div id="${S}-k1"></div><div id="${S}-i1">${ctx.icon(steps[0].icon)}</div></div></div>
     <div id="${S}-l1">${esc(steps[0].label)}</div>
     ${br.map((s, j) => `<div class="${S}-card" id="${S}-n${j + 2}" style="top: ${ys[j]}px"><div class="${S}-lit" id="${S}-k${j + 2}"></div>
       <div class="${S}-ico" id="${S}-i${j + 2}">${ctx.icon(s.icon)}</div><div class="${S}-lab" id="${S}-l${j + 2}">${esc(s.label)}</div><div class="${S}-num">${num(j + 1)}</div></div>`).join("\n    ")}
@@ -191,12 +193,13 @@ ${sparkCss}`;
 .${S}-trk { fill: none; stroke: color-mix(in srgb, var(--ink) 12%, transparent); stroke-width: 3; stroke-dasharray: 8 10; }
 .${S}-cn { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; }
 #${S}-back { stroke: var(--cyan); stroke-width: 4; }
-.${S}-node { position: absolute; top: ${cy - disc / 2}px; width: ${disc}px; height: ${disc}px; margin-left: -${disc / 2}px; box-sizing: border-box;
+.${S}-node { position: absolute; top: ${cy - disc / 2 - 62}px; width: ${disc}px; height: ${disc + 62}px; margin-left: -${disc / 2}px; }
+.${S}-disc { position: absolute; left: 0; top: 62px; width: ${disc}px; height: ${disc}px; box-sizing: border-box;
   border-radius: 50%; background: var(--surface); border: 3px solid color-mix(in srgb, var(--ink) 14%, transparent); }
 .${S}-lit { position: absolute; inset: -3px; border-radius: 50%; border: 6px solid var(--gold); box-shadow: 0 0 26px color-mix(in srgb, var(--gold) 35%, transparent); }
 .${S}-ico { position: absolute; left: 47px; top: 47px; width: 90px; height: 90px; color: var(--gold); }
 .${S}-ico svg { width: 90px; height: 90px; }
-.${S}-num { position: absolute; left: 0; top: -62px; width: ${disc}px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 34px; color: var(--cyan); }
+.${S}-num { position: absolute; left: 0; top: 0; width: ${disc}px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 34px; color: var(--cyan); }
 .${S}-lab { position: absolute; top: ${cy + disc / 2 + 28}px; width: 320px; margin-left: -160px; text-align: center; font-size: ${n >= 5 ? 34 : 40}px;
   font-weight: 800; line-height: 1.15; color: var(--ink); }
 ${sparkCss}`;
@@ -208,8 +211,8 @@ ${sparkCss}`;
       ${steps.slice(1).map((_, i) => `<path class="${S}-cn" id="${S}-c${i + 2}" pathLength="1000" d="${seg(i)}"/>`).join("")}
       ${loop ? `<path class="${S}-cn" id="${S}-back" pathLength="1000" d="${back}"/>` : ""}
     </svg>
-    ${steps.map((s, i) => `<div class="${S}-node" id="${S}-n${i + 1}" style="left: ${xs[i]}px"><div class="${S}-lit" id="${S}-k${i + 1}"></div>
-      <div class="${S}-num">${num(i)}</div><div class="${S}-ico" id="${S}-i${i + 1}">${ctx.icon(s.icon)}</div></div>
+    ${steps.map((s, i) => `<div class="${S}-node" id="${S}-n${i + 1}" style="left: ${xs[i]}px"><div class="${S}-num">${num(i)}</div>
+      <div class="${S}-disc"><div class="${S}-lit" id="${S}-k${i + 1}"></div><div class="${S}-ico" id="${S}-i${i + 1}">${ctx.icon(s.icon)}</div></div></div>
     <div class="${S}-lab" id="${S}-l${i + 1}" style="left: ${xs[i]}px">${esc(s.label)}</div>`).join("\n    ")}
     ${spark}
   </div>

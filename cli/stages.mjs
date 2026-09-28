@@ -2,7 +2,7 @@
 // Each stage: needs (stages done + gates approved on the current files), inputs (hashed: a change makes it stale),
 // gate (asked after it) and run(ctx) → exit code.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -20,6 +20,7 @@ export function sh(P, ...parts) {
 }
 /** the compiler next to the scripts in use: P/tools/compiler in a project, else the skill's compiler/ */
 const compilerDir = (c) => (existsSync(`${c.SC}/compiler/compile.mjs`) ? `${c.SC}/compiler` : `${SKILL_ROOT}/compiler`);
+const isLegacy = (P) => existsSync(join(P, ".abm/state.json")) && JSON.parse(readFileSync(join(P, ".abm/state.json"), "utf8")).legacy === true;
 const seq = (...steps) => { for (const s of steps) { const c = s(); if (c) return c; } return 0; };
 
 const sha = (p) => (existsSync(p) ? createHash("sha1").update(readFileSync(p)).digest("hex") : null);
@@ -86,20 +87,30 @@ export const STAGES = [
       );
     } },
   { name: "storyboard", needs: { stages: ["voice"], gates: [] }, inputs: ["audio_meta.json", "scenes.json"],
-    // with scenes.json the compiler resolves cues itself; retime-and-cue only serves hand-built (legacy) storyboards
-    run: (c) => (existsSync(join(c.P, "scenes.json"))
-      ? sh(c.P, [process.execPath, `${compilerDir(c)}/lint.mjs`])
-      : seq(
-      () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`]),
-      () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`, "--check"]),
-      () => sh(c.P, [process.execPath, `${c.SC}/variety-lint.mjs`, "STORYBOARD.md"]),
-    )) },
+    // scenes.json is written once by the solver and then only linted (never overwritten; --regenerate keeps a .bak);
+    // retime-and-cue only serves hand-built storyboards of legacy projects
+    run: (c) => {
+      const scenes = join(c.P, "scenes.json");
+      if (isLegacy(c.P)) {
+        return seq(
+          () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`]),
+          () => sh(c.P, [process.execPath, `${c.SC}/retime-and-cue.mjs`, "--check"]),
+          () => sh(c.P, [process.execPath, `${c.SC}/variety-lint.mjs`, "STORYBOARD.md"]),
+        );
+      }
+      if (existsSync(scenes) && !c.args.includes("--regenerate")) return sh(c.P, [process.execPath, `${compilerDir(c)}/lint.mjs`]);
+      if (existsSync(scenes)) {
+        const bak = `scenes.json.bak-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+        renameSync(scenes, join(c.P, bak));
+        console.log(`kept the previous scenes.json as ${bak}`);
+      }
+      return sh(c.P, [process.execPath, `${compilerDir(c)}/solver.mjs`, "--auto"]);
+    } },
   { name: "compile", needs: { stages: ["storyboard"], gates: [] }, inputs: ["scenes.json", "audio_meta.json"],
     run: async (c) => {
       if (!existsSync(join(c.P, "scenes.json"))) { console.log("compile: legacy project, frames are hand-built"); return 0; }
       const { compile } = await import(pathToFileURL(`${compilerDir(c)}/compile.mjs`).href);
-      const legacy = JSON.parse(existsSync(join(c.P, ".abm/state.json")) ? readFileSync(join(c.P, ".abm/state.json"), "utf8") : "{}").legacy === true;
-      const r = await compile({ P: c.P, cfg: c.cfg, legacy });
+      const r = await compile({ P: c.P, cfg: c.cfg, legacy: isLegacy(c.P) });
       if (!r.ok) return 1;
       // lint + snapshot only the frames whose html changed (wave-check mounts them in a scratch project)
       return r.changed.length ? sh(c.P, [process.execPath, `${c.SC}/wave-check.mjs`, ...r.changed.map(String)]) : 0;

@@ -29,8 +29,8 @@ export function render(ctx) {
 .${S}-col { position: absolute; top: 130px; width: ${cw}px; height: 520px; }
 .${S}-numo, .${S}-numf { position: absolute; left: 0; top: 0; width: ${cw}px; font-family: ${mono}; font-weight: 700;
   font-size: ${numFs}px; line-height: 1; text-align: ${n === 1 ? "center" : "left"}; }
-.${S}-numo { color: transparent; -webkit-text-stroke: 2px color-mix(in srgb, var(--cyan) 55%, transparent); }
-.${S}-numf { color: var(--gold); }
+.${S}-numo { color: color-mix(in srgb, var(--ink) 4%, transparent); -webkit-text-stroke: 2px color-mix(in srgb, var(--cyan) 55%, transparent); }
+.${S}-numf { color: var(--gold); -webkit-text-stroke: 0; }
 .${S}-bar { position: absolute; left: ${n === 1 ? cw / 2 - 90 : 4}px; top: ${numFs + 24}px; width: 180px; height: 6px; border-radius: 3px;
   background: var(--gold); transform-origin: 0 50%; }
 .${S}-ghost { position: absolute; left: ${n === 1 ? cw / 2 - 260 : 0}px; top: ${numFs + 70}px; width: ${n === 1 ? 520 : cw - 40}px; }
@@ -41,8 +41,7 @@ export function render(ctx) {
 ${cols.map((x, i) => `#${S}-c${i + 1} { left: ${x}px; }`).join("\n")}`;
     const html = `    <div id="${S}-spot"></div>
 ${items.map((it, i) => `    <div class="${S}-col" id="${S}-c${i + 1}">
-      <div class="${S}-numo" id="${S}-no${i + 1}">${String(i + 1).padStart(2, "0")}</div>
-      <div class="${S}-numf" id="${S}-nf${i + 1}">${String(i + 1).padStart(2, "0")}</div>
+      <div class="${S}-numo" id="${S}-no${i + 1}">${String(i + 1).padStart(2, "0")}<div class="${S}-numf" id="${S}-nf${i + 1}">${String(i + 1).padStart(2, "0")}</div></div>
       <div class="${S}-bar" id="${S}-b${i + 1}"></div>
       <div class="${S}-ghost" id="${S}-g${i + 1}"><i></i><i></i></div>
       <div class="${S}-txt" id="${S}-t${i + 1}">${esc(it)}</div>

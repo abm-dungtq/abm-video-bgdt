@@ -55,6 +55,10 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
       if (st.name === "tts" && !(await apiUp())) {
         return { next: "start the speech API and keep it running", run: `node ${MCP}/start-api.mjs`, why: "tts needs the VieNeu API" };
       }
+      if (st.name === "compile" && existsSync(join(P, "scenes.json")) && !s.stages.compile) {
+        return { next: "review scenes.json (optional edits, see references/scene-spec.md), then compile", run: `${cli} run compile`,
+          why: "the solver wrote scenes.json; templates, slots and custom frames can be adjusted before the first compile" };
+      }
       return { next: `run stage ${st.name}`, run: `${cli} run ${st.name}`,
         why: s.stages[st.name] ? `stage ${st.name} is stale (its inputs changed)` : `stage ${st.name} has not run yet` };
     }

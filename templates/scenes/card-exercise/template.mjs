@@ -23,7 +23,8 @@ export function render(ctx) {
   const big = ctx.variant !== "steps";
 
   // the ring: geometry (card-local) and the whole-shot draw + spark + pulse
-  const ring = big ? { x: 60, y: 150, d: 390, sw: 16, fs: 170 } : { x: 1150, y: 96, d: 230, sw: 12, fs: 96 };
+  // minY/unitY: offsets from the centre; a big mono numeral renders a ~1.3 em text box, so the unit sits ≥ 0.2 em below it
+  const ring = big ? { x: 60, y: 150, d: 390, sw: 16, fs: 170, minY: -115, unitY: 105 } : { x: 1150, y: 96, d: 230, sw: 12, fs: 96, minY: -60, unitY: 43 };
   const R = ring.d / 2 - ring.sw;
   const c = ring.d / 2;
   const runFrom = w.a + 0.1, runDur = Math.max(1, w.b - 0.1 - runFrom);
@@ -42,9 +43,9 @@ export function render(ctx) {
 #${S}-ring .${S}-run { stroke: var(--gold); stroke-linecap: round; stroke-dasharray: 1000; }
 #${S}-spark { position: absolute; left: ${c - 13}px; top: ${ring.sw - 13}px; width: 26px; height: 26px; border-radius: 50%;
   background: var(--ink); box-shadow: 0 0 18px var(--gold); }
-#${S}-min { position: absolute; left: 0; top: ${c - ring.fs * 0.62}px; width: ${ring.d}px; text-align: center; font-family: ${mono};
+#${S}-min { position: absolute; left: 0; top: ${c + ring.minY}px; width: ${ring.d}px; text-align: center; font-family: ${mono};
   font-size: ${ring.fs}px; font-weight: 700; line-height: 1; color: var(--gold); }
-#${S}-unit { position: absolute; left: 0; top: ${c + ring.fs * 0.45}px; width: ${ring.d}px; text-align: center; font-family: ${mono};
+#${S}-unit { position: absolute; left: 0; top: ${c + ring.unitY}px; width: ${ring.d}px; text-align: center; font-family: ${mono};
   font-size: 28px; letter-spacing: 0.18em; color: var(--muted); }
 #${S}-call { position: absolute; height: 76px; display: flex; align-items: center; gap: 18px; padding: 0 34px; border-radius: 38px;
   border: 2px solid var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); font-size: 34px; font-weight: 800; color: var(--gold); white-space: nowrap; }

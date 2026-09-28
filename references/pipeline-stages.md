@@ -167,10 +167,14 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
    - Lint must show 0 errors.
    - `privacy-check ok … privacy: clean`. Copy that line into `renders/qa-report.md`.
    - Runtime must show 0 errors.
-   - For every `content_overlap` finding, take a snapshot at the flagged time with `wave-check.mjs N@t`. On the first video
-     all eight were false positives, caused by elements at opacity 0, clipped, or on flip cards. Record each verdict in
-     `renders/qa-report.md`. Fix real overlaps in the frame file.
-   - Because this stage exits 1 whenever layout findings remain, the orchestrator decides only after checking the snapshots.
+   - Compiled frames (from `scenes.json`) are check-clean by construction: `dev/template-ci.mjs` runs this same check on
+     every template, and the emitter hides not-yet-revealed elements with `autoAlpha`. A layout error in a compiled frame
+     is a template bug: fix the template, not the frame.
+   - For a `content_overlap` finding in a **custom** frame, take a snapshot at the flagged time with `wave-check.mjs N@t`.
+     On the first video all eight were false positives (elements at opacity 0, clipped, or on flip cards). Record each
+     verdict in `renders/qa-report.md`, and fix real overlaps in the frame file.
+   - `abm-video run assemble` stops on any check error; for a custom-frame false positive, mark the element with
+     `data-layout-allow-overlap` (intentional layering) after checking its snapshot.
 2. Draft render:
    ```
    $HF render --quality draft --fps 25 --frames-cache-dir <cache> --output renders/draft.mp4

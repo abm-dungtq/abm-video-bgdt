@@ -9,7 +9,7 @@
 //   every target exists in the html; no tl.set at 0 (initial hides use gsap.set); no CSS transform on an element
 //   whose transform is tweened; no Math.random / Date.now / setTimeout / requestAnimationFrame / repeat:-1.
 
-export const ALLOWED = ["x", "y", "xPercent", "yPercent", "scale", "scaleX", "scaleY", "rotation", "opacity", "filter",
+export const ALLOWED = ["x", "y", "xPercent", "yPercent", "scale", "scaleX", "scaleY", "rotation", "opacity", "autoAlpha", "filter",
   "attr", "strokeDashoffset", "textContent"];
 const TRANSFORM = ["x", "y", "xPercent", "yPercent", "scale", "scaleX", "scaleY", "rotation"];
 const EPS = 1e-6;
@@ -85,8 +85,16 @@ const cssTransformed = (css) => new Set([...css.replace(/\/\*[\s\S]*?\*\//g, "")
   .filter(([, , body]) => /(^|[;\s])transform\s*:/.test(body))
   .flatMap(([, sel]) => sel.split(",").map((s) => s.trim().split(/\s+/).at(-1))));
 
+/** opacity → autoAlpha when a tween starts or ends fully transparent (visibility follows, so hidden text is really hidden) */
+function hidden(t) {
+  if (t.set || !t.from || !t.to || !("opacity" in t.to)) return t;
+  if (t.from.opacity !== 0 && t.to.opacity !== 0) return t;
+  const swap = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k === "opacity" ? "autoAlpha" : k, v]));
+  return { ...t, from: swap(t.from), to: swap(t.to) };
+}
+
 export function emit(motions, { frameId, duration, html, css = "" }) {
-  const all = motions.flatMap(tweens).map((t) => ({ ...t, at: r3(t.at), dur: r3(t.dur) }));
+  const all = motions.flatMap(tweens).map((t) => hidden({ ...t, at: r3(t.at), dur: r3(t.dur) }));
   const transformed = cssTransformed(css);
   for (const t of all) {
     targetExists(t.target, html);
