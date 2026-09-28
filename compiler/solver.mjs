@@ -329,15 +329,22 @@ const BUILD = {
 };
 
 // ── solving ──────────────────────────────────────────────────────────────────
-/** Candidate templates for a shot, best first. */
-function candidates(c, types) {
+/**
+ * Candidate templates for a shot, best first: the frame's scene_hint (first shot), what the content asks for (numbers →
+ * stat, a comparison → split), then every other template, least used in the video so far first, so no template takes
+ * over the lesson.
+ */
+function candidates(c, types, videoUsed) {
   const hint = HINT[c.frame.scene_hint] ?? c.frame.scene_hint;
   const content = [];
   if (c.nums.length) content.push("stat");
   if (/thay vì|khác với|so với|ngược lại|trước đây/.test(norm(c.text)) && c.sents.length > 1) content.push("split");
-  if (c.ph.length >= 3) content.push("cards", "flow", "hub", "journey", "anchor", "pictogram-scene");
-  content.push("kinetic", "zoom", "pictogram-scene", "typewriter", "cards", "flow", "terminal");
-  const list = c.first ? [hint, ...content] : content;
+  const general = c.ph.length >= 3
+    ? ["cards", "flow", "hub", "journey", "anchor", "pictogram-scene", "kinetic", "zoom", "typewriter", "terminal"]
+    : ["kinetic", "zoom", "pictogram-scene", "typewriter", "cards", "flow", "hub", "journey", "terminal"];
+  const rest = general.map((t, k) => ({ t, k })).sort((x, y) => (videoUsed.get(x.t) ?? 0) - (videoUsed.get(y.t) ?? 0) || x.k - y.k)
+    .map((x) => x.t);
+  const list = c.first ? [hint, ...content, ...rest] : [...content, ...rest];
   return [...new Set(list)].filter((t) => BUILD[t] && (t !== "title" || c.first && hint === "title"));
 }
 
@@ -378,6 +385,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
   }
   const chapters = script.chapters.map((ch, ci) => ({ ch, ci, frames: ch.frames }));
   const recent = []; // last (template/variant) pairs
+  const videoUsed = new Map(); // template → shots in the whole video
   let prevFamily = null;
   const frames = [];
   const stats = { shots: 0, fallbacks: 0 };
@@ -391,7 +399,11 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
       const ctx = frameCtx(frame.id, script, audioMeta, duration, { estimated, timing: cfg.timing, rate });
       const allPh = phrases(ctx), allSents = sentences(ctx), allNums = numbers(ctx);
       const rng = mulberry32(seed + frame.id);
-      const cuts = splitShots(allSents, 0, duration, maxShot) ?? [];
+      // a frame whose scene_hint names a template that can hold the whole frame is one shot of that template (a
+      // case, an exercise or a comparison needs all of its sentences); otherwise the frame is cut into shots
+      const hintSchema = schemas[HINT[frame.scene_hint] ?? frame.scene_hint];
+      const whole = hintSchema && frame.scene_hint !== "title" && duration <= (hintSchema.duration?.max ?? maxShot) + 0.01;
+      const cuts = whole ? [] : splitShots(allSents, 0, duration, maxShot) ?? [];
       // cut just before the next group's first keyword phrase (not at its sentence start), so a new shot never waits
       // long on bare structure; fall back to the sentence start when that would break a shot's length limits
       const cutCues = cuts.map((k, j) => {
@@ -426,7 +438,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         };
         const nextHint = fi + 1 < fs.length ? (HINT[fs[fi + 1].scene_hint] ?? fs[fi + 1].scene_hint) : null;
         let chosen = null;
-        const cands = candidates(c, types).filter((t) => schemas[t]);
+        const cands = candidates(c, types, videoUsed).filter((t) => schemas[t]);
         for (const [rank, t] of cands.entries()) {
           const schema = schemas[t];
           if (schema.family === prevFamily) continue;
@@ -468,6 +480,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         }
         if (!chosen) throw new Error(`frame ${frame.id} shot ${i + 1}: no template fits (${cands.join(", ")})`);
         used.set(chosen.template, (used.get(chosen.template) ?? 0) + 1);
+        videoUsed.set(chosen.template, (videoUsed.get(chosen.template) ?? 0) + 1);
         recent.push(`${chosen.template}/${chosen.variant}`);
         shots.push(chosen);
         stats.shots++;

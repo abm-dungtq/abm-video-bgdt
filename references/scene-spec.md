@@ -45,7 +45,9 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 
 - **Another look for the same content:** change `variant` (catalog below; the preview images show each one).
 - **Another template:** change `template` and rewrite `slots` for it; keep `window`. Two shots in a row may not share a
-  family, and one template + variant should not come back within six shots (lint warns).
+  family, and one template + variant should not come back within six shots (lint warns). Across the video no
+  family may take more than 25 % of the shots, and it must use at least min(10, shots ÷ 3) templates (lint errors);
+  a frame's first shot follows its `scene_hint` (lint warns).
 - **Wrong words on screen:** edit the slot text; keep it within the `≤n` limits (lint errors otherwise).
 - **A reveal lands too early or late:** set its key in `reveals` to the keyword that says it.
 - **Different shot cut:** move the `window` boundary (`sent:k.start-0.3` is the usual cut just before a sentence).

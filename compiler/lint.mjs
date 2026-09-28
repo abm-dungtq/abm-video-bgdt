@@ -203,7 +203,17 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     }
     out.push({ no: bf.no, custom: false, duration, board: bf, ctx, shots, rail });
   }
-  if (variety) warnings.push(...varietyWarnings({ flat, out, script, byNo }));
+  if (variety) {
+    warnings.push(...varietyWarnings({ flat, out, script, byNo }));
+    (legacy ? warnings : errors).push(...varietyErrors(flat));
+    // the first shot of a frame follows the scene_hint the script chose for it
+    const hintOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.scene_hint])));
+    for (const f of out) {
+      const first = flat.find((s) => s.frame === f.no);
+      if (!f.custom && first && hintOf.get(f.no) && first.family !== hintOf.get(f.no))
+        warnings.push(`frame ${f.no}: opens with ${first.template} (${first.family}), not its scene_hint ${hintOf.get(f.no)}`);
+    }
+  }
   const custom = out.filter((f) => f.custom).length;
   const budget = cfg.scenes?.customBudget ?? 0.15;
   if (out.length && custom / out.length > budget + 1e-9) {
@@ -227,6 +237,26 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   const res = await analyze({ P, cfg, estimated: process.argv.includes("--estimated"), legacy });
   report(res);
   process.exit(res.errors.length ? 1 : 0);
+}
+
+/**
+ * Variety errors (warnings in legacy projects), for 10 shots or more: E1 one family (title excluded) takes more than
+ * 25 % of the shots · E2 the video uses fewer than min(10, shots / 3) templates. A lesson that leans on one or two
+ * layouts bores the viewer even when no pair repeats back to back.
+ */
+function varietyErrors(flat) {
+  const e = [];
+  const body = flat.filter((s) => s.family !== "title");
+  if (body.length < 10) return e;
+  const byFamily = new Map();
+  for (const s of body) byFamily.set(s.family, (byFamily.get(s.family) ?? 0) + 1);
+  for (const [family, n] of byFamily) {
+    if (n / body.length > 0.25) e.push(`${family}: ${n}/${body.length} shots (${Math.round((100 * n) / body.length)} %), above 25 % — use other templates (scene-spec.md)`);
+  }
+  const distinct = new Set(flat.map((s) => s.template)).size;
+  const need = Math.min(10, Math.ceil(flat.length / 3));
+  if (distinct < need) e.push(`the video uses ${distinct} templates, fewer than ${need} for ${flat.length} shots`);
+  return e;
 }
 
 /**
