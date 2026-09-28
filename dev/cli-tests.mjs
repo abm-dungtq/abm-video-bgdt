@@ -337,6 +337,22 @@ writeFileSync(join(Adir, "audio/qa-accepted.txt"), "s002-1\n");
 ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -80, tail_db: -15, edge: false }]);
 check("gate 3 asr passes an end-cut clip listed in qa-accepted.txt", ra.ok, ra.detail);
 
+// tts-manifest --pending: a clip spoken from an older text is pending again; a clip without a text record is done
+const Mdir = join(dirname(R), "cli-tts-pending");
+rmSync(Mdir, { recursive: true, force: true });
+mkdirSync(Mdir, { recursive: true });
+for (const f of ["video.config.json", "script.json"]) cpSync(join(SRC, f), join(Mdir, f));
+const manifest = (...a) => spawnSync(process.execPath, [join(S, "scripts/tts-manifest.mjs"), ...a], { cwd: Mdir, encoding: "utf8" });
+manifest();
+const job0 = JSON.parse(readFileSync(join(Mdir, "audio/tts-jobs.json"), "utf8"))[0];
+const pendingIds = () => JSON.parse(manifest("--pending").stdout).jobs.map((j) => j.id);
+writeFileSync(job0.output_path, makeTestWav(Buffer.alloc(24000), 48000)); // above the 10 kB minimum clip size
+check("tts-manifest: a clip without a text record is done", !pendingIds().includes(job0.id), "");
+writeFileSync(`${job0.output_path}.txt`, job0.text);
+check("tts-manifest: a clip spoken from the current text is done", !pendingIds().includes(job0.id), "");
+writeFileSync(`${job0.output_path}.txt`, "câu cũ trước khi sửa kịch bản");
+check("tts-manifest: a clip spoken from an older text is pending", pendingIds().includes(job0.id), "");
+
 // ── (b) asr-check --self-test ───────────────────────────────────────────────
 const py = spawnSync("python", [join(S, "scripts/asr-check.py"), "--self-test"], { encoding: "utf8" });
 if (py.error && py.error.code === "ENOENT") {

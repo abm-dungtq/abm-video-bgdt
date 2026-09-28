@@ -102,7 +102,8 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
 ## Stage 3: Voice and alignment (about 1–2 h, mostly TTS)
 
 1. Run `abm-video run tts`. It speaks every pending sentence through the speech API in parallel batches, resuming
-   after an interruption, then runs the **speech check**:
+   after an interruption; a sentence reworded after its clip was made is pending again (each clip records its text in
+   `audio/clips/<id>.wav.txt`). Then it runs the **speech check**:
    - clips are transcribed by `scripts/asr-check.py` (PhoWhisper) and checked for a cut start (RMS of the first
      20 ms > `voice.maxHeadDb`, -40 dBFS) and a cut end (last 40 ms > `voice.maxTailDb`, -40 dBFS); VieNeu Turbo cuts about 60 % of starts (some sentences in nearly every take) and 40 % of
      ends at random; a cut end loses the last syllable and a cut start may lose the first consonant, so both are retaken;

@@ -54,6 +54,16 @@ async function speak(text, out, voice) {
   throw new Error(`speech API failed after retries: ${last?.message}`);
 }
 
+/**
+ * One pipeline clip: speaks the job and records the text it was spoken from in `<wav>.txt`, so tts-manifest
+ * --pending can respeak a sentence whose text changed after a script edit instead of keeping the old audio.
+ */
+async function speakJob(j, voice) {
+  const d = await speak(j.text, j.output_path, voice);
+  writeFileSync(`${j.output_path}.txt`, j.text);
+  return d;
+}
+
 const syllables = (text) => text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 
 /** One clip. Returns its duration in seconds. */
@@ -185,7 +195,7 @@ export async function verify(P, asr, rounds) {
     for (const r of bad) {
       const j = jobs.get(r.id);
       copyFileSync(j.output_path, `${j.output_path}.best`);
-      await speak(j.text, j.output_path, cfg.voice);
+      await speakJob(j, cfg.voice);
     }
     for (const r of asr(bad.map((x) => x.id))) {
       const j = jobs.get(r.id);
@@ -238,8 +248,8 @@ export async function batch(P, scripts, concurrency = 4) {
     for (let j; (j = queue.shift());) {
       const expected = syllables(j.text) / rate;
       const ok = (d) => d >= 0.6 * expected && d <= 1.6 * expected;
-      let d = await speak(j.text, j.output_path, cfg.voice);
-      if (!ok(d)) d = await speak(j.text, j.output_path, cfg.voice);
+      let d = await speakJob(j, cfg.voice);
+      if (!ok(d)) d = await speakJob(j, cfg.voice);
       if (!ok(d)) flagged.push({ id: j.id, duration: Number(d.toFixed(2)), expected: Number(expected.toFixed(2)) });
       if (++done % 10 === 0) console.log(`tts: ${done}/${jobs.length}`);
     }

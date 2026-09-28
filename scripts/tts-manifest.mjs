@@ -3,7 +3,7 @@
 //
 //   node tools/tts-manifest.mjs            write audio/tts-jobs.json
 //   node tools/tts-manifest.mjs --count    verify job count == sentence count
-//   node tools/tts-manifest.mjs --pending  list jobs whose wav is missing (resumable batches), with the
+//   node tools/tts-manifest.mjs --pending  list jobs whose wav is missing or was spoken from an older text, with the
 //                                          text_to_speech arguments from video.config.json `voice`
 
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -22,7 +22,10 @@ const jobs = script.chapters.flatMap((c) =>
     })),
   ),
 );
-const done = (j) => existsSync(j.output_path) && statSync(j.output_path).size > 10240;
+// A clip is done when it exists and was spoken from the current text (`<wav>.txt`, written by abm-video tts);
+// clips made before that record existed count as done.
+const spokenFrom = (j) => (existsSync(`${j.output_path}.txt`) ? readFileSync(`${j.output_path}.txt`, "utf8") : j.text);
+const done = (j) => existsSync(j.output_path) && statSync(j.output_path).size > 10240 && spokenFrom(j) === j.text;
 
 if (process.argv.includes("--count")) {
   const onDisk = JSON.parse(readFileSync("audio/tts-jobs.json", "utf8")).length;
