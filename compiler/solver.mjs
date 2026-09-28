@@ -32,6 +32,10 @@ const PRIVATE = /[A-Za-z]:\\Users\\|\/Users\/|\/home\/|@[\w.-]+\.\w+/;
 // ── content of a frame ─────────────────────────────────────────────────────────
 const strip = (s) => s.replace(/^[\s"“”'(]+|[\s.,!?;:…"“”')]+$/g, "");
 
+const WEAK = new Set(["bạn", "tôi", "nó", "mọi thứ", "cái này", "điều này", "ở đây", "như vậy", "rất", "nhiều"]);
+/** a phrase that says nothing on its own: a pronoun or filler, or a bare spoken count ("hai", "ba mươi") */
+const weak = (text) => WEAK.has(norm(text)) || norm(text).split(/\s+/).every((w) => w in DIGIT || w in SCALE || ["mười", "mươi", "trăm", "linh", "lẻ", "hơn"].includes(w));
+
 /** Keyword phrases: runs of keyword tokens inside one sentence, with the cue of their first token. */
 function phrases(ctx) {
   const out = [];
@@ -49,7 +53,7 @@ function phrases(ctx) {
     const n = seen.get(t.norm);
     out.push({ words: [t.display], sent: t.sent, time: r2(ctx.times[i].start), end: ctx.times[i].end, cue: `kw:${t.norm}${n > 1 ? `#${n}` : ""}` });
   });
-  return out.map((p) => ({ ...p, text: strip(p.words.join(" ")) })).filter((p) => p.text);
+  return out.map((p) => ({ ...p, text: strip(p.words.join(" ")) })).filter((p) => p.text && !weak(p.text));
 }
 
 function sentences(ctx) {
@@ -94,6 +98,8 @@ function numbers(ctx) {
     }
     if (value === null || value < 2) continue;
     const suffix = w[i - 1] === "hơn" ? "+" : w[j] === "phần" && w[j + 1] === "trăm" ? "%" : "";
+    const spoken = !/^\d/.test(w[i]);
+    if (spoken && value < 10 && !suffix && !w.slice(i, j).some((x) => x in SCALE)) { i = j - 1; continue; }
     const n = w.slice(0, i + 1).filter((x) => x === w[i]).length;
     out.push({ value, suffix, time: r2(ctx.times[i].start), cue: `word:${w[i]}${n > 1 ? `#${n}` : ""}`, sent: ctx.tokens[i].sent });
     i = j - 1;
@@ -110,6 +116,17 @@ function fit(text, max) {
   while (!ok() && words.length > 1 && STOP.has(norm(words.at(-1)))) words = words.slice(0, -1);
   const s = words.join(" ");
   return s && ok() ? s.charAt(0).toUpperCase() + s.slice(1) : null;
+}
+
+/** Icons for a list of [label, context] pairs: the label decides, its sentence is a fallback, no icon twice in a shot. */
+function iconsFor(pairs) {
+  const used = new Set();
+  return pairs.map(([label, context]) => {
+    const pick = [iconFor(label), iconFor(label, context)].find((i) => i !== "spark" && !used.has(i))
+      ?? ["spark", ...Object.keys(ICONS).filter((k) => !k.startsWith("_"))].find((i) => !used.has(i));
+    used.add(pick);
+    return pick;
+  });
 }
 
 function iconFor(...texts) {
@@ -159,21 +176,24 @@ const BUILD = {
     const it = items(c.ph, 22, 2, 4);
     if (!it) return null;
     const heading = c.first ? fit(c.frame.title, 40) : null;
-    return { slots: { ...(heading ? { heading } : {}), items: it.map((x) => ({ icon: iconFor(x.t, c.sentOf(x.p)), label: x.t })) },
+    const icons = iconsFor(it.map((x) => [x.t, c.sentOf(x.p)]));
+    return { slots: { ...(heading ? { heading } : {}), items: it.map((x, i) => ({ icon: icons[i], label: x.t })) },
       reveals: Object.fromEntries(it.map((x, i) => [`items.${i}`, cueOf(x)])) };
   },
   hub: (c) => {
     const center = fit(c.frame.title, 16) ?? fit(c.ph[0]?.text, 16);
     const it = items(c.ph.filter((p) => norm(p.text) !== norm(center ?? "")), 14, 3, 6);
     if (!center || !it) return null;
-    return { slots: { center: { icon: iconFor(c.frame.title), label: center }, nodes: it.map((x) => ({ icon: iconFor(x.t), label: x.t })) },
+    const icons = iconsFor([[center, c.frame.title], ...it.map((x) => [x.t, c.sentOf(x.p)])]);
+    return { slots: { center: { icon: icons[0], label: center }, nodes: it.map((x, i) => ({ icon: icons[i + 1], label: x.t })) },
       reveals: Object.fromEntries(it.map((x, i) => [`nodes.${i}`, cueOf(x)])) };
   },
   flow: (c) => {
     const it = items(c.ph, 18, 2, 5);
     if (!it) return null;
     const loop = /vòng lặp|lặp lại/.test(norm(`${c.frame.title} ${c.text}`));
-    return { slots: { steps: it.map((x) => ({ icon: iconFor(x.t, c.sentOf(x.p)), label: x.t })), ...(loop ? { loop: true } : {}) },
+    const icons = iconsFor(it.map((x) => [x.t, c.sentOf(x.p)]));
+    return { slots: { steps: it.map((x, i) => ({ icon: icons[i], label: x.t })), ...(loop ? { loop: true } : {}) },
       reveals: Object.fromEntries(it.map((x, i) => [`steps.${i}`, cueOf(x)])) };
   },
   journey: (c) => {
@@ -192,7 +212,7 @@ const BUILD = {
     const mid = c.sents.length > 1 ? c.sents[Math.floor(c.sents.length / 2)].k : null;
     if (!mid) return null;
     const side = (ps) => {
-      const it = items(ps, 28, 1, 4);
+      const it = items(ps, 28, 2, 4);
       if (!it) return null;
       const title = fit(it[0].p.text, 24);
       return title ? { slots: { title, items: it.slice(1, 4).map((x) => x.t), icon: iconFor(it[0].t, c.sentOf(it[0].p)) }, cue: cueOf(it[0]) } : null;
@@ -205,7 +225,7 @@ const BUILD = {
     const [n1, n2] = c.nums;
     const label = fit(c.frame.title, 32) ?? fit(c.ph[0]?.text, 32);
     if (!n1 || !label) return null;
-    const cmpLabel = n2 ? fit(c.ph.find((p) => p.time >= n2.time)?.text ?? "", 24) : null;
+    const cmpLabel = n2 ? fit(c.ph.find((p) => p.time >= n2.time && !/\d/.test(p.text))?.text ?? "", 24) : null;
     return { slots: { value: n1.value, ...(n1.suffix ? { suffix: n1.suffix } : {}), label, ...(n2 && cmpLabel ? { compare: { value: n2.value, label: cmpLabel } } : {}) },
       reveals: { value: n1.cue, ...(n2 && cmpLabel ? { compare: n2.cue } : {}) } };
   },
@@ -228,7 +248,7 @@ const BUILD = {
     const it = items(c.ph, 16, 1, 4);
     if (!it) return null;
     const badge = c.first ? fit(c.frame.title, 24) : null;
-    return { slots: { pictos: it.map((x) => iconFor(x.t, c.sentOf(x.p))), labels: it.map((x) => x.t), ...(badge ? { badge } : {}) },
+    return { slots: { pictos: iconsFor(it.map((x) => [x.t, c.sentOf(x.p)])), labels: it.map((x) => x.t), ...(badge ? { badge } : {}) },
       reveals: Object.fromEntries(it.map((x, i) => [`pictos.${i}`, cueOf(x)])) };
   },
   terminal: (c) => {
@@ -297,7 +317,7 @@ function candidates(c, types) {
   const hint = HINT[c.frame.scene_hint] ?? c.frame.scene_hint;
   const content = [];
   if (c.nums.length) content.push("stat");
-  if (/trước|thay vì|khác với|so với|còn|nhưng/.test(norm(c.text)) && c.sents.length > 1) content.push("split");
+  if (/thay vì|khác với|so với|ngược lại|trước đây/.test(norm(c.text)) && c.sents.length > 1) content.push("split");
   if (c.ph.length >= 3) content.push("cards", "flow", "hub", "journey", "anchor", "pictogram-scene");
   content.push("kinetic", "zoom", "pictogram-scene", "typewriter", "cards", "flow", "terminal");
   const list = c.first ? [hint, ...content] : content;
@@ -380,7 +400,8 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
       for (let i = 0; i < windows.length; i++) {
         const a = edges[i], b = edges[i + 1];
         const inWin = (t) => t >= a - 0.05 && t < b - 0.35;
-        const sents = allSents.filter((s) => s.start >= a - 0.05 && s.start < b);
+        const anchor = (s) => allPh.find((p) => p.sent === s.k)?.time ?? s.start;
+        const sents = allSents.filter((s) => anchor(s) >= a - 0.05 && anchor(s) < b);
         const c = {
           P, frame, chapter: ch, chapterIndex: ci, first: i === 0, titleLead,
           ph: allPh.filter((p) => inWin(p.time)), nums: allNums.filter((n) => inWin(n.time)), sents,
