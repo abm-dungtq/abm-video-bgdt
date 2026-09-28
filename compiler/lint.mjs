@@ -217,8 +217,9 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     for (const f of out) {
       const first = flat.find((s) => s.frame === f.no);
       if (cfg.scenes?.director === true) {
+        // an exercise or a quiz the script asked for must show: it is the learner's task, not a decoration
         if (!f.custom && first && hintOf.get(f.no) && !flat.some((s) => s.frame === f.no && s.family === hintOf.get(f.no)))
-          warnings.push(`frame ${f.no}: no shot shows its scene_hint ${hintOf.get(f.no)}`);
+          (["exercise", "quiz"].includes(hintOf.get(f.no)) ? errors : warnings).push(`frame ${f.no}: no shot shows its scene_hint ${hintOf.get(f.no)}`);
       } else if (!f.custom && first && hintOf.get(f.no) && first.family !== hintOf.get(f.no))
         warnings.push(`frame ${f.no}: opens with ${first.template} (${first.family}), not its scene_hint ${hintOf.get(f.no)}`);
     }

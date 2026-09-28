@@ -28,6 +28,8 @@ const ICONS = JSON.parse(readFileSync(join(HERE, "icon-words.json"), "utf8"));
 const STOP = new Set(["một", "các", "những", "của", "và", "thì", "là", "cho", "với", "được", "này", "đó", "nó", "rồi", "cũng"]);
 const HINT = { metaphor: "pictogram-scene", objective: "card-objective", principle: "card-principle", antipattern: "card-antipattern",
   case: "card-case", exercise: "card-exercise", quiz: "card-quiz" };
+// families of cards that are built from a whole frame (the director keeps such a frame in one shot)
+export const WHOLE_FAMILIES = new Set(["exercise", "quiz", "case"]);
 const PRIVATE = /[A-Za-z]:\\Users\\|\/Users\/|\/home\/|@[\w.-]+\.\w+/;
 
 // ── content of a frame ─────────────────────────────────────────────────────────
@@ -472,7 +474,10 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
       const allPh = phrases(ctx), allSents = sentences(ctx), allNums = numbers(ctx);
       const rng = mulberry32(seed + frame.id);
       stats.durations.set(frame.id, duration);
-      const long = D && duration > longRule.overS;
+      // whole-frame cards (an exercise, a quiz, a case) need all of the frame's sentences: the director does not cut them
+      // while they fit WHOLE_FRAME_MAX_S, so a hinted exercise never disappears into shorter windows
+      const long = D && duration > longRule.overS && !(WHOLE_FAMILIES.has(schemas[HINT[frame.scene_hint] ?? frame.scene_hint]?.family)
+        && duration <= WHOLE_FRAME_MAX_S);
       // a frame whose scene_hint names a template that can hold the whole frame is one shot of that template, up to
       // WHOLE_FRAME_MAX_S (a case, an exercise or a comparison needs all of its sentences); otherwise, or when the
       // template cannot be built from the whole frame, the frame is cut into shots

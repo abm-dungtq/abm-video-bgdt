@@ -42,7 +42,7 @@ let longSingle = 0, hintShown = 0, hintLate = 0;
 const byChapter = new Map(); // chapter index → Map(template → Set(variant))
 for (const f of scenes.frames) {
   const info = frameInfo.get(f.frame);
-  if (dur.get(f.frame) > tpl.minShotsLongFrame.overS && f.shots.length === 1) longSingle++;
+  if (dur.get(f.frame) > tpl.minShotsLongFrame.overS && f.shots.length === 1 && !/^card-(exercise|quiz|case)$/.test(f.shots[0].template)) longSingle++;
   const at = f.shots.findIndex((s) => s.template === info.hint);
   if (at >= 0 && info.hint !== "title") { hintShown++; if (at === f.shots.length - 1 || f.shots.length === 1) hintLate++; }
   if (!byChapter.has(info.ci)) byChapter.set(info.ci, new Map());
@@ -51,6 +51,11 @@ for (const f of scenes.frames) {
     if (!m.has(s.template)) m.set(s.template, new Set());
     m.get(s.template).add(s.variant);
   }
+}
+// an exercise or a quiz the script asks for always shows
+for (const f of scenes.frames) {
+  const h = frameInfo.get(f.frame).hint;
+  if (/^card-(exercise|quiz)$/.test(h) && !f.shots.some((s) => s.template === h)) problems.push(`frame ${f.frame}: its ${h} does not show`);
 }
 if (longSingle) problems.push(`${longSingle} frame(s) over ${tpl.minShotsLongFrame.overS} s with one shot`);
 if (hintShown && hintLate / hintShown < 0.6) problems.push(`the hint closes only ${hintLate} of ${hintShown} frames that show it`);
