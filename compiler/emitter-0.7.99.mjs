@@ -132,7 +132,7 @@ export function emit(motions, { frameId, duration, html, css = "" }) {
   for (const t of all) {
     if (t.set) lines.push(`tl.set(${js(t.target)}, ${js(t.to)}, ${t.at});`);
     else if (t.typeOf) {
-      lines.push(`document.querySelectorAll(${js(t.target)}).forEach(function (c, i) { tl.set(c, { opacity: 1 }, ${t.at} + i * ${r3(t.typeOf.d)}); });`);
+      lines.push(`document.querySelectorAll(${js(t.target)}).forEach(function (c, i) { tl.set(c, { autoAlpha: 1 }, ${t.at} + i * ${r3(t.typeOf.d)}); });`);
     } else {
       lines.push(`tl.fromTo(${js(t.target)}, ${js({ ...t.from })}, ${js({ ...t.to, ...(t.extra ?? {}), duration: t.dur, ease: t.ease, immediateRender: false })}, ${t.at});`);
     }

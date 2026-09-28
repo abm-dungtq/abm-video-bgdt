@@ -80,6 +80,11 @@ test("emit valid output", () => {
   }
   if (/tl\.set\([^)]*, 0\)/.test(out)) throw new Error("tl.set at 0 in output");
 });
+test("emit type shows each character with autoAlpha (the initial state hides visibility too)", () => {
+  const out = emit([{ prim: "type", target: "#f01-s1-a", chars: ".f01-s1-x", count: 1, at: 1, dur: 1 }], opts);
+  if (!out.includes('gsap.set(".f01-s1-x", {"autoAlpha":0});')) throw new Error("initial state is not autoAlpha 0");
+  if (!out.includes("tl.set(c, { autoAlpha: 1 }")) throw new Error("characters are revealed with opacity only");
+});
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);
