@@ -1,0 +1,15 @@
+{
+  "template": "screen",
+  "variant": "focus",
+  "window": ["start", "end"],
+  "slots": {
+    "image": "placeholder",
+    "region": { "x": 0.3, "y": 0.41, "w": 0.4, "h": 0.12 },
+    "callouts": [
+      { "x": 0.36, "y": 0.47, "label": "Khung nhập" },
+      { "x": 0.64, "y": 0.5, "label": "Chọn model" },
+      { "x": 0.5, "y": 0.66, "label": "Gợi ý nhanh" }
+    ],
+    "steps": ["Mở claude.ai", "Gõ câu hỏi vào khung nhập", "Nhấn gửi"]
+  }
+}

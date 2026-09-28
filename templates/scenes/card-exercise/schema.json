@@ -1,0 +1,27 @@
+{
+  "id": "card-exercise",
+  "family": "exercise",
+  "card": "card-exercise",
+  "variants": ["timer-ring", "steps"],
+  "signatures": ["timer-ring"],
+  "zone": { "timer-ring": "split-40-60", "steps": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["task"],
+    "additionalProperties": false,
+    "properties": {
+      "task": { "type": "string", "minLength": 1, "maxLength": 80 },
+      "minutes": { "type": "integer", "minimum": 1, "maximum": 60 },
+      "steps": {
+        "type": "array", "minItems": 0, "maxItems": 3,
+        "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+      }
+    }
+  },
+  "reveals": {
+    "label": { "default": "spread", "range": false },
+    "task": { "default": "kw", "range": false },
+    "steps.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 8, "max": 10 }
+}

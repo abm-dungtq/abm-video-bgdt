@@ -1,0 +1,14 @@
+{
+  "template": "flow",
+  "variant": "loop",
+  "window": ["start", "end"],
+  "slots": {
+    "steps": [
+      { "icon": "book", "label": "Ghi nhớ" },
+      { "icon": "lightbulb", "label": "Tạo kỹ năng" },
+      { "icon": "person", "label": "Hiểu bạn hơn" },
+      { "icon": "rocket", "label": "Làm tốt hơn" }
+    ],
+    "loop": true
+  }
+}

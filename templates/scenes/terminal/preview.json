@@ -1,0 +1,22 @@
+{
+  "template": "terminal",
+  "variant": "typed",
+  "window": ["start", "end"],
+  "slots": {
+    "title": "Kiểm tra Hermes",
+    "lines": [
+      { "prompt": true, "text": "hermes --version" },
+      { "prompt": false, "text": "Hermes Agent v0.21.3 (2026.9.14) · upstream fff10484" },
+      { "prompt": false, "text": "Install method: git" },
+      { "prompt": false, "text": "Python: 3.11.16" },
+      { "prompt": true, "text": "hermes --help" },
+      { "prompt": false, "text": "usage: hermes [-h] [--version] [-z PROMPT] [-m MODEL] <command> ..." },
+      { "prompt": false, "text": "Hermes Agent - AI assistant with tool-calling capabilities" },
+      { "prompt": false, "text": "    chat                Interactive chat with the agent" },
+      { "prompt": false, "text": "    model               Select default model and provider" },
+      { "prompt": false, "text": "    gateway             Messaging gateway management" },
+      { "prompt": false, "text": "    setup               Interactive setup wizard" },
+      { "prompt": false, "text": "    status              Show status of all components" }
+    ]
+  }
+}

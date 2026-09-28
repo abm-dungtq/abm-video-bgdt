@@ -1,0 +1,30 @@
+{
+  "id": "flow",
+  "family": "flow",
+  "variants": ["linear", "loop", "branch"],
+  "signatures": ["loop"],
+  "zone": { "linear": "hero-center", "loop": "ring", "branch": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["steps"],
+    "additionalProperties": false,
+    "properties": {
+      "steps": {
+        "type": "array", "minItems": 2, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["icon", "label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 }
+          }
+        }
+      },
+      "loop": { "type": "boolean" }
+    }
+  },
+  "reveals": {
+    "steps.*": { "default": "kw", "range": false },
+    "spark": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

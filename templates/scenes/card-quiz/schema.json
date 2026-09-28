@@ -1,0 +1,28 @@
+{
+  "id": "card-quiz",
+  "family": "quiz",
+  "card": "card-quiz",
+  "variants": ["abc", "true-false"],
+  "signatures": ["abc"],
+  "zone": { "abc": "split-60-40", "true-false": "triptych" },
+  "slots": {
+    "type": "object",
+    "required": ["question", "options", "answer"],
+    "additionalProperties": false,
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 90 },
+      "options": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+      },
+      "answer": { "type": "integer", "minimum": 0, "maximum": 3 }
+    }
+  },
+  "reveals": {
+    "label": { "default": "spread", "range": false },
+    "question": { "default": "kw", "range": false },
+    "options.*": { "default": "kw", "range": false },
+    "answer": { "default": "kw", "range": false, "after": "options.1" }
+  },
+  "duration": { "min": 8, "max": 10 }
+}

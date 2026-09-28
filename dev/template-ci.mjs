@@ -113,7 +113,8 @@ if (compiled.length) {
   for (const c of compiled) { if (c.snap) at.push((t + 0.2 * c.dur).toFixed(2), (t + 0.85 * c.dur).toFixed(2)); t += c.dur; }
   const r = shTry(`npx -y ${HF} snapshot --no-end --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --at ${at.join(",")}`);
   if (!r.ok) console.error(`⚠ snapshot failed: ${r.out.slice(-400)}`);
-  const files = existsSync(join(W, "snapshots")) ? readdirSync(join(W, "snapshots")).filter((f) => /^frame-\d+-at-/.test(f)).sort() : [];
+  const files = existsSync(join(W, "snapshots")) ? readdirSync(join(W, "snapshots")).filter((f) => /^frame-\d+-at-/.test(f))
+    .sort((x, y) => Number(x.match(/^frame-(\d+)/)[1]) - Number(y.match(/^frame-(\d+)/)[1])) : []; // numeric: frame-100 after frame-99
   snaps.forEach((c, k) => {
     const [a, b] = [files[2 * k], files[2 * k + 1]];
     if (!a || !b) return;

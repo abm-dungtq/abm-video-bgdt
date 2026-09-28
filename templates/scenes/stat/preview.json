@@ -1,0 +1,11 @@
+{
+  "template": "stat",
+  "variant": "ring",
+  "window": ["start", "end"],
+  "slots": {
+    "value": 64,
+    "suffix": "K",
+    "label": "Token ngữ cảnh tối thiểu",
+    "compare": { "value": 8, "label": "Mô hình nhỏ bị từ chối" }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "template": "card-quiz",
+  "variant": "abc",
+  "window": ["start", "end"],
+  "slots": {
+    "question": "Hermes gặp một lệnh chưa rõ an toàn hay nguy hiểm. Nó sẽ làm gì?",
+    "options": ["Chạy luôn cho nhanh", "Hỏi bạn trước khi chạy", "Tự xóa lệnh đó đi"],
+    "answer": 1
+  }
+}

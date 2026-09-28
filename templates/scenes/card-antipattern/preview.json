@@ -1,0 +1,9 @@
+{
+  "template": "card-antipattern",
+  "variant": "side-by-side",
+  "window": ["start", "end"],
+  "slots": {
+    "wrong": { "label": "Hỏi chung chung", "items": ["Viết giúp tôi một bài", "Không nói cho ai, để làm gì"] },
+    "right": { "label": "Hỏi cụ thể", "items": ["Bài 300 chữ cho khách hàng mới", "Giọng thân thiện, có lời kêu gọi"] }
+  }
+}

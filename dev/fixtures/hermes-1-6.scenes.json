@@ -1,55 +1,285 @@
 {
-  "version": 1,
-  "seed": 20260928,
-  "frames": [
-    { "frame": 1, "shots": [
-      { "template": "title", "variant": "number-draw", "window": ["start", "end"],
-        "slots": { "chapterNo": 0, "title": "Hermes Agent – từ cơ bản đến nâng cao", "kicker": "Bài học" },
-        "reveals": { "kicker": "sent:1.start", "number": "sent:1.start+0.3", "title": "kw:hermes" } } ] },
-    { "frame": 2, "shots": [
-      { "template": "kinetic", "variant": "center-punch", "window": ["start", "kw:kinh-0.8"],
-        "slots": { "words": ["Không", "bao giờ", "quên"] },
-        "reveals": { "words.0": "kw:không", "words.1": "kw:bao", "words.2": "kw:quên" } },
-      { "template": "cards", "variant": "grid-3", "window": ["prev.end", "end"],
-        "slots": { "items": [
-          { "icon": "key", "label": "Tự rút kinh nghiệm", "note": "Sau mỗi việc khó" },
-          { "icon": "spark", "label": "Hermes Agent" },
-          { "icon": "person", "label": "Nous Research", "note": "Nhóm tạo ra Hermes" } ] },
-        "reveals": { "items.0": "kw:kinh", "items.1": "kw:hermes", "items.2": "kw:nous" } } ] },
-    { "frame": 3, "shots": [
-      { "template": "kinetic", "variant": "stack-words", "window": ["start", "sent:2.start"],
-        "slots": { "words": ["Mã nguồn mở", "Giấy phép MIT"] },
-        "reveals": { "words.0": "kw:mã", "words.1": "kw:mit" } },
-      { "template": "cards", "variant": "grid-4", "window": ["prev.end", "end"],
-        "slots": { "items": [
-          { "icon": "person", "label": "Máy cá nhân" },
-          { "icon": "folder", "label": "Máy chủ 5 đô la" },
-          { "icon": "spark", "label": "Đám mây" },
-          { "icon": "check", "label": "Không thu thập dữ liệu" } ] },
-        "reveals": { "items.0": "word:máy", "items.1": "kw:năm", "items.2": "kw:đám", "items.3": "kw:không" } } ] },
-    { "frame": 4, "shots": [
-      { "template": "kinetic", "variant": "center-punch", "window": ["start", "sent:2.start"],
-        "slots": { "words": ["Agent", "Chatbot"], "sub": "Khác nhau ra sao?" },
-        "reveals": { "words.0": "kw:agent", "words.1": "kw:chatbot", "sub": "kw:chatbot+0.4" } },
-      { "template": "cards", "variant": "grid-3", "window": ["prev.end", "end"],
-        "slots": { "heading": "Sau bài học này", "items": [
-          { "icon": "folder", "label": "Cài đặt" },
-          { "icon": "spark", "label": "Tự học" },
-          { "icon": "target", "label": "Điểm nổi bật" } ] },
-        "reveals": { "heading": "prev.end+0.2", "items.0": "kw:cài", "items.1": "kw:tự", "items.2": "kw:điểm" } } ] },
-    { "frame": 5, "shots": [
-      { "template": "title", "variant": "big-type", "window": ["start", "end"],
-        "slots": { "chapterNo": 1, "title": "Agent là gì?" },
-        "reveals": { "number": "start+0.3", "title": "kw:agent" } } ] },
-    { "frame": 6, "shots": [
-      { "template": "kinetic", "variant": "stack-words", "window": ["start", "sent:4.start"],
-        "slots": { "words": ["Chatbot", "Trả lời", "Dừng lại"] },
-        "reveals": { "words.0": "kw:chatbot", "words.1": "kw:trả", "words.2": "kw:dừng" } },
-      { "template": "cards", "variant": "grid-3", "window": ["prev.end", "end"],
-        "slots": { "items": [
-          { "icon": "cross", "label": "Không tự mở file" },
-          { "icon": "cross", "label": "Không tự tìm kiếm" },
-          { "icon": "cross", "label": "Không tự kiểm tra" } ] },
-        "reveals": { "items.0": "word:mở", "items.1": "kw:tìm", "items.2": "kw:kiểm" } } ] }
-  ]
+ "version": 1,
+ "seed": 20260928,
+ "frames": [
+  {
+   "frame": 1,
+   "shots": [
+    {
+     "template": "title",
+     "variant": "number-draw",
+     "window": [
+      "start",
+      "end"
+     ],
+     "slots": {
+      "chapterNo": 0,
+      "title": "Hermes Agent – từ cơ bản đến nâng cao",
+      "kicker": "Bài học"
+     },
+     "reveals": {
+      "kicker": "sent:1.start",
+      "number": "sent:1.start+0.3",
+      "title": "kw:hermes"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2,
+   "shots": [
+    {
+     "template": "kinetic",
+     "variant": "center-punch",
+     "window": [
+      "start",
+      "kw:kinh-0.8"
+     ],
+     "slots": {
+      "words": [
+       "Không",
+       "bao giờ",
+       "quên"
+      ]
+     },
+     "reveals": {
+      "words.0": "kw:không",
+      "words.1": "kw:bao",
+      "words.2": "kw:quên"
+     }
+    },
+    {
+     "template": "cards",
+     "variant": "grid-3",
+     "window": [
+      "prev.end",
+      "end"
+     ],
+     "slots": {
+      "items": [
+       {
+        "icon": "key",
+        "label": "Tự rút kinh nghiệm",
+        "note": "Sau mỗi việc khó"
+       },
+       {
+        "icon": "spark",
+        "label": "Hermes Agent"
+       },
+       {
+        "icon": "person",
+        "label": "Nous Research",
+        "note": "Nhóm tạo ra Hermes"
+       }
+      ]
+     },
+     "reveals": {
+      "items.0": "kw:kinh",
+      "items.1": "kw:hermes",
+      "items.2": "kw:nous"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3,
+   "shots": [
+    {
+     "template": "kinetic",
+     "variant": "stack-words",
+     "window": [
+      "start",
+      "sent:2.start"
+     ],
+     "slots": {
+      "words": [
+       "Mã nguồn mở",
+       "Giấy phép MIT"
+      ]
+     },
+     "reveals": {
+      "words.0": "kw:mã",
+      "words.1": "kw:mit"
+     }
+    },
+    {
+     "template": "cards",
+     "variant": "grid-4",
+     "window": [
+      "prev.end",
+      "end"
+     ],
+     "slots": {
+      "items": [
+       {
+        "icon": "person",
+        "label": "Máy cá nhân"
+       },
+       {
+        "icon": "folder",
+        "label": "Máy chủ 5 đô la"
+       },
+       {
+        "icon": "spark",
+        "label": "Đám mây"
+       },
+       {
+        "icon": "check",
+        "label": "Không thu thập dữ liệu"
+       }
+      ]
+     },
+     "reveals": {
+      "items.0": "word:máy",
+      "items.1": "kw:năm",
+      "items.2": "kw:đám",
+      "items.3": "kw:không"
+     }
+    }
+   ],
+   "rail": {
+    "slots": [
+     "Mã nguồn mở",
+     "Chạy mọi nơi",
+     "Riêng tư"
+    ],
+    "at": [
+     "kw:mã",
+     "word:máy",
+     "kw:không"
+    ]
+   }
+  },
+  {
+   "frame": 4,
+   "shots": [
+    {
+     "template": "kinetic",
+     "variant": "center-punch",
+     "window": [
+      "start",
+      "sent:2.start"
+     ],
+     "slots": {
+      "words": [
+       "Agent",
+       "Chatbot"
+      ],
+      "sub": "Khác nhau ra sao?"
+     },
+     "reveals": {
+      "words.0": "kw:agent",
+      "words.1": "kw:chatbot",
+      "sub": "kw:chatbot+0.4"
+     }
+    },
+    {
+     "template": "cards",
+     "variant": "grid-3",
+     "window": [
+      "prev.end",
+      "end"
+     ],
+     "slots": {
+      "heading": "Sau bài học này",
+      "items": [
+       {
+        "icon": "folder",
+        "label": "Cài đặt"
+       },
+       {
+        "icon": "spark",
+        "label": "Tự học"
+       },
+       {
+        "icon": "target",
+        "label": "Điểm nổi bật"
+       }
+      ]
+     },
+     "reveals": {
+      "heading": "prev.end+0.2",
+      "items.0": "kw:cài",
+      "items.1": "kw:tự",
+      "items.2": "kw:điểm"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 5,
+   "shots": [
+    {
+     "template": "title",
+     "variant": "big-type",
+     "window": [
+      "start",
+      "end"
+     ],
+     "slots": {
+      "chapterNo": 1,
+      "title": "Agent là gì?"
+     },
+     "reveals": {
+      "number": "start+0.3",
+      "title": "kw:agent"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6,
+   "shots": [
+    {
+     "template": "kinetic",
+     "variant": "stack-words",
+     "window": [
+      "start",
+      "sent:4.start"
+     ],
+     "slots": {
+      "words": [
+       "Chatbot",
+       "Trả lời",
+       "Dừng lại"
+      ]
+     },
+     "reveals": {
+      "words.0": "kw:chatbot",
+      "words.1": "kw:trả",
+      "words.2": "kw:dừng"
+     }
+    },
+    {
+     "template": "cards",
+     "variant": "grid-3",
+     "window": [
+      "prev.end",
+      "end"
+     ],
+     "slots": {
+      "items": [
+       {
+        "icon": "cross",
+        "label": "Không tự mở file"
+       },
+       {
+        "icon": "cross",
+        "label": "Không tự tìm kiếm"
+       },
+       {
+        "icon": "cross",
+        "label": "Không tự kiểm tra"
+       }
+      ]
+     },
+     "reveals": {
+      "items.0": "word:mở",
+      "items.1": "kw:tìm",
+      "items.2": "kw:kiểm"
+     }
+    }
+   ]
+  }
+ ]
 }

@@ -1,0 +1,36 @@
+{
+  "id": "hub",
+  "family": "hub",
+  "variants": ["constellation", "orbit", "spokes"],
+  "signatures": ["constellation"],
+  "zone": { "constellation": "ring", "orbit": "ring", "spokes": "sidebar-left" },
+  "slots": {
+    "type": "object",
+    "required": ["center", "nodes"],
+    "additionalProperties": false,
+    "properties": {
+      "center": {
+        "type": "object", "required": ["icon", "label"], "additionalProperties": false,
+        "properties": {
+          "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 16 }
+        }
+      },
+      "nodes": {
+        "type": "array", "minItems": 3, "maxItems": 8,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 14 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "center": { "default": "spread", "range": false },
+    "nodes.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

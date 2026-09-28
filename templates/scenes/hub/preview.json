@@ -1,0 +1,15 @@
+{
+  "template": "hub",
+  "variant": "constellation",
+  "window": ["start", "end"],
+  "slots": {
+    "center": { "icon": "server", "label": "Hermes Gateway" },
+    "nodes": [
+      { "icon": "chat", "label": "Telegram" },
+      { "icon": "chat", "label": "Discord" },
+      { "icon": "mail", "label": "WhatsApp" },
+      { "icon": "people", "label": "Slack" },
+      { "icon": "globe", "label": "Signal" }
+    ]
+  }
+}

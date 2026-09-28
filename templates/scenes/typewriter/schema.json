@@ -1,0 +1,21 @@
+{
+  "id": "typewriter",
+  "family": "typewriter",
+  "variants": ["line", "document", "quote-card"],
+  "signatures": ["document"],
+  "zone": { "line": "hero-center", "document": "split-40-60", "quote-card": "full-bleed-quote" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 110 },
+      "heading": { "type": "string", "maxLength": 30 }
+    }
+  },
+  "reveals": {
+    "heading": { "default": "spread", "range": false },
+    "text": { "default": "kw", "range": true }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

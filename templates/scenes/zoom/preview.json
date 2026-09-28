@@ -1,0 +1,10 @@
+{
+  "template": "zoom",
+  "variant": "pull-back",
+  "window": ["start", "end"],
+  "slots": {
+    "subject": { "icon": "chat", "label": "Không chỉ là chatbot" },
+    "detail": "Một agent tự chủ, càng chạy càng giỏi",
+    "context": ["Tìm kiếm", "Đọc tệp", "Chạy lệnh", "Ghi nhớ"]
+  }
+}

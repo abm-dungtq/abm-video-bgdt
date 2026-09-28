@@ -1,0 +1,15 @@
+{
+  "template": "journey",
+  "variant": "path",
+  "window": ["start", "end"],
+  "slots": {
+    "stops": [
+      { "label": "Làm quen Claude", "note": "Chat, model, giao diện" },
+      { "label": "Tổ chức công việc", "note": "Project và Artifact" },
+      { "label": "Kết nối", "note": "Connectors và Research" },
+      { "label": "Claude Code", "note": "Terminal và nền tảng" },
+      { "label": "Dùng an toàn", "note": "Quyền riêng tư, kiểm chứng" }
+    ],
+    "current": 3
+  }
+}

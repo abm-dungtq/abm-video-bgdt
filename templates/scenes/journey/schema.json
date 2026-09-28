@@ -1,0 +1,29 @@
+{
+  "id": "journey",
+  "family": "journey",
+  "variants": ["stations", "timeline", "path"],
+  "signatures": ["path"],
+  "zone": { "stations": "hero-center", "timeline": "split-40-60", "path": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["stops"],
+    "additionalProperties": false,
+    "properties": {
+      "stops": {
+        "type": "array", "minItems": 3, "maxItems": 6,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 },
+            "note": { "type": "string", "maxLength": 28 }
+          }
+        }
+      },
+      "current": { "type": "integer", "minimum": 0, "maximum": 5 }
+    }
+  },
+  "reveals": {
+    "stops.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

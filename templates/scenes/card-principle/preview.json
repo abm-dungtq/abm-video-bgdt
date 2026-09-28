@@ -1,0 +1,9 @@
+{
+  "template": "card-principle",
+  "variant": "quote",
+  "window": ["start", "end"],
+  "slots": {
+    "text": "Kỹ năng là trí nhớ về cách làm: làm một lần, lần sau agent tự làm tốt hơn",
+    "keyword": "trí nhớ"
+  }
+}

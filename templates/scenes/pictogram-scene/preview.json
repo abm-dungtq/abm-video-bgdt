@@ -1,0 +1,10 @@
+{
+  "template": "pictogram-scene",
+  "variant": "triptych",
+  "window": ["start", "end"],
+  "slots": {
+    "pictos": ["folder", "doc", "book"],
+    "labels": ["Dự án", "Tài liệu", "Hướng dẫn"],
+    "badge": "Mỗi dự án một ngăn kéo"
+  }
+}

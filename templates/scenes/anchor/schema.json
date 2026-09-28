@@ -1,0 +1,21 @@
+{
+  "id": "anchor",
+  "family": "anchor",
+  "variants": ["checklist", "cycle", "badge-row"],
+  "signatures": ["cycle"],
+  "zone": { "checklist": "sidebar-left", "cycle": "ring", "badge-row": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["title", "items"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 30 },
+      "items": { "type": "array", "minItems": 2, "maxItems": 5, "items": { "type": "string", "minLength": 1, "maxLength": 34 } }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

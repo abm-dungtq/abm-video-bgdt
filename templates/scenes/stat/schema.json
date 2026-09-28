@@ -1,0 +1,30 @@
+{
+  "id": "stat",
+  "family": "stat",
+  "variants": ["countup", "bar", "ring"],
+  "signatures": ["ring"],
+  "zone": { "countup": "hero-center", "bar": "strip-top", "ring": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["value", "label"],
+    "additionalProperties": false,
+    "properties": {
+      "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+      "suffix": { "type": "string", "maxLength": 6 },
+      "label": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "compare": {
+        "type": "object", "required": ["value", "label"], "additionalProperties": false,
+        "properties": {
+          "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 24 }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "value": { "default": "kw", "range": false },
+    "label": { "default": "spread", "range": false },
+    "compare": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "terminal",
+  "family": "terminal",
+  "variants": ["typed", "output-scroll"],
+  "signatures": ["typed"],
+  "zone": { "typed": "hero-center", "output-scroll": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["title", "lines"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 30 },
+      "lines": {
+        "type": "array", "minItems": 1, "maxItems": 12,
+        "description": "real terminal text, taken from capture/terminal",
+        "items": {
+          "type": "object", "required": ["prompt", "text"], "additionalProperties": false,
+          "properties": {
+            "prompt": { "type": "boolean" },
+            "text": { "type": "string", "maxLength": 80 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "lines.*": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 3, "max": 12 }
+}

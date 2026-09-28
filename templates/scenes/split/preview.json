@@ -1,0 +1,10 @@
+{
+  "template": "split",
+  "variant": "compare-50",
+  "window": ["start", "end"],
+  "slots": {
+    "left": { "title": "Tệp .env", "icon": "lock", "items": ["Khóa API", "Mật khẩu và token"] },
+    "right": { "title": "Tệp config", "icon": "gear", "items": ["Cài đặt thông thường", "Mô hình, giao diện"] },
+    "verdict": "Bí mật luôn tách riêng khỏi cài đặt"
+  }
+}

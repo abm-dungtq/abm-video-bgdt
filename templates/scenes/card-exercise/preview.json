@@ -1,0 +1,10 @@
+{
+  "template": "card-exercise",
+  "variant": "timer-ring",
+  "window": ["start", "end"],
+  "slots": {
+    "task": "Nhờ Hermes tạo một kỹ năng tóm tắt email mỗi sáng",
+    "minutes": 5,
+    "steps": ["Gõ hermes để bắt đầu trò chuyện", "Mô tả việc bạn muốn tự động", "Kiểm tra kỹ năng vừa tạo"]
+  }
+}

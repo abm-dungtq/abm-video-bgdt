@@ -1,0 +1,12 @@
+{
+  "template": "card-objective",
+  "variant": "list",
+  "window": ["start", "end"],
+  "slots": {
+    "items": [
+      "Hiểu agent là gì và khác chatbot ra sao",
+      "Biết cách cài đặt, trò chuyện với Hermes",
+      "Dạy Hermes tự học qua từng lần làm"
+    ]
+  }
+}

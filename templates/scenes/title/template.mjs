@@ -1,5 +1,7 @@
 // title — opens a chapter. number-draw: a ring is drawn around the chapter number, then the title rises.
 // big-type: an oversized left-aligned title slides in over a faint outline numeral, underlined by a drawn bar.
+// split-band: a full-width band sweeps in; a gold block on its left counts the chapter number up, the title sits on the
+// band to the right with the kicker above it and a drawn gold rule below.
 
 export const revealKeys = (slots) => [...(slots.kicker ? ["kicker"] : []), "number", "title"];
 
@@ -43,6 +45,50 @@ export function render(ctx) {
     ];
     if (label) m.push({ prim: "reveal", target: `#${S}-label`, at: tKick ?? tNum, dur: 0.5, from: { opacity: 0, y: 16 } });
     if (kicker) m.push({ prim: "reveal", target: `#${S}-kicker`, at: Math.min(settle, w.b - 0.5), dur: 0.45, from: { opacity: 0, y: 16 } });
+    return { css, html, motions: m };
+  }
+
+  if (ctx.variant === "split-band") {
+    const fs = size(slots.title, [[20, 100], [30, 84], [40, 72]]);
+    const n = slots.chapterNo;
+    const numHtml = n > 0 ? `${n < 10 ? "<span>0</span>" : ""}<span id="${S}-nv">0</span>` : ctx.icon("spark");
+    const fit = (t, dur) => Math.max(w.a, Math.min(t, w.b - dur - 0.05));
+    const css = `
+#${S}-root { position: absolute; inset: 0; }
+#${S}-band { position: absolute; left: 0; top: 250px; width: 1760px; height: 320px; box-sizing: border-box; transform-origin: 0 50%;
+  background: color-mix(in srgb, var(--surface) 85%, transparent); border-top: 2px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--gold) 45%, transparent); }
+#${S}-block { position: absolute; left: 0; top: 250px; width: 460px; height: 320px; box-sizing: border-box; background: var(--surface);
+  border-left: 12px solid var(--gold); border-right: 3px solid color-mix(in srgb, var(--gold) 60%, transparent); }
+#${S}-cap { position: absolute; left: 0; top: 34px; width: 445px; text-align: center; font-family: "${theme.mono}", monospace; font-size: 30px;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); }
+#${S}-num { position: absolute; left: 0; top: 70px; width: 445px; height: 230px; display: flex; align-items: center; justify-content: center;
+  font-family: "${theme.mono}", monospace; font-weight: 700; font-size: 210px; line-height: 1; color: var(--gold); }
+#${S}-num svg { width: 150px; height: 150px; }
+#${S}-kicker { position: absolute; left: 540px; top: 180px; font-family: "${theme.mono}", monospace; font-size: 30px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+#${S}-grp { position: absolute; left: 540px; top: 250px; width: 1160px; height: 320px; display: flex; align-items: center; }
+#${S}-title { font-size: ${fs}px; font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; color: var(--ink); }
+#${S}-line { position: absolute; left: 540px; top: 604px; width: 1160px; height: 10px; overflow: visible; }
+#${S}-line path { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; fill: none; stroke-dasharray: 1000; }`;
+    const html = `<div id="${S}-root">
+  <div id="${S}-band"></div>
+  <div id="${S}-block"><div id="${S}-cap">Chương</div><div id="${S}-num">${numHtml}</div></div>
+  ${slots.kicker ? `<div id="${S}-kicker">${esc(slots.kicker)}</div>` : ""}
+  <div id="${S}-grp"><div id="${S}-title">${title}</div></div>
+  <svg id="${S}-line" viewBox="0 0 1160 10"><path id="${S}-linep" pathLength="1000" d="M3 5 L1157 5"/></svg>
+</div>`;
+    const m = [
+      { prim: "reveal", target: `#${S}-band`, at: w.a, dur: 0.6, from: { scaleX: 0 }, ease: "power3.out" },
+      { prim: "reveal", target: `#${S}-block`, at: w.a + 0.15, dur: 0.5, from: { opacity: 0, x: -60 }, ease: ctx.ease },
+      { prim: "reveal", target: `#${S}-num`, at: Math.max(tNum, w.a + 0.3), dur: 0.5, from: { opacity: 0, scale: 0.7 }, ease: "back.out(1.6)" },
+      { prim: "reveal", target: `#${S}-title`, at: tTitle, dur: 0.6, from: ctx.motionFrom(), ease: ctx.ease },
+      { prim: "draw", target: `#${S}-linep`, at: fit(tTitle + 0.35, 0.7), dur: 0.7 },
+    ];
+    if (n > 0) m.push({ prim: "count", target: `#${S}-nv`, at: fit(Math.max(tNum, w.a + 0.3), 0.6), dur: 0.6, to: n });
+    if (slots.kicker) m.push({ prim: "reveal", target: `#${S}-kicker`, at: tKick, dur: 0.5, from: { opacity: 0, x: -20 } });
+    const d = ctx.drift(`#${S}-grp`, fit(tTitle + 0.7, 0.7), 12);
+    if (d) m.push(d);
     return { css, html, motions: m };
   }
 

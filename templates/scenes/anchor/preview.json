@@ -1,0 +1,15 @@
+{
+  "template": "anchor",
+  "variant": "cycle",
+  "window": ["start", "end"],
+  "slots": {
+    "title": "Tóm tắt chương sáu",
+    "items": [
+      "Agent con làm việc song song",
+      "Code gọi công cụ",
+      "MCP, cổng cắm chung",
+      "Bảy môi trường chạy lệnh",
+      "SOUL.md, linh hồn của agent"
+    ]
+  }
+}

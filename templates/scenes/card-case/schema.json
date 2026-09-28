@@ -1,0 +1,25 @@
+{
+  "id": "card-case",
+  "family": "case",
+  "card": "card-case",
+  "variants": ["story", "chat"],
+  "signatures": ["chat"],
+  "zone": { "story": "split-40-60", "chat": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["situation", "detail"],
+    "additionalProperties": false,
+    "properties": {
+      "situation": { "type": "string", "minLength": 1, "maxLength": 90 },
+      "detail": { "type": "string", "minLength": 1, "maxLength": 60 },
+      "question": { "type": "string", "minLength": 1, "maxLength": 60 }
+    }
+  },
+  "reveals": {
+    "label": { "default": "spread", "range": false },
+    "situation": { "default": "kw", "range": false },
+    "detail": { "default": "kw", "range": false, "after": "situation" },
+    "question": { "default": "kw", "range": false, "after": "detail" }
+  },
+  "duration": { "min": 4, "max": 10 }
+}

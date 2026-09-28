@@ -1,0 +1,23 @@
+{
+  "id": "card-principle",
+  "family": "principle",
+  "card": "card-principle",
+  "variants": ["quote", "keyword"],
+  "signatures": ["keyword"],
+  "zone": { "quote": "full-bleed-quote", "keyword": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 90 },
+      "keyword": { "type": "string", "minLength": 1, "maxLength": 18 }
+    }
+  },
+  "reveals": {
+    "label": { "default": "spread", "range": false },
+    "text": { "default": "kw", "range": false },
+    "keyword": { "default": "kw", "range": false, "after": "text" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

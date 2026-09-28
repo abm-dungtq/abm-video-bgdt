@@ -1,8 +1,9 @@
 {
   "id": "cards",
   "family": "cards",
-  "variants": ["grid-3", "grid-4"],
-  "zone": { "grid-3": "triptych", "grid-4": "strip-top" },
+  "variants": ["grid-3", "grid-4", "stack-fan"],
+  "signatures": ["stack-fan"],
+  "zone": { "grid-3": "triptych", "grid-4": "strip-top", "stack-fan": "hero-center" },
   "slots": {
     "type": "object",
     "required": ["items"],
@@ -10,7 +11,7 @@
     "properties": {
       "heading": { "type": "string", "maxLength": 40 },
       "items": {
-        "type": "array", "minItems": 2, "maxItems": 4,
+        "type": "array", "minItems": 2, "maxItems": 6,
         "items": {
           "type": "object", "required": ["icon", "label"], "additionalProperties": false,
           "properties": {

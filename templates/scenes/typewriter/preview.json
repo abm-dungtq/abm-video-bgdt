@@ -1,0 +1,6 @@
+{
+  "template": "typewriter",
+  "variant": "document",
+  "window": ["start", "end"],
+  "slots": { "heading": "SOUL.md", "text": "Bạn quyết định giọng điệu, phong cách, và cách agent giao tiếp với bạn." }
+}

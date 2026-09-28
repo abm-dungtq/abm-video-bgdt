@@ -1,0 +1,37 @@
+{
+  "id": "split",
+  "family": "split",
+  "variants": ["compare-50", "slide-over", "before-after"],
+  "signatures": ["before-after"],
+  "zone": { "compare-50": "split-50", "slide-over": "split-60-40", "before-after": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["left", "right"],
+    "additionalProperties": false,
+    "properties": {
+      "left": {
+        "type": "object", "required": ["title"], "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 24 },
+          "items": { "type": "array", "minItems": 0, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 28 } },
+          "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        }
+      },
+      "right": {
+        "type": "object", "required": ["title"], "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 24 },
+          "items": { "type": "array", "minItems": 0, "maxItems": 3, "items": { "type": "string", "minLength": 1, "maxLength": 28 } },
+          "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        }
+      },
+      "verdict": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "reveals": {
+    "left": { "default": "kw", "range": false },
+    "right": { "default": "kw", "range": false, "after": "left" },
+    "verdict": { "default": "spread", "range": false, "after": "right" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

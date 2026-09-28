@@ -1,0 +1,29 @@
+{
+  "id": "zoom",
+  "family": "zoom",
+  "variants": ["lens", "pull-back", "focus-crop"],
+  "signatures": ["pull-back"],
+  "zone": { "lens": "split-60-40", "pull-back": "ring", "focus-crop": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["subject", "detail"],
+    "additionalProperties": false,
+    "properties": {
+      "subject": {
+        "type": "object", "required": ["icon", "label"], "additionalProperties": false,
+        "properties": {
+          "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 24 }
+        }
+      },
+      "detail": { "type": "string", "minLength": 1, "maxLength": 40 },
+      "context": { "type": "array", "minItems": 0, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 16 } }
+    }
+  },
+  "reveals": {
+    "subject": { "default": "kw", "range": false },
+    "detail": { "default": "kw", "range": false, "after": "subject" },
+    "context.*": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

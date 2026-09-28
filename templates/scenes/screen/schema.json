@@ -1,0 +1,48 @@
+{
+  "id": "screen",
+  "family": "screen",
+  "variants": ["focus", "steps", "callout"],
+  "signatures": ["focus"],
+  "zone": { "focus": "screen-focus", "steps": "screen-steps", "callout": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["image"],
+    "additionalProperties": false,
+    "properties": {
+      "image": {
+        "type": "string",
+        "description": "a screenshot under assets/screens/ (16:9), or \"placeholder\" for a neutral mock browser window",
+        "pattern": "^(placeholder|assets/screens/[A-Za-z0-9._/-]+\\.(png|jpg|jpeg|webp))$"
+      },
+      "region": {
+        "type": "object", "required": ["x", "y", "w", "h"], "additionalProperties": false,
+        "description": "the part to highlight, as fractions (0–1) of the screenshot",
+        "properties": {
+          "x": { "type": "number", "minimum": 0, "maximum": 1 },
+          "y": { "type": "number", "minimum": 0, "maximum": 1 },
+          "w": { "type": "number", "minimum": 0.02, "maximum": 1 },
+          "h": { "type": "number", "minimum": 0.02, "maximum": 1 }
+        }
+      },
+      "callouts": {
+        "type": "array", "minItems": 0, "maxItems": 3,
+        "items": {
+          "type": "object", "required": ["x", "y", "label"], "additionalProperties": false,
+          "description": "a pin at (x, y), fractions (0–1) of the screenshot",
+          "properties": {
+            "x": { "type": "number", "minimum": 0, "maximum": 1 },
+            "y": { "type": "number", "minimum": 0, "maximum": 1 },
+            "label": { "type": "string", "minLength": 1, "maxLength": 24 }
+          }
+        }
+      },
+      "steps": { "type": "array", "minItems": 0, "maxItems": 4, "items": { "type": "string", "minLength": 1, "maxLength": 30 } }
+    }
+  },
+  "reveals": {
+    "image": { "default": "spread", "range": false },
+    "callouts.*": { "default": "kw", "range": false },
+    "steps.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}
