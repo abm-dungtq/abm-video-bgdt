@@ -40,7 +40,7 @@ Linux, needs no machine-specific path, and never changes anything before the use
    - To repeat a single step: `--only link|hyperframes|vieneu|mcp`.
 
    `setup.mjs` does the following:
-   1. links the skill into the skill folders of Claude Code, Codex and `~/.agents/skills`;
+   1. links the skill into the skill folders of Claude Code, Codex, Gemini CLI, Antigravity CLI (`~/.gemini/antigravity/skills`) and `~/.agents/skills`;
    2. installs the full HyperFrames skill set (`npx -y hyperframes@0.7.99 skills`);
    3. clones VieNeu-TTS if needed and installs the variant for the hardware profile (plus torchaudio 2.8 and uroman for word alignment);
    4. writes the machine profile `~/.config/abm-video-bgdt/machine.json`;

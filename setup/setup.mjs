@@ -92,6 +92,9 @@ if (steps.includes("link")) {
   const targets = [join(H, ".agents/skills")];
   if (has("claude") || existsSync(join(H, ".claude"))) targets.push(join(H, ".claude/skills"));
   if (has("codex") || existsSync(join(H, ".codex"))) targets.push(join(H, ".codex/skills"));
+  // Gemini CLI reads ~/.gemini/skills; the Antigravity CLI (agy) reads ~/.gemini/antigravity/skills
+  if (has("gemini") || existsSync(join(H, ".gemini"))) targets.push(join(H, ".gemini/skills"));
+  if (has("agy") || existsSync(join(H, ".gemini/antigravity"))) targets.push(join(H, ".gemini/antigravity/skills"));
   for (const root of targets) {
     const dest = join(root, basename(SKILL));
     if (resolve(dest) === SKILL) { console.log(`  ${dest}: this is the skill itself`); continue; }
