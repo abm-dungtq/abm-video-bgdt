@@ -11,8 +11,9 @@
     "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu.",
     "strictTerms": true,
     "maxWer": 0.2,
+    "maxHeadDb": -40,
     "maxTailDb": -40,
-    "retakes": 4
+    "retakes": 10
   },
   "spokenOverrides": {},
   "timing": {

@@ -103,12 +103,15 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
 
 1. Run `abm-video run tts`. It speaks every pending sentence through the speech API in parallel batches, resuming
    after an interruption, then runs the **speech check**:
-   - clips are transcribed by `scripts/asr-check.py` (PhoWhisper) and checked for tail RMS > `voice.maxTailDb` (-40 dBFS);
+   - clips are transcribed by `scripts/asr-check.py` (PhoWhisper) and checked for a cut start (RMS of the first
+     20 ms > `voice.maxHeadDb`, -40 dBFS) and a cut end (last 40 ms > `voice.maxTailDb`, -40 dBFS); VieNeu Turbo cuts about 60 % of starts and 40 % of ends at random, losing the first
+     consonant or the last syllable, so only a retake fixes it;
    - edge rule: first/last non-wildcard expected word must match, with no extra heard words at the end;
-   - retakes: up to 4 rounds (`voice.retakes`), keeping the best take by tail ok first, then edge ok, then lower WER;
+   - retakes: up to 10 rounds (`voice.retakes`), regenerating only failing clips and keeping the best take by sound ok
+     (start and end) first, then edge ok, then lower WER; rerunning `tts` re-checks every clip;
    - foreign words without `spokenOverrides` match as wildcards;
-   - fail rule: a clip whose best take still has a cut tail, an edge error, or WER > 2 × `maxWer` is a FAIL (not warn)
-     unless its id is in `audio/qa-accepted.txt`. Prints script text, heard words, WER, tail dBFS, and edge status.
+   - fail rule: a clip whose best take is still cut at either end, has an edge error, or WER > 2 × `maxWer` is a FAIL (not warn)
+     unless its id is in `audio/qa-accepted.txt`. Prints script text, heard words, WER, start and end dBFS, and edge status.
    Verify: the last line reports `0 failed`. The clips it lists as "to listen to" go to the user with gate 3.
 2. Forced alignment (next step) aligns any audio to its text, so it cannot catch a garbled word; the speech check can.
 3. Run `R -From voice -To meta`. This runs:
@@ -264,7 +267,7 @@ Before approval, mechanical verifiers ensure gate prerequisites pass. Run `abm-v
 | `1` | (none; human listening only) |
 | `2` | `facts-check --urls` (sources defined, URLs return 200), `script-to-md --check`, `hints` (no consecutive repeated `scene_hint`, required DNA hints in content chapters) |
 | `2b` | `privacy-check` (if present in tools) |
-| `3` | `asr` (`audio/asr-report.json` present, no clip with WER > 2× `maxWer` unless in `audio/qa-accepted.txt`) |
+| `3` | `asr` (`audio/asr-report.json` present; no clip with WER > 2× `maxWer`, a cut start or end, or an edge error, unless in `audio/qa-accepted.txt`) |
 | `4` | `lint` (compiler lint exits 0), `asr` (same as gate 3) |
 
 ## Stage map of `run-pipeline.ps1`

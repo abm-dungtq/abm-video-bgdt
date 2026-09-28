@@ -112,8 +112,9 @@ export const STAGES = [
       };
       const { fail } = await verify(c.P, asr);
       if (fail.length) {
-        console.error(`✗ ${fail.length} clip(s) still say something else after two retakes (audio/asr-report.json). Fix the `
-          + `sentence or its spokenOverrides and rerun tts, or listen and, if it sounds right, add the id to audio/qa-accepted.txt`);
+        console.error(`✗ ${fail.length} clip(s) still cut at the start or end, or saying something else, after the retakes `
+          + `(audio/asr-report.json). Rerun tts for more retakes, fix the sentence or its spokenOverrides, or listen and, `
+          + `if it sounds right, add the id to audio/qa-accepted.txt`);
         return 1;
       }
       return 0;

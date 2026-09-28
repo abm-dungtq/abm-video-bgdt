@@ -14,7 +14,8 @@ import { fileURLToPath } from "node:url";
 import { hashes, isStale, load, markStage, save } from "../cli/state.mjs";
 import { gateStatus, GATES } from "../cli/gates.mjs";
 import { activeStages } from "../cli/stages.mjs";
-import { tailDb } from "../cli/tts.mjs";
+import { gateChecks } from "../cli/gate-checks.mjs";
+import { headDb, tailDb } from "../cli/tts.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2);
@@ -303,6 +304,35 @@ const wavSinePath = join(R, "test-tail-sine.wav");
 writeFileSync(wavSinePath, makeTestWav(pcmSine, 48000, true));
 const dbSine = tailDb(wavSinePath, 40);
 check("tailDb on a generated WAV that ends with a full-scale sine > -20", dbSine > -20, `dbSine=${dbSine}`);
+
+// headDb: the same sine-then-silence clip starts loud; a clip with 50 ms of lead silence starts quiet
+const dbHeadSine = headDb(wavSilencePath, 20);
+check("headDb on a generated WAV that starts with a full-scale sine > -20", dbHeadSine > -20, `dbHeadSine=${dbHeadSine}`);
+const pcmLead = Buffer.alloc(4800 * 2);
+for (let i = 2400; i < 4800; i++) pcmLead.writeInt16LE(Math.round(32767 * Math.sin(2 * Math.PI * 1000 * i / 48000)), i * 2);
+const wavLeadPath = join(R, "test-head-silence.wav");
+writeFileSync(wavLeadPath, makeTestWav(pcmLead, 48000, true));
+const dbHeadSilence = headDb(wavLeadPath, 20);
+check("headDb on a generated WAV that starts with silence < -60", dbHeadSilence < -60, `dbHeadSilence=${dbHeadSilence}`);
+
+// gate 3 asr verifier: a clip cut at the start or wrong at an edge word fails unless accepted after listening
+const Adir = join(dirname(R), "cli-gate-asr");
+rmSync(Adir, { recursive: true, force: true });
+mkdirSync(join(Adir, "audio"), { recursive: true });
+writeFileSync(join(Adir, "video.config.json"), JSON.stringify({ voice: { maxWer: 0.2 } }));
+const asrGate = (report) => {
+  writeFileSync(join(Adir, "audio/asr-report.json"), JSON.stringify(report));
+  return gateChecks(Adir, 3).find((x) => x.name === "asr").run();
+};
+const clean = { id: "s001-1", wer: 0, head_db: -80, tail_db: -70, edge: false };
+check("gate 3 asr passes clean clips", asrGate([clean]).ok, JSON.stringify(asrGate([clean])));
+let ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -15, tail_db: -70, edge: false }]);
+check("gate 3 asr fails a clip cut at the start", !ra.ok && ra.detail.includes("s002-1") && ra.detail.includes("start cut"), ra.detail);
+ra = asrGate([{ id: "s003-1", wer: 0.1, head_db: -80, tail_db: -70, edge: true }]);
+check("gate 3 asr fails a clip with a wrong edge word", !ra.ok && ra.detail.includes("edge"), ra.detail);
+writeFileSync(join(Adir, "audio/qa-accepted.txt"), "s002-1\n");
+ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -15, tail_db: -70, edge: false }]);
+check("gate 3 asr passes a start-cut clip listed in qa-accepted.txt", ra.ok, ra.detail);
 
 // ── (b) asr-check --self-test ───────────────────────────────────────────────
 const py = spawnSync("python", [join(S, "scripts/asr-check.py"), "--self-test"], { encoding: "utf8" });
