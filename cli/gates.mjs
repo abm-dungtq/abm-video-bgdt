@@ -34,7 +34,11 @@ export function gateOk(s, P, n) {
   const g = s.gates[n];
   if (!g || g.status !== "approved") return false;
   const now = hashes(P, known(n).artifacts);
-  return Object.entries(now).every(([k, v]) => g.artifacts?.[k] === v && (v !== null || s.legacy));
+  const cleaned = s.stages.clean?.status === "done";
+  // clean removes regenerable artifacts after delivery
+  return Object.entries(now).every(([k, v]) =>
+    (cleaned && v === null) || (g.artifacts?.[k] === v && (v !== null || s.legacy))
+  );
 }
 
 /** "approved", "approved (stale)", "requested", "rejected" or "pending" */

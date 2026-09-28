@@ -12,7 +12,7 @@ import { createServer } from "node:http";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashes, isStale, load, markStage, save } from "../cli/state.mjs";
-import { GATES } from "../cli/gates.mjs";
+import { gateStatus, GATES } from "../cli/gates.mjs";
 import { activeStages } from "../cli/stages.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,6 +61,27 @@ check("run tts after the script changed is refused", r.code === 1 && r.err.inclu
 
 r = cli("status");
 check("status shows the stale gate", r.out.includes("2  approved (stale)"), r.out + r.err);
+
+mkdirSync(join(R, ".probe"), { recursive: true });
+writeFileSync(join(R, ".probe/rate.wav"), "rate-v1");
+writeFileSync(join(R, ".probe/pronunciation.md"), "pron-v1");
+cli("gate", "1", "--approve", "ok");
+rmSync(join(R, ".probe/rate.wav"));
+r = cli("status");
+check("approved gate whose artifact file is deleted, clean not done: status approved (stale)",
+  gateStatus(load(R), R, "1") === "approved (stale)" && r.out.includes("1  approved (stale)"), r.out + r.err);
+
+const sc = load(R);
+markStage(sc, R, "clean");
+save(R, sc);
+r = cli("status");
+check("same but with clean marked done: status approved",
+  gateStatus(load(R), R, "1") === "approved" && r.out.includes("1  approved") && !r.out.includes("1  approved (stale)"), r.out + r.err);
+
+writeFileSync(join(R, ".probe/rate.wav"), "rate-v2-different");
+r = cli("status");
+check("clean done but the artifact changed: status approved (stale)",
+  gateStatus(load(R), R, "1") === "approved (stale)" && r.out.includes("1  approved (stale)"), r.out + r.err);
 
 r = cli("next");
 check("next prints one NEXT line", r.code === 0 && r.out.split("\n").filter((l) => l.startsWith("NEXT:")).length === 1, r.out + r.err);
