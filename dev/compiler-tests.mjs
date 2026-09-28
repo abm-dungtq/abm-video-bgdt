@@ -133,5 +133,13 @@ test("split: a side with one keyword phrase is a title without items", () => {
   eq([b.slots.left.title, b.slots.left.items, b.slots.right.title], ["Phần mềm văn phòng", [], "Lực lượng lao động mới"]);
 });
 
+test("quiz: options follow the question at once, the answer is cued where it is spoken", () => {
+  const b = BUILD["card-quiz"](shot(
+    [sent(1, "Nếu đã mua công cụ mà chưa thấy kết quả, bạn làm gì trước?"), sent(2, "Hãy dừng lại vài giây."),
+      sent(3, "Cách đúng là chọn một bài toán nhỏ."), sent(4, "Không phải mua thêm một công cụ mới.")],
+    [kw(3, "một bài toán nhỏ"), kw(4, "công cụ mới")]));
+  eq(b.reveals, { question: "sent:1.start", "options.0": "sent:1.end+0.4", "options.1": "sent:1.end+0.9", answer: "kw:một" });
+});
+
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

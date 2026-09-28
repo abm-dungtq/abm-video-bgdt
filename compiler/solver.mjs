@@ -331,8 +331,12 @@ export const BUILD = {
     const q = c.sents.find((s) => /\?$/.test(s.text.trim()) && [...s.text].length <= 90);
     const opts = items(c.ph.filter((p) => !q || p.sent !== q.k), 40, 2, 3);
     if (!q || !opts) return null;
+    // the options appear one by one right after the question, so the learner can think during the pause that follows;
+    // the narration usually names them only while giving the answer, which lights when it is spoken
     return { slots: { question: q.text, options: opts.map((x) => x.t), answer: 0 },
-      reveals: { question: `sent:${q.k}.start`, ...Object.fromEntries(opts.map((x, i) => [`options.${i}`, cueOf(x)])) } };
+      reveals: { question: `sent:${q.k}.start`,
+        ...Object.fromEntries(opts.map((x, i) => [`options.${i}`, `sent:${q.k}.end+${(0.4 + 0.5 * i).toFixed(1)}`])),
+        answer: cueOf(opts[0]) } };
   },
 };
 
