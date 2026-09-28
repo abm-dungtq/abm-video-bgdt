@@ -7,7 +7,8 @@
 //
 // Scratch project: <workspace>/.regress/template-ci ($ABM_REGRESS_DIR), created once with hyperframes init and reused.
 // The synthetic voice: 0.35 s per token w1 w2 …, every 4th token a keyword, sentences of 8 tokens, silent wav. Each shot
-// uses its preview.json slots and variant with window start → end and default reveals (the solver's path).
+// uses its preview.json slots and variant with window start → end and default reveals (the solver's path); an optional
+// preview.json "stress" object (slots at their length limits) adds one more frame per variant.
 // Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %; its errors count too —
 // the assemble stage runs the same check on a real lesson, so a template must be check-clean, not only lint-clean.
 // Last line: template-ci: <t> templates, <v> variants, <n> frames, <e> lint errors  (exit 1 when e > 0).
@@ -53,6 +54,8 @@ for (const id of ids) {
   for (const variant of schema.variants) {
     const durs = [...new Set(DURS.map((d) => Math.min(hi, Math.max(lo, d))))];
     for (const dur of durs) combos.push({ id, variant, dur, schema, preview, snap: dur === durs[Math.floor(durs.length / 2)] });
+    // preview.json "stress": slots at their length limits, checked once per variant (no snapshot)
+    if (preview.stress) combos.push({ id, variant, dur: durs[Math.floor(durs.length / 2)], schema, preview: { ...preview, slots: preview.stress }, snap: false });
   }
 }
 

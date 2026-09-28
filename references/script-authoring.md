@@ -17,10 +17,16 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 - **Keywords are the on-screen labels.** The solver turns each run of marked tokens (a *keyword phrase*) into a card,
   step or node label, so mark 2–4 word noun phrases that read well alone on screen: `*tự* *rút* *kinh* *nghiệm*`,
   `*máy* *chủ* *riêng*`. Do not mark pronouns (`bạn`, `nó`), bare counts (`hai`, `ba`) or lone verbs. A comma ends a
-  phrase: `*ghi* *nhớ,* *tìm* *lại,* *kỹ* *năng*` gives three labels. Numbers worth a big counter are spoken fully
-  (`sáu mươi tư nghìn`, `hơn hai mươi`). The script stage warns when more than half of the phrases are a single word.
+  phrase: `*ghi* *nhớ,* *tìm* *lại,* *kỹ* *năng*` gives three labels. Numbers worth a big counter are written
+  with digits (`64.000`, `hơn 20`); a year or a version is never a counter. The script stage warns when more than half of the phrases are a single word.
   Aim for 2–5 per frame.
 - A fact id must exist in `capture/extracted/visible-text.txt` as `[F-NN]`, or `--check` fails.
+- **Numbers are written with digits** (`10 hàm`, `bản 7.75`, `64.000 dòng`). They stay digits on screen and are
+  spoken in Vietnamese words automatically (`mười`, `bảy chấm bảy mươi lăm`). Write dates as words around digits
+  (`tháng 8 năm 2026`, not `8/2026`): `--check` fails on a token with digits it cannot read out.
+- **Foreign words** (product names, English terms) are read differently on each take. Give every product name a
+  Vietnamese reading in `spokenOverrides` (`"Lark": "Lác"`, `"AI": "ây ai"`), and list every other foreign word in
+  the gate 1 probe (`.probe/pronunciation.md`). `--check` fails on a foreign word that is in neither place.
 - `spokenOverrides` in the config maps a display token, without punctuation, to what the voice should say. Keep
   display text correct (for example `SOUL.md`) and fix only the spoken side.
 

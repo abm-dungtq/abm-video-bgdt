@@ -10,7 +10,8 @@
 //   Sentence with *keyword* tokens. {F-01,F-07}  sentence; *x* marks a keyword, {..} cites facts
 //
 // spoken == display for every token, except entries in video.config.json `spokenOverrides`
-// (display token without punctuation → spoken text, from the pronunciation probe).
+// (display token without punctuation → spoken text, from the pronunciation probe) and numbers: a numeric token
+// stays digits on screen and is spoken in Vietnamese words (10 → mười, 7.75 → bảy chấm bảy mươi lăm).
 // Title, message, voice and budget come from video.config.json; the speech rate from
 // .probe/rate.json (pilot calibration). Existing meta (e.g. `approved`) in script.json is preserved.
 //
@@ -18,6 +19,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { cfg, ROLES } from "./lib/config.mjs";
+import { readNumeric } from "./lib/spoken.mjs";
 
 const SPOKEN_OVERRIDES = cfg.spokenOverrides ?? {};
 
@@ -60,7 +62,8 @@ for (const [i, raw] of lines.entries()) {
       const keyword = /\*[^*]+\*/.test(w);
       const display = w.replace(/\*/g, "");
       const bare = display.replace(/^[.,!?;:…"“”()]+|[.,!?;:…"“”()]+$/g, "");
-      const tok = { display, spoken: SPOKEN_OVERRIDES[bare] ? display.replace(bare, SPOKEN_OVERRIDES[bare]) : display };
+      const said = SPOKEN_OVERRIDES[bare] ?? readNumeric(bare);
+      const tok = { display, spoken: said ? display.replace(bare, said) : display };
       if (keyword) tok.keyword = true;
       return tok;
     });

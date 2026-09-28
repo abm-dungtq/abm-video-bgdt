@@ -83,19 +83,27 @@ export function readNumber(words) {
   return total + hundreds + tens + (unit ?? 0);
 }
 
-/** Spoken numbers (words or digits) with the cue of their first word; "một"/"năm" alone are an article / "year". */
-function numbers(ctx) {
+/**
+ * Numbers worth a counter (words or digits) with the cue of their first word; "một"/"năm" alone are an article /
+ * "year". Not counters: decimals, versions and dates written with digits (7.75, 8/2026) and years (1900–2100 after
+ * "năm"/"tháng", or a spoken run with "năm" inside: "tháng tám năm hai nghìn…").
+ */
+export function numbers(ctx) {
   const out = [];
   const w = ctx.tokens.map((t) => t.norm);
+  const bare = (i) => ctx.tokens[i].display.replace(/^[.,!?;:…"“”()]+|[.,!?;:…"“”()]+$/g, "");
   for (let i = 0; i < w.length; i++) {
     let value = null, j = i + 1;
-    const digits = w[i].replace(/[.,]/g, "");
-    if (/^\d+$/.test(digits)) value = Number(digits);
+    const b = bare(i);
+    if (/^\d+$/.test(b) || /^\d{1,3}(\.\d{3})+$/.test(b)) value = Number(b.replace(/\./g, ""));
+    else if (/\d/.test(b)) continue;
     else if (w[i] in DIGIT || w[i] === "mười") {
       while (j < w.length && NUMWORD(w[j]) && ctx.tokens[j].sent === ctx.tokens[i].sent) j++;
       const run = w.slice(i, j);
+      if (run.slice(0, -1).includes("năm") && run.length > 2) { i = j - 1; continue; }
       value = run.length === 1 && ["một", "mốt", "năm", "không"].includes(run[0]) ? null : readNumber(run);
     }
+    if (value !== null && value >= 1900 && value <= 2100 && ["năm", "tháng"].includes(w[i - 1])) { i = j - 1; continue; }
     if (value === null || value < 2) continue;
     const suffix = w[i - 1] === "hơn" ? "+" : w[j] === "phần" && w[j + 1] === "trăm" ? "%" : "";
     const spoken = !/^\d/.test(w[i]);
@@ -230,10 +238,19 @@ const BUILD = {
       reveals: { value: n1.cue, ...(n2 && cmpLabel ? { compare: n2.cue } : {}) } };
   },
   typewriter: (c) => {
-    const s = [...c.sents].sort((x, y) => y.text.length - x.text.length).find((x) => [...x.text].length <= 110);
-    if (!s) return null;
-    const heading = c.first ? fit(c.frame.title, 30) : null;
-    return { slots: { text: s.text, ...(heading ? { heading } : {}) }, reveals: { text: `sent:${s.k}.start..sent:${s.k}.end` } };
+    // the narration is already on screen in the karaoke band: type the keyword phrases; a whole sentence (the
+    // shortest) only when the shot has fewer than two phrases and nothing else fits
+    const ph = c.ph.slice(0, 4);
+    if (ph.length < 2) {
+      const s = [...c.sents].sort((x, y) => x.text.length - y.text.length).find((x) => [...x.text].length <= 110);
+      return s ? { slots: { text: s.text }, reveals: { text: `sent:${s.k}.start..sent:${s.k}.end` } } : null;
+    }
+    const join = () => ph.map((p) => p.text).join(" · ");
+    while ([...join()].length > 80 && ph.length > 2) ph.pop();
+    const text = join();
+    if ([...text].length > 80) return null;
+    const heading = fit(c.frame.title, 30);
+    return { slots: { text, ...(heading ? { heading } : {}) }, reveals: { text: `${ph[0].cue}..${ph.at(-1).cue}+0.6` } };
   },
   zoom: (c) => {
     const [a, b, ...rest] = c.ph;

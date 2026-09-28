@@ -101,10 +101,16 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
 
 ## Stage 3: Voice and alignment (about 1–2 h, mostly TTS)
 
-1. Run `node tools/tts-manifest.mjs --pending`. It prints `{voice, temperature, sample_rate, jobs:[{id,text,output_path}]}`.
-2. For each job, call MCP `text_to_speech` with exactly those `voice`, `temperature`, `sample_rate`, `text` and
-   `output_path` values. Work in batches of about 20. `--pending` resumes after an interruption.
-   Verify: `node tools/tts-manifest.mjs --pending` reports `pending=0/N`.
+1. Run `abm-video run tts`. It speaks every pending sentence through the speech API in parallel batches, resuming
+   after an interruption, then runs the **speech check**:
+   - every clip is transcribed by `scripts/asr-check.py` (PhoWhisper, downloaded once, about 1 GB) and compared
+     with its text;
+   - a clip whose word error rate is above `voice.maxWer` (0.2) is spoken again, twice at most, keeping the best take;
+   - foreign words without a `spokenOverrides` reading count as matched, since the voice may say them its own way.
+   The stage fails when a clip is still above 2 × `maxWer`. It prints the script text and what was heard. Fix the
+   sentence or its `spokenOverrides` reading, or listen and add the id to `audio/qa-accepted.txt`.
+   Verify: the last line reports `0 failed`. The clips it lists as "to listen to" go to the user with gate 3.
+2. Forced alignment (next step) aligns any audio to its text, so it cannot catch a garbled word; the speech check can.
 3. Run `R -From voice -To meta`. This runs:
    - `build-voice.py --qa`, which flags clips far from the expected length;
    - trim and per-frame concat into `assets/voice/NN.wav`;

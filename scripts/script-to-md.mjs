@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cfg } from "./lib/config.mjs";
+import { isVietnamese } from "./lib/spoken.mjs";
 
 const SCENE_TYPES = new Set(cfg.scenes.types);
 const TRANSITIONS = new Set(["cut", "crossfade", "blur-crossfade", "push-slide", "zoom-through", "squeeze"]);
@@ -52,6 +53,13 @@ const factText = existsSync(join(root, "capture/extracted/visible-text.txt"))
 const factIds = new Set(factText.match(/\[F-\d+\]/g)?.map((x) => x.slice(1, -1)) ?? []);
 let totalSyl = 0, totalEst = 0;
 const seenIds = new Set();
+// foreign words the voice reads unpredictably: each must be tried at gate 1 (.probe/pronunciation.md) or have a
+// spokenOverrides reading; everyday loanwords the voice reads well are exempt (on when voice.strictTerms is set, as in
+// every project made from 0.6.0 on)
+const LOANWORDS = new Set(["video", "email", "file", "web", "website", "online", "internet", "app", "laptop", "blog", "chat", "ok"]);
+const probed = existsSync(join(root, ".probe/pronunciation.md")) ? readFileSync(join(root, ".probe/pronunciation.md"), "utf8").toLowerCase() : "";
+const unprobed = new Set();
+const bareOf = (d) => d.replace(/^[.,!?;:…"“”()]+|[.,!?;:…"“”()]+$/g, "");
 frames.forEach((f, i) => {
   if (f.id !== i + 1) errors.push(`frame ids must be 1..N in order (got ${f.id} at position ${i + 1})`);
   if (!SCENE_TYPES.has(f.scene_hint)) errors.push(`frame ${f.id}: scene_hint "${f.scene_hint}" not in catalog`);
@@ -63,11 +71,21 @@ frames.forEach((f, i) => {
     const n = syllables(s);
     totalSyl += n;
     if (n > MAX_SENTENCE_SYL) errors.push(`${s.id}: ${n} syllables > ${MAX_SENTENCE_SYL}`);
-    for (const t of s.tokens) if (!t.display || !t.spoken) errors.push(`${s.id}: empty token`);
+    for (const t of s.tokens) {
+      if (!t.display || !t.spoken) errors.push(`${s.id}: empty token`);
+      const bare = bareOf(t.display);
+      if (t.spoken !== t.display) continue;
+      if (/\d/.test(bare)) errors.push(`${s.id}: "${bare}" has no spoken form — write it as words the voice can read (tháng 8 năm 2026) or add it to spokenOverrides`);
+      else if (!isVietnamese(bare) && !LOANWORDS.has(bare.toLowerCase()) && !probed.includes(bare.toLowerCase())) unprobed.add(bare);
+    }
     for (const fid of s.facts ?? []) if (!factIds.has(fid)) errors.push(`${s.id}: fact ${fid} not in visible-text.txt`);
   }
   totalEst += estimate(f);
 });
+if (unprobed.size && cfg.voice?.strictTerms) {
+  errors.push(`foreign words not tried at gate 1: ${[...unprobed].join(", ")} — add them to the probe (.probe/pronunciation.md, `
+    + `then gate 1 again) or give each a Vietnamese reading in video.config.json spokenOverrides`);
+}
 if (frames.length < FRAMES_RANGE[0] || frames.length > FRAMES_RANGE[1])
   errors.push(`frames=${frames.length} outside ${FRAMES_RANGE.join("–")}`);
 if (totalEst < TARGET_S[0] || totalEst > TARGET_S[1])

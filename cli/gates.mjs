@@ -11,7 +11,8 @@ import { hashes, load, save } from "./state.mjs";
 
 export const GATES = {
   1: { artifacts: [".probe/rate.wav", ".probe/pronunciation.md"], extra: [".probe/terms-raw.wav", ".probe/terms-candidates.wav"],
-    question: "Nghe hai file: phát âm thuật ngữ và nhịp đọc. Có đạt không? Nếu nhanh/chậm, nói rõ." },
+    question: "Nghe các file phát âm thuật ngữ (terms-raw, terms-candidates) và nhịp đọc (rate). Từ nào đọc sai, nói cách "
+      + "đọc đúng; nhịp nhanh/chậm thì nói rõ. Agent không nghe được âm thanh: chỉ câu trả lời của bạn quyết định." },
   2: { artifacts: ["SCRIPT-REVIEW.md", "script.json"],
     question: "Đọc SCRIPT-REVIEW.md. Duyệt kịch bản hay liệt kê chỗ cần sửa?" },
   "2b": { artifacts: ["capture/screens/INDEX.md"],

@@ -1,6 +1,25 @@
 {
   "template": "kinetic",
   "variant": "center-punch",
-  "window": ["start", "end"],
-  "slots": { "words": ["Học", "một lần", "dùng mãi"], "sub": "Agent nhớ kỹ năng qua từng lần làm" }
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "words": [
+      "Học",
+      "một lần",
+      "dùng mãi"
+    ],
+    "sub": "Agent nhớ kỹ năng qua từng lần làm"
+  },
+  "stress": {
+    "words": [
+      "Cơ sở dữ liệu mới",
+      "Thông tin dự án",
+      "Quy trình tự động",
+      "Hàm công thức mới"
+    ],
+    "sub": "Sức mạnh của cơ sở dữ liệu không cần lập trình"
+  }
 }

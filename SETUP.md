@@ -282,6 +282,15 @@ AGENTS.md), `GEMINI.md` (Gemini CLI) và `.cursor/rules/abm-video.mdc` (Cursor).
 
 MCP server `vieneu-tts` vẫn dùng được để thử giọng hay nhân bản giọng, nhưng không bắt buộc.
 
+Giai đoạn `tts` nhận dạng lại từng câu vừa đọc bằng PhoWhisper (`scripts/asr-check.py`, chạy trong môi trường
+VieNeu-TTS) để bắt câu đọc sai hoặc bỏ chữ, rồi đọc lại câu đó. Lần chạy đầu tải mô hình khoảng 1 GB vào cache
+Hugging Face; đổi mô hình bằng biến `ABM_ASR_MODEL`.
+
+**Điều phối qua Orca.** Một agent (ví dụ Claude) làm coordinator, giao cả dự án cho một CLI khác (agy, codex…)
+bằng `orca orchestration worker-start --agent <id> --worktree current`. Mọi câu hỏi ở cổng duyệt đi qua
+`orca orchestration ask`/`reply`. Thư mục không phải git không thêm được bằng `orca repo add`; khi đó dùng
+`--worktree current` (workspace của terminal coordinator), không `git init` chỉ để đăng ký.
+
 ## 10. Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân thường gặp | Cách sửa |

@@ -45,10 +45,16 @@ export function render(ctx) {
     // a staircase of words on an axis tilted −7°, each sliding in along it; a gold rule is drawn down the steps
     const L = Math.max(...words.map((x) => [...x].length));
     const n = words.length;
-    const fs = Math.min(L <= 8 ? 132 : L <= 12 ? 112 : 92, n >= 4 ? 100 : 140);
-    const lh = Math.round(fs * 1.12);
-    const W = 1440, H = lh * n;
+    // a row tilted by 7° rises by width × sin 7° across its length; rows are spaced by that rise as well, so their
+    // upright bounding boxes (what the layout check measures) never overlap; long words shrink until the stack fits
+    const TILT = Math.sin((7 * Math.PI) / 180);
+    const room = slots.sub ? 600 : 700;
+    const fs = Math.floor(Math.min(L <= 8 ? 132 : L <= 12 ? 112 : 92, n >= 4 ? 100 : 140, room / (n * (1.12 + 0.6 * L * TILT))));
+    const rh = Math.round(fs * 1.12);
+    const W = 1440;
     const ww = Math.round(L * fs * 0.6);
+    const lh = Math.round(rh + ww * TILT);
+    const H = lh * n;
     const step = n > 1 ? Math.max(0, Math.min(360, (W - ww) / (n - 1))) : 0;
     const top = Math.round((slots.sub ? 740 : 820) / 2 - H / 2);
     // the rule steps down from each row's tick to the next one: down the gap, then across to the next word
@@ -62,11 +68,11 @@ export function render(ctx) {
 #${S}-rule { position: absolute; left: -44px; top: 0; width: ${Math.round((n - 1) * step) + 20}px; height: ${H}px; overflow: visible; }
 #${S}-rule path { fill: none; stroke: var(--gold); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; }
 .${S}-tick { position: absolute; left: -56px; width: 24px; height: 24px; border-radius: 50%; background: var(--cyan); }
-.${S}-w { position: absolute; left: 0; height: ${lh}px; font-size: ${fs}px; line-height: ${lh}px; font-weight: 800; letter-spacing: -0.01em;
+.${S}-w { position: absolute; left: 0; height: ${rh}px; font-size: ${fs}px; line-height: ${rh}px; font-weight: 800; letter-spacing: -0.01em;
   white-space: nowrap; color: var(--ink); }
 .${S}-w:last-of-type { color: var(--gold); }
 #${S}-sub { position: absolute; right: 90px; top: 680px; width: 900px; text-align: right; font-size: 40px; font-weight: 600; line-height: 1.3; color: var(--muted); }
-${words.map((_, i) => `#${S}-w${i + 1} { top: ${i * lh}px; margin-left: ${Math.round(i * step)}px; }
+${words.map((_, i) => `#${S}-w${i + 1} { top: ${Math.round(i * lh + (lh - rh) / 2)}px; margin-left: ${Math.round(i * step)}px; }
 #${S}-t${i + 1} { top: ${Math.round(i * lh + lh / 2 - 12)}px; margin-left: ${Math.round(i * step)}px; }`).join("\n")}`;
     const html = `<div id="${S}-root">
   <div id="${S}-drift"><div id="${S}-axis">

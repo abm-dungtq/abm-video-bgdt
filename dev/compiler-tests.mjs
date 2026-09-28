@@ -9,6 +9,8 @@ import { validate } from "../compiler/schema.mjs";
 import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
+import { numbers } from "../compiler/solver.mjs";
+import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
 const SRC = resolvePath(argv.includes("--source") ? argv[argv.indexOf("--source") + 1]
@@ -85,6 +87,21 @@ test("emit type shows each character with autoAlpha (the initial state hides vis
   if (!out.includes('gsap.set(".f01-s1-x", {"autoAlpha":0});')) throw new Error("initial state is not autoAlpha 0");
   if (!out.includes("tl.set(c, { autoAlpha: 1 }")) throw new Error("characters are revealed with opacity only");
 });
+
+// spoken forms and the solver's counters
+test("digits are spoken in Vietnamese", () => eq(["10", "2026", "64.000", "7.75", "1001", "21"].map(readNumeric),
+  ["mười", "hai nghìn không trăm hai mươi sáu", "sáu mươi tư nghìn", "bảy chấm bảy mươi lăm", "một nghìn không trăm linh một", "hai mươi mốt"]));
+test("foreign words and acronyms are not Vietnamese", () => eq(["Lark", "Base", "AI", "Kanban", "chương", "nghiêng", "Thanh", "khuya"].map(isVietnamese),
+  [false, false, false, false, true, true, true, true]));
+const numCtx = (text) => {
+  const toks = text.split(" ");
+  return { tokens: toks.map((d) => ({ display: d, norm: d.toLowerCase().replace(/[.,!?;:…"“”()'‘’]/g, ""), sent: 1 })),
+    times: toks.map((_, i) => ({ start: i * 0.3 })) };
+};
+test("counters: a version, a date and a year are not counters", () => eq(
+  numbers(numCtx("Bản 7.75 tháng 8/2026 năm 2026 có 10 hàm và 64.000 dòng")).map((x) => x.value), [10, 64000]));
+test("counters: a spoken year is not a counter", () => eq(
+  numbers(numCtx("tháng tám năm hai nghìn không trăm hai mươi sáu có hơn hai mươi nền tảng")).map((x) => `${x.value}${x.suffix}`), ["20+"]));
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

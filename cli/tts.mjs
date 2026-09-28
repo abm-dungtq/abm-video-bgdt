@@ -5,9 +5,11 @@
 //
 // Same request body as mcp/vieneu-tts/server.py. The API answers raw s16le mono PCM, written here as WAV.
 // Plausibility QA per clip, same rule as build-voice.py --qa: 0.6× ≤ duration / (syllables / rate) ≤ 1.6×.
+// Speech check (verify): every clip is transcribed (scripts/asr-check.py); a clip whose word error rate is above
+// voice.maxWer is spoken again, twice at most, keeping its best take.
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export const API = (process.env.VIENEU_API_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
@@ -58,6 +60,48 @@ const syllables = (text) => text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test
 export async function one(P, text, out) {
   const cfg = JSON.parse(readFileSync(join(P, "video.config.json"), "utf8"));
   return speak(text, join(P, out), cfg.voice);
+}
+
+/**
+ * Speech check of every clip. `asr(ids)` transcribes those clips and returns [{ id, wer, expected, heard }].
+ * Returns the clips still wrong after the retakes: `warn` (maxWer < WER ≤ 2 × maxWer) and `fail` (worse, or missing);
+ * ids listed in audio/qa-accepted.txt are never failed. Writes audio/asr-report.json.
+ */
+export async function verify(P, asr, rounds = 2) {
+  const cfg = JSON.parse(readFileSync(join(P, "video.config.json"), "utf8"));
+  const maxWer = cfg.voice.maxWer ?? 0.2;
+  const jobs = new Map(JSON.parse(readFileSync(join(P, "audio/tts-jobs.json"), "utf8")).map((j) => [j.id, j]));
+  const good = (r) => typeof r.wer === "number" && r.wer <= maxWer;
+  const best = new Map(asr([...jobs.keys()]).map((r) => [r.id, r]));
+  for (let round = 1; round <= rounds; round++) {
+    const bad = [...best.values()].filter((r) => !good(r) && existsSync(jobs.get(r.id).output_path));
+    if (!bad.length) break;
+    console.log(`tts: speech check, retake ${round}: ${bad.length} clip(s)`);
+    for (const r of bad) {
+      const j = jobs.get(r.id);
+      copyFileSync(j.output_path, `${j.output_path}.best`);
+      await speak(j.text, j.output_path, cfg.voice);
+    }
+    for (const r of asr(bad.map((x) => x.id))) {
+      const j = jobs.get(r.id);
+      if (typeof r.wer === "number" && r.wer < best.get(r.id).wer) best.set(r.id, r);
+      else copyFileSync(`${j.output_path}.best`, j.output_path);
+      rmSync(`${j.output_path}.best`, { force: true });
+    }
+  }
+  const list = [...best.values()];
+  writeFileSync(join(P, "audio/asr-report.json"), JSON.stringify(list, null, 1));
+  const accepted = existsSync(join(P, "audio/qa-accepted.txt")) ? readFileSync(join(P, "audio/qa-accepted.txt"), "utf8") : "";
+  const warn = list.filter((r) => !good(r) && r.wer <= 2 * maxWer);
+  const fail = list.filter((r) => !good(r) && !(r.wer <= 2 * maxWer) && !accepted.includes(r.id));
+  for (const r of [...warn, ...fail]) {
+    console.log(`${fail.includes(r) ? "✗" : "⚠"} ${r.id}: WER ${r.wer ?? "?"}${r.missing ? ` (missing ${r.missing})` : ""}`);
+    if (r.heard) console.log(`    script: ${r.expected}\n    heard:  ${r.heard}`);
+  }
+  const scored = list.filter((r) => typeof r.wer === "number");
+  const mean = scored.reduce((s, r) => s + r.wer, 0) / Math.max(1, scored.length);
+  console.log(`tts: speech check ${list.length} clip(s), mean WER ${mean.toFixed(3)}, ${warn.length} to listen to, ${fail.length} failed`);
+  return { warn, fail };
 }
 
 /** Every pending job; returns { done, total, flagged }. */

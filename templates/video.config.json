@@ -8,7 +8,9 @@
     "id": "Thanh Bình",
     "temperature": 0.55,
     "sampleRate": 48000,
-    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu."
+    "direction": "Ấm áp, rõ ràng, chậm rãi như một người hướng dẫn thân thiện cho người mới bắt đầu.",
+    "strictTerms": true,
+    "maxWer": 0.2
   },
   "spokenOverrides": {},
   "timing": {

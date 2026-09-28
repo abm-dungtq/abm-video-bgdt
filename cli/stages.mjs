@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { MCP, SKILL_ROOT } from "./paths.mjs";
-import { apiUp, batch } from "./tts.mjs";
+import { apiUp, batch, verify } from "./tts.mjs";
 
 const q = (a) => (/[\s"&|<>^]/.test(a) ? `"${String(a).replace(/"/g, '\\"')}"` : String(a));
 
@@ -51,9 +51,13 @@ export const untouched = (P, rel, tmpl) => sha(join(P, rel)) === sha(join(SKILL_
 
 function probeHelp() {
   console.log(`probe: record the two probe clips, then rerun this stage.
-  1. Pronunciation: list every English/technical term of the topic, comma-separated, and run
+  1. Pronunciation: list every English/technical term and product name of the topic, comma-separated, and run
        abm-video tts --text "<term1>, <term2>, …" --out .probe/terms-raw.wav
-     Write each decision to .probe/pronunciation.md; put overrides in video.config.json "spokenOverrides".
+     The voice reads foreign words differently each time, so give every product name a Vietnamese reading in
+     video.config.json "spokenOverrides" (e.g. "Lark": "Lác", "Base": "Bây", "AI": "ây ai") and probe those readings
+     as well: abm-video tts --text "<reading1>, <reading2>, …" --out .probe/terms-candidates.wav
+     List every term in .probe/pronunciation.md with its reading and the status "chưa nghe": you cannot hear the
+     clips, so only the user's answer at gate 1 decides. Numbers need nothing: digits are read out automatically.
   2. Rate: pick a 45–55-syllable sentence typical of the lesson and run
        abm-video tts --text "<sentence>" --out .probe/rate.wav
        node tools/measure-rate.mjs .probe/rate.wav "<same sentence>"`);
@@ -96,7 +100,23 @@ export const STAGES = [
       // the storyboard outline is written once, right after the script is approved (never again later)
       if (!existsSync(join(c.P, "STORYBOARD.md")) && sh(c.P, [process.execPath, tool(c, "script-to-md.mjs"), "script.json"])) return 1;
       const r = await batch(c.P, c.SC, Number(c.opt("--concurrency", 4)));
-      return r.done === r.total ? 0 : 1;
+      if (r.done !== r.total) return 1;
+      // forced alignment later aligns any audio to its text, so a garbled or skipped word would reach the karaoke:
+      // transcribe every clip and retake the ones that say something else
+      const venv = c.venv();
+      const out = join(c.P, "audio/asr-round.json");
+      const asr = (ids) => {
+        if (sh(c.P, ["uv", "run", "--directory", venv, "python", tool(c, "asr-check.py"), "--jobs", `${c.P}/audio/tts-jobs.json`,
+          "--ids", ids.join(","), "--out", out])) throw new Error("asr-check.py failed");
+        return JSON.parse(readFileSync(out, "utf8"));
+      };
+      const { fail } = await verify(c.P, asr);
+      if (fail.length) {
+        console.error(`✗ ${fail.length} clip(s) still say something else after two retakes (audio/asr-report.json). Fix the `
+          + `sentence or its spokenOverrides and rerun tts, or listen and, if it sounds right, add the id to audio/qa-accepted.txt`);
+        return 1;
+      }
+      return 0;
     } },
   { name: "voice", needs: { stages: ["tts"], gates: [] }, inputs: ["script.json"],
     run: (c) => {
