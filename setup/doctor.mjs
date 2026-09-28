@@ -3,13 +3,15 @@
 //
 //   node setup/doctor.mjs           human-readable report
 //   node setup/doctor.mjs --json    machine-readable report (for agents)
+//   node setup/doctor.mjs --fix     when the HeyGen faceless-explainer scripts are missing or broken, install them
+//                                   (hyperframes skills update faceless-explainer, at the pinned CLI) and check again
 //
 // Exit 1 when a required item fails (✗). Warnings (⚠) do not fail: the speech API may simply not be running yet.
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { findSkillsDir, findVieneuDir, PROFILE_PATH, readProfile } from "../scripts/lib/machine.mjs";
 import { detect } from "./hardware.mjs";
 import { registerMcp } from "./register-mcp.mjs";
@@ -41,6 +43,37 @@ const fe = existsSync(join(skillsDir, "faceless-explainer/scripts/lib/storyboard
 const hfCount = existsSync(skillsDir) ? readdirSync(skillsDir).filter((d) => existsSync(join(skillsDir, d, "SKILL.md"))).length : 0;
 add("hyperframes skills", fe ? "ok" : "fail", fe ? `${skillsDir} (${hfCount} skills)` : "faceless-explainer not found",
   "npx -y hyperframes@0.7.99 skills   (or set HF_SKILLS_DIR)");
+
+// upstream scripts the pipeline calls (kept as a dependency, never vendored): import-probe each one
+const PIN = JSON.parse(readFileSync(join(HERE, "../templates/video.config.json"), "utf8")).cli.pin;
+const FIX = `node ${resolve(HERE, "doctor.mjs").replace(/\\/g, "/")} --fix`;
+const feDir = join(skillsDir, "faceless-explainer/scripts");
+async function probeUpstream() {
+  const out = [];
+  const sb = join(feDir, "lib/storyboard.mjs");
+  let ok = false;
+  try { ok = existsSync(sb) && typeof (await import(pathToFileURL(sb).href)).parseStoryboard === "function"; } catch {}
+  out.push(["upstream storyboard", ok, ok ? "parseStoryboard exported" : `${sb} missing or has no parseStoryboard`]);
+  for (const [name, file, want] of [["upstream assemble", "assemble-index.mjs"], ["upstream transitions", "transitions.mjs"],
+    ["upstream audio", "audio.mjs", "sync-durations"]]) {
+    const f = join(feDir, file);
+    const r = existsSync(f) ? spawnSync(process.execPath, [f, "--help"], { encoding: "utf8" }) : null;
+    const text = r ? `${r.stdout}${r.stderr}` : "";
+    const good = !!r && !/Cannot find module|ERR_MODULE_NOT_FOUND/.test(text) && (!want || text.includes(want) || readFileSync(f, "utf8").includes(want));
+    out.push([name, good, good ? file : `${f} ${r ? "does not load" : "missing"}${want && r ? ` or lacks ${want}` : ""}`]);
+  }
+  return out;
+}
+let upstream = await probeUpstream();
+if (process.argv.includes("--fix") && upstream.some(([, ok]) => !ok)) {
+  // on 0.7.99 `skills update` refreshes every installed skill, so it only runs on --fix after a failed probe
+  console.log(`fixing: npx -y hyperframes@${PIN} skills update faceless-explainer`);
+  spawnSync(`npx -y hyperframes@${PIN} skills update faceless-explainer`, { stdio: "inherit", shell: true });
+  upstream = await probeUpstream();
+  console.log("upstream API may have moved: run node tools/fixture-check.mjs in a project before relying on it");
+}
+for (const [name, ok, detail] of upstream) add(name, ok ? "ok" : "fail", detail, FIX);
+const upstreamOk = upstream.every(([, ok]) => ok);
 
 // ── VieNeu-TTS ────────────────────────────────────────────────────────────────
 let vieneu = null;
@@ -85,7 +118,7 @@ for (const line of registerMcp({ dry: true })) {
 // ── report ────────────────────────────────────────────────────────────────────
 const failed = checks.filter((c) => c.level === "fail").length;
 if (process.argv.includes("--json")) {
-  console.log(JSON.stringify({ ok: failed === 0, hardware: hw, checks }, null, 2));
+  console.log(JSON.stringify({ ok: failed === 0, upstreamOk, hardware: hw, checks }, null, 2));
 } else {
   const icon = { ok: "✓", warn: "⚠", fail: "✗" };
   for (const c of checks) console.log(`${icon[c.level]} ${c.name.padEnd(20)} ${c.detail}${c.level !== "ok" && c.fix ? `\n    → ${c.fix}` : ""}`);
