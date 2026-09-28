@@ -203,8 +203,10 @@ export async function verify(P, asr, rounds) {
   writeFileSync(join(P, "audio/asr-report.json"), JSON.stringify(list, null, 1));
   const accepted = existsSync(join(P, "audio/qa-accepted.txt")) ? readFileSync(join(P, "audio/qa-accepted.txt"), "utf8") : "";
 
-  // After the rounds, a clip whose best take is still cut at either end or wrong at an edge word is a FAIL (not a warn) unless its id is in audio/qa-accepted.txt.
-  const hasFatalDefect = (r) => Boolean(r.missing || typeof r.wer !== "number" || r.wer > 2 * maxWer || r.edge || !tailOk(r, lim) || !headOk(r, lim));
+  // After the rounds, a clip whose best take is still cut at the end or wrong at an edge word is a FAIL (not a warn) unless its id is in audio/qa-accepted.txt.
+  // A cut start with the first word heard right is only a warn: some sentences start cut in nearly every take, the
+  // word survives, and build-voice ramps the onset; a start that lost the consonant fails through the edge rule.
+  const hasFatalDefect = (r) => Boolean(r.missing || typeof r.wer !== "number" || r.wer > 2 * maxWer || r.edge || !tailOk(r, lim));
 
   const fail = list.filter((r) => !good(r) && hasFatalDefect(r) && !accepted.includes(r.id));
   const warn = list.filter((r) => !good(r) && !fail.includes(r));

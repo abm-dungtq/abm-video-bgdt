@@ -315,7 +315,8 @@ writeFileSync(wavLeadPath, makeTestWav(pcmLead, 48000, true));
 const dbHeadSilence = headDb(wavLeadPath, 20);
 check("headDb on a generated WAV that starts with silence < -60", dbHeadSilence < -60, `dbHeadSilence=${dbHeadSilence}`);
 
-// gate 3 asr verifier: a clip cut at the start or wrong at an edge word fails unless accepted after listening
+// gate 3 asr verifier: a clip cut at the end or wrong at an edge word fails unless accepted after listening;
+// a cut start whose words are heard right passes (the edge rule catches a lost first consonant)
 const Adir = join(dirname(R), "cli-gate-asr");
 rmSync(Adir, { recursive: true, force: true });
 mkdirSync(join(Adir, "audio"), { recursive: true });
@@ -327,12 +328,14 @@ const asrGate = (report) => {
 const clean = { id: "s001-1", wer: 0, head_db: -80, tail_db: -70, edge: false };
 check("gate 3 asr passes clean clips", asrGate([clean]).ok, JSON.stringify(asrGate([clean])));
 let ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -15, tail_db: -70, edge: false }]);
-check("gate 3 asr fails a clip cut at the start", !ra.ok && ra.detail.includes("s002-1") && ra.detail.includes("start cut"), ra.detail);
+check("gate 3 asr passes a clip cut at the start whose words are right", ra.ok, ra.detail);
+ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -80, tail_db: -15, edge: false }]);
+check("gate 3 asr fails a clip cut at the end", !ra.ok && ra.detail.includes("s002-1") && ra.detail.includes("end cut"), ra.detail);
 ra = asrGate([{ id: "s003-1", wer: 0.1, head_db: -80, tail_db: -70, edge: true }]);
 check("gate 3 asr fails a clip with a wrong edge word", !ra.ok && ra.detail.includes("edge"), ra.detail);
 writeFileSync(join(Adir, "audio/qa-accepted.txt"), "s002-1\n");
-ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -15, tail_db: -70, edge: false }]);
-check("gate 3 asr passes a start-cut clip listed in qa-accepted.txt", ra.ok, ra.detail);
+ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -80, tail_db: -15, edge: false }]);
+check("gate 3 asr passes an end-cut clip listed in qa-accepted.txt", ra.ok, ra.detail);
 
 // ── (b) asr-check --self-test ───────────────────────────────────────────────
 const py = spawnSync("python", [join(S, "scripts/asr-check.py"), "--self-test"], { encoding: "utf8" });

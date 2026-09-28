@@ -24,6 +24,9 @@ LEAD_S, TITLE_LEAD_S, GAP_S, TAIL_S, PAD_S = _t["lead"], _t["titleLead"], _t["ga
 # Leading-silence trim only; applied forward and on the reversed signal to trim both ends
 # without touching pauses inside the sentence.
 TRIM = "silenceremove=start_periods=1:start_threshold=-45dB"
+# The speech model often starts or ends a take at full level from the first/last sample; a 5 ms ramp after each trim
+# removes that click without touching clean clips, which already ramp up from -45 dB.
+RAMP = "afade=t=in:d=0.005"
 
 
 def wav_duration(path):
@@ -72,7 +75,7 @@ def qa(frames, rate):
 
 def trim(src, dst):
     dst.parent.mkdir(parents=True, exist_ok=True)
-    af = f"{TRIM},areverse,{TRIM},areverse,adelay={int(PAD_S * 1000)},apad=pad_dur={PAD_S}"
+    af = f"{TRIM},{RAMP},areverse,{TRIM},{RAMP},areverse,adelay={int(PAD_S * 1000)},apad=pad_dur={PAD_S}"
     subprocess.run(
         ["ffmpeg", "-v", "error", "-y", "-i", str(src), "-af", af, "-ar", str(SR), "-ac", "1",
          "-sample_fmt", "s16", str(dst)],

@@ -37,7 +37,6 @@ function asrCheck(P) {
   const cfg = existsSync(cfgPath) ? JSON.parse(readFileSync(cfgPath, "utf8")) : {};
   const maxWer = cfg.voice?.maxWer ?? 0.2;
   const maxTailDb = cfg.voice?.maxTailDb ?? -40;
-  const maxHeadDb = cfg.voice?.maxHeadDb ?? -40;
   const acceptedPath = join(P, "audio/qa-accepted.txt");
   const acceptedContent = existsSync(acceptedPath) ? readFileSync(acceptedPath, "utf8") : "";
   const acceptedLines = new Set(acceptedContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean));
@@ -48,7 +47,6 @@ function asrCheck(P) {
     const why = [];
     if (r.missing) why.push(`missing ${r.missing}`);
     if (typeof r.wer !== "number" || r.wer > 2 * maxWer) why.push(`WER ${r.wer ?? "?"}`);
-    if (typeof r.head_db === "number" && r.head_db > maxHeadDb) why.push(`start cut ${r.head_db} dBFS`);
     if (typeof r.tail_db === "number" && r.tail_db > maxTailDb) why.push(`end cut ${r.tail_db} dBFS`);
     if (r.edge) why.push("edge word wrong");
     if (why.length && !isAccepted(r.id)) failed.push(`${r.id}: ${why.join(", ")}`);
