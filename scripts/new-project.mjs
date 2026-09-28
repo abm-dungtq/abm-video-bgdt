@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // new-project.mjs — scaffold a lesson-video project from the abm-video-bgdt skill.
 //
-//   node <skill>/scripts/new-project.mjs <project-dir> [--title "Tiêu đề bài giảng"] [--theme abm-brand]
+//   node <skill>/scripts/new-project.mjs <project-dir> [--title "Tiêu đề bài giảng"] [--theme abm-brand] [--minutes 3]
 //   node <skill>/scripts/new-project.mjs <project-dir> --update-tools
 //
 // New project: HyperFrames init (pinned CLI, skills left untouched), then the skill's scripts are
@@ -9,6 +9,7 @@
 // tools/worker-kit/ templates, video.config.json, BRIEF.md, script.src.txt and the capture folders.
 // --update-tools refreshes only <project>/tools/ from the skill (never the config or content).
 // --theme <name> merges templates/themes/<name>.json (design, fonts, karaoke) into the new config; optional.
+// --minutes <n> sizes budget (duration, frame count, syllables) for an n-minute lesson; the default budget is 10 minutes.
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
@@ -17,11 +18,14 @@ import { fileURLToPath } from "node:url";
 
 const SKILL = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
-const dir = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--title" && args[i - 1] !== "--theme");
-const title = args.includes("--title") ? args[args.indexOf("--title") + 1] : null;
-const theme = args.includes("--theme") ? args[args.indexOf("--theme") + 1] : null;
-if (!dir) {
-  console.error('usage: new-project.mjs <project-dir> [--title "…"] [--theme abm-brand] [--update-tools]');
+const valued = ["--title", "--theme", "--minutes"];
+const dir = args.find((a, i) => !a.startsWith("--") && !valued.includes(args[i - 1]));
+const opt = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
+const title = opt("--title");
+const theme = opt("--theme");
+const minutes = opt("--minutes") === null ? null : Number(opt("--minutes"));
+if (!dir || (minutes !== null && !(minutes >= 1 && minutes <= 30))) {
+  console.error('usage: new-project.mjs <project-dir> [--title "…"] [--theme abm-brand] [--minutes 1-30] [--update-tools]');
   process.exit(1);
 }
 const P = resolve(dir);
@@ -53,6 +57,12 @@ if (existsSync(join(P, "video.config.json"))) {
 const config = JSON.parse(readFileSync(join(SKILL, "templates/video.config.json"), "utf8"));
 config.name = name;
 if (title) config.title = title;
+if (minutes !== null) {
+  const n = minutes;
+  config.budget.targetS = [Math.round(57 * n), Math.round(63 * n)];
+  config.budget.frames = [Math.round(4.5 * n), Math.round(6.5 * n)];
+  config.budget.syllables = { total: Math.round(205 * n), range: [Math.round(195 * n), Math.round(210 * n)] };
+}
 if (theme) {
   const themePath = join(SKILL, "templates/themes", `${theme}.json`);
   if (!existsSync(themePath)) {

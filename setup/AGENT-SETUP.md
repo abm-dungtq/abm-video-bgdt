@@ -56,11 +56,11 @@ Linux, needs no machine-specific path, and never changes anything before the use
    It reads the VieNeu-TTS folder and the backend/dtype from the machine profile. Wait until `http://127.0.0.1:8000/health`
    answers `"status":"ok"`.
 
-6. **Tell the user to restart the agent**, so it loads the skill and the MCP server. After the restart, verify:
-   1. call the MCP tool `server_status`; it must return `"status":"ok"`;
-   2. run `node <SKILL_DIR>/setup/doctor.mjs`; it must print `doctor ok`;
-   3. optionally, run `node <SKILL_DIR>/scripts/new-project.mjs videos/thu-nghiem`, then in that folder
-      `node tools/build-design-kit.mjs && node tools/fixture-check.mjs`; it must print `fixture-check ok`.
+6. **Tell the user to restart the agent**, so it loads the skill. After the restart, verify:
+   1. run `node <SKILL_DIR>/bin/abm-video.mjs doctor`; it must print `doctor ok`;
+   2. run `node <SKILL_DIR>/bin/abm-video.mjs next`; outside a project it must say `create the lesson project`;
+   3. optionally, call the MCP tool `server_status` (`"status":"ok"`). The pipeline speaks through the HTTP API, so the MCP
+      server is only for trying voices.
 
 7. **Report** what was installed, the hardware profile, the VieNeu-TTS folder, the agents that were registered, and anything
    left for the user (for example: update the NVIDIA driver to use the GPU, or restart the agent).

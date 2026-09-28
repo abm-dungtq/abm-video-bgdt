@@ -15,7 +15,7 @@ A production line, not a guide: a CLI with recorded state and user gates runs ev
 from templates. **Always run `next` and do exactly what it prints. Never invent a step.**
 
 ```
-node <skill>/bin/abm-video.mjs next            before a project exists (it tells you to run init)
+node <skill>/bin/abm-video.mjs next            before a project exists (it tells you to run init; pass --minutes <n>)
 node tools/bin/abm-video.mjs next              inside a project (the folder with video.config.json)
 ```
 

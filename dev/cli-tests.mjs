@@ -121,5 +121,13 @@ out = scenario("stale", (D, st) => {
 });
 check("next: a changed input reruns its stage", /NEXT: run stage script[\s\S]*WHY: stage script is stale/.test(out), out);
 
+// ── init --minutes sizes the budget ─────────────────────────────────────────────
+const M = join(dirname(R), "cli-minutes");
+rmSync(M, { recursive: true, force: true });
+spawnSync(process.execPath, [join(S, "scripts/new-project.mjs"), M, "--minutes", "3"], { encoding: "utf8" });
+const budget = existsSync(join(M, "video.config.json")) ? JSON.parse(readFileSync(join(M, "video.config.json"), "utf8")).budget : null;
+check("init --minutes 3 scales the budget", budget?.targetS.join() === "171,189" && budget.frames.join() === "14,20"
+  && budget.syllables.total === 615, JSON.stringify(budget));
+
 console.log(passed === cases.length ? `cli-tests ok (${passed}/${cases.length})` : `cli-tests FAILED (${passed}/${cases.length})`);
 process.exit(passed === cases.length ? 0 : 1);

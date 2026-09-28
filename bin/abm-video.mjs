@@ -3,7 +3,7 @@
 //
 //   abm-video next                                 the single next action (always start here)
 //   abm-video doctor [--fix] [--json]              check this machine; --fix installs the HeyGen skills when missing
-//   abm-video init <dir> [--title "…"] [--theme abm-brand]
+//   abm-video init <dir> [--title "…"] [--theme abm-brand] [--minutes 3]
 //   abm-video status                               stages and gates of this project
 //   abm-video run <stage> [--force] [--apply] [--concurrency N]
 //   abm-video gate <n> --request | --approve "<user's words>" | --reject "<changes>"
@@ -76,6 +76,10 @@ async function runStage(name) {
   } catch (e) {
     die(`stage ${name} failed: ${e.message}`);
   }
+  if (code === 2) {
+    console.error(`stage ${name}: waiting for the files above, then rerun`);
+    process.exit(1);
+  }
   if (code) die(`stage ${name} failed (exit ${code})`);
   const after = load(Pd);
   markStage(after, Pd, name, st.inputs);
@@ -86,7 +90,7 @@ async function runStage(name) {
 switch (cmd) {
   case "next": {
     if (!P) {
-      print({ next: "create the lesson project", run: `${CLI} init <dir> --title "<lesson title>" [--theme abm-brand]`,
+      print({ next: "create the lesson project", run: `${CLI} init <dir> --title "<lesson title>" --minutes <length> [--theme abm-brand]`,
         why: "no video.config.json here or above" });
       break;
     }
@@ -103,7 +107,7 @@ switch (cmd) {
     process.exit(code);
   }
   case "init": {
-    const dir = argv[1] && !argv[1].startsWith("--") ? argv[1] : die('usage: abm-video init <dir> [--title "…"] [--theme <name>]');
+    const dir = argv[1] && !argv[1].startsWith("--") ? argv[1] : die('usage: abm-video init <dir> [--title "…"] [--theme <name>] [--minutes <n>]');
     if (doctor() !== 0) die("doctor failed: fix the items above (or run abm-video doctor --fix), then init again");
     const r = spawnSync(process.execPath, [join(SKILL_ROOT, "scripts/new-project.mjs"), ...argv.slice(1)], { stdio: "inherit" });
     if (r.status) process.exit(r.status);

@@ -136,5 +136,5 @@ if (!DRY) spawnSync(process.execPath, [join(HERE, "doctor.mjs")], { stdio: "inhe
 console.log(`
 Next:
   1. start the speech API and keep it running:  node ${join(SKILL, "mcp/vieneu-tts/start-api.mjs").replace(/\\/g, "/")}
-  2. restart your agent so it loads the skill and the vieneu-tts MCP server
-  3. ask the agent to call server_status, then make a lesson ("làm video bài giảng về …")`);
+  2. restart your agent so it loads the skill
+  3. ask the agent to make a lesson ("làm video bài giảng 3 phút về …"); it follows abm-video next`);

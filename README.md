@@ -178,11 +178,12 @@ cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates
 
 **abm-video-bgdt** is an agent skill that lets a coding agent (Claude Code, or any agent that reads `SKILL.md`) produce a
 3–15-minute Vietnamese e-learning lesson video, 1920×1080:
-- narration from VieNeu-TTS through an MCP server included here;
+- a CLI (`bin/abm-video.mjs`) with recorded state runs every stage; the agent loops on `abm-video next`;
+- narration from VieNeu-TTS through its HTTP API in batches (an MCP server is included for trying voices);
 - word-by-word karaoke captions aligned with MMS_FA;
-- motion-graphics frames built in HyperFrames by parallel worker agents.
+- HyperFrames frames compiled from 20 scene templates (54 variants) through `scenes.json`, not hand-written HTML.
 
-It adds four human review gates, the DNA BGĐT lesson structure, a layout library meant for remixing, anti-boredom lint, an
+It adds four human review gates bound to file hashes, the DNA BGĐT lesson structure, lint for variety and timing, an
 optional ABM brand theme, regression tests, and an example library of 142 real frames with previews. Setup for Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode and Windsurf/Devin on Windows, macOS and
 Linux is in [SETUP.md](SETUP.md) (in Vietnamese; commands and config snippets are universal). No machine-specific paths:
 scripts discover the HeyGen skills and a `VieNeu-TTS/` folder, or read `VIENEU_TTS_DIR` / `HF_SKILLS_DIR`.

@@ -35,7 +35,8 @@ const nodeMajor = Number(process.versions.node.split(".")[0]);
 add("node", nodeMajor >= 20 ? "ok" : "fail", `v${process.versions.node}`, `install Node.js 20 or newer (${installer})`);
 for (const [bin, args] of [["git"], ["ffmpeg", ["-version"]], ["ffprobe", ["-version"]], ["uv"], ["pwsh"], ["npx"]]) {
   const v = version(bin, args);
-  add(bin, v ? "ok" : "fail", v ?? "not found", `run ${installer}`);
+  // pwsh only runs the deprecated run-pipeline.ps1; the CLI does not need it
+  add(bin, v ? "ok" : bin === "pwsh" ? "warn" : "fail", v ?? "not found", `run ${installer}`);
 }
 
 // ── HyperFrames skills ────────────────────────────────────────────────────────

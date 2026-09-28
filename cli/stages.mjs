@@ -57,7 +57,7 @@ function probeHelp() {
   2. Rate: pick a 45–55-syllable sentence typical of the lesson and run
        abm-video tts --text "<sentence>" --out .probe/rate.wav
        node tools/measure-rate.mjs .probe/rate.wav "<same sentence>"`);
-  return 1;
+  return 2;
 }
 
 export const STAGES = [
@@ -85,7 +85,7 @@ export const STAGES = [
     run: (c) => {
       if (!untouched(c.P, "capture/screens/INDEX.md", "screens-INDEX.md")) return sh(c.P, [process.execPath, tool(c, "privacy-check.mjs")]);
       console.log(`screens: capture, redact and list the screenshots as in ${SKILL_ROOT}/references/pipeline-stages.md § Stage 2b, then rerun.`);
-      return 1;
+      return 2;
     } },
   { name: "tts", needs: { stages: ["script"], gates: ["2", "2b"] }, inputs: ["script.json"],
     run: async (c) => {
