@@ -1,0 +1,58 @@
+{
+  "template": "signal-trace",
+  "variant": "scope",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Tốc độ phản hồi",
+    "shape": "pulse",
+    "channels": [
+      "Yêu cầu",
+      "Phản hồi"
+    ],
+    "readouts": [
+      {
+        "label": "Mô hình",
+        "value": "grok-4-fast"
+      },
+      {
+        "label": "Trung bình",
+        "value": "0,32 giây"
+      },
+      {
+        "label": "Chậm nhất",
+        "value": "0,9 giây"
+      }
+    ],
+    "marker": "Độ trễ 320 ms"
+  },
+  "stress": {
+    "title": "Thời gian phản hồi của trợ lý",
+    "shape": "step",
+    "channels": [
+      "Câu hỏi gửi đi",
+      "Chữ đầu tiên"
+    ],
+    "readouts": [
+      {
+        "label": "Mô hình cần đo",
+        "value": "grok-4-fast"
+      },
+      {
+        "label": "Mức trung bình",
+        "value": "0,32 giây"
+      },
+      {
+        "label": "Chậm nhất tuần",
+        "value": "1,25 giây"
+      },
+      {
+        "label": "Số lượt đã đo",
+        "value": "123.456 lượt"
+      }
+    ],
+    "marker": "Độ trễ trung bình 320 ms"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "path-text",
+  "family": "path-text",
+  "variants": ["wave", "arc"],
+  "signatures": ["wave"],
+  "zone": { "wave": "hero-center", "arc": "ring" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 56, "description": "a phrase written along the path" },
+      "from": { "type": "string", "maxLength": 20, "description": "label at the start of the path" },
+      "to": { "type": "string", "maxLength": 20, "description": "label at the end of the path, shown when the writing arrives" }
+    }
+  },
+  "reveals": {
+    "text": { "default": "kw", "range": true },
+    "to": { "default": "spread", "range": false, "after": "text" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

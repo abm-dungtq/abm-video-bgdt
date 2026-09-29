@@ -1,0 +1,28 @@
+{
+  "id": "code-card",
+  "family": "code-card",
+  "variants": ["float", "aside"],
+  "signatures": ["float"],
+  "zone": { "float": "hero-center", "aside": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["file", "lines"],
+    "additionalProperties": false,
+    "properties": {
+      "file": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "lang": { "type": "string", "maxLength": 14 },
+      "lines": {
+        "type": "array", "minItems": 2, "maxItems": 12,
+        "description": "real code, one string per line",
+        "items": { "type": "string", "maxLength": 52 }
+      },
+      "focus": { "type": "integer", "minimum": 0, "maximum": 11, "description": "index of the active line" },
+      "caption": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "caption": { "default": "spread", "range": false },
+    "focus": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

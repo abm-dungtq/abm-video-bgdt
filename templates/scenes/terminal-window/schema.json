@@ -1,0 +1,40 @@
+{
+  "id": "terminal-window",
+  "family": "terminal-window",
+  "variants": ["classic", "steps"],
+  "signatures": ["classic"],
+  "zone": { "classic": "hero-center", "steps": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["steps"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 30 },
+      "prompt": { "type": "string", "maxLength": 24, "description": "the shell prompt, e.g. an@macbook du-an %" },
+      "steps": {
+        "type": "array", "minItems": 1, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["cmd"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "maxLength": 26, "description": "what the step does, in words (steps variant)" },
+            "cmd": { "type": "string", "minLength": 1, "maxLength": 48 },
+            "output": {
+              "type": "array", "minItems": 0, "maxItems": 4,
+              "items": {
+                "type": "object", "required": ["text"], "additionalProperties": false,
+                "properties": {
+                  "text": { "type": "string", "maxLength": 60 },
+                  "kind": { "enum": ["text", "ok", "err", "dim"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "steps.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "callout-sentence",
+  "family": "callout-sentence",
+  "variants": ["marker", "circle"],
+  "signatures": ["marker"],
+  "zone": { "marker": "full-bleed-quote", "circle": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 110, "description": "the one key sentence, as it is said" },
+      "key": { "type": "string", "maxLength": 32, "description": "whole words taken from text, accented once the sweep passes them" },
+      "source": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "reveals": {
+    "text": { "default": "kw", "range": true },
+    "source": { "default": "spread", "range": false, "after": "text" }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

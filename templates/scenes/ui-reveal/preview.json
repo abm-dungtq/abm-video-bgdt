@@ -1,0 +1,28 @@
+{
+  "template": "ui-reveal",
+  "variant": "tilt",
+  "window": ["start", "end"],
+  "slots": {
+    "app": "Grok Studio",
+    "nav": ["Tổng quan", "Trò chuyện", "Mã nguồn", "Cài đặt"],
+    "headline": "Bảng điều khiển của nhóm",
+    "cards": [
+      { "label": "Câu hỏi hôm nay", "value": "1.248" },
+      { "label": "Tiết kiệm", "value": "36 giờ" },
+      { "label": "Độ chính xác", "value": "94%" }
+    ],
+    "caption": "Mọi số liệu gom về một màn hình"
+  },
+  "stress": {
+    "app": "Trung tâm vận hành AI số",
+    "nav": ["Tổng quan dự án", "Hỏi đáp tự động", "Kho mã nguồn mở", "Báo cáo tuần này", "Quyền truy cập"],
+    "headline": "Hiệu quả trợ lý của phòng kỹ thuật",
+    "cards": [
+      { "label": "Yêu cầu được xử lý", "value": "12.480 lần" },
+      { "label": "Giờ công tiết kiệm", "value": "1.236 giờ" },
+      { "label": "Lỗi được phát hiện", "value": "3.472 lỗi" },
+      { "label": "Mức độ hài lòng", "value": "98,5 điểm" }
+    ],
+    "caption": "Mọi số liệu quan trọng gom về một chỗ"
+  }
+}

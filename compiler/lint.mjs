@@ -198,7 +198,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       if (Number.isFinite(firstKey) && firstKey - a > 2.0) warnings.push(`${at}: the first reveal comes ${r2(firstKey - a)} s after the shot starts: move the window start nearer its first keyword`);
       shots.push({ spec: s, schema: tpl.schema, mod: tpl.mod, variant, a, b, times });
       prevShot = { template: s.template, variant, family: tpl.schema.family };
-      flat.push({ frame: bf.no, template: s.template, variant, family: tpl.schema.family, signature: (tpl.schema.signatures ?? []).includes(variant) && s.template !== "title" });
+      flat.push({ frame: bf.no, template: s.template, variant, family: tpl.schema.family, accent: tpl.schema.accent === true, signature: (tpl.schema.signatures ?? []).includes(variant) && s.template !== "title" });
       prevEnd = b;
     }
     if (prevEnd != null && Math.abs(prevEnd - duration) > TOL) errors.push(`${where}: the last shot ends at ${prevEnd}, the frame lasts ${duration}`);
@@ -264,7 +264,8 @@ export function ideaErrors(frames, sc = {}) {
  * layouts bores the viewer even when no pair repeats back to back.
  * Under authoring "claude" (sc = cfg.scenes), at any length, title excluded: E3 a template is used more than
  * sc.maxUsesPerTemplate times · E4 a template comes back within sc.pairGap shots · E5 (sc.uniqueChapterOpeners) two
- * chapters open with the same template/variant. `chapters` lists each chapter's frame numbers.
+ * chapters open with the same template/variant · E6 a chapter has more than one accent shot (schema "accent": true).
+ * `chapters` lists each chapter's frame numbers.
  */
 export function varietyErrors(flat, sc = {}, chapters = []) {
   const e = [];
@@ -298,6 +299,10 @@ function authoredErrors(flat, sc, chapters) {
       if (back.some((x) => x.template === s.template)) e.push(`frame ${s.frame}: ${s.template} comes back within ${gap} shots (scenes.pairGap)`);
     });
   }
+  chapters.forEach((frames, ci) => {
+    const n = flat.filter((s) => s.accent && frames.includes(s.frame)).length;
+    if (n > 1) e.push(`chapter ${ci}: ${n} accent shots, at most 1`);
+  });
   if (sc.uniqueChapterOpeners) {
     const seen = new Map();
     chapters.forEach((frames, ci) => {

@@ -1,0 +1,50 @@
+{
+  "template": "accent-device",
+  "variant": "turntable",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "app": "Grok",
+    "icon": "chat",
+    "caption": "Grok luôn ở trong túi bạn",
+    "items": [
+      {
+        "label": "Hỏi bằng giọng nói",
+        "note": "Trả lời ngay lập tức"
+      },
+      {
+        "label": "Tạo ảnh từ mô tả",
+        "note": "Grok Imagine"
+      },
+      {
+        "label": "Đọc tin mới trên X",
+        "note": "Cập nhật từng phút"
+      }
+    ]
+  },
+  "stress": {
+    "app": "Grok trên di động",
+    "icon": "rocket",
+    "caption": "Mọi tính năng Grok gói gọn một ứng dụng",
+    "items": [
+      {
+        "label": "Trò chuyện bằng giọng",
+        "note": "Nói tự nhiên như bạn bè"
+      },
+      {
+        "label": "Tạo ảnh và video ngắn",
+        "note": "Chỉ cần một câu mô tả rõ"
+      },
+      {
+        "label": "Tóm tắt tài liệu dài",
+        "note": "Tải tệp lên, đọc tức thì"
+      },
+      {
+        "label": "Tìm kiếm tin tức mới",
+        "note": "Nguồn tin từ X và cả web"
+      }
+    ]
+  }
+}

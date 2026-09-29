@@ -1,0 +1,7 @@
+{
+  "template": "opener-canopy",
+  "variant": "part",
+  "window": ["start", "end"],
+  "slots": { "kicker": "Bài giảng mở đầu", "headline": "Hệ sinh thái Grok", "headline2": "Bắt đầu từ đâu?" },
+  "stress": { "kicker": "Chào mừng bạn đến khóa học", "headline": "Khám phá trọn bộ Grok AI", "headline2": "Mọi điều cần biết trước tiên" }
+}

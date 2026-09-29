@@ -1,0 +1,24 @@
+{
+  "id": "opener-canopy",
+  "family": "opener-canopy",
+  "accent": true,
+  "variants": ["part", "sweep"],
+  "signatures": ["part"],
+  "zone": { "part": "hero-center", "sweep": "full-bleed-quote" },
+  "slots": {
+    "type": "object",
+    "required": ["headline"],
+    "additionalProperties": false,
+    "properties": {
+      "kicker": { "type": "string", "maxLength": 28 },
+      "headline": { "type": "string", "minLength": 1, "maxLength": 24, "description": "uncovered when the leaves part" },
+      "headline2": { "type": "string", "maxLength": 28, "description": "carried in by a second pass of leaves, replacing the first" }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "headline": { "default": "kw", "range": false },
+    "headline2": { "default": "kw", "range": false, "after": "headline" }
+  },
+  "duration": { "min": 3.5, "max": 12 }
+}

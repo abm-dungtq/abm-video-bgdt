@@ -1,0 +1,35 @@
+{
+  "id": "hex-map",
+  "family": "hex-map",
+  "variants": ["honeycomb", "ranked"],
+  "signatures": ["honeycomb"],
+  "zone": { "honeycomb": "split-60-40", "ranked": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["regions"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 36 },
+      "unit": { "type": "string", "maxLength": 8 },
+      "regions": {
+        "type": "array", "minItems": 4, "maxItems": 20,
+        "description": "one hexagon per region (a province, a country, a team); col/row place it on the hex grid, else the grid is packed in order",
+        "items": {
+          "type": "object", "required": ["label", "value"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 10 },
+            "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+            "col": { "type": "integer", "minimum": 0, "maximum": 9 },
+            "row": { "type": "integer", "minimum": 0, "maximum": 5 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "fill": { "default": "kw", "range": false },
+    "top": { "default": "kw", "range": false, "after": "fill" }
+  },
+  "duration": { "min": 3.5, "max": 10 }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "accent-cuboids",
+  "family": "accent-cuboids",
+  "accent": true,
+  "variants": ["wave", "shelf"],
+  "signatures": ["wave"],
+  "zone": { "wave": "strip-top", "shelf": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["items"],
+    "additionalProperties": false,
+    "properties": {
+      "heading": { "type": "string", "maxLength": 40 },
+      "items": {
+        "type": "array", "minItems": 3, "maxItems": 6,
+        "description": "one product per cuboid: its icon, name and a short note",
+        "items": {
+          "type": "object", "required": ["icon", "label"], "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string" },
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 },
+            "note": { "type": "string", "maxLength": 26 }
+          }
+        }
+      },
+      "hero": { "type": "integer", "minimum": 0, "maximum": 5, "description": "index of the standout product (default: the middle one)" }
+    }
+  },
+  "reveals": {
+    "heading": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false },
+    "hero": { "default": "spread", "range": false, "after": "items.2" }
+  },
+  "duration": { "min": 4, "max": 12 }
+}

@@ -1,0 +1,33 @@
+{
+  "template": "code-typing",
+  "variant": "editor",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "file": "tom-tat.py",
+    "lines": [
+      "from anthropic import Anthropic",
+      "client = Anthropic()",
+      "reply = client.messages.create(",
+      "    model=\"claude-sonnet\", max_tokens=400,",
+      "    messages=[{\"role\": \"user\", \"content\": hoi}])"
+    ],
+    "note": "Năm dòng là gọi được mô hình"
+  },
+  "stress": {
+    "file": "tro-ly-ca-nhan/vong-lap-chinh.py",
+    "lines": [
+      "# Vòng lặp chính: lập kế hoạch rồi gọi công cụ đúng",
+      "def run(task, max_steps=12, timeout=30, lang='vi'):",
+      "    plan = llm.plan(task, lang='vi', depth=3, n=2)",
+      "    for index, step in enumerate(plan.steps, 1):",
+      "        result = tools.call(step, timeout=timeout)",
+      "        memory.save(step.name, result, ttl=3600)",
+      "        if index >= max_steps: break  # dừng sớm",
+      "    return memory.summary(style='ngắn gọn, dễ hiểu')"
+    ],
+    "note": "Kết quả cuối cùng quay về tay người dùng rất sớm"
+  }
+}

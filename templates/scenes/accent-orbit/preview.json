@@ -1,0 +1,17 @@
+{
+  "template": "accent-orbit",
+  "variant": "orbit",
+  "window": ["start", "end"],
+  "slots": {
+    "tag": "Grok 4",
+    "title": "Tìm kiếm thời gian thực",
+    "desc": "Grok đọc tin tức và bài đăng mới nhất trên X trước khi trả lời bạn.",
+    "icon": "globe"
+  },
+  "stress": {
+    "tag": "Tính năng nổi bật",
+    "title": "Suy luận nhiều bước sâu hơn",
+    "desc": "Mô hình chia bài toán khó thành từng bước nhỏ, tự kiểm tra từng bước rồi mới trả lời bạn.",
+    "icon": "lightbulb"
+  }
+}

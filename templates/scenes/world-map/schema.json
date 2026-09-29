@@ -1,0 +1,35 @@
+{
+  "id": "world-map",
+  "family": "world-map",
+  "variants": ["callouts", "pins"],
+  "signatures": ["callouts"],
+  "zone": { "callouts": "strip-top", "pins": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["regions"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 40 },
+      "regions": {
+        "type": "array", "minItems": 1, "maxItems": 6,
+        "description": "the covered regions: a country (ISO 3166 alpha-2, lower case) or a group (continent, eu, middle-east, southeast-asia)",
+        "items": {
+          "type": "object", "required": ["region", "label"], "additionalProperties": false,
+          "properties": {
+            "region": { "enum": ["vn", "cn", "jp", "kr", "in", "id", "th", "ph", "my", "tw", "kh", "la", "mm", "pk", "bd", "kz", "mn", "us", "ca", "mx",
+              "br", "ar", "cl", "co", "pe", "gb", "fr", "de", "it", "es", "pt", "nl", "se", "no", "fi", "pl", "ua", "ch", "ie", "ru", "tr", "sa", "ae",
+              "il", "ir", "eg", "ng", "za", "ke", "et", "ma", "au", "nz", "north-america", "south-america", "europe", "africa", "oceania", "asia",
+              "middle-east", "southeast-asia", "eu"] },
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "value": { "type": "string", "maxLength": 12 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "regions.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

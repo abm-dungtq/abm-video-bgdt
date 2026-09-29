@@ -1,0 +1,18 @@
+{
+  "template": "path-text",
+  "variant": "wave",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "text": "Từ câu hỏi đầu tiên đến trợ lý riêng của bạn",
+    "from": "Người mới",
+    "to": "Thành thạo"
+  },
+  "stress": {
+    "text": "Mỗi ngày một thói quen nhỏ, ba tháng sau bạn tự động hoá",
+    "from": "Hôm nay bắt đầu học.",
+    "to": "Ba tháng sau tự làm."
+  }
+}

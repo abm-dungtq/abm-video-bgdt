@@ -1,0 +1,46 @@
+{
+  "template": "media-grid",
+  "variant": "grid",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Một trợ lý, nhiều việc",
+    "tiles": [
+      {
+        "kind": "chat",
+        "label": "Trò chuyện"
+      },
+      {
+        "kind": "code",
+        "label": "Viết mã"
+      },
+      {
+        "kind": "chart",
+        "label": "Phân tích số liệu"
+      }
+    ]
+  },
+  "stress": {
+    "title": "Những việc trợ lý làm giúp bạn mỗi ngày.",
+    "tiles": [
+      {
+        "kind": "dashboard",
+        "label": "Báo cáo doanh thu cả quý"
+      },
+      {
+        "kind": "doc",
+        "label": "Soạn thảo hợp đồng mẫu 2"
+      },
+      {
+        "kind": "photo",
+        "label": "Sửa ảnh sản phẩm cho đẹp"
+      },
+      {
+        "kind": "terminal",
+        "label": "Chạy tác vụ tự động đêm"
+      }
+    ]
+  }
+}

@@ -41,6 +41,14 @@ for (const sub of ["compositions/components", "compositions"]) {
     copied.push(f);
   }
 }
+// some blocks install as a folder (compositions/<name>/index.html plus assets): copy the whole folder
+const comp = join(W, "compositions");
+if (existsSync(comp)) {
+  for (const e of readdirSync(comp, { withFileTypes: true }).filter((x) => x.isDirectory() && x.name !== "components")) {
+    cpSync(join(comp, e.name), join(out, e.name), { recursive: true });
+    copied.push(`${e.name}/`);
+  }
+}
 rmSync(W, { recursive: true, force: true });
 console.log(`registry-ref: ${copied.length} file(s) in .hyperframes/registry-ref${failed.length ? `; not found: ${failed.join(", ")}` : ""}`);
-process.exit(failed.length ? 1 : 0);
+process.exit(failed.length || !copied.length ? 1 : 0);

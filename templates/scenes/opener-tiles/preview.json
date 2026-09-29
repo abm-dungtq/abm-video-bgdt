@@ -1,0 +1,7 @@
+{
+  "template": "opener-tiles",
+  "variant": "sweep",
+  "window": ["start", "end"],
+  "slots": { "kicker": "Chương 3 · Bên trong mô hình", "headline": "Grok 4", "reverse": "Suy luận" },
+  "stress": { "kicker": "Chương mười một · Kỹ thuật sâu", "headline": "Cửa sổ ngữ cảnh", "reverse": "Tác tử lập trình" }
+}

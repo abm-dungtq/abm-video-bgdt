@@ -1,0 +1,24 @@
+{
+  "id": "opener-portal",
+  "family": "opener-portal",
+  "accent": true,
+  "variants": ["tunnel", "rings"],
+  "signatures": ["tunnel"],
+  "zone": { "tunnel": "hero-center", "rings": "ring" },
+  "slots": {
+    "type": "object",
+    "required": ["title", "phrase"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 20, "description": "the phrase that comes through the portal" },
+      "phrase": { "type": "string", "minLength": 1, "maxLength": 28, "description": "the phrase its letters swap into" },
+      "subtitle": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "reveals": {
+    "title": { "default": "kw", "range": false },
+    "phrase": { "default": "kw", "range": false, "after": "title" },
+    "subtitle": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 3.5, "max": 12 }
+}

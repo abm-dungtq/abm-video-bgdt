@@ -1,0 +1,24 @@
+{
+  "id": "opener-write",
+  "family": "opener-write",
+  "accent": true,
+  "variants": ["chalk", "ink"],
+  "signatures": ["chalk"],
+  "zone": { "chalk": "hero-center", "ink": "full-bleed-quote" },
+  "slots": {
+    "type": "object",
+    "required": ["title"],
+    "additionalProperties": false,
+    "properties": {
+      "kicker": { "type": "string", "maxLength": 28 },
+      "title": { "type": "string", "minLength": 1, "maxLength": 30, "description": "written on by hand; longer than 16 characters it takes two lines" },
+      "note": { "type": "string", "maxLength": 44, "description": "a small line written under the underline" }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "title": { "default": "kw", "range": false },
+    "note": { "default": "spread", "range": false, "after": "title" }
+  },
+  "duration": { "min": 3.5, "max": 12 }
+}

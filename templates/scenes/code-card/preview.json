@@ -1,0 +1,40 @@
+{
+  "template": "code-card",
+  "variant": "float",
+  "window": ["start", "end"],
+  "slots": {
+    "file": "goi_grok.py",
+    "lang": "Python",
+    "lines": [
+      "from xai_sdk import Client",
+      "",
+      "client = Client(api_key=KEY)",
+      "chat = client.chat.create(model=\"grok-4\")",
+      "chat.append(user(\"Tóm tắt bài báo này\"))",
+      "reply = chat.sample()",
+      "print(reply.content)  # in câu trả lời"
+    ],
+    "focus": 3,
+    "caption": "Gọi Grok chỉ với sáu dòng"
+  },
+  "stress": {
+    "file": "tro-ly-ca-nhan/goi_mo_hinh_ai.py",
+    "lang": "CPython 3.12.4",
+    "lines": [
+      "# Gọi mô hình, ghi nhật ký và trả kết quả về",
+      "from xai_sdk import Client, user, system as sys",
+      "client = Client(api_key=KEY, timeout=3600.0)",
+      "chat = client.chat.create(model=\"grok-4-fast\")",
+      "chat.append(sys(\"Trả lời ngắn gọn bằng tiếng Việt\"))",
+      "chat.append(user(\"Tóm tắt bài báo này giúp tôi\"))",
+      "for chunk in chat.stream(max_tokens=1024):",
+      "    print(chunk.content, end=\"\", flush=True)",
+      "    log.write(chunk.content)  # lưu từng đoạn",
+      "usage = chat.last_usage()  # số token đã dùng",
+      "if usage.total > 100000: warn(\"Sắp hết hạn mức\")",
+      "return reply  # trả kết quả cuối cho người dùng"
+    ],
+    "focus": 11,
+    "caption": "Gọi Grok, stream từng đoạn và ghi lại nhật ký"
+  }
+}

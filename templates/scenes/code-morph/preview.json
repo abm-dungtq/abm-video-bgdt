@@ -1,0 +1,58 @@
+{
+  "template": "code-morph",
+  "variant": "flip",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "file": "loc-nguoi-dung.js",
+    "before": [
+      "function activeNames(users) {",
+      "  const out = []",
+      "  for (const u of users) {",
+      "    if (u.active) {",
+      "      out.push(u.name)",
+      "    }",
+      "  }",
+      "  return out",
+      "}"
+    ],
+    "after": [
+      "function activeNames(users) {",
+      "  return users",
+      "    .filter((u) => u.active)",
+      "    .map((u) => u.name)",
+      "}"
+    ],
+    "note": "Cùng kết quả, gọn hơn một nửa"
+  },
+  "stress": {
+    "file": "tro-ly-ca-nhan/xu-ly-tin-nhan.js",
+    "before": [
+      "// Lọc tin chưa đọc rồi gom theo người gửi",
+      "async function unread(inbox, since, limit) {",
+      "  const result = []",
+      "  for (const message of inbox.messages) {",
+      "    if (!message.read && message.at > t) {",
+      "      result.push({ from: message.from })",
+      "    }",
+      "  }",
+      "  return result.slice(0, limit)",
+      "}"
+    ],
+    "after": [
+      "// Lọc tin chưa đọc rồi gom theo người gửi",
+      "async function unread(inbox, since, limit) {",
+      "  return inbox.messages",
+      "    .filter((m) => !m.read && m.at > since)",
+      "    .slice(0, limit)",
+      "    .map((m) => ({ from: m.from, text }))",
+      "}",
+      "",
+      "// dùng: await unread(hopThu, homQua, 20)",
+      "export default unread"
+    ],
+    "note": "Bản mới ngắn hơn, dễ đọc hơn và dễ kiểm thử hơn"
+  }
+}

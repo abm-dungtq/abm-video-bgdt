@@ -1,0 +1,34 @@
+{
+  "id": "accent-device",
+  "family": "accent-device",
+  "accent": true,
+  "variants": ["turntable", "callouts"],
+  "signatures": ["turntable"],
+  "zone": { "turntable": "split-40-60", "callouts": "triptych" },
+  "slots": {
+    "type": "object",
+    "required": ["app", "caption", "items"],
+    "additionalProperties": false,
+    "properties": {
+      "app": { "type": "string", "minLength": 1, "maxLength": 18, "description": "the app name in the phone's header" },
+      "icon": { "type": "string", "description": "the app icon (default: chat)" },
+      "caption": { "type": "string", "minLength": 1, "maxLength": 40, "description": "the line beside (turntable) or above (callouts) the phone" },
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "what the app shows: one card each on the screen (and one callout each in callouts)",
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "note": { "type": "string", "maxLength": 26 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "caption": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 4, "max": 12 }
+}

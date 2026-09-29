@@ -1,0 +1,23 @@
+{
+  "id": "opener-prism",
+  "family": "opener-prism",
+  "accent": true,
+  "variants": ["center", "numeral"],
+  "signatures": ["center"],
+  "zone": { "center": "hero-center", "numeral": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["title"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 32, "description": "the chapter title, split into prism colours" },
+      "kicker": { "type": "string", "maxLength": 28 },
+      "chapterNo": { "type": "integer", "minimum": 1, "maximum": 20, "description": "shown as the giant prism numeral of the numeral variant" }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "title": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 12 }
+}

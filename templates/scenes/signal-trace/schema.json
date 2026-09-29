@@ -1,0 +1,38 @@
+{
+  "id": "signal-trace",
+  "family": "signal-trace",
+  "variants": ["scope", "latency"],
+  "signatures": ["scope"],
+  "zone": { "scope": "split-60-40", "latency": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["shape", "readouts"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 32 },
+      "shape": { "enum": ["sine", "square", "pulse", "step", "noise"], "description": "the waveform drawn by the beam" },
+      "channels": {
+        "type": "array", "minItems": 1, "maxItems": 2,
+        "description": "channel names: the signal, and (latency) its response",
+        "items": { "type": "string", "minLength": 1, "maxLength": 14 }
+      },
+      "readouts": {
+        "type": "array", "minItems": 1, "maxItems": 4,
+        "items": {
+          "type": "object", "required": ["label", "value"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 14 },
+            "value": { "type": "string", "minLength": 1, "maxLength": 12 }
+          }
+        }
+      },
+      "marker": { "type": "string", "maxLength": 24, "description": "the measured gap between two cursors, e.g. Độ trễ 120 ms" }
+    }
+  },
+  "reveals": {
+    "trace": { "default": "kw", "range": false },
+    "readouts.*": { "default": "spread", "range": false },
+    "marker": { "default": "kw", "range": false, "after": "trace" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

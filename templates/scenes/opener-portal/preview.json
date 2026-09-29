@@ -1,0 +1,7 @@
+{
+  "template": "opener-portal",
+  "variant": "tunnel",
+  "window": ["start", "end"],
+  "slots": { "title": "Grok 4", "phrase": "Thông minh hơn", "subtitle": "Chương 2 · Mô hình mới" },
+  "stress": { "title": "Trợ lý của mọi người", "phrase": "Có mặt trên mọi thiết bị bạn", "subtitle": "Chương mười · Hệ sinh thái trọn vẹn nhất" }
+}

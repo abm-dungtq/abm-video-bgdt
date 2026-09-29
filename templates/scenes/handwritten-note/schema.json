@@ -1,0 +1,21 @@
+{
+  "id": "handwritten-note",
+  "family": "handwritten-note",
+  "variants": ["title", "sticky"],
+  "signatures": ["title"],
+  "zone": { "title": "hero-center", "sticky": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 40, "description": "the note itself, a short phrase" },
+      "note": { "type": "string", "maxLength": 56, "description": "a side remark written next to a doodled arrow" }
+    }
+  },
+  "reveals": {
+    "text": { "default": "kw", "range": true },
+    "note": { "default": "spread", "range": false, "after": "text" }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "media-grid",
+  "family": "media-grid",
+  "variants": ["grid", "hero"],
+  "signatures": ["grid"],
+  "zone": { "grid": "screen-focus", "hero": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["tiles"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 40 },
+      "tiles": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "one screenshot tile each, drawn as a mock screen of its kind",
+        "items": {
+          "type": "object", "required": ["kind", "label"], "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "enum": ["chat", "code", "chart", "doc", "photo", "dashboard", "terminal"] },
+            "label": { "type": "string", "minLength": 1, "maxLength": 24 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "tiles.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

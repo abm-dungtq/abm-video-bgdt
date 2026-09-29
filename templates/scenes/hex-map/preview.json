@@ -1,0 +1,140 @@
+{
+  "template": "hex-map",
+  "variant": "honeycomb",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Người dùng Grok theo vùng",
+    "unit": "nghìn",
+    "regions": [
+      {
+        "label": "Hà Nội",
+        "value": 820
+      },
+      {
+        "label": "Hải Phòng",
+        "value": 210
+      },
+      {
+        "label": "Quảng Ninh",
+        "value": 95
+      },
+      {
+        "label": "Huế",
+        "value": 120
+      },
+      {
+        "label": "Đà Nẵng",
+        "value": 340
+      },
+      {
+        "label": "Nha Trang",
+        "value": 88
+      },
+      {
+        "label": "Đà Lạt",
+        "value": 64
+      },
+      {
+        "label": "TP HCM",
+        "value": 1250
+      },
+      {
+        "label": "Cần Thơ",
+        "value": 150
+      },
+      {
+        "label": "Vũng Tàu",
+        "value": 76
+      }
+    ]
+  },
+  "stress": {
+    "title": "Số người dùng trợ lý AI theo tỉnh",
+    "unit": "lượt/giờ",
+    "regions": [
+      {
+        "label": "Lào Cai",
+        "value": 1200
+      },
+      {
+        "label": "Hà Giang",
+        "value": 800
+      },
+      {
+        "label": "Cao Bằng",
+        "value": 650
+      },
+      {
+        "label": "Điện Biên",
+        "value": 540
+      },
+      {
+        "label": "Sơn La",
+        "value": 900
+      },
+      {
+        "label": "Thái Bình",
+        "value": 4200
+      },
+      {
+        "label": "Bắc Ninh",
+        "value": 8800
+      },
+      {
+        "label": "Hà Nội",
+        "value": 98000
+      },
+      {
+        "label": "Hải Phòng",
+        "value": 21000
+      },
+      {
+        "label": "Quảng Ninh",
+        "value": 9500
+      },
+      {
+        "label": "Thanh Hóa",
+        "value": 7400
+      },
+      {
+        "label": "Nghệ An",
+        "value": 8100
+      },
+      {
+        "label": "Thừa Thiên",
+        "value": 12000
+      },
+      {
+        "label": "Đà Nẵng",
+        "value": 34000
+      },
+      {
+        "label": "Khánh Hòa",
+        "value": 8800
+      },
+      {
+        "label": "Lâm Đồng",
+        "value": 6400
+      },
+      {
+        "label": "Đồng Nai",
+        "value": 15000
+      },
+      {
+        "label": "TP Hồ Chí",
+        "value": 125000
+      },
+      {
+        "label": "Cần Thơ",
+        "value": 15500
+      },
+      {
+        "label": "Kiên Giang",
+        "value": 999999
+      }
+    ]
+  }
+}

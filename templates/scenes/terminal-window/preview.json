@@ -1,0 +1,131 @@
+{
+  "template": "terminal-window",
+  "variant": "classic",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "zsh — grok-cli",
+    "prompt": "an@macbook du-an %",
+    "steps": [
+      {
+        "label": "Cài công cụ Grok",
+        "cmd": "npm install -g @vibe-kit/grok-cli",
+        "output": [
+          {
+            "text": "added 142 packages in 6s",
+            "kind": "dim"
+          },
+          {
+            "text": "grok-cli 1.0.1 đã sẵn sàng",
+            "kind": "ok"
+          }
+        ]
+      },
+      {
+        "label": "Hỏi một câu",
+        "cmd": "grok -p \"Tóm tắt thư mục này\"",
+        "output": [
+          {
+            "text": "Đang đọc 18 tệp…"
+          },
+          {
+            "text": "Xong: dự án là một trợ lý đặt lịch",
+            "kind": "ok"
+          }
+        ]
+      }
+    ]
+  },
+  "stress": {
+    "title": "zsh — tro-ly-ca-nhan — 120×40",
+    "prompt": "nguyen@may-tinh-cua-an %",
+    "steps": [
+      {
+        "label": "Cài công cụ dòng lệnh Grok",
+        "cmd": "npm i --global @vibe-kit/grok-cli@latest --quiet",
+        "output": [
+          {
+            "text": "added 142 packages, audited 143 packages in 6s, 0 lỗi nào",
+            "kind": "dim"
+          },
+          {
+            "text": "grok-cli 1.0.1 đã được cài đặt và sẵn sàng sử dụng ngay",
+            "kind": "ok"
+          },
+          {
+            "text": "Cảnh báo: phiên bản Node của bạn cũ hơn mức khuyến nghị",
+            "kind": "err"
+          },
+          {
+            "text": "Chạy lệnh grok --help để xem toàn bộ các tùy chọn hiện có"
+          }
+        ]
+      },
+      {
+        "label": "Đăng nhập bằng khóa API",
+        "cmd": "export GROK_API_KEY=xai-0123456789abcdef0123456",
+        "output": [
+          {
+            "text": "Đã lưu khóa vào biến môi trường của phiên làm việc này",
+            "kind": "ok"
+          },
+          {
+            "text": "Khóa sẽ mất khi bạn đóng cửa sổ terminal hiện tại",
+            "kind": "dim"
+          },
+          {
+            "text": "Muốn lưu lâu dài, hãy thêm dòng này vào tệp ~/.zshrc",
+            "kind": "dim"
+          },
+          {
+            "text": "Kiểm tra lại bằng lệnh echo $GROK_API_KEY bất cứ lúc nào"
+          }
+        ]
+      },
+      {
+        "label": "Hỏi Grok tóm tắt thư mục",
+        "cmd": "grok -p \"Tóm tắt thư mục này thật ngắn gọn nhé\"",
+        "output": [
+          {
+            "text": "Đang đọc 18 tệp trong thư mục hiện tại, vui lòng chờ…"
+          },
+          {
+            "text": "Xong: dự án là một trợ lý đặt lịch hẹn viết bằng Python",
+            "kind": "ok"
+          },
+          {
+            "text": "Có 3 tệp kiểm thử chưa chạy được vì thiếu thư viện pytest",
+            "kind": "err"
+          },
+          {
+            "text": "Gợi ý: chạy pip install pytest rồi thử lại lệnh kiểm thử",
+            "kind": "dim"
+          }
+        ]
+      },
+      {
+        "label": "Chạy lại toàn bộ kiểm thử",
+        "cmd": "pip install pytest && pytest -q tests/ --maxfail",
+        "output": [
+          {
+            "text": "Successfully installed pytest-8.3.2 pluggy-1.5.0 iniconfig",
+            "kind": "dim"
+          },
+          {
+            "text": "12 passed in 0.84s — mọi kiểm thử đều đã chạy thành công",
+            "kind": "ok"
+          },
+          {
+            "text": "Không còn cảnh báo nào, dự án sẵn sàng để đẩy lên kho mã",
+            "kind": "ok"
+          },
+          {
+            "text": "Thời gian chạy tổng cộng: 7,2 giây trên máy tính của bạn"
+          }
+        ]
+      }
+    ]
+  }
+}

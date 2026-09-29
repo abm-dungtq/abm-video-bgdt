@@ -1,0 +1,37 @@
+{
+  "id": "editor-window",
+  "family": "editor-window",
+  "variants": ["workbench", "zen"],
+  "signatures": ["workbench"],
+  "zone": { "workbench": "screen-focus", "zen": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["project", "file", "lines"],
+    "additionalProperties": false,
+    "properties": {
+      "project": { "type": "string", "minLength": 1, "maxLength": 24 },
+      "file": { "type": "string", "minLength": 1, "maxLength": 28 },
+      "files": {
+        "type": "array", "minItems": 1, "maxItems": 4,
+        "description": "other files of the project, shown in the Explorer and the tabs",
+        "items": { "type": "string", "minLength": 1, "maxLength": 22 }
+      },
+      "lines": {
+        "type": "array", "minItems": 2, "maxItems": 10,
+        "description": "real code, one string per line, written in order",
+        "items": { "type": "string", "maxLength": 48 }
+      },
+      "run": { "type": "string", "maxLength": 40, "description": "the command run in the terminal after the code" },
+      "output": {
+        "type": "array", "minItems": 1, "maxItems": 3,
+        "description": "what the command prints (needs run); the last line is the result",
+        "items": { "type": "string", "maxLength": 48 }
+      }
+    }
+  },
+  "reveals": {
+    "code": { "default": "kw", "range": true },
+    "run": { "default": "kw", "range": false, "after": "code" }
+  },
+  "duration": { "min": 4, "max": 10 }
+}

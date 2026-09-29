@@ -1,0 +1,26 @@
+{
+  "id": "accent-orbit",
+  "family": "accent-orbit",
+  "accent": true,
+  "variants": ["orbit", "side"],
+  "signatures": ["orbit"],
+  "zone": { "orbit": "hero-center", "side": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["title", "desc"],
+    "additionalProperties": false,
+    "properties": {
+      "tag": { "type": "string", "maxLength": 20, "description": "a small label on the card: the product or the chapter" },
+      "title": { "type": "string", "minLength": 1, "maxLength": 28, "description": "the one standout feature" },
+      "desc": { "type": "string", "minLength": 1, "maxLength": 96 },
+      "icon": { "type": "string", "description": "shown glowing at the centre of the dot sphere" }
+    }
+  },
+  "reveals": {
+    "tag": { "default": "spread", "range": false },
+    "title": { "default": "kw", "range": false },
+    "desc": { "default": "kw", "range": false, "after": "title" },
+    "turn": { "default": "spread", "range": false, "after": "desc" }
+  },
+  "duration": { "min": 4, "max": 12 }
+}

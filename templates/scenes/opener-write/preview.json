@@ -1,0 +1,7 @@
+{
+  "template": "opener-write",
+  "variant": "chalk",
+  "window": ["start", "end"],
+  "slots": { "kicker": "Chương 4", "title": "Viết prompt hay", "note": "Nói rõ điều bạn muốn Grok làm" },
+  "stress": { "kicker": "Chương mười hai · Thực hành", "title": "Tự tay xây trợ lý Grok của bạn", "note": "Từ một câu lệnh đến công cụ dùng mỗi ngày" }
+}

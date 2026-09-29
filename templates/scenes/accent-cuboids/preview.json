@@ -1,0 +1,27 @@
+{
+  "template": "accent-cuboids",
+  "variant": "wave",
+  "window": ["start", "end"],
+  "slots": {
+    "heading": "Một trợ lý, nhiều sản phẩm",
+    "items": [
+      { "icon": "chat", "label": "Ứng dụng Grok", "note": "Trò chuyện mọi lúc" },
+      { "icon": "image", "label": "Grok Imagine", "note": "Tạo ảnh và video" },
+      { "icon": "terminal", "label": "Grok Code", "note": "Viết mã nhanh hơn" },
+      { "icon": "plug", "label": "Grok API", "note": "Gắn vào sản phẩm" }
+    ],
+    "hero": 1
+  },
+  "stress": {
+    "heading": "Toàn bộ hệ sinh thái Grok trong một cảnh",
+    "items": [
+      { "icon": "chat", "label": "Ứng dụng di động", "note": "Trò chuyện bằng giọng nói" },
+      { "icon": "image", "label": "Tạo ảnh bằng chữ", "note": "Mô tả xong là có ngay" },
+      { "icon": "terminal", "label": "Lập trình cùng AI", "note": "Viết, sửa và giải thích" },
+      { "icon": "plug", "label": "Giao diện kết nối", "note": "Kết nối mọi dịch vụ khác" },
+      { "icon": "globe", "label": "Tìm kiếm trên mạng", "note": "Tin tức cập nhật từng giờ" },
+      { "icon": "shield", "label": "Chế độ riêng tư", "note": "Không lưu lịch sử chat" }
+    ],
+    "hero": 5
+  }
+}

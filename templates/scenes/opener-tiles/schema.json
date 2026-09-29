@@ -1,0 +1,24 @@
+{
+  "id": "opener-tiles",
+  "family": "opener-tiles",
+  "accent": true,
+  "variants": ["sweep", "ripple"],
+  "signatures": ["sweep"],
+  "zone": { "sweep": "hero-center", "ripple": "hero-center" },
+  "slots": {
+    "type": "object",
+    "required": ["headline", "reverse"],
+    "additionalProperties": false,
+    "properties": {
+      "kicker": { "type": "string", "maxLength": 32 },
+      "headline": { "type": "string", "minLength": 1, "maxLength": 16, "description": "printed across the tile surface" },
+      "reverse": { "type": "string", "minLength": 1, "maxLength": 16, "description": "on the back of the tiles, shown when they turn over" }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "headline": { "default": "kw", "range": false },
+    "reverse": { "default": "kw", "range": false, "after": "headline" }
+  },
+  "duration": { "min": 3.5, "max": 12 }
+}

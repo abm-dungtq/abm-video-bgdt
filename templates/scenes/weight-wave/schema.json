@@ -1,0 +1,22 @@
+{
+  "id": "weight-wave",
+  "family": "weight-wave",
+  "variants": ["wave", "specimen"],
+  "signatures": ["wave"],
+  "zone": { "wave": "hero-center", "specimen": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["text"],
+    "additionalProperties": false,
+    "properties": {
+      "text": { "type": "string", "minLength": 1, "maxLength": 28, "description": "a short keyword phrase, one line" },
+      "focus": { "type": "string", "maxLength": 16, "description": "a word of text that ends extra-bold in gold" },
+      "caption": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "text": { "default": "kw", "range": false },
+    "caption": { "default": "spread", "range": false, "after": "text" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

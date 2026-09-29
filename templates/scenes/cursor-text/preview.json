@@ -1,0 +1,22 @@
+{
+  "template": "cursor-text",
+  "variant": "retype",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "lead": "Grok sẽ",
+    "draft": "thay lập trình viên",
+    "fix": "giúp lập trình viên",
+    "tail": "làm nhanh hơn",
+    "note": "Người vẫn quyết định, máy lo phần lặp lại"
+  },
+  "stress": {
+    "lead": "Trợ lý AI trong công việc hằng ngày sẽ",
+    "draft": "thay thế toàn bộ nhân sự",
+    "fix": "gánh bớt việc lặp đi lặp",
+    "tail": "lại để con người dồn sức sáng tạo",
+    "note": "Công cụ mạnh nhất vẫn cần người biết đặt câu hỏi"
+  }
+}

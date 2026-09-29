@@ -1,0 +1,16 @@
+{
+  "template": "handwritten-note",
+  "variant": "title",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "text": "Hỏi rõ, đáp đúng",
+    "note": "Câu hỏi càng cụ thể, câu trả lời càng sát"
+  },
+  "stress": {
+    "text": "Đừng vội tin ngay, hãy kiểm chứng lại kỹ",
+    "note": "Mô hình có thể bịa số liệu, nhất là ngày tháng, tên gọi."
+  }
+}

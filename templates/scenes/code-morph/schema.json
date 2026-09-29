@@ -1,0 +1,31 @@
+{
+  "id": "code-morph",
+  "family": "code-morph",
+  "variants": ["flip", "summary"],
+  "signatures": ["flip"],
+  "zone": { "flip": "hero-center", "summary": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["file", "before", "after"],
+    "additionalProperties": false,
+    "properties": {
+      "file": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "before": {
+        "type": "array", "minItems": 1, "maxItems": 10,
+        "description": "the real code before the change, one string per line",
+        "items": { "type": "string", "maxLength": 44 }
+      },
+      "after": {
+        "type": "array", "minItems": 1, "maxItems": 10,
+        "description": "the same code after the change; shared tokens glide to their new place",
+        "items": { "type": "string", "maxLength": 44 }
+      },
+      "note": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "after": { "default": "kw", "range": false },
+    "note": { "default": "spread", "range": false, "after": "after" }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

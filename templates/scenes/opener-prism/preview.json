@@ -1,0 +1,7 @@
+{
+  "template": "opener-prism",
+  "variant": "center",
+  "window": ["start", "end"],
+  "slots": { "title": "Hệ sinh thái Grok", "kicker": "Chương 1 · Tổng quan", "chapterNo": 1 },
+  "stress": { "title": "Grok trên điện thoại và máy tính", "kicker": "Chương mười hai · Nâng cao", "chapterNo": 12 }
+}

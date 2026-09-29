@@ -1,0 +1,38 @@
+{
+  "id": "ui-reveal",
+  "family": "ui-reveal",
+  "variants": ["tilt", "angle"],
+  "signatures": ["tilt"],
+  "zone": { "tilt": "screen-focus", "angle": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["app", "cards"],
+    "additionalProperties": false,
+    "properties": {
+      "app": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the product name in the window title bar" },
+      "nav": {
+        "type": "array", "minItems": 2, "maxItems": 5,
+        "description": "sidebar menu items; the first is the active page",
+        "items": { "type": "string", "minLength": 1, "maxLength": 16 }
+      },
+      "headline": { "type": "string", "maxLength": 36 },
+      "cards": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "metric cards that load in on their keywords",
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 },
+            "value": { "type": "string", "maxLength": 10 }
+          }
+        }
+      },
+      "caption": { "type": "string", "maxLength": 40 }
+    }
+  },
+  "reveals": {
+    "cards.*": { "default": "kw", "range": false },
+    "caption": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

@@ -1,0 +1,18 @@
+{
+  "template": "weight-wave",
+  "variant": "wave",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "text": "Ngữ cảnh là tất cả",
+    "focus": "Ngữ cảnh",
+    "caption": "Cùng câu hỏi, thêm ngữ cảnh thì đáp án khác hẳn"
+  },
+  "stress": {
+    "text": "Kiểm chứng trước khi tin nhé",
+    "focus": "Kiểm chứng trước",
+    "caption": "Mô hình trả lời trôi chảy chưa chắc đúng sự thật"
+  }
+}

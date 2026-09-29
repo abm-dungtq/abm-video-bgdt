@@ -1,0 +1,25 @@
+{
+  "id": "cursor-text",
+  "family": "cursor-text",
+  "variants": ["retype", "select"],
+  "signatures": ["retype"],
+  "zone": { "retype": "hero-center", "select": "full-bleed-quote" },
+  "slots": {
+    "type": "object",
+    "required": ["lead", "draft", "fix"],
+    "additionalProperties": false,
+    "properties": {
+      "lead": { "type": "string", "minLength": 1, "maxLength": 40, "description": "the words that stay, typed first" },
+      "draft": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the first attempt, typed then erased" },
+      "fix": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the correction typed in its place" },
+      "tail": { "type": "string", "maxLength": 36, "description": "words after the correction" },
+      "note": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "lead": { "default": "spread", "range": false },
+    "fix": { "default": "kw", "range": false },
+    "note": { "default": "spread", "range": false, "after": "fix" }
+  },
+  "duration": { "min": 4, "max": 10 }
+}

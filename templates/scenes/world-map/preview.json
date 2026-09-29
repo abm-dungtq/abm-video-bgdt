@@ -1,0 +1,27 @@
+{
+  "template": "world-map",
+  "variant": "callouts",
+  "window": ["start", "end"],
+  "slots": {
+    "title": "Grok đã có mặt ở đâu?",
+    "regions": [
+      { "region": "us", "label": "Hoa Kỳ", "value": "Từ 11/2023" },
+      { "region": "br", "label": "Brazil", "value": "Từ 5/2024" },
+      { "region": "eu", "label": "Liên minh châu Âu", "value": "Từ 5/2024" },
+      { "region": "vn", "label": "Việt Nam", "value": "Từ 8/2024" },
+      { "region": "jp", "label": "Nhật Bản", "value": "Từ 8/2024" },
+      { "region": "au", "label": "Úc", "value": "Từ 8/2024" }
+    ]
+  },
+  "stress": {
+    "title": "Các thị trường đầu tiên có trợ lý AI này",
+    "regions": [
+      { "region": "north-america", "label": "Bắc Mỹ và các đảo gần", "value": "Hơn 12 triệu" },
+      { "region": "south-america", "label": "Nam Mỹ và vùng Caribê", "value": "Khoảng 8 tr." },
+      { "region": "europe", "label": "Châu Âu mở rộng thêm", "value": "Hơn 15 triệu" },
+      { "region": "africa", "label": "Châu Phi cận Sahara", "value": "Dưới 2 triệu" },
+      { "region": "southeast-asia", "label": "Đông Nam Á lục địa", "value": "Gần 9 triệu" },
+      { "region": "oceania", "label": "Châu Đại Dương rộng", "value": "Khoảng 3 tr." }
+    ]
+  }
+}

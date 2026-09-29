@@ -1,0 +1,18 @@
+{
+  "template": "callout-sentence",
+  "variant": "marker",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "text": "Mô hình không nhớ gì giữa hai lần gọi, trừ khi bạn gửi lại ngữ cảnh.",
+    "key": "gửi lại ngữ cảnh",
+    "source": "Tài liệu hướng dẫn Claude API"
+  },
+  "stress": {
+    "text": "Một câu lệnh rõ ràng, có ví dụ cụ thể và tiêu chí đánh giá, luôn cho kết quả tốt hơn hẳn một câu lệnh dài dòng",
+    "key": "tiêu chí đánh giá, luôn cho kết",
+    "source": "Tài liệu hướng dẫn viết câu lệnh cho AI."
+  }
+}

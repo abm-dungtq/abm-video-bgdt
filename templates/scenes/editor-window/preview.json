@@ -1,0 +1,59 @@
+{
+  "template": "editor-window",
+  "variant": "workbench",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "project": "tro-ly-hoc-tap",
+    "file": "tom_tat.py",
+    "files": [
+      "bai_giang.md",
+      "test_tom_tat.py"
+    ],
+    "lines": [
+      "from anthropic import Anthropic",
+      "",
+      "def tom_tat(vb: str) -> str:",
+      "    client = Anthropic()",
+      "    reply = client.messages.create(",
+      "     model=\"claude-sonnet\", max_tokens=300,",
+      "     messages=[{\"role\": \"user\", \"content\": vb}])",
+      "    return reply.content[0].text"
+    ],
+    "run": "python -m pytest -q",
+    "output": [
+      "3 passed in 1.2s",
+      "Tất cả bài kiểm thử đều đạt"
+    ]
+  },
+  "stress": {
+    "project": "tro-ly-ca-nhan-cua-toi-2",
+    "file": "xu_ly_tin_nhan_moi_nhat.py",
+    "files": [
+      "huong_dan_su_dung.md",
+      "kiem_thu_tin_nhan.py",
+      "cau_hinh_mo_hinh.toml",
+      "ghi_chu_phat_trien.md"
+    ],
+    "lines": [
+      "# Đọc hộp thư, lọc tin chưa đọc rồi tóm tắt lại",
+      "def xu_ly(hop_thu, tu_ngay, gioi_han=20):",
+      "    chua_doc = [m for m in hop_thu if not m.rd]",
+      "    moi = [m for m in chua_doc if m.at > tu_ng]",
+      "    moi.sort(key=lambda m: m.at, reverse=True)",
+      "    ket_qua = []",
+      "    for tin in moi[:gioi_han]:",
+      "        ket_qua.append(tom_tat(tin.noi_dung))",
+      "    luu_nhat_ky(len(ket_qua), 'đã tóm tắt xong')",
+      "    return ket_qua  # trả về danh sách tóm tắt"
+    ],
+    "run": "python -m pytest tests/ -q --maxfail=12",
+    "output": [
+      "12 passed, 0 failed in 3.48s (tro-ly-ca-nhan)",
+      "Cảnh báo: còn 2 hàm chưa có chú thích kiểu dữ",
+      "Tất cả bài kiểm thử đều đạt, sẵn sàng triển khai"
+    ]
+  }
+}

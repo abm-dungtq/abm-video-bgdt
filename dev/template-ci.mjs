@@ -117,16 +117,22 @@ if (compiled.length) {
   {
     let t0 = 0;
     const at = compiled.flatMap((c) => { const s = t0; t0 += c.dur; return [0.2, 0.55, 0.9].map((f) => (s + f * c.dur).toFixed(2)); });
-    const r = shTry(`npx -y ${HF} check --json --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --max-issues 400 --at ${at.join(",")}`);
-    let report = null;
-    try { report = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1)); } catch { errs.set("_project", [...(errs.get("_project") ?? []), `check did not return JSON: ${r.out.slice(-300)}`]); }
-    for (const section of ["runtime", "layout", "contrast"]) {
-      for (const f of report?.[section]?.findings ?? []) {
-        if (f.severity !== "error") continue;
-        const n = Number((f.selector ?? "").match(/[#.]f(\d+)-/)?.[1]);
-        const c = compiled.find((x) => x.n === n);
-        const line = `check ${f.code} ${f.selector}${f.text ? ` "${f.text}"` : ""} at ${f.time}s`;
-        (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line}`);
+    // Windows caps a command line at 8191 characters, so a full run samples in chunks of 400 timestamps
+    const seen = new Set();
+    for (let k = 0; k < at.length; k += 400) {
+      const r = shTry(`npx -y ${HF} check --json --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --max-issues 400 --at ${at.slice(k, k + 400).join(",")}`);
+      let report = null;
+      try { report = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1)); } catch { errs.set("_project", [...(errs.get("_project") ?? []), `check did not return JSON: ${r.out.slice(-300)}`]); }
+      for (const section of ["runtime", "layout", "contrast"]) {
+        for (const f of report?.[section]?.findings ?? []) {
+          if (f.severity !== "error") continue;
+          const n = Number((f.selector ?? "").match(/[#.]f(\d+)-/)?.[1]);
+          const c = compiled.find((x) => x.n === n);
+          const line = `check ${f.code} ${f.selector}${f.text ? ` "${f.text}"` : ""} at ${f.time}s`;
+          if (seen.has(line)) continue;
+          seen.add(line);
+          (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line}`);
+        }
       }
     }
   }

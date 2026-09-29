@@ -252,6 +252,10 @@ test("authored: a template back within pairGap shots is an error", () => {
   const flat = ["stat", "cards", "hub", "stat"].map((t, i) => aShot(i + 1, t));
   eq(varietyErrors(flat, AUTH), ["frame 4: stat comes back within 6 shots (scenes.pairGap)"]);
 });
+test("authored: two accent shots in one chapter is an error", () => {
+  const flat = [{ ...aShot(1, "opener-prism"), accent: true }, aShot(2, "cards"), { ...aShot(3, "accent-orbit"), accent: true }, { ...aShot(4, "accent-cuboids"), accent: true }];
+  eq(varietyErrors(flat, AUTH, [[1, 2, 3], [4]]), ["chapter 0: 2 accent shots, at most 1"]);
+});
 test("authored: two chapters opening alike is an error", () => {
   const flat = [aShot(1, "title", "big-type"), aShot(2, "cards"), aShot(3, "title", "big-type"), aShot(4, "hub")];
   eq(varietyErrors(flat, AUTH, [[1, 2], [3, 4]]), ["chapter 1: opens with title/big-type like chapter 0 (scenes.uniqueChapterOpeners)"]);
