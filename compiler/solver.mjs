@@ -4,9 +4,10 @@
 //
 //   node tools/compiler/solver.mjs --auto [--estimated] [--seed N] [--out scenes.json]
 //
-// Per frame: split into 1–3 shots at sentence boundaries (each ≤ scenes.maxShotS and inside the template's duration
-// range); shot 1 follows the frame's scene_hint, later shots follow their content (numbers → stat, many phrases →
-// cards/hub/flow/journey/anchor, a comparison → split, else kinetic/zoom/pictogram/typewriter). Slots come from the
+// Per frame: split into 1–3 shots at sentence boundaries (more only when the frame's own duration needs it, each
+// shot ≤ scenes.maxShotS and inside the template's duration range); shot 1 follows the frame's scene_hint, later
+// shots follow their content (numbers → stat, many phrases → cards/hub/flow/journey/anchor, a comparison → split,
+// else kinetic/zoom/pictogram/typewriter). Slots come from the
 // keyword phrases (runs of *keyword* tokens in one sentence), the frame title, spoken numbers and capture/terminal.
 // A template whose slots cannot be filled within its limits falls back to the next candidate; never cut a word.
 // Variety: no family twice in a row (across frames too), a (template, variant) pair not reused within 6 shots, new
@@ -583,10 +584,13 @@ export function fitOk(fit, c) {
   return true;
 }
 
-function splitShots(sents, a, b, maxShot, minShot = 2.5, minN = 1) {
+export function splitShots(sents, a, b, maxShot, minShot = 2.5, minN = 1) {
   const dur = b - a;
-  let n = Math.max(minN, Math.min(3, Math.ceil(dur / maxShot), sents.length));
-  for (; n <= Math.min(3, sents.length); n++) {
+  // up to 3 shots normally; a frame whose duration alone needs more (dur > 3 * maxShot) grows past 3, one sentence
+  // per shot at most, so a long frame's real narration is never stranded in a single over-length shot
+  const capN = Math.min(sents.length, Math.max(3, Math.ceil(dur / maxShot)));
+  let n = Math.max(minN, Math.min(capN, Math.ceil(dur / maxShot), sents.length));
+  for (; n <= capN; n++) {
     // boundaries just before the first sentence of each later group, chosen nearest to an even split
     const cuts = [];
     for (let k = 1; k < n; k++) {
@@ -748,10 +752,13 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
         let chosen = null;
         const cands = candidates(c, types, videoUsed, dir).filter((t) => schemas[t]);
         // the director's preferences (keep the hint's family for the closing shot, no half-empty split) give way when
-        // nothing else fits the shot
+        // nothing else fits the shot; so does the reuse cap (used twice already), once ignoring it is the only way
+        // a shot gets a template at all — a guess at a fresher candidate must not cost the shot its only candidate
         for (const relaxed of D ? [false, true] : [false]) {
         if (chosen) break;
         if (D) c.relaxed = relaxed;
+        for (const ignoreOveruse of [false, true]) {
+        if (chosen) break;
         for (const [rank, t] of cands.entries()) {
           const schema = schemas[t];
           if (schema.family === prevFamily) continue;
@@ -764,7 +771,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           const wholeHint = whole && t === hintT;
           const max = wholeHint && d.max != null ? Math.max(d.max, WHOLE_FRAME_MAX_S) : d.max;
           if ((d.min != null && len < d.min - 0.01) || (max != null && len > max + 0.01)) continue;
-          if (!wholeHint && !(D && c.hintHere && t === hintT) && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
+          if (!ignoreOveruse && !wholeHint && !(D && c.hintHere && t === hintT) && t !== "title" && (used.get(t) ?? 0) >= 2 && cands.slice(rank + 1).some((x) => schemas[x] && (used.get(x) ?? 0) < 2 && schemas[x].family !== prevFamily)) continue;
           const lab = Boolean(frame.labels?.length && !labelsUsed && LABELED.has(t)
             && (t === hintT || !LABELED.has(hintT) || i === (D ? hintShot : windows.length - 1)));
           const built = BUILD[t](lab ? withLabels(c, frame.labels) : c);
@@ -775,6 +782,18 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
             try {
               const v = String(cue).split("..").map((x) => resolve(x, ctx, a));
               if (v[0] < a - 0.05 || v.at(-1) > b - (v.length > 1 ? 0 : 0.3)) delete built.reveals[k];
+            } catch { delete built.reveals[k]; }
+          }
+          // a schema's "after" rule (e.g. a quiz's answer after its last option) is a narration guess (cueOf a
+          // phrase, or a label's sentence start): drop it when it lands before the key it must follow, the lint
+          // default then takes over and lands after that key in the shot's own reveal order
+          for (const [k, cue] of Object.entries(built.reveals)) {
+            const after = schema.reveals?.[k]?.after ?? schema.reveals?.[k.replace(/\.\d+$/, ".*")]?.after;
+            if (!after || !(after in built.reveals)) continue;
+            try {
+              const v = resolve(String(cue).split("..")[0], ctx, a);
+              const va = resolve(String(built.reveals[after]).split("..")[0], ctx, a);
+              if (v < va) delete built.reveals[k];
             } catch { delete built.reveals[k]; }
           }
           // a long silence before the shot's first keyword: bring its first element in early instead of leaving the
@@ -806,6 +825,7 @@ export async function solve({ P, cfg, estimated = false, seed = 20260928 }) {
           if (t !== "title" && (schema.signatures ?? []).includes(variant)) signature = true;
           prevFamily = schema.family;
           break;
+        }
         }
         }
         if (!chosen) throw new Error(`frame ${frame.id} shot ${i + 1}: no template fits (${cands.join(", ")})`);
@@ -865,7 +885,9 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
       for (const x of best.v) console.log(`solver: scorecard FAIL ${x.key}=${x.value} (${x.limit})`);
     }
     const out = opt("--out", "scenes.json");
-    writeFileSync(join(P, out), JSON.stringify(scenes, null, 1) + "\n");
+    // --out may be an absolute scratch path (so a solve never touches a delivered project's scenes.json); join()
+    // does not special-case that, so resolve it against P the way an absolute path is supposed to win
+    writeFileSync(resolvePath(P, out), JSON.stringify(scenes, null, 1) + "\n");
     const res = await analyze({ P: P, cfg, estimated });
     if (out !== "scenes.json") console.log("(lint ran on scenes.json; pass --out scenes.json to lint the new file)");
     const templates = new Set(scenes.frames.flatMap((f) => f.shots.map((s) => s.template))).size;
