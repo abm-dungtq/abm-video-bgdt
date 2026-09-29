@@ -28,7 +28,10 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 - `slots` must match the template's slots exactly (lint names the field that is wrong). Text is on-screen copy: short
   labels in Vietnamese with full diacritics, never whole narration sentences (the karaoke band shows those).
 - `reveals` is optional: a key you leave out lands on the next keyword phrase of the window (`kw` keys) or is spread
-  evenly (`spread` keys). A cue you give must fall inside the shot.
+  evenly (`spread` keys). A cue you give must fall inside the shot. Defaults rarely hit the word that says an item:
+  pin every item, label and value with `word:<its word>-0.1`, and write copy the voice actually says. Lint checks each
+  reveal against the aligned voice (voice sync, 1.2 s): under authoring `claude` a defaulted reveal that misses is an
+  error, a pinned one a warning. Headings, titles and kickers are exempt; they may open the shot.
 - Icons: `person people doc docs folder card-stack terminal cloud server key lock shield target timer question check
   cross arrow spark chat mail calendar chart gear plug book lightbulb rocket globe image briefcase`.
 - `rail` (optional) lights 2–4 pills across the top of the frame on their cues; keep that frame's content below y 140.

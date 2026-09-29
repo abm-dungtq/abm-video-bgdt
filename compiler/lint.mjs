@@ -6,13 +6,15 @@
 // Errors: scenes.json shape (C2), template/variant, slots against the template schema, cues that do not resolve,
 // shots that do not tile [0, duration] (±0.2 s) or break the template's duration range, custom share above
 // scenes.customBudget (legacy projects excepted), glyphs the fonts lack, and two consecutive shots (also across
-// frames) with the same template+variant or the same family.
+// frames) with the same template+variant or the same family. Voice sync (aligned voice only): a reveal whose words are
+// never said in the frame or are said more than SYNC_TOL_S away is an error under authoring "claude" when the time came
+// from a default, a warning when the author pinned it.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { validate } from "./schema.mjs";
-import { endsPhrase, frameCtx, resolve, resolveRange } from "./cues.mjs";
+import { endsPhrase, frameCtx, norm, resolve, resolveRange } from "./cues.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const TEMPLATES = resolvePath(HERE, "../templates/scenes");
@@ -115,6 +117,34 @@ function revealTimes(keys, schema, spec, ctx, a, b) {
   return out;
 }
 
+// Voice sync: on-screen copy should land on the words that say it. Framing keys (a heading, a kicker) and non-text
+// keys are exempt; function words never count as a match.
+export const SYNC_TOL_S = 1.2;
+const FRAMING_KEYS = new Set(["heading", "title", "kicker", "subtitle", "app", "headline", "file", "number", "chapterNo"]);
+const STOP = new Set(("của và cho một là có các những trong với từ để thì mà rồi này đó nó bạn ra lên vào được cũng như khi nếu "
+  + "đã sẽ không chỉ còn đều hay hoặc ở trên dưới qua lại mình ai gì nào").split(" "));
+const words = (s) => norm(s).replace(/(\d)\.(?=\d)/g, "$1").split(/\s+/).filter((w) => w && !STOP.has(w));
+const textOf = (v) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : Array.isArray(v) ? v.map(textOf).join(" ")
+  : v && typeof v === "object" ? Object.entries(v).filter(([k]) => k !== "icon" && k !== "kind").map(([, x]) => textOf(x)).join(" ") : "");
+
+/** [{ key, text, at, spoken, explicit }] for the reveals whose words are never said in the frame or land > SYNC_TOL_S away. */
+export function voiceSyncIssues(spec, times, ctx) {
+  const spokenAt = ctx.tokens.map((t, i) => [norm(t.display).replace(/(\d)\.(?=\d)/g, "$1"), ctx.times[i].start]);
+  const out = [];
+  for (const [key, t] of Object.entries(times)) {
+    if (FRAMING_KEYS.has(key.split(".")[0])) continue;
+    const slot = key.split(".").reduce((v, k) => (v == null ? v : v[k]), spec.slots);
+    if (typeof slot === "number" && key !== "value") continue; // an index (pick, hero, current), not copy
+    const text = textOf(slot), want = new Set(words(text));
+    if (!want.size) continue;
+    const at = Array.isArray(t) ? t[0] : t;
+    const hits = spokenAt.filter(([w]) => want.has(w)).map(([, s]) => s);
+    const spoken = hits.length ? hits.reduce((p, s) => (Math.abs(s - at) < Math.abs(p - at) ? s : p)) : null;
+    if (spoken == null || Math.abs(at - spoken) > SYNC_TOL_S) out.push({ key, text, at, spoken: spoken == null ? null : r2(spoken), explicit: !!spec.reveals?.[key] });
+  }
+  return out;
+}
+
 /**
  * Resolve every frame. Returns { frames: [{ no, custom, duration, shots: [{ spec, schema, mod, variant, a, b, times }] }],
  * errors, warnings, stats }.
@@ -193,6 +223,12 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       const valid = !validate(tpl.schema.slots, s.slots).length;
       if (valid) {
         try { times = revealTimes(tpl.mod.revealKeys(s.slots, variant), tpl.schema, s, ctx, a, b); } catch (e) { errors.push(`${at}: ${e.message}`); }
+      }
+      // under authoring claude a defaulted reveal that misses its words is an error; an explicit cue is the author's call
+      if (!estimated) for (const v of voiceSyncIssues(s, times, ctx)) {
+        const what = v.spoken == null ? "is never said in this frame" : `is said at ${v.spoken} s`;
+        const msg = `${at}: reveal ${v.key} "${v.text.slice(0, 40)}" at ${v.at} s ${what}: pin it with "reveals": { "${v.key}": "word:<its word>-0.1" } or change the copy to what the voice says`;
+        (cfg.scenes?.authoring === "claude" && !v.explicit && !legacy ? errors : warnings).push(msg);
       }
       const firstKey = Math.min(...Object.values(times).map((v) => (Array.isArray(v) ? v[0] : v)));
       if (Number.isFinite(firstKey) && firstKey - a > 2.0) warnings.push(`${at}: the first reveal comes ${r2(firstKey - a)} s after the shot starts: move the window start nearer its first keyword`);
