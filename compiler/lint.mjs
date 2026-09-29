@@ -30,6 +30,7 @@ const SCENES_SCHEMA = {
       type: "object", required: ["frame"], additionalProperties: false,
       properties: {
         frame: { type: "integer", minimum: 1 }, custom: { type: "boolean" }, seed: { type: "integer" },
+        idea: { type: "string", minLength: 10, maxLength: 400 },
         rail: { type: ["object", "null"], required: ["slots", "at"], additionalProperties: false, properties: {
           slots: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", minLength: 1, maxLength: 18 } },
           at: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" } } } },
@@ -140,6 +141,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   for (const f of board) if (!byNo.has(f.no)) errors.push(`frame ${f.no}: no entry in scenes.json`);
   for (const f of scenes.frames) if (!board.some((b) => b.no === f.frame)) errors.push(`frame ${f.frame}: not in STORYBOARD.md`);
   if (scenes.frames.length !== byNo.size) errors.push("scenes.json: a frame number appears twice");
+  errors.push(...ideaErrors(scenes.frames, cfg.scenes));
 
   const out = [];
   const flat = []; // every compiled shot in order, for the variety warnings
@@ -211,7 +213,8 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   }
   if (variety) {
     warnings.push(...varietyWarnings({ flat, out, script, byNo }));
-    (legacy ? warnings : errors).push(...varietyErrors(flat));
+    const chapterFrames = script.chapters.map((c) => c.frames.map((f) => f.id));
+    (legacy ? warnings : errors).push(...varietyErrors(flat, cfg.scenes, chapterFrames));
     // the first shot of a frame follows the scene_hint the script chose for it; under the director (scenes.director)
     // the hint closes a long frame, so any shot of the frame may carry it
     for (const f of out) {
@@ -249,13 +252,23 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   process.exit(res.errors.length ? 1 : 0);
 }
 
+/** Under authoring "claude" every frame records its visual idea (references/direction.md). */
+export function ideaErrors(frames, sc = {}) {
+  if (sc?.authoring !== "claude") return [];
+  return frames.filter((f) => !f.idea).map((f) => `frame ${f.frame}: needs "idea" (authoring claude, see references/direction.md)`);
+}
+
 /**
  * Variety errors (warnings in legacy projects), for 10 shots or more: E1 one family (title excluded) takes more than
  * 25 % of the shots · E2 the video uses fewer than min(10, shots / 3) templates. A lesson that leans on one or two
  * layouts bores the viewer even when no pair repeats back to back.
+ * Under authoring "claude" (sc = cfg.scenes), at any length, title excluded: E3 a template is used more than
+ * sc.maxUsesPerTemplate times · E4 a template comes back within sc.pairGap shots · E5 (sc.uniqueChapterOpeners) two
+ * chapters open with the same template/variant. `chapters` lists each chapter's frame numbers.
  */
-function varietyErrors(flat) {
+export function varietyErrors(flat, sc = {}, chapters = []) {
   const e = [];
+  if (sc?.authoring === "claude") e.push(...authoredErrors(flat, sc, chapters));
   const body = flat.filter((s) => s.family !== "title");
   if (body.length < 10) return e;
   const byFamily = new Map();
@@ -266,6 +279,35 @@ function varietyErrors(flat) {
   const distinct = new Set(flat.map((s) => s.template)).size;
   const need = Math.min(10, Math.ceil(flat.length / 3));
   if (distinct < need) e.push(`the video uses ${distinct} templates, fewer than ${need} for ${flat.length} shots`);
+  return e;
+}
+
+function authoredErrors(flat, sc, chapters) {
+  const e = [];
+  const body = flat.filter((s) => s.family !== "title");
+  const max = sc.maxUsesPerTemplate;
+  if (max) {
+    const uses = new Map();
+    for (const s of body) uses.set(s.template, (uses.get(s.template) ?? 0) + 1);
+    for (const [t, n] of uses) if (n > max) e.push(`${t}: used ${n} times, at most ${max} (scenes.maxUsesPerTemplate)`);
+  }
+  const gap = sc.pairGap;
+  if (gap) {
+    body.forEach((s, i) => {
+      const back = body.slice(Math.max(0, i - (gap - 1)), i);
+      if (back.some((x) => x.template === s.template)) e.push(`frame ${s.frame}: ${s.template} comes back within ${gap} shots (scenes.pairGap)`);
+    });
+  }
+  if (sc.uniqueChapterOpeners) {
+    const seen = new Map();
+    chapters.forEach((frames, ci) => {
+      const first = flat.find((s) => frames.includes(s.frame));
+      if (!first) return;
+      const key = `${first.template}/${first.variant}`;
+      if (seen.has(key)) e.push(`chapter ${ci}: opens with ${key} like chapter ${seen.get(key)} (scenes.uniqueChapterOpeners)`);
+      else seen.set(key, ci);
+    });
+  }
   return e;
 }
 

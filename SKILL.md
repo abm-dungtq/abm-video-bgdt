@@ -29,8 +29,9 @@ If the machine is not ready it says `doctor`; `abm-video doctor --fix` installs 
    noun phrases as `*keywords*`; they become the on-screen labels. Give every chapter its own arc (§ Chapter arcs: no
    two chapters on the same scene hints), write a list's items on a `| a / b / c` line, and use `exercise` at most once
    in the whole video.
-3. **Scenes (optional edits):** the storyboard stage writes `scenes.json` from templates. Review and adjust it with
-   [references/scene-spec.md](references/scene-spec.md). At most 15 % of frames may be `custom` (hand-built with
+3. **Scenes:** under `authoring: "claude"` (the default) the coordinator writes `scenes.json` by hand, one visual
+   `idea` per frame, following [references/direction.md](references/direction.md); a worker never does. Older projects
+   let the storyboard stage's solver write it. Shape and catalog: [references/scene-spec.md](references/scene-spec.md). At most 15 % of frames may be `custom` (hand-built with
    [references/custom-frame.md](references/custom-frame.md)).
 4. **Gate answers:** when `next` asks for a gate, show the user the file it names, then record the user's own words:
    `abm-video gate <n> --approve "<what they said>"` or `--reject "<the changes>"`. The gates: pronunciation and pace (1),

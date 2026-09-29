@@ -62,6 +62,7 @@ if (minutes !== null) {
   config.budget.targetS = [Math.round(57 * n), Math.round(63 * n)];
   config.budget.frames = [Math.round(4.5 * n), Math.round(6.5 * n)];
   config.budget.syllables = { total: Math.round(205 * n), range: [Math.round(195 * n), Math.round(210 * n)] };
+  config.scenes.maxUsesPerTemplate = n <= 5 ? 2 : 3;
 }
 if (theme) {
   const themePath = join(SKILL, "templates/themes", `${theme}.json`);

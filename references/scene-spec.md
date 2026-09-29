@@ -1,6 +1,7 @@
 # scenes.json — the only file you edit to change the visuals
 
-The storyboard stage writes `scenes.json` for you (`compiler/solver.mjs`); `abm-video run compile` turns it into every
+Under `authoring: "claude"` the coordinator writes `scenes.json` by hand ([direction.md](direction.md)); in older
+projects the storyboard stage writes it (`compiler/solver.mjs`). `abm-video run compile` turns it into every
 frame's HTML. You never write HTML or GSAP for a compiled frame. Edit the JSON when a shot reads wrong, then compile
 again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs inside the storyboard and compile stages).
 

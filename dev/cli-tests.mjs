@@ -152,6 +152,25 @@ out = scenario("stale", (D, st) => {
 });
 check("next: a changed input reruns its stage", /NEXT: run stage script[\s\S]*WHY: stage script is stale/.test(out), out);
 
+// ── authoring "claude": the storyboard stage never runs the solver ──────────────
+const claudeCfg = (D) => {
+  const c = JSON.parse(readFileSync(join(D, "video.config.json"), "utf8"));
+  c.scenes = { ...c.scenes, authoring: "claude" };
+  writeFileSync(join(D, "video.config.json"), JSON.stringify(c, null, 2));
+};
+out = scenario("authoring", (D, st) => {
+  claudeCfg(D);
+  rmSync(join(D, "scenes.json"), { force: true });
+  done(D, st, "doctor", "init", "probe", "script", "tts", "voice");
+  approveAll(D, st, "1", "2");
+});
+check("next: authoring claude without scenes.json asks the coordinator", /NEXT: the coordinator \(Claude\) writes scenes\.json/.test(out), out);
+{
+  const D = join(dirname(R), "cli-next-authoring");
+  const r = spawnSync(process.execPath, [join(S, "bin/abm-video.mjs"), "run", "storyboard"], { cwd: D, encoding: "utf8" });
+  check("run storyboard under authoring claude without scenes.json fails", r.status !== 0 && r.stderr.includes('authoring is "claude"'), `${r.status}\n${r.stdout}${r.stderr}`);
+}
+
 // ── init --minutes sizes the budget ─────────────────────────────────────────────
 const M = join(dirname(R), "cli-minutes");
 rmSync(M, { recursive: true, force: true });

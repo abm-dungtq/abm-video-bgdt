@@ -69,6 +69,10 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
       if (st.name === "clean") {
         return { next: "remove the regenerable files (renders are kept)", run: `${cli} run clean --apply`, why: "the final video is done" };
       }
+      if (st.name === "storyboard" && cfg.scenes?.authoring === "claude" && !existsSync(join(P, "scenes.json"))) {
+        return { next: "the coordinator (Claude) writes scenes.json from references/direction.md", run: `(Claude writes scenes.json, then) ${cli} run storyboard`,
+          why: "authoring is claude: a worker never picks the visuals" };
+      }
       if (st.name === "compile" && existsSync(join(P, "scenes.json")) && !s.stages.compile) {
         return { next: "review scenes.json (optional edits, see references/scene-spec.md), then compile", run: `${cli} run compile`,
           why: "the solver wrote scenes.json; templates, slots and custom frames can be adjusted before the first compile" };

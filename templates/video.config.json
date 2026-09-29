@@ -75,6 +75,10 @@
       "layers"
     ],
     "terminalChapters": [],
+    "authoring": "claude",
+    "maxUsesPerTemplate": 3,
+    "pairGap": 6,
+    "uniqueChapterOpeners": true,
     "maxShotS": 10,
     "director": true,
     "minShotsLongFrame": {

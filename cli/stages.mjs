@@ -132,7 +132,8 @@ export const STAGES = [
       );
     } },
   { name: "storyboard", needs: { stages: ["voice"], gates: [] }, inputs: ["audio_meta.json", "scenes.json"],
-    // scenes.json is written once by the solver and then only linted (never overwritten; --regenerate keeps a .bak);
+    // scenes.json is written once (by the coordinator under authoring "claude", else by the solver) and then only
+    // linted (never overwritten; --regenerate runs the solver and keeps a .bak);
     // retime-and-cue only serves hand-built storyboards of legacy projects
     run: (c) => {
       const scenes = join(c.P, "scenes.json");
@@ -144,6 +145,10 @@ export const STAGES = [
         );
       }
       if (existsSync(scenes) && !c.args.includes("--regenerate")) return sh(c.P, [process.execPath, `${compilerDir(c)}/lint.mjs`]);
+      if ((c.cfg.scenes?.authoring ?? "solver") === "claude" && !existsSync(scenes) && !c.args.includes("--regenerate")) {
+        console.error('✗ scenes.json missing: authoring is "claude" — the coordinator writes it from references/direction.md (the solver is not run)');
+        return 1;
+      }
       if (existsSync(scenes)) {
         const bak = `scenes.json.bak-${new Date().toISOString().replace(/[:.]/g, "-")}`;
         renameSync(scenes, join(c.P, bak));

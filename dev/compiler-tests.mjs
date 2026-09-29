@@ -11,6 +11,7 @@ import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
 import { BUILD, fitOk, numbers, splitShots, withLabels } from "../compiler/solver.mjs";
+import { ideaErrors, varietyErrors } from "../compiler/lint.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -234,6 +235,27 @@ test("dialogue: lead-ins and clock times are not speakers", () => {
 test("funnel: a stage over 999 999 drops the numbers, not the funnel", () => {
   const c = { ...three, nums: [{ value: 2000000, sent: 1 }, { value: 1000000, sent: 2 }, { value: 500000, sent: 3 }] };
   const b = BUILD.funnel(c); valid("funnel", b); eq(b.slots.stages.some((s) => "value" in s), false);
+});
+
+// authoring "claude": ideas and repetition are errors
+const AUTH = { authoring: "claude", maxUsesPerTemplate: 2, pairGap: 6, uniqueChapterOpeners: true };
+const aShot = (frame, template, variant = "a") => ({ frame, template, variant, family: template });
+test("authored frame without idea is an error", () => {
+  eq(ideaErrors([{ frame: 1, idea: "a tower with one floor per service" }, { frame: 2 }], AUTH), ['frame 2: needs "idea" (authoring claude, see references/direction.md)']);
+  eq(ideaErrors([{ frame: 2 }], {}), []);
+});
+test("authored: a template over maxUsesPerTemplate is an error", () => {
+  const flat = ["stat", "cards", "hub", "flow", "split", "zoom", "stat", "table", "kinetic", "layers", "matrix", "funnel", "stat"].map((t, i) => aShot(i + 1, t));
+  eq(varietyErrors(flat, { ...AUTH, pairGap: 0 }).filter((m) => m.includes("maxUses")), ["stat: used 3 times, at most 2 (scenes.maxUsesPerTemplate)"]);
+});
+test("authored: a template back within pairGap shots is an error", () => {
+  const flat = ["stat", "cards", "hub", "stat"].map((t, i) => aShot(i + 1, t));
+  eq(varietyErrors(flat, AUTH), ["frame 4: stat comes back within 6 shots (scenes.pairGap)"]);
+});
+test("authored: two chapters opening alike is an error", () => {
+  const flat = [aShot(1, "title", "big-type"), aShot(2, "cards"), aShot(3, "title", "big-type"), aShot(4, "hub")];
+  eq(varietyErrors(flat, AUTH, [[1, 2], [3, 4]]), ["chapter 1: opens with title/big-type like chapter 0 (scenes.uniqueChapterOpeners)"]);
+  eq(varietyErrors(flat, {}, [[1, 2], [3, 4]]), []);
 });
 
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
