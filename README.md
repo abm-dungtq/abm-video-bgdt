@@ -37,14 +37,14 @@ Hình được dựng bằng [HyperFrames](https://hyperframes.heygen.com) (HTML
 ## Cách hoạt động
 
 Skill là một dây chuyền sản xuất, không phải một bản hướng dẫn: CLI `abm-video` giữ trạng thái từng giai đoạn và các cổng
-duyệt, còn khung hình được **biên dịch** từ thư viện 20 template cảnh (54 biến thể), không phải do model tự viết HTML.
+duyệt, còn khung hình được **biên dịch** từ thư viện 64 template cảnh (158 biến thể; 8 template nhấn 3D/showcase chuyển từ registry HyperFrames), không phải do model tự viết HTML.
 
 ```mermaid
 flowchart LR
   A[script.src.txt<br/>kịch bản + fact sheet] -->|Gate 2| B[TTS theo lô<br/>API VieNeu]
   B --> C[trim + ghép theo khung<br/>MMS_FA căn từng từ]
   C --> D[audio_meta.json]
-  D --> E[solver<br/>scenes.json]
+  D --> E[Claude đạo diễn<br/>scenes.json]
   E --> F[trình biên dịch template<br/>emitter luật 0.7.99]
   D --> G[karaoke 162 px<br/>+ overlay chương]
   F --> H[assemble + transitions<br/>lint · check]
@@ -52,7 +52,7 @@ flowchart LR
   H -->|Gate 4| I[render → ghép giọng gốc<br/>−16 LUFS → MP4]
 ```
 
-- **Model chỉ viết:** fact sheet, kịch bản, và (tùy chọn) chỉnh `scenes.json`. Tối đa 15 % khung được tự dựng tay (`custom`).
+- **Model chỉ viết:** fact sheet, kịch bản (giữ nguyên từ tiếng Anh), và `scenes.json`: điều phối viên (Claude) chọn ý tưởng hình và template cho từng khung theo [`references/direction.md`](references/direction.md), worker chỉ chạy các giai đoạn. Tối đa 15 % khung được tự dựng tay (`custom`).
 - **Script làm phần còn lại:** giọng đọc, căn thời gian, chọn template và điền nội dung, karaoke, ghép, render, QA, dọn dẹp.
 - **Cổng duyệt gắn với file:** câu trả lời của người dùng được ghi bằng `abm-video gate`; file đổi sau khi duyệt thì cổng
   mất hiệu lực và giai đoạn sau từ chối chạy.
@@ -121,7 +121,7 @@ node tools/bin/abm-video.mjs next                trong dự án
 | 1 | `probe` | thử giọng; **Gate 1**: phát âm thuật ngữ, nhịp đọc |
 | 2 | `script` | fact sheet `[F-NN]`, `script.src.txt`; **Gate 2**: duyệt kịch bản |
 | 3 | `tts`, `voice` | TTS theo lô qua API, căn thời gian từng từ, `audio_meta.json` |
-| 4 | `storyboard`, `compile` | solver viết `scenes.json`; biên dịch mọi khung từ template, lint + snapshot |
+| 4 | `storyboard`, `compile` | Claude viết `scenes.json` (dự án cũ: solver); biên dịch mọi khung từ template, lint + snapshot |
 | 5 | `karaoke` | phụ đề karaoke; **Gate 3**: xem thử karaoke |
 | 6 | `assemble`, `draft` | ghép, lint/check; bản nháp, đo độ khớp; **Gate 4**: duyệt nháp |
 | 7 | `final`, `clean` | render cuối, −16 LUFS; dọn khoảng 400 MB file trung gian vào Thùng rác |
@@ -181,7 +181,7 @@ cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates
 - a CLI (`bin/abm-video.mjs`) with recorded state runs every stage; the agent loops on `abm-video next`;
 - narration from VieNeu-TTS through its HTTP API in batches (an MCP server is included for trying voices);
 - word-by-word karaoke captions aligned with MMS_FA;
-- HyperFrames frames compiled from 20 scene templates (54 variants) through `scenes.json`, not hand-written HTML.
+- HyperFrames frames compiled from 64 scene templates (158 variants, 8 of them 3D/showcase accents ported from the HyperFrames registry) through a `scenes.json` the coordinator directs, not hand-written HTML.
 
 It adds four human review gates bound to file hashes, the DNA BGĐT lesson structure, lint for variety and timing, an
 optional ABM brand theme, regression tests, and an example library of 142 real frames with previews. Setup for Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode and Windsurf/Devin on Windows, macOS and

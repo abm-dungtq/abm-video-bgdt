@@ -82,6 +82,8 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
 6. Run `node tools/script-to-md.mjs script.json` **once**. It writes `SCRIPT.md` and the outline
    `STORYBOARD.md`, where every frame has `src`, `duration`, `transition_in`, `scene`, `chapter` and `voiceover`.
    Never run write mode again after stage 4 has started.
+7. **authoring claude:** the coordinator writes `scenes.json` ([direction.md](direction.md)) before stage storyboard,
+   and checks it with `node tools/compiler/lint.mjs --estimated`; a worker never does.
 
 ## Stage 2b: Screenshots (only when the lesson shows real UI)
 
