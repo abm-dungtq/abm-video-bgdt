@@ -53,11 +53,12 @@ function probeHelp() {
   console.log(`probe: record the two probe clips, then rerun this stage.
   1. Pronunciation: list every English/technical term and product name of the topic, comma-separated, and run
        abm-video tts --text "<term1>, <term2>, …" --out .probe/terms-raw.wav
-     The voice reads foreign words differently each time, so give every product name a Vietnamese reading in
-     video.config.json "spokenOverrides" (e.g. "Lark": "Lác", "Base": "Bây", "AI": "ây ai") and probe those readings
-     as well: abm-video tts --text "<reading1>, <reading2>, …" --out .probe/terms-candidates.wav
-     List every term in .probe/pronunciation.md with its reading and the status "chưa nghe": you cannot hear the
-     clips, so only the user's answer at gate 1 decides. Numbers need nothing: digits are read out automatically.
+     Keep English words as written: the Thanh Bình voice reads mixed Vietnamese-English well (user-approved
+     2026-09-29), and Vietnamese-phonetic respellings sound worse. List every term in .probe/pronunciation.md
+     with the reading "giữ nguyên" and the status "chưa nghe": you cannot hear the clips, so only the user's answer
+     at gate 1 decides. Add a video.config.json "spokenOverrides" entry only for a word the user reports as wrong,
+     preferring an easier English spelling ("xAI": "x AI") over a Vietnamese respelling unless the user asks for
+     one, and probe it: abm-video tts --text "<reading1>, …" --out .probe/terms-candidates.wav Numbers need nothing: digits are read out automatically.
   2. Rate: pick a 45–55-syllable sentence typical of the lesson and run
        abm-video tts --text "<sentence>" --out .probe/rate.wav
        node tools/measure-rate.mjs .probe/rate.wav "<same sentence>"`);

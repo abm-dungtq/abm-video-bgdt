@@ -2,8 +2,8 @@
 //
 // Digits stay digits on screen (karaoke, labels, counters) and are spoken as Vietnamese words:
 //   10 → mười, 2026 → hai nghìn không trăm hai mươi sáu, 64.000 → sáu mươi tư nghìn, 7.75 → bảy chấm bảy mươi lăm.
-// Foreign words (Lark, Base, Kanban, AI…) are read unpredictably by the Vietnamese voice, so each needs a
-// `spokenOverrides` entry (a Vietnamese reading, or the word itself to keep it as is).
+// Foreign words (Grok, API, SuperGrok…) are kept as written; the voice reads them well. A `spokenOverrides`
+// entry is added only for a word the user heard wrong at gate 1.
 
 const DIGITS = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
 

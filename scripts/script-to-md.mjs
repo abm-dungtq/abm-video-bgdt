@@ -84,7 +84,7 @@ frames.forEach((f, i) => {
 });
 if (unprobed.size && cfg.voice?.strictTerms) {
   errors.push(`foreign words not tried at gate 1: ${[...unprobed].join(", ")} — add them to the probe (.probe/pronunciation.md, `
-    + `then gate 1 again) or give each a Vietnamese reading in video.config.json spokenOverrides`);
+    + `then gate 1 again); keep them as written unless the user reported one as wrong`);
 }
 if (frames.length < FRAMES_RANGE[0] || frames.length > FRAMES_RANGE[1])
   errors.push(`frames=${frames.length} outside ${FRAMES_RANGE.join("–")}`);

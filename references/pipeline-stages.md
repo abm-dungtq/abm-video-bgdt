@@ -40,10 +40,11 @@ Verify: `node -e "JSON.parse(require('fs').readFileSync('video.config.json','utf
 2. `node tools/fixture-check.mjs`. Verify: it prints `fixture-check ok`. If it fails, the pin or the installed
    faceless-explainer scripts have drifted, so stop and resolve that before anything else.
 3. **Pronunciation probe.** List every English or technical term in the topic. Synthesize them in one
-   `text_to_speech` call, separated by commas, to `.probe/terms-raw.wav`. For any term that sounds wrong, try
-   Vietnamese-phonetic spellings in `.probe/terms-candidates.wav`. Record each decision in
-   `.probe/pronunciation.md`. Put every override in `video.config.json` → `spokenOverrides`
-   (`"display token": "spoken text"`).
+   `text_to_speech` call, separated by commas, to `.probe/terms-raw.wav`. Keep English words as written; the voice
+   reads mixed Vietnamese-English well. Record each term in `.probe/pronunciation.md` as "giữ nguyên". Only for a
+   term the user reports as wrong at gate 1, add a `video.config.json` → `spokenOverrides` entry
+   (`"display token": "spoken text"`), preferring an easier English spelling (`"xAI": "x AI"`) over a
+   Vietnamese respelling, and probe it in `.probe/terms-candidates.wav`.
 4. **Rate probe.** Pick a 45–55-syllable sentence typical of the lesson and call `text_to_speech` with the configured
    voice and temperature, writing to `.probe/rate.wav`. Then run `node tools/measure-rate.mjs .probe/rate.wav "<same text>"`.
    Verify: exit 0 (rate 2.5–6 syl/s). Thanh Bình measured 4.32.

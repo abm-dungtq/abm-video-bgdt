@@ -33,9 +33,12 @@ Một câu một dòng, có *từ* *khóa*. {F-01}    sentence; *x* = keyword to
 - **Numbers are written with digits** (`10 hàm`, `bản 7.75`, `64.000 dòng`). They stay digits on screen and are
   spoken in Vietnamese words automatically (`mười`, `bảy chấm bảy mươi lăm`). Write dates as words around digits
   (`tháng 8 năm 2026`, not `8/2026`): `--check` fails on a token with digits it cannot read out.
-- **Foreign words** (product names, English terms) are read differently on each take. Give every product name a
-  Vietnamese reading in `spokenOverrides` (`"Lark": "Lác"`, `"AI": "ây ai"`), and list every other foreign word in
-  the gate 1 probe (`.probe/pronunciation.md`). `--check` fails on a foreign word that is in neither place.
+- **Foreign words** (product names, English terms) stay as written: the voice reads mixed Vietnamese-English well,
+  and Vietnamese respellings (`"Lác"`, `"ây ai"`) sound worse. List every foreign word in the gate 1 probe
+  (`.probe/pronunciation.md`); `--check` fails on a foreign word that is not there. Add a `spokenOverrides` entry
+  only for a word the user reported as wrong at gate 1.
+- Do not push an English word to the end of a sentence just to dodge the ASR check: the check already treats a
+  foreign word as a wildcard for up to three heard words.
 - `spokenOverrides` in the config maps a display token, without punctuation, to what the voice should say. Keep
   display text correct (for example `SOUL.md`) and fix only the spoken side.
 

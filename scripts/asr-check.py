@@ -79,14 +79,14 @@ def _words(text: str) -> list:
 
 
 def wer(ref: list, hyp: list) -> float:
-    """Word error rate; a "*" in ref matches zero to two heard words for free (a foreign word read the voice's way)."""
+    """Word error rate; a "*" in ref matches zero to three heard words for free (a foreign word read the voice's way)."""
     n = len(hyp)
     prev = list(range(n + 1))
     for r in ref:
         cur = [0] * (n + 1)
         if r == "*":
             for j in range(n + 1):
-                cur[j] = min(prev[j - k] for k in range(0, min(2, j) + 1))
+                cur[j] = min(prev[j - k] for k in range(0, min(3, j) + 1))
         else:
             cur[0] = prev[0] + 1
             for j in range(1, n + 1):
@@ -161,6 +161,8 @@ def main():
         assert edge_error("hòa bình", "hoà bình") is False
         assert edge_error("sức khỏe", "sức khoẻ") is False
         assert wer(words("tự động hóa", wildcard=True), words("tự động hoá")) == 0
+        assert wer(words("dùng SuperGrok nhé", wildcard=True), words("dùng súp bơ góc nhé")) == 0
+        assert wer(words("hai trăm nghìn GPU", wildcard=True), words("hai trăm nghìn di pi ô")) == 0
         print("self-test ok")
         sys.exit(0)
 
