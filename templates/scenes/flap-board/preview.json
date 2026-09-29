@@ -1,0 +1,25 @@
+{
+  "template": "flap-board",
+  "variant": "board",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "kicker": "Chính thức ra mắt",
+    "lines": [
+      "GROK 4",
+      "17 THÁNG 9"
+    ],
+    "note": "Mô hình mới của xAI đã có mặt trong Hermes"
+  },
+  "stress": {
+    "kicker": "Cột mốc quan trọng nhất năm",
+    "lines": [
+      "TRỢ LÝ ĐA NĂNG",
+      "RẺ HƠN MỘT NỬA",
+      "ĐỒNG BỘ TẤT CẢ"
+    ],
+    "note": "Một trợ lý cho điện thoại, máy tính và đồng hồ"
+  }
+}

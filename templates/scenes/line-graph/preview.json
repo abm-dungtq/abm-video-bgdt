@@ -1,0 +1,86 @@
+{
+  "template": "line-graph",
+  "variant": "draw",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Người dùng Grok tăng nhanh",
+    "unit": "triệu người",
+    "labels": [
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6"
+    ],
+    "series": [
+      {
+        "name": "Ứng dụng di động",
+        "values": [
+          12,
+          26,
+          22,
+          38,
+          44,
+          58
+        ]
+      },
+      {
+        "name": "Trên nền web",
+        "values": [
+          8,
+          14,
+          18,
+          16,
+          28,
+          36
+        ]
+      }
+    ]
+  },
+  "stress": {
+    "title": "Lượt tải ứng dụng theo từng quý gần đây",
+    "unit": "nghìn lượt tải",
+    "labels": [
+      "Quý 1/2024",
+      "Quý 2/2024",
+      "Quý 3/2024",
+      "Quý 4/2024",
+      "Quý 1/2025",
+      "Quý 2/2025",
+      "Quý 3/2025",
+      "Quý 4/2025"
+    ],
+    "series": [
+      {
+        "name": "Điện thoại Android",
+        "values": [
+          120500,
+          245000,
+          310250,
+          298000,
+          456700,
+          612300,
+          780900,
+          999999
+        ]
+      },
+      {
+        "name": "Điện thoại iPhone",
+        "values": [
+          98000,
+          150000,
+          305000,
+          420000,
+          455000,
+          590000,
+          760000,
+          871000
+        ]
+      }
+    ]
+  }
+}

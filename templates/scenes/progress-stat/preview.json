@@ -1,0 +1,21 @@
+{
+  "template": "progress-stat",
+  "variant": "track",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "value": 22,
+    "max": 30,
+    "label": "Mục tiêu đã hoàn thành",
+    "caption": "Chỉ còn tám mục nữa là về đích"
+  },
+  "stress": {
+    "value": 987654,
+    "max": 999999,
+    "suffix": "người",
+    "label": "Người dùng hoạt động trong tháng",
+    "caption": "Tăng gần gấp đôi so với cùng kỳ của năm ngoái đó"
+  }
+}

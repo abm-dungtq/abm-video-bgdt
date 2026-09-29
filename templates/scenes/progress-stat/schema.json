@@ -1,0 +1,25 @@
+{
+  "id": "progress-stat",
+  "family": "progress-stat",
+  "variants": ["track", "blocks"],
+  "signatures": ["blocks"],
+  "zone": { "track": "hero-center", "blocks": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["value", "max", "label"],
+    "additionalProperties": false,
+    "properties": {
+      "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+      "max": { "type": "integer", "minimum": 1, "maximum": 999999 },
+      "suffix": { "type": "string", "maxLength": 6 },
+      "label": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "caption": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "value": { "default": "kw", "range": false },
+    "label": { "default": "spread", "range": false },
+    "caption": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

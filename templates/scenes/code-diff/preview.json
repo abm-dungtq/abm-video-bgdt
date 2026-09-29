@@ -1,0 +1,33 @@
+{
+  "template": "code-diff",
+  "variant": "split",
+  "window": ["start", "end"],
+  "slots": {
+    "file": "config.yaml",
+    "lines": [
+      { "kind": "ctx", "text": "agent:" },
+      { "kind": "ctx", "text": "  name: hermes" },
+      { "kind": "del", "text": "  model: gpt-4o-mini" },
+      { "kind": "add", "text": "  model: grok-4-fast" },
+      { "kind": "add", "text": "  # nhanh hơn, rẻ hơn một nửa" },
+      { "kind": "ctx", "text": "  temperature: 0.2" }
+    ],
+    "note": "Đổi mô hình mặc định sang Grok"
+  },
+  "stress": {
+    "file": "cấu-hình-trợ-lý-cá-nhân-mới.yaml",
+    "lines": [
+      { "kind": "ctx", "text": "# Tệp cấu hình chính của trợ lý, đừng sửa tay" },
+      { "kind": "ctx", "text": "agent:" },
+      { "kind": "del", "text": "  model: gpt-4o-mini  # mô hình cũ, chậm và đắt" },
+      { "kind": "del", "text": "  max_tokens: 2048  # giới hạn cũ quá ngắn rồi" },
+      { "kind": "add", "text": "  model: grok-4-fast  # nhanh gấp đôi, giá rẻ" },
+      { "kind": "add", "text": "  max_tokens: 8192  # đủ cho tài liệu dài hơn" },
+      { "kind": "add", "text": "  tools: [search, files, terminal, calendar]" },
+      { "kind": "ctx", "text": "  temperature: 0.2" },
+      { "kind": "ctx", "text": "  language: vi  # trả lời bằng tiếng Việt có dấu" },
+      { "kind": "ctx", "text": "  memory: true  # nhớ ngữ cảnh giữa các lần chat" }
+    ],
+    "note": "Đổi mô hình mặc định và nới giới hạn độ dài câu"
+  }
+}

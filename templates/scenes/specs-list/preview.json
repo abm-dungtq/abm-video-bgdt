@@ -1,0 +1,58 @@
+{
+  "template": "specs-list",
+  "variant": "rows",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "heading": "Grok 4 có gì mới",
+    "items": [
+      {
+        "label": "Cửa sổ ngữ cảnh",
+        "value": "256 nghìn token"
+      },
+      {
+        "label": "Tìm kiếm thời gian thực",
+        "value": "Dữ liệu từ X và web"
+      },
+      {
+        "label": "Giọng nói",
+        "value": "Trò chuyện rảnh tay"
+      },
+      {
+        "label": "Tạo ảnh",
+        "value": "Ngay trong khung chat"
+      }
+    ]
+  },
+  "stress": {
+    "heading": "Điểm nổi bật của phiên bản mới nhất này",
+    "items": [
+      {
+        "label": "Cửa sổ ngữ cảnh rất dài",
+        "value": "Đọc trọn một cuốn sách dày mỗi lần"
+      },
+      {
+        "label": "Tìm kiếm thời gian thực",
+        "value": "Lấy dữ liệu mới nhất từ mạng xã hội"
+      },
+      {
+        "label": "Trò chuyện bằng giọng",
+        "value": "Hỏi đáp rảnh tay khi đang lái xe đi."
+      },
+      {
+        "label": "Tạo ảnh trong khung chat",
+        "value": "Mô tả bằng lời là có ngay ảnh đẹp"
+      },
+      {
+        "label": "Lập trình cùng trợ lý ảo",
+        "value": "Viết, sửa và giải thích mã nguồn"
+      },
+      {
+        "label": "Phân tích tệp đính kèm",
+        "value": "Đọc bảng tính, tài liệu và ảnh chụp"
+      }
+    ]
+  }
+}

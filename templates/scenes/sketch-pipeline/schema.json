@@ -1,0 +1,30 @@
+{
+  "id": "sketch-pipeline",
+  "family": "sketch-pipeline",
+  "variants": ["row", "zigzag"],
+  "signatures": ["zigzag"],
+  "zone": { "row": "hero-center", "zigzag": "strip-top" },
+  "slots": {
+    "type": "object",
+    "required": ["steps"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 36 },
+      "steps": {
+        "type": "array", "minItems": 2, "maxItems": 5,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 18 },
+            "note": { "type": "string", "maxLength": 28 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "steps.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

@@ -1,0 +1,35 @@
+{
+  "template": "code-focus",
+  "variant": "lens",
+  "window": ["start", "end"],
+  "slots": {
+    "file": "agent.py",
+    "lines": [
+      "def run(task):",
+      "    plan = llm.plan(task)",
+      "    for step in plan:",
+      "        result = tools.call(step)",
+      "        memory.save(result)",
+      "    return memory.summary()"
+    ],
+    "focus": 3,
+    "note": "Mỗi bước gọi đúng một công cụ"
+  },
+  "stress": {
+    "file": "tro-ly-ca-nhan/vong-lap-chinh.py",
+    "lines": [
+      "# Vòng lặp chính: lập kế hoạch rồi gọi công cụ",
+      "def run(task, max_steps=12, timeout=30.0):",
+      "    plan = llm.plan(task, lang='vi', depth=3)",
+      "    for index, step in enumerate(plan.steps):",
+      "        result = tools.call(step, timeout=30)",
+      "        memory.save(step.name, result, ttl=3600)",
+      "        if index >= max_steps: break  # dừng sớm",
+      "    report = memory.summary(style='ngắn gọn')",
+      "    notify(user, report, channel='telegram')",
+      "    return report  # trả kết quả cho người dùng"
+    ],
+    "focus": 9,
+    "note": "Kết quả cuối cùng quay về tay người dùng"
+  }
+}

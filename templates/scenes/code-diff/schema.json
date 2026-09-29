@@ -1,0 +1,33 @@
+{
+  "id": "code-diff",
+  "family": "code-diff",
+  "variants": ["unified", "split"],
+  "signatures": ["split"],
+  "zone": { "unified": "hero-center", "split": "split-50" },
+  "slots": {
+    "type": "object",
+    "required": ["file", "lines"],
+    "additionalProperties": false,
+    "properties": {
+      "file": { "type": "string", "minLength": 1, "maxLength": 32 },
+      "lines": {
+        "type": "array", "minItems": 2, "maxItems": 10,
+        "description": "the changed code: ctx lines stay, del lines are removed, add lines are new",
+        "items": {
+          "type": "object", "required": ["kind", "text"], "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "enum": ["ctx", "del", "add"] },
+            "text": { "type": "string", "maxLength": 48 }
+          }
+        }
+      },
+      "note": { "type": "string", "maxLength": 48 }
+    }
+  },
+  "reveals": {
+    "del": { "default": "kw", "range": false },
+    "add": { "default": "kw", "range": false, "after": "del" },
+    "note": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 3, "max": 10 }
+}

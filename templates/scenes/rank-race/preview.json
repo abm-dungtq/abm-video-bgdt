@@ -1,0 +1,124 @@
+{
+  "template": "rank-race",
+  "variant": "race",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Điểm suy luận qua từng phiên bản",
+    "unit": "điểm",
+    "milestones": [
+      "Grok 2",
+      "Grok 3",
+      "Grok 4"
+    ],
+    "items": [
+      {
+        "name": "Grok",
+        "values": [
+          62,
+          78,
+          93
+        ]
+      },
+      {
+        "name": "ChatGPT",
+        "values": [
+          75,
+          84,
+          88
+        ]
+      },
+      {
+        "name": "Gemini",
+        "values": [
+          70,
+          80,
+          90
+        ]
+      },
+      {
+        "name": "Claude",
+        "values": [
+          72,
+          86,
+          91
+        ]
+      }
+    ]
+  },
+  "stress": {
+    "title": "Lượt tải ứng dụng trợ lý AI qua từng năm",
+    "unit": "lượt tải",
+    "milestones": [
+      "Quý 1 - 2021",
+      "Quý 1 - 2022",
+      "Quý 1 - 2023",
+      "Quý 1 - 2024",
+      "Quý 1 - 2025"
+    ],
+    "items": [
+      {
+        "name": "Trợ lý Grok từ X",
+        "values": [
+          0,
+          120000,
+          450000,
+          780000,
+          999999
+        ]
+      },
+      {
+        "name": "Trợ lý ChatGPT",
+        "values": [
+          0,
+          900000,
+          950000,
+          970000,
+          980000
+        ]
+      },
+      {
+        "name": "Trợ lý Gemini",
+        "values": [
+          50000,
+          300000,
+          600000,
+          820000,
+          900000
+        ]
+      },
+      {
+        "name": "Trợ lý Claude AI",
+        "values": [
+          0,
+          80000,
+          400000,
+          760000,
+          955000
+        ]
+      },
+      {
+        "name": "Trợ lý Copilot",
+        "values": [
+          20000,
+          250000,
+          500000,
+          700000,
+          750000
+        ]
+      },
+      {
+        "name": "Perplexity Pro",
+        "values": [
+          10000,
+          90000,
+          200000,
+          450000,
+          600000
+        ]
+      }
+    ]
+  }
+}

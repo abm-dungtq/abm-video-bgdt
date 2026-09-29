@@ -1,0 +1,30 @@
+{
+  "id": "specs-list",
+  "family": "specs-list",
+  "variants": ["rows", "checklist"],
+  "signatures": ["checklist"],
+  "zone": { "rows": "screen-focus", "checklist": "split-50" },
+  "slots": {
+    "type": "object",
+    "required": ["items"],
+    "additionalProperties": false,
+    "properties": {
+      "heading": { "type": "string", "maxLength": 40 },
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 6,
+        "items": {
+          "type": "object", "required": ["label"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 24 },
+            "value": { "type": "string", "maxLength": 36 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "heading": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

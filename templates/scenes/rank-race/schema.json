@@ -1,0 +1,38 @@
+{
+  "id": "rank-race",
+  "family": "rank-race",
+  "variants": ["race", "columns"],
+  "signatures": ["race"],
+  "zone": { "race": "strip-top", "columns": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["milestones", "items"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 40 },
+      "unit": { "type": "string", "maxLength": 8 },
+      "milestones": {
+        "type": "array", "minItems": 2, "maxItems": 5,
+        "items": { "type": "string", "minLength": 1, "maxLength": 12 }
+      },
+      "items": {
+        "type": "array", "minItems": 3, "maxItems": 6,
+        "items": {
+          "type": "object", "required": ["name", "values"], "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 16 },
+            "values": {
+              "type": "array", "minItems": 2, "maxItems": 5,
+              "items": { "type": "integer", "minimum": 0, "maximum": 999999 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "milestones.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

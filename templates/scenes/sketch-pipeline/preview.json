@@ -1,0 +1,54 @@
+{
+  "template": "sketch-pipeline",
+  "variant": "zigzag",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Trợ lý xử lý một yêu cầu",
+    "steps": [
+      {
+        "label": "Nghe yêu cầu",
+        "note": "Hiểu bạn muốn gì"
+      },
+      {
+        "label": "Lập kế hoạch",
+        "note": "Chia thành từng bước"
+      },
+      {
+        "label": "Gọi công cụ",
+        "note": "Tìm kiếm, đọc tệp"
+      },
+      {
+        "label": "Trả kết quả",
+        "note": "Tóm tắt ngắn gọn"
+      }
+    ]
+  },
+  "stress": {
+    "title": "Quy trình tự động hóa việc hằng ngày",
+    "steps": [
+      {
+        "label": "Nhận lịch làm việc",
+        "note": "Đọc lịch và email mới nhất"
+      },
+      {
+        "label": "Phân loại ưu tiên",
+        "note": "Việc gấp đưa lên đầu danh"
+      },
+      {
+        "label": "Chuẩn bị tài liệu",
+        "note": "Tìm và gom tệp cần dùng"
+      },
+      {
+        "label": "Nhắc việc đúng giờ",
+        "note": "Gửi tin nhắn qua Telegram"
+      },
+      {
+        "label": "Tổng kết cuối ngày",
+        "note": "Báo cáo việc đã hoàn tất rồi"
+      }
+    ]
+  }
+}

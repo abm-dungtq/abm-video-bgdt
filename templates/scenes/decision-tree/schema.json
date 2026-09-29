@@ -1,0 +1,33 @@
+{
+  "id": "decision-tree",
+  "family": "decision-tree",
+  "variants": ["tree", "sideways"],
+  "signatures": ["tree"],
+  "zone": { "tree": "strip-top", "sideways": "split-40-60" },
+  "slots": {
+    "type": "object",
+    "required": ["question", "branches"],
+    "additionalProperties": false,
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 40 },
+      "branches": {
+        "type": "array", "minItems": 2, "maxItems": 3,
+        "items": {
+          "type": "object", "required": ["when", "then"], "additionalProperties": false,
+          "properties": {
+            "when": { "type": "string", "minLength": 1, "maxLength": 18, "description": "the condition, e.g. \"Cần tốc độ\"" },
+            "then": { "type": "string", "minLength": 1, "maxLength": 28, "description": "what to use, e.g. \"Dùng Grok 4 Fast\"" },
+            "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+          }
+        }
+      },
+      "pick": { "type": "integer", "minimum": 0, "maximum": 2, "description": "the branch the lesson recommends" }
+    }
+  },
+  "reveals": {
+    "question": { "default": "spread", "range": false },
+    "branches.*": { "default": "kw", "range": false },
+    "pick": { "default": "spread", "range": false, "after": "branches.1" }
+  },
+  "duration": { "min": 3.5, "max": 10 }
+}

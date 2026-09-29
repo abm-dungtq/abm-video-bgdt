@@ -1,0 +1,50 @@
+{
+  "template": "decision-tree",
+  "variant": "tree",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "question": "Nên dùng mô hình nào?",
+    "branches": [
+      {
+        "when": "Cần tốc độ",
+        "then": "Dùng Grok 4 Fast",
+        "icon": "rocket"
+      },
+      {
+        "when": "Cần suy luận sâu",
+        "then": "Dùng Grok 4 Heavy",
+        "icon": "lightbulb"
+      },
+      {
+        "when": "Chạy trên máy",
+        "then": "Dùng mô hình mở",
+        "icon": "server"
+      }
+    ],
+    "pick": 0
+  },
+  "stress": {
+    "question": "Khi nào nên để trợ lý tự quyết thay bạn?",
+    "branches": [
+      {
+        "when": "Việc làm lặp lại",
+        "then": "Giao hẳn cho trợ lý tự động",
+        "icon": "gear"
+      },
+      {
+        "when": "Liên quan tiền bạc",
+        "then": "Luôn hỏi lại trước khi làm",
+        "icon": "shield"
+      },
+      {
+        "when": "Chưa chắc chắn lắm",
+        "then": "Để trợ lý đề xuất, bạn duyệt",
+        "icon": "question"
+      }
+    ],
+    "pick": 2
+  }
+}

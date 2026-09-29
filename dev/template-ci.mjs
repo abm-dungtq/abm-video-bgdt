@@ -23,6 +23,8 @@ const argv = process.argv.slice(2);
 const only = argv.includes("--only") ? argv[argv.indexOf("--only") + 1].split(",") : null;
 const W = resolve(process.env.ABM_REGRESS_DIR ?? "D:/TQD/Claude-Video/.regress", "template-ci");
 const cfg = JSON.parse(readFileSync(join(S, "templates/video.config.json"), "utf8"));
+// previews are not a directed lesson: no per-frame idea, and variants sit side by side on purpose
+cfg.scenes = { ...cfg.scenes, authoring: "solver" };
 const HF = `hyperframes@${cfg.cli.pin}`;
 const TPL = join(S, "templates/scenes");
 const DURS = [4, 7, 10];

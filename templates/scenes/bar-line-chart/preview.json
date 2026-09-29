@@ -1,0 +1,86 @@
+{
+  "template": "bar-line-chart",
+  "variant": "combo",
+  "window": [
+    "start",
+    "end"
+  ],
+  "slots": {
+    "title": "Doanh thu và tỷ lệ chuyển đổi cùng tăng",
+    "unit": "tỷ đồng",
+    "barName": "Doanh thu",
+    "lineName": "Tỷ lệ chuyển đổi",
+    "lineSuffix": "%",
+    "points": [
+      {
+        "label": "Tháng 1",
+        "bar": 8,
+        "line": 21
+      },
+      {
+        "label": "Tháng 2",
+        "bar": 12,
+        "line": 28
+      },
+      {
+        "label": "Tháng 3",
+        "bar": 15,
+        "line": 32
+      },
+      {
+        "label": "Tháng 4",
+        "bar": 11,
+        "line": 29
+      },
+      {
+        "label": "Tháng 5",
+        "bar": 18,
+        "line": 38
+      },
+      {
+        "label": "Tháng 6",
+        "bar": 22,
+        "line": 42
+      }
+    ]
+  },
+  "stress": {
+    "title": "Số người dùng trả phí và mức độ hài lòng",
+    "unit": "nghìn thuê bao",
+    "barName": "Người dùng trả phí",
+    "lineName": "Mức độ hài lòng",
+    "lineSuffix": "điểm",
+    "points": [
+      {
+        "label": "Quý 1/2024",
+        "bar": 120500,
+        "line": 71
+      },
+      {
+        "label": "Quý 2/2024",
+        "bar": 245000,
+        "line": 74
+      },
+      {
+        "label": "Quý 3/2024",
+        "bar": 310250,
+        "line": 69
+      },
+      {
+        "label": "Quý 4/2024",
+        "bar": 598000,
+        "line": 80
+      },
+      {
+        "label": "Quý 1/2025",
+        "bar": 856700,
+        "line": 84
+      },
+      {
+        "label": "Quý 2/2025",
+        "bar": 999999,
+        "line": 88
+      }
+    ]
+  }
+}

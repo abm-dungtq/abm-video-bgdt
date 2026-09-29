@@ -1,0 +1,36 @@
+{
+  "id": "bar-line-chart",
+  "family": "bar-line-chart",
+  "variants": ["combo", "spotlight"],
+  "signatures": ["spotlight"],
+  "zone": { "combo": "strip-top", "spotlight": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["barName", "points"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "maxLength": 40 },
+      "unit": { "type": "string", "maxLength": 14 },
+      "barName": { "type": "string", "minLength": 1, "maxLength": 18 },
+      "lineName": { "type": "string", "minLength": 1, "maxLength": 18 },
+      "lineSuffix": { "type": "string", "maxLength": 4 },
+      "points": {
+        "type": "array", "minItems": 3, "maxItems": 6,
+        "items": {
+          "type": "object", "required": ["label", "bar"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 10 },
+            "bar": { "type": "integer", "minimum": 0, "maximum": 999999 },
+            "line": { "type": "integer", "minimum": 0, "maximum": 999999 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "bars": { "default": "kw", "range": false },
+    "line": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

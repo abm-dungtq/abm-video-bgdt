@@ -123,7 +123,7 @@ syllables / rate + lead (titleLead for title frames) + tail + gap × (sentences 
 - `rate` comes from `.probe/rate.json`.
 - The pauses come from `timing`: lead 0.25, titleLead 0.8, gap 0.5, tail 0.7 and pad 0.08 on the first video.
 - The total must land inside `budget.targetS`, and the frame count inside `budget.frames`.
-- One sentence may have at most `maxSentenceSyllables` (26) syllables, because long sentences overflow the karaoke band and tire beginners.
+- One sentence may have at most `maxSentenceSyllables` (36) syllables: long enough to tell a story, short enough for the karaoke band.
 
 The first video's estimate ended within 1.5 % of the real voice (604 s estimated, 612 s real).
 
