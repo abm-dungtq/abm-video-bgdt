@@ -12,6 +12,7 @@
 // Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %, 18 frames per assembled
 // index (a page of every frame loads slower than the check timeout); its errors, with their message, count too —
 // the assemble stage runs the same check on a real lesson, so a template must be check-clean, not only lint-clean.
+// Before that, tools/visible-check.mjs proves every shot's copy is on screen at the end of the shot.
 // Last line: template-ci: <t> templates, <v> variants, <n> frames, <e> lint errors  (exit 1 when e > 0).
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -106,6 +107,17 @@ const compiled = combos.filter((c) => existsSync(join(W, `compositions/frames/${
 // assemble only the frames that compiled
 const board = md.join("\n").split(/(?=^## Frame \d+ )/m).filter((b) => !/^## Frame (\d+) /.test(b) || compiled.some((c) => c.n === Number(b.match(/^## Frame (\d+) /)[1])));
 writeFileSync(join(W, "STORYBOARD.md"), board.join(""));
+// the copy of every shot is on screen at the end of the shot (tools/visible-check.mjs, the check of gate 3). A template
+// that draws its copy twice for an effect marks the decorative copy aria-hidden="true", or this fails.
+if (compiled.length) {
+  const v = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: W, encoding: "utf8", timeout: 900000 });
+  const out = `${v.stdout ?? ""}${v.stderr ?? ""}`;
+  if (!/^visible-check (ok|FAILED)/m.test(out)) (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`visible-check did not run: ${out.slice(-300)}`);
+  for (const line of out.split("\n").filter((l) => l.startsWith("✗ frame "))) {
+    const c = compiled.find((x) => x.n === Number(line.match(/^✗ frame (\d+) /)[1]));
+    if (c) errs.get(c.id).push(`${c.variant} ${c.dur}s: visible ${line.slice(2).trim()}`);
+  }
+}
 const SK = `${(await import(pathToFileURL(join(W, "tools/lib/machine.mjs")).href)).findSkillsDir()}/faceless-explainer/scripts`;
 if (compiled.length) {
   const a = shTry(`node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
