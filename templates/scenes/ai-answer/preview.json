@@ -1,0 +1,22 @@
+{
+  "template": "ai-answer",
+  "variant": "inline",
+  "window": ["start", "end"],
+  "slots": {
+    "question": "Vì sao trợ lý AI hay trả lời sai về số liệu mới?",
+    "turns": [
+      { "who": "Tạp chí Khoa học", "text": "Mô hình chỉ học từ dữ liệu đến một thời điểm nhất định, nên không biết những gì xảy ra sau đó." },
+      { "who": "Báo Công nghệ", "text": "Khi thiếu thông tin, mô hình có xu hướng đoán một câu nghe hợp lý thay vì nhận là không biết." },
+      { "who": "Cẩm nang AI", "text": "Cho phép tra cứu nguồn và yêu cầu trích dẫn giúp giảm hẳn lỗi này." }
+    ]
+  },
+  "stress": {
+    "question": "Vì sao các mô hình ngôn ngữ lớn đôi khi bịa ra số liệu thống kê nghe rất thuyết phục?",
+    "turns": [
+      { "who": "Tạp chí Khoa học Ứng dụng", "text": "Mô hình dự đoán từ tiếp theo dựa trên xác suất, nên câu trả lời luôn trôi chảy dù nội dung chưa chắc đã đúng sự thật." },
+      { "who": "Báo Công nghệ Số", "text": "Dữ liệu huấn luyện chỉ đến một mốc thời gian, nên các con số mới hơn mốc đó thường bị đoán thay vì tra cứu." },
+      { "who": "Cẩm nang Trí tuệ nhân tạo", "text": "Yêu cầu trích dẫn nguồn và cho phép tra cứu trực tiếp giúp giảm mạnh các câu trả lời không có căn cứ rõ ràng." },
+      { "who": "Diễn đàn Kỹ sư Việt", "text": "Cách an toàn nhất vẫn là đối chiếu con số quan trọng với nguồn gốc trước khi đưa vào báo cáo hay bài thuyết trình." }
+    ]
+  }
+}

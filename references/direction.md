@@ -24,7 +24,12 @@ After the voice stage, the storyboard stage lints it again with real timings; fi
    explains why the frame looks the way it does.
 3. **Choose the template by meaning, not habit.** A trend over time is `line-graph`, a ranking that changes is
    `rank-race`, "if … then use …" is `decision-tree`, a command is `terminal-window` or `code-typing`, a key sentence
-   is `callout-sentence`. When two templates fit, take the one used least so far.
+   is `callout-sentence`. A conversation with an assistant is `chat-exchange` (in `turns`, a turn whose `who` equals
+   `name` is the assistant's; with no match the turns alternate), an answer that cites its sources is `ai-answer`, a
+   chat between two people is `message-thread` (`who` equal to `contact` is the received side), events arriving one
+   after another are `notify-stack`, one alert that matters is `notify-single`, a few live figures side by side are
+   `glass-widgets`, and ordered steps read top to bottom are `flow-vertical`. `opener-shard` (a chapter title) and
+   `code-hero` (the one command of a chapter) are accents. When two templates fit, take the one used least so far.
 
 ```json
 { "frame": 7, "idea": "the Grok family as floors of one building; the lift stops at the floor being named",

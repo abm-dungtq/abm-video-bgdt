@@ -1,0 +1,23 @@
+{
+  "template": "flow-vertical",
+  "variant": "stack",
+  "window": ["start", "end"],
+  "slots": {
+    "steps": [
+      { "icon": "book", "label": "Ghi lại yêu cầu" },
+      { "icon": "lightbulb", "label": "Lập kế hoạch" },
+      { "icon": "gear", "label": "Thực hiện từng bước" },
+      { "icon": "rocket", "label": "Kiểm tra và giao" }
+    ]
+  },
+  "stress": {
+    "steps": [
+      { "icon": "book", "label": "Thu thập yêu cầu khách" },
+      { "icon": "lightbulb", "label": "Phân tích và lên kế hoạch" },
+      { "icon": "gear", "label": "Viết mã và chạy thử nghiệm" },
+      { "icon": "person", "label": "Xem xét cùng đồng nghiệp" },
+      { "icon": "spark", "label": "Điều chỉnh theo góp ý" },
+      { "icon": "rocket", "label": "Phát hành và theo dõi" }
+    ]
+  }
+}

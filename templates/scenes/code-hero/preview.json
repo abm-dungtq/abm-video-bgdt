@@ -1,0 +1,7 @@
+{
+  "template": "code-hero",
+  "variant": "flip",
+  "window": ["start", "end"],
+  "slots": { "title": "Cài Grok bằng một lệnh", "code": "npm install -g grok-cli", "lang": "Terminal" },
+  "stress": { "title": "Cài đặt và chạy thử trợ lý ngay hôm nay", "code": "grok run -m grok-4 --stream \"xin chào\"", "lang": "PowerShell 7.4" }
+}

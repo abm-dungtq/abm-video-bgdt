@@ -1,0 +1,23 @@
+{
+  "template": "message-thread",
+  "variant": "bubbles",
+  "window": ["start", "end"],
+  "slots": {
+    "contact": "Chị Lan",
+    "turns": [
+      { "who": "Bạn", "text": "Chị ơi, báo cáo tuần này em gửi trợ lý AI soạn nhé?" },
+      { "who": "Chị Lan", "text": "Được, nhưng em nhớ đối chiếu số liệu trước khi gửi cho sếp." },
+      { "who": "Bạn", "text": "Dạ, em yêu cầu nó ghi rõ nguồn từng con số luôn ạ." },
+      { "who": "Chị Lan", "text": "Tốt lắm, làm vậy vừa nhanh vừa yên tâm." }
+    ]
+  },
+  "stress": {
+    "contact": "Nhóm Vận hành Dự án",
+    "turns": [
+      { "who": "Nguyễn Thị Hồng Nhung", "text": "Chào cả nhóm, hôm nay mình thử dùng trợ lý AI để tổng hợp biên bản cuộc họp sáng, mọi người thấy thế nào?" },
+      { "who": "Nhóm Vận hành Dự án", "text": "Ý hay đấy, nhưng cần một người đọc lại kết quả và sửa các chỗ trợ lý hiểu sai tên riêng hoặc số liệu." },
+      { "who": "Nguyễn Thị Hồng Nhung", "text": "Mình sẽ nhận việc đó, đồng thời ghi chú những mục nào do AI viết để cả nhóm dễ kiểm tra lại." },
+      { "who": "Nhóm Vận hành Dự án", "text": "Đồng ý, thử trong hai tuần rồi họp đánh giá xem có tiết kiệm được thời gian thật sự hay không nhé." }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "glass-widgets",
+  "family": "glass-widgets",
+  "variants": ["row", "board"],
+  "signatures": ["board"],
+  "zone": { "row": "strip-top", "board": "split-60-40" },
+  "slots": {
+    "type": "object",
+    "required": ["items"],
+    "additionalProperties": false,
+    "properties": {
+      "heading": { "type": "string", "maxLength": 40 },
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "number widgets; each counts up on its own reveal key (in board the first is the large one)",
+        "items": {
+          "type": "object", "required": ["label", "value"], "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 22 },
+            "value": { "type": "integer", "minimum": 0, "maximum": 999999 },
+            "unit": { "type": "string", "maxLength": 6 },
+            "meter": { "type": "integer", "minimum": 0, "maximum": 100, "description": "fill of the small bar under the number, in percent" },
+            "note": { "type": "string", "maxLength": 28 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "heading": { "default": "spread", "range": false },
+    "items.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

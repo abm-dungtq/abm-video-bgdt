@@ -1,0 +1,23 @@
+{
+  "template": "chat-exchange",
+  "variant": "chatgpt",
+  "window": ["start", "end"],
+  "slots": {
+    "name": "Trợ lý AI",
+    "turns": [
+      { "who": "Bạn", "text": "Làm sao để nhờ trợ lý sắp xếp thư mục tải về mỗi tuần?" },
+      { "who": "Trợ lý AI", "text": "Bạn hãy mô tả quy tắc bằng lời, ví dụ: ảnh vào thư mục Ảnh, hóa đơn vào thư mục Kế toán. Tôi sẽ viết sẵn tập lệnh chạy theo lịch." },
+      { "who": "Bạn", "text": "Nếu trùng tên tệp thì sao?" },
+      { "who": "Trợ lý AI", "text": "Tôi thêm hậu tố ngày vào tên tệp mới, không bao giờ ghi đè." }
+    ]
+  },
+  "stress": {
+    "name": "Trợ lý ảo Thông Thái",
+    "turns": [
+      { "who": "Bạn", "text": "Tôi muốn tự động hóa việc tổng hợp báo cáo cuối tuần từ nhiều bảng tính khác nhau, bạn hướng dẫn giúp được không?" },
+      { "who": "Trợ lý ảo Thông Thái", "text": "Được chứ. Bạn hãy cho tôi biết các bảng nằm ở đâu, cột nào cần cộng dồn, và tôi sẽ soạn quy trình gộp dữ liệu thành một báo cáo duy nhất." },
+      { "who": "Bạn", "text": "Các bảng nằm trong thư mục chung của phòng, cột cần cộng là doanh thu và số đơn hàng theo từng khu vực." },
+      { "who": "Trợ lý ảo Thông Thái", "text": "Tuyệt vời. Tôi sẽ đọc từng tệp, cộng theo khu vực, rồi xuất báo cáo kèm biểu đồ và gửi vào hộp thư của bạn mỗi chiều thứ Sáu." }
+    ]
+  }
+}

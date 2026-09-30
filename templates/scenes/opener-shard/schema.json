@@ -1,0 +1,22 @@
+{
+  "id": "opener-shard",
+  "family": "opener-shard",
+  "accent": true,
+  "variants": ["center", "sweep"],
+  "signatures": ["center"],
+  "zone": { "center": "hero-center", "sweep": "full-bleed-quote" },
+  "slots": {
+    "type": "object",
+    "required": ["title"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 32, "description": "the chapter or climax title; glass shards fly in and tile themselves into it" },
+      "kicker": { "type": "string", "maxLength": 28 }
+    }
+  },
+  "reveals": {
+    "kicker": { "default": "spread", "range": false },
+    "title": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 3, "max": 12 }
+}

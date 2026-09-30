@@ -1,0 +1,23 @@
+{
+  "template": "notify-stack",
+  "variant": "cascade",
+  "window": ["start", "end"],
+  "slots": {
+    "heading": "Hermes báo việc liên tục",
+    "items": [
+      { "icon": "check", "title": "Đã chép xong tệp", "text": "Báo cáo tuần đã lưu vào thư mục Dự án", "when": "Vừa xong" },
+      { "icon": "calendar", "title": "Nhắc lịch họp", "text": "Họp nhóm lúc 14 giờ 30 chiều nay", "when": "2 phút" },
+      { "icon": "mail", "title": "Thư mới từ khách hàng", "text": "Anh Minh hỏi về báo giá tháng sau", "when": "5 phút" }
+    ]
+  },
+  "stress": {
+    "heading": "Năm việc Hermes vừa hoàn thành",
+    "items": [
+      { "icon": "check", "title": "Đã sắp xếp thư mục tải về", "text": "Đã phân loại 248 tệp vào các thư mục con", "when": "Vừa xong" },
+      { "icon": "calendar", "title": "Nhắc lịch họp quan trọng", "text": "Cuộc họp với khách hàng bắt đầu sau ba mươi phút", "when": "2 phút" },
+      { "icon": "mail", "title": "Thư mới từ khách hàng lớn", "text": "Chị Thảo gửi lại hợp đồng đã ký và điều chỉnh", "when": "5 phút" },
+      { "icon": "shield", "title": "Cảnh báo đăng nhập lạ", "text": "Có một lần đăng nhập từ thiết bị chưa quen", "when": "9 phút" },
+      { "icon": "rocket", "title": "Bản mới đã lên máy chủ", "text": "Phiên bản 2.4 đã chạy ổn định trên hệ thống", "when": "12 phút" }
+    ]
+  }
+}

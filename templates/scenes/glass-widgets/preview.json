@@ -1,0 +1,22 @@
+{
+  "template": "glass-widgets",
+  "variant": "row",
+  "window": ["start", "end"],
+  "slots": {
+    "heading": "Một ngày của trợ lý",
+    "items": [
+      { "label": "Việc đã làm", "value": 248, "note": "so với hôm qua", "meter": 76 },
+      { "label": "Tiết kiệm", "value": 36, "unit": "giờ", "meter": 60 },
+      { "label": "Độ chính xác", "value": 94, "unit": "%", "meter": 94 }
+    ]
+  },
+  "stress": {
+    "heading": "Số liệu quan trọng của cả nhóm",
+    "items": [
+      { "label": "Yêu cầu được xử lý", "value": 124800, "unit": "lần", "meter": 88, "note": "tăng mạnh trong tháng" },
+      { "label": "Giờ công tiết kiệm", "value": 12360, "unit": "giờ", "meter": 64, "note": "so với làm thủ công" },
+      { "label": "Lỗi được phát hiện", "value": 3472, "unit": "lỗi", "meter": 41, "note": "trước khi lên máy chủ" },
+      { "label": "Mức độ hài lòng", "value": 98, "unit": "%", "meter": 98, "note": "khảo sát khách hàng" }
+    ]
+  }
+}

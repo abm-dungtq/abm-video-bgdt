@@ -1,0 +1,30 @@
+{
+  "id": "message-thread",
+  "family": "message-thread",
+  "variants": ["bubbles", "feed"],
+  "signatures": ["feed"],
+  "zone": { "bubbles": "screen-focus", "feed": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["contact", "turns"],
+    "additionalProperties": false,
+    "properties": {
+      "contact": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the other party's name in the thread header (a person, a team or a bot)" },
+      "turns": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "the messages in order; each appears on its own keyword",
+        "items": {
+          "type": "object", "required": ["who", "text"], "additionalProperties": false,
+          "properties": {
+            "who": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the sender's name shown over the message; a message whose who equals the contact is received, any other is sent" },
+            "text": { "type": "string", "minLength": 1, "maxLength": 140 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "turns.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

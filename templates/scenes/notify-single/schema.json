@@ -1,0 +1,24 @@
+{
+  "id": "notify-single",
+  "family": "notify-single",
+  "variants": ["banner", "spotlight"],
+  "signatures": ["spotlight"],
+  "zone": { "banner": "hero-center", "spotlight": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["icon", "title"],
+    "additionalProperties": false,
+    "properties": {
+      "icon": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "app": { "type": "string", "maxLength": 22, "description": "the app name in small capitals above the title; plain text, no logo" },
+      "when": { "type": "string", "maxLength": 12 },
+      "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+      "body": { "type": "string", "maxLength": 110 }
+    }
+  },
+  "reveals": {
+    "title": { "default": "kw", "range": false },
+    "body": { "default": "spread", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

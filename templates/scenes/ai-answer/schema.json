@@ -1,0 +1,31 @@
+{
+  "id": "ai-answer",
+  "family": "ai-answer",
+  "variants": ["inline", "sources-side"],
+  "signatures": ["sources-side"],
+  "zone": { "inline": "screen-focus", "sources-side": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["question", "turns"],
+    "additionalProperties": false,
+    "properties": {
+      "question": { "type": "string", "minLength": 1, "maxLength": 100, "description": "the question asked, shown in the search bar above the answer" },
+      "turns": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "the answer, one paragraph per turn, each with the source it cites; a paragraph and its source appear on its keyword",
+        "items": {
+          "type": "object", "required": ["who", "text"], "additionalProperties": false,
+          "properties": {
+            "who": { "type": "string", "minLength": 1, "maxLength": 28, "description": "the cited source (a site or publisher name)" },
+            "text": { "type": "string", "minLength": 1, "maxLength": 140 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "question": { "default": "spread", "range": false },
+    "turns.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

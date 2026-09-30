@@ -1,0 +1,7 @@
+{
+  "template": "opener-shard",
+  "variant": "center",
+  "window": ["start", "end"],
+  "slots": { "title": "Ba lớp kỹ năng", "kicker": "Chương 2 · Cốt lõi" },
+  "stress": { "title": "Trợ lý cá nhân tự học mỗi ngày", "kicker": "Chương mười hai · Nâng cao" }
+}

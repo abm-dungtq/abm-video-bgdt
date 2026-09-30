@@ -1,0 +1,30 @@
+{
+  "id": "chat-exchange",
+  "family": "chat-exchange",
+  "variants": ["chatgpt", "claude"],
+  "signatures": ["claude"],
+  "zone": { "chatgpt": "screen-focus", "claude": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["name", "turns"],
+    "additionalProperties": false,
+    "properties": {
+      "name": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the chatbot's display name in the window header (plain text, no logo)" },
+      "turns": {
+        "type": "array", "minItems": 2, "maxItems": 4,
+        "description": "the exchange in order; each turn appears on its own keyword",
+        "items": {
+          "type": "object", "required": ["who", "text"], "additionalProperties": false,
+          "properties": {
+            "who": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the speaker label shown over the turn; a turn whose who equals the bot name is the bot's, any other is the user's" },
+            "text": { "type": "string", "minLength": 1, "maxLength": 140 }
+          }
+        }
+      }
+    }
+  },
+  "reveals": {
+    "turns.*": { "default": "kw", "range": false }
+  },
+  "duration": { "min": 2.5, "max": 10 }
+}

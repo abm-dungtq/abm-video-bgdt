@@ -1,0 +1,19 @@
+{
+  "template": "notify-single",
+  "variant": "banner",
+  "window": ["start", "end"],
+  "slots": {
+    "icon": "mail",
+    "app": "Hòm thư",
+    "when": "Vừa xong",
+    "title": "Thư mới từ khách hàng",
+    "body": "Chị Thảo vừa gửi lại hợp đồng đã ký, cần bạn xác nhận trước năm giờ chiều."
+  },
+  "stress": {
+    "icon": "shield",
+    "app": "Trung tâm bảo mật số",
+    "when": "12 phút",
+    "title": "Cảnh báo đăng nhập từ thiết bị lạ",
+    "body": "Tài khoản của bạn vừa được đăng nhập từ một thiết bị chưa từng dùng, hãy kiểm tra và đổi mật khẩu ngay."
+  }
+}

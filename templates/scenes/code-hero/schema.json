@@ -1,0 +1,23 @@
+{
+  "id": "code-hero",
+  "family": "code-hero",
+  "accent": true,
+  "variants": ["flip", "slice"],
+  "signatures": ["flip"],
+  "zone": { "flip": "screen-focus", "slice": "screen-focus" },
+  "slots": {
+    "type": "object",
+    "required": ["title", "code"],
+    "additionalProperties": false,
+    "properties": {
+      "title": { "type": "string", "minLength": 1, "maxLength": 40, "description": "what this snippet or command does, in plain words" },
+      "code": { "type": "string", "minLength": 1, "maxLength": 40, "description": "real code or a real command, one line" },
+      "lang": { "type": "string", "maxLength": 14 }
+    }
+  },
+  "reveals": {
+    "title": { "default": "spread", "range": false },
+    "code": { "default": "kw", "range": false, "code": true }
+  },
+  "duration": { "min": 3, "max": 12 }
+}
