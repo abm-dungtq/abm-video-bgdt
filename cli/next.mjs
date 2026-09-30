@@ -4,7 +4,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { gateOk, gateStatus } from "./gates.mjs";
+import { agentApproves, gateOk, gateStatus } from "./gates.mjs";
 import { MCP } from "./paths.mjs";
 import { activeStages, untouched } from "./stages.mjs";
 import { isStale, load } from "./state.mjs";
@@ -16,6 +16,12 @@ export const doctorFresh = (s) => s.stages.doctor?.status === "done" && Date.now
 
 function gateAction(s, P, n, stage, cli) {
   const st = gateStatus(s, P, n);
+  // a directed lesson: the agent checks gates 2 and 3 itself and approves only when every check passes
+  if (agentApproves(P, n) && st !== "rejected") {
+    return { next: `check gate ${n} yourself; when a check fails, fix its cause (never a threshold in video.config.json) and check again`,
+      run: `${cli} gate ${n} --check   then   ${cli} gate ${n} --approve --by agent "<what the checks showed>"`,
+      why: st === "approved (stale)" ? `gate ${n} files changed after approval` : `stage ${stage} is done; gate ${n} is approved on its checks in a directed lesson` };
+  }
   if (st === "requested") {
     return { next: `show the user .abm/gates/${n}.md, then record their answer`,
       run: `${cli} gate ${n} --approve "<user's words>"   |   ${cli} gate ${n} --reject "<changes>"`,

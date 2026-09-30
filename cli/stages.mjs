@@ -84,6 +84,8 @@ export const STAGES = [
       () => sh(c.P, [process.execPath, tool(c, "script-to-md.mjs"), "--review", "script.json"]),
       () => sh(c.P, [process.execPath, tool(c, "tts-manifest.mjs")]),
       () => keywordAdvice(c.P),
+      // the storyboard outline, rewritten with the script until the voice exists (sync-durations and compile own it after)
+      () => (existsSync(join(c.P, "audio_meta.json")) ? 0 : sh(c.P, [process.execPath, tool(c, "script-to-md.mjs"), "script.json"])),
     ) },
   { name: "screens", when: (cfg) => cfg.screens === true, needs: { stages: ["script"], gates: ["2"] },
     inputs: ["capture/screens/INDEX.md"], gate: "2b",

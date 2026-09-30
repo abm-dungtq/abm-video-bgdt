@@ -443,6 +443,49 @@ writeFileSync(join(Ldir, "script.src.txt"), `# ch0 | Mở đầu | basic\n## 1 |
 const rLong = spawnSync(process.execPath, [join(S, "scripts/src-to-script.mjs"), "script.src.txt", "script.json"], { cwd: Ldir, encoding: "utf8" });
 check("src-to-script: a label over 32 characters fails", rLong.status !== 0 && rLong.stderr.includes("label longer than 32"), rLong.stderr);
 
+// ── agent approval: a directed lesson lets the agent approve gates 2 and 3 on their checks, never 1 or 4 ────────────
+out = scenario("agent-gate", (D, st) => {
+  const c = JSON.parse(readFileSync(join(D, "video.config.json"), "utf8"));
+  writeFileSync(join(D, "video.config.json"), JSON.stringify({ ...c, scenes: { ...(c.scenes ?? {}), authoring: "director" } }, null, 2));
+  done(D, st, "doctor", "init", "probe", "script");
+  approveAll(D, st, "1");
+});
+check("next: a directed lesson checks and approves gate 2 itself", /NEXT: check gate 2 yourself[\s\S]*RUN: .*gate 2 --check .*--approve --by agent/.test(out), out);
+let rAgent = await cliIn(D, "gate", "4", "--approve", "--by", "agent", "x");
+check("gate 4 --approve --by agent is refused", rAgent.code !== 0 && (rAgent.out + rAgent.err).includes("needs the user's approval"), rAgent.out + rAgent.err);
+rAgent = await cliIn(D, "gate", "2", "--approve", "--by", "agent", "x");
+check("gate 2 --approve --by agent is refused outside a directed lesson", rAgent.code !== 0 && (rAgent.out + rAgent.err).includes("directed lesson"), rAgent.out + rAgent.err);
+
+// the storyboard gate on a directed lesson that passes its checks: the fixed grok lesson (ABM_DIRECTED_SOURCE)
+const DIR_SRC = resolve(process.env.ABM_DIRECTED_SOURCE ?? "D:/TQD/Claude-Video/.regress/lint-grok");
+if (!existsSync(join(DIR_SRC, "scenes.json"))) {
+  check(`gate 3 --approve --by agent on a directed lesson (skipped: no ${DIR_SRC})`, true, "");
+} else {
+  const G = join(dirname(R), "cli-agent-gate");
+  rmSync(G, { recursive: true, force: true });
+  // audio clips are not read by the gate 3 checks, only the ASR report
+  cpSync(DIR_SRC, G, { recursive: true, filter: (p) => !/[\\/]audio[\\/].+/.test(p.slice(DIR_SRC.length)) || p.endsWith("asr-report.json") });
+  mkdirSync(join(G, "renders"), { recursive: true });
+  writeFileSync(join(G, "renders/karaoke-preview.mp4"), "preview"); // the gate's artifact (content does not matter here)
+  const gs = load(G);
+  delete gs.gates["3"];
+  save(G, gs);
+  rAgent = await cliIn(G, "gate", "3", "--check");
+  const rec = existsSync(join(G, ".abm/gates/3-check.json")) ? JSON.parse(readFileSync(join(G, ".abm/gates/3-check.json"), "utf8")) : {};
+  check("gate 3 --check runs asr, lint, visible and config and records them", rAgent.code === 0 && rec.ok === true
+    && ["asr", "lint", "visible", "config"].every((n) => rec.checks?.some((c) => c.name === n && c.ok)), rAgent.out + rAgent.err);
+  rAgent = await cliIn(G, "gate", "3", "--approve", "--by", "agent", "lint, visible, asr and config pass");
+  const g3 = load(G).gates["3"];
+  check("gate 3 --approve --by agent passes on its checks and records who approved",
+    rAgent.code === 0 && g3?.status === "approved" && g3.by === "agent" && g3.note === "lint, visible, asr and config pass", rAgent.out + rAgent.err + JSON.stringify(g3));
+  const c = JSON.parse(readFileSync(join(G, "video.config.json"), "utf8"));
+  writeFileSync(join(G, "video.config.json"), JSON.stringify({ ...c, scenes: { ...c.scenes, maxUsesPerTemplate: 9 } }, null, 2));
+  rAgent = await cliIn(G, "gate", "3", "--check");
+  check("gate 3 --check fails a loosened threshold", rAgent.code === 1 && rAgent.out.includes("✗ config: scenes.maxUsesPerTemplate is 9"), rAgent.out + rAgent.err);
+  rAgent = await cliIn(G, "gate", "3", "--approve", "--by", "agent", "x");
+  check("gate 3 --approve --by agent is refused when a check fails", rAgent.code !== 0 && load(G).gates["3"].note !== "x", rAgent.out + rAgent.err);
+}
+
 srv.close();
 
 console.log(passed === cases.length ? `cli-tests ok (${passed}/${cases.length})` : `cli-tests FAILED (${passed}/${cases.length})`);

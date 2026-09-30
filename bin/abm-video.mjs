@@ -7,6 +7,7 @@
 //   abm-video status                               stages and gates of this project
 //   abm-video run <stage> [--force] [--apply] [--concurrency N]
 //   abm-video gate <n> --request | --check | --approve "<user's words>" | --reject "<changes>"
+//   abm-video gate <2|3> --approve --by agent "<what the checks showed>"   (directed lesson only)
 //   abm-video tts [--concurrency N]                pending narration clips (same as run tts)
 //   abm-video tts --text "<text>" --out <wav>      one clip (probes)
 //   abm-video migrate                              bring a project made before this CLI under it (all frames custom)
@@ -146,7 +147,13 @@ switch (cmd) {
     try {
       if (argv.includes("--request")) process.stdout.write(request(Pd, n, CLI));
       else if (argv.includes("--check")) process.exit(runGateChecks(Pd, n) ? 0 : 1);
-      else if (argv.includes("--approve")) { approve(Pd, n, opt("--approve", "")); console.log(`gate ${n} approved`); }
+      else if (argv.includes("--approve")) {
+        // the note is the one argument left once the flags and the --by value are taken out, wherever they stand
+        const by = opt("--by", "user");
+        const [note = ""] = argv.slice(2).filter((a, i, all) => a !== "--approve" && a !== "--by" && all[i - 1] !== "--by");
+        approve(Pd, n, note, by);
+        console.log(`gate ${n} approved by ${by}`);
+      }
       else if (argv.includes("--reject")) { reject(Pd, n, opt("--reject", "")); console.log(`gate ${n} rejected`); }
       else die("gate needs --request, --check, --approve or --reject");
     } catch (e) {

@@ -3,12 +3,21 @@
 //
 //   abm-video gate <n> --request            write .abm/gates/<n>.md (question + files) and print it
 //   abm-video gate <n> --approve "<note>"   record the user's approval on the current files
+//   abm-video gate <n> --approve --by agent "<note>"   gates 2 and 3 of a directed lesson: the agent approves on its checks
 //   abm-video gate <n> --reject "<note>"    record the changes the user asked for
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { hashes, load, save } from "./state.mjs";
 import { runGateChecks } from "./gate-checks.mjs";
+import { isDirected } from "../compiler/lint.mjs";
+
+/** Gates the agent may approve itself in a directed lesson; 1 (the voice) and 4 (the draft) stay with the user. */
+export const AGENT_GATES = ["2", "3"];
+const directed = (P) => existsSync(join(P, "video.config.json"))
+  && isDirected(JSON.parse(readFileSync(join(P, "video.config.json"), "utf8")).scenes);
+/** The agent approves gate n itself: a directed lesson and gate 2 or 3. */
+export const agentApproves = (P, n) => AGENT_GATES.includes(String(n)) && directed(P);
 
 export const GATES = {
   1: { artifacts: [".probe/rate.wav", ".probe/pronunciation.md"], extra: [".probe/terms-raw.wav", ".probe/terms-candidates.wav"],
@@ -77,22 +86,25 @@ Ghi câu trả lời của người dùng:
   return md;
 }
 
-export function approve(P, n, note) {
+export function approve(P, n, note, by = "user") {
   const g = known(n);
+  if (!["user", "agent"].includes(by)) throw new Error(`--by ${by}: use user or agent`);
+  if (by === "agent" && !AGENT_GATES.includes(String(n))) throw new Error(`gate ${n} needs the user's approval`);
+  if (by === "agent" && !directed(P)) throw new Error(`gate ${n}: an agent approves only in a directed lesson (scenes.authoring "director")`);
   const s = load(P);
   const miss = missing(P, g.artifacts);
   if (miss.length && !s.legacy) throw new Error(`gate ${n}: missing ${miss.join(", ")}; nothing to approve`);
   const passed = runGateChecks(P, String(n));
-  if (!passed && !s.legacy) throw new Error(`gate ${n}: checks failed; fix them or reject the gate`);
+  if (!passed && (!s.legacy || by === "agent")) throw new Error(`gate ${n}: checks failed; fix them or reject the gate`);
   if (!passed && s.legacy) console.warn(`gate ${n}: checks failed (legacy project, approving anyway)`);
   if (String(n) === "2" && existsSync(join(P, "script.json"))) {
     // src-to-script keeps meta.approved on later runs, so recording it here does not change the script again
     const script = JSON.parse(readFileSync(join(P, "script.json"), "utf8"));
     // keep an earlier approval date, so approving the same script again leaves script.json (and tts) untouched
-    script.meta.approved ??= `${new Date().toISOString().slice(0, 10)} by user`;
+    script.meta.approved ??= `${new Date().toISOString().slice(0, 10)} by ${by}`;
     writeFileSync(join(P, "script.json"), JSON.stringify(script, null, 1));
   }
-  s.gates[n] = { ...(s.gates[n] ?? {}), status: "approved", approvedAt: new Date().toISOString(), note,
+  s.gates[n] = { ...(s.gates[n] ?? {}), status: "approved", approvedAt: new Date().toISOString(), note, by,
     artifacts: hashes(P, g.artifacts) };
   save(P, s);
 }

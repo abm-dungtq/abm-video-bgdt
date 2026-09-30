@@ -1,10 +1,16 @@
-// gate-checks.mjs — gate verifiers for abm-video.
-import { existsSync, readFileSync } from "node:fs";
+// gate-checks.mjs — gate verifiers for abm-video. `gate <n> --check` runs them all in one pass and records the result in
+// .abm/gates/<n>-check.json; an approval runs them again and refuses on any failure.
+// In a directed lesson (the agent making the video writes scenes.json, references/direction.md) the agent approves
+// gates 2 and 3 itself on these checks, so they also hold the lines it could otherwise move: the storyboard lint,
+// the on-screen copy (visible-check) and the thresholds of video.config.json (configGuard).
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chapterOverlap } from "../compiler/scorecard.mjs";
+import { isDirected } from "../compiler/lint.mjs";
+import { SKILL_ROOT as INSTALLED_SKILL } from "./paths.mjs";
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -23,6 +29,64 @@ function findLint(P) {
   if (existsSync(p2)) return p2;
   return null;
 }
+
+const readCfg = (P) => (existsSync(join(P, "video.config.json")) ? JSON.parse(readFileSync(join(P, "video.config.json"), "utf8")) : {});
+const run = (P, file, args = []) => {
+  const r = spawnSync(process.execPath, [file, ...args], { cwd: P, encoding: "utf8" });
+  return { ok: r.status === 0, detail: ((r.stdout || "") + (r.stderr ? "\n" + r.stderr : "")).trim() };
+};
+const lintCheck = (P, args = []) => () => {
+  const lintPath = findLint(P);
+  if (!lintPath) return { ok: false, detail: "compiler/lint.mjs missing" };
+  return run(P, lintPath, args);
+};
+const toolCheck = (P, f, args = []) => () => {
+  const tool = findTool(P, f);
+  if (!tool) return { ok: false, detail: `${f} missing; run new-project.mjs ${P} --update-tools` };
+  return run(P, tool, args);
+};
+
+// The thresholds a directed lesson may not loosen, against templates/video.config.json of the installed skill (never
+// the project's copy of the tools, which the agent could edit).
+// looser(project value, default) → true when the project's value lets more through. A missing key counts as loosened:
+// the rule it feeds is off.
+const GUARD = {
+  2: {
+    "depth.factsPerChapter": (v, d) => !(v >= d),
+    "depth.examplePerChapter": (v, d) => d === true && v !== true,
+    "depth.maxListRun": (v, d) => !(v >= 1 && v <= d),
+  },
+  3: {
+    "scenes.maxUsesPerTemplate": (v, d) => !(v >= 1 && v <= d),
+    "scenes.pairGap": (v, d) => !(v >= d),
+    "scenes.customBudget": (v, d) => v !== undefined && !(v <= d),
+    "scenes.uniqueChapterOpeners": (v, d) => d === true && v !== true,
+    "scenes.director": (v, d) => d === true && v !== true,
+    "voice.maxWer": (v, d) => !(v <= d),
+    "voice.maxHeadDb": (v, d) => !(v <= d),
+    "voice.maxTailDb": (v, d) => !(v <= d),
+  },
+};
+const DEFAULTS_EXTRA = { "scenes.customBudget": 0.15 }; // lint's default when the template leaves it out
+const at = (o, path) => path.split(".").reduce((v, k) => (v == null ? v : v[k]), o);
+
+/** Loosened thresholds of video.config.json for gate n ("2" or "3"): [] when none. */
+export function configGuard(P, n) {
+  const cfg = readCfg(P);
+  const dflt = JSON.parse(readFileSync(join(INSTALLED_SKILL, "templates/video.config.json"), "utf8"));
+  const out = [];
+  if (!isDirected(cfg.scenes)) out.push(`scenes.authoring is "${cfg.scenes?.authoring ?? "solver"}": an agent-approved lesson is directed ("director")`);
+  for (const [key, looser] of Object.entries(GUARD[n] ?? {})) {
+    const d = at(dflt, key) ?? DEFAULTS_EXTRA[key];
+    const v = at(cfg, key);
+    if (looser(v, d)) out.push(`${key} is ${JSON.stringify(v ?? null)}, looser than the skill's ${JSON.stringify(d)}`);
+  }
+  return out;
+}
+const configCheck = (P, n) => () => {
+  const bad = configGuard(P, n);
+  return bad.length ? { ok: false, detail: bad.join("; ") } : { ok: true, detail: "thresholds at the skill's defaults or stricter" };
+};
 
 function asrCheck(P) {
   const reportPath = join(P, "audio/asr-report.json");
@@ -178,6 +242,19 @@ export function gateChecks(P, n) {
       },
     });
 
+    if (isDirected(readCfg(P).scenes)) {
+      // the director writes scenes.json before the voice exists: lint it on the estimated durations
+      checks.push({
+        name: "lint",
+        run: () => {
+          if (!existsSync(join(P, "scenes.json"))) return { ok: false, detail: "scenes.json missing: write it from references/direction.md before gate 2" };
+          if (!existsSync(join(P, "STORYBOARD.md"))) return { ok: false, detail: "STORYBOARD.md missing: rerun the script stage" };
+          return lintCheck(P, ["--estimated"])();
+        },
+      });
+      checks.push({ name: "config", run: configCheck(P, "2") });
+    }
+
     return checks;
   }
 
@@ -201,43 +278,41 @@ export function gateChecks(P, n) {
       name: "asr",
       run: () => asrCheck(P),
     });
+    if (isDirected(readCfg(P).scenes)) {
+      checks.push({ name: "lint", run: lintCheck(P) });
+      checks.push({ name: "visible", run: toolCheck(P, "visible-check.mjs") });
+      checks.push({ name: "config", run: configCheck(P, "3") });
+    }
     return checks;
   }
 
   if (gate === "4") {
-    checks.push({
-      name: "lint",
-      run: () => {
-        const lintPath = findLint(P);
-        if (!lintPath || !existsSync(lintPath)) {
-          return { ok: false, detail: "compiler/lint.mjs missing" };
-        }
-        const r = spawnSync(process.execPath, [lintPath], { cwd: P, encoding: "utf8" });
-        const out = ((r.stdout || "") + (r.stderr ? "\n" + r.stderr : "")).trim();
-        return { ok: r.status === 0, detail: out };
-      },
-    });
+    checks.push({ name: "lint", run: lintCheck(P) });
     checks.push({
       name: "asr",
       run: () => asrCheck(P),
     });
+    // a stretch of bare ground in the draft (a frame whose copy never came in); only projects whose tools have it
+    if (findTool(P, "blank-check.mjs") && existsSync(join(P, "renders/draft.mp4"))) {
+      checks.push({ name: "blank", run: toolCheck(P, "blank-check.mjs", ["renders/draft.mp4"]) });
+    }
     return checks;
   }
 
   return checks;
 }
 
+/** Run every check of gate n, print ✓/✗ per check, record .abm/gates/<n>-check.json; true when all pass. */
 export function runGateChecks(P, n) {
   const checks = gateChecks(P, n);
-  let allOk = true;
+  const results = [];
   for (const c of checks) {
     const res = c.run();
-    if (res.ok) {
-      console.log(`✓ ${c.name}`);
-    } else {
-      console.log(`✗ ${c.name}: ${res.detail}`);
-      allOk = false;
-    }
+    results.push({ name: c.name, ok: !!res.ok, detail: String(res.detail ?? "").slice(0, 4000) });
+    console.log(res.ok ? `✓ ${c.name}` : `✗ ${c.name}: ${res.detail}`);
   }
-  return allOk;
+  const ok = results.every((r) => r.ok);
+  mkdirSync(join(P, ".abm/gates"), { recursive: true });
+  writeFileSync(join(P, `.abm/gates/${n}-check.json`), JSON.stringify({ gate: String(n), at: new Date().toISOString(), ok, checks: results }, null, 1));
+  return ok;
 }
