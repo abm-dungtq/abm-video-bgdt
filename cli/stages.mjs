@@ -9,6 +9,7 @@ import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { MCP, SKILL_ROOT } from "./paths.mjs";
 import { apiUp, batch, verify } from "./tts.mjs";
+import { isDirected } from "../compiler/lint.mjs";
 
 const q = (a) => (/[\s"&|<>^]/.test(a) ? `"${String(a).replace(/"/g, '\\"')}"` : String(a));
 
@@ -116,8 +117,8 @@ export const STAGES = [
       const { fail } = await verify(c.P, asr);
       if (fail.length) {
         console.error(`✗ ${fail.length} clip(s) still cut at the start or end, or saying something else, after the retakes `
-          + `(audio/asr-report.json). Rerun tts for more retakes, fix the sentence or its spokenOverrides, or listen and, `
-          + `if it sounds right, add the id to audio/qa-accepted.txt`);
+          + `(audio/asr-report.json). Rerun tts for more retakes, fix the sentence or its spokenOverrides, or ask the user to `
+          + `listen to audio/clips/<id>.wav; only someone who listened adds an id to audio/qa-accepted.txt`);
         return 1;
       }
       return 0;
@@ -134,7 +135,7 @@ export const STAGES = [
       );
     } },
   { name: "storyboard", needs: { stages: ["voice"], gates: [] }, inputs: ["audio_meta.json", "scenes.json"],
-    // scenes.json is written once (by the coordinator under authoring "claude", else by the solver) and then only
+    // scenes.json is written once (by the director in a directed lesson, else by the solver) and then only
     // linted (never overwritten; --regenerate runs the solver and keeps a .bak);
     // retime-and-cue only serves hand-built storyboards of legacy projects
     run: (c) => {
@@ -147,8 +148,8 @@ export const STAGES = [
         );
       }
       if (existsSync(scenes) && !c.args.includes("--regenerate")) return sh(c.P, [process.execPath, `${compilerDir(c)}/lint.mjs`]);
-      if ((c.cfg.scenes?.authoring ?? "solver") === "claude" && !existsSync(scenes) && !c.args.includes("--regenerate")) {
-        console.error('✗ scenes.json missing: authoring is "claude" — the coordinator writes it from references/direction.md (the solver is not run)');
+      if (isDirected(c.cfg.scenes) && !existsSync(scenes) && !c.args.includes("--regenerate")) {
+        console.error(`✗ scenes.json missing: authoring is "${c.cfg.scenes.authoring}" — the director writes it from references/direction.md (the solver is not run)`);
         return 1;
       }
       if (existsSync(scenes)) {

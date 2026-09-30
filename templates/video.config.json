@@ -114,7 +114,7 @@
       "accent-device"
     ],
     "terminalChapters": [],
-    "authoring": "claude",
+    "authoring": "director",
     "maxUsesPerTemplate": 3,
     "pairGap": 6,
     "uniqueChapterOpeners": true,

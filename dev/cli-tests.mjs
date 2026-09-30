@@ -152,7 +152,7 @@ out = scenario("stale", (D, st) => {
 });
 check("next: a changed input reruns its stage", /NEXT: run stage script[\s\S]*WHY: stage script is stale/.test(out), out);
 
-// ── authoring "claude": the storyboard stage never runs the solver ──────────────
+// ── a directed lesson ("director", or its older name "claude"): the storyboard stage never runs the solver ──────────────
 const claudeCfg = (D) => {
   const c = JSON.parse(readFileSync(join(D, "video.config.json"), "utf8"));
   c.scenes = { ...c.scenes, authoring: "claude" };
@@ -164,7 +164,7 @@ out = scenario("authoring", (D, st) => {
   done(D, st, "doctor", "init", "probe", "script", "tts", "voice");
   approveAll(D, st, "1", "2");
 });
-check("next: authoring claude without scenes.json asks the coordinator", /NEXT: the coordinator \(Claude\) writes scenes\.json/.test(out), out);
+check("next: authoring claude without scenes.json asks the director", /NEXT: write scenes\.json from references\/direction\.md \(you are the director\)/.test(out), out);
 {
   const D = join(dirname(R), "cli-next-authoring");
   const r = spawnSync(process.execPath, [join(S, "bin/abm-video.mjs"), "run", "storyboard"], { cwd: D, encoding: "utf8" });
@@ -450,6 +450,9 @@ out = scenario("agent-gate", (D, st) => {
   done(D, st, "doctor", "init", "probe", "script");
   approveAll(D, st, "1");
 });
+check("next: a directed lesson without scenes.json asks for it before gate 2", /NEXT: write scenes\.json from references\/direction\.md/.test(out), out);
+writeFileSync(join(dirname(R), "cli-next-agent-gate", "scenes.json"), "{}");
+out = spawnSync(process.execPath, [join(S, "bin/abm-video.mjs"), "next"], { cwd: join(dirname(R), "cli-next-agent-gate"), encoding: "utf8" }).stdout;
 check("next: a directed lesson checks and approves gate 2 itself", /NEXT: check gate 2 yourself[\s\S]*RUN: .*gate 2 --check .*--approve --by agent/.test(out), out);
 let rAgent = await cliIn(D, "gate", "4", "--approve", "--by", "agent", "x");
 check("gate 4 --approve --by agent is refused", rAgent.code !== 0 && (rAgent.out + rAgent.err).includes("needs the user's approval"), rAgent.out + rAgent.err);

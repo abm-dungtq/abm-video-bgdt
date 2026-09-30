@@ -321,7 +321,7 @@ export function ideaErrors(frames, sc = {}) {
  * Variety errors (warnings in legacy projects), for 10 shots or more: E1 one family (title excluded) takes more than
  * 25 % of the shots · E2 the video uses fewer than min(10, shots / 3) templates. A lesson that leans on one or two
  * layouts bores the viewer even when no pair repeats back to back.
- * Under authoring "claude" (sc = cfg.scenes), at any length, title excluded: E3 a template is used more than
+ * In a directed lesson (sc = cfg.scenes, isDirected), at any length, title excluded: E3 a template is used more than
  * sc.maxUsesPerTemplate times · E4 a template comes back within sc.pairGap shots · E5 (sc.uniqueChapterOpeners) two
  * chapters open with the same template/variant · E6 a chapter has more than one accent shot (schema "accent": true) ·
  * E7 a frame opens with a family that a shot of one of the two frames before it used (title and accent shots excluded).

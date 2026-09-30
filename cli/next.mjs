@@ -8,7 +8,7 @@ import { agentApproves, gateOk, gateStatus } from "./gates.mjs";
 import { MCP } from "./paths.mjs";
 import { activeStages, untouched } from "./stages.mjs";
 import { isStale, load } from "./state.mjs";
-import { readStoryboard } from "../compiler/lint.mjs";
+import { isDirected, readStoryboard } from "../compiler/lint.mjs";
 import { apiUp } from "./tts.mjs";
 
 export const DOCTOR_MAX_AGE_MS = 7 * 24 * 3600e3;
@@ -17,6 +17,11 @@ export const doctorFresh = (s) => s.stages.doctor?.status === "done" && Date.now
 function gateAction(s, P, n, stage, cli) {
   const st = gateStatus(s, P, n);
   // a directed lesson: the agent checks gates 2 and 3 itself and approves only when every check passes
+  if (agentApproves(P, n) && String(n) === "2" && !existsSync(join(P, "scenes.json"))) {
+    return { next: "write scenes.json from references/direction.md (you are the director), then lint it on the estimated timing",
+      run: `node tools/compiler/lint.mjs --estimated   then   ${cli} gate 2 --check`,
+      why: "gate 2 of a directed lesson checks scenes.json before any voice is made" };
+  }
   if (agentApproves(P, n) && st !== "rejected") {
     return { next: `check gate ${n} yourself; when a check fails, fix its cause (never a threshold in video.config.json) and check again`,
       run: `${cli} gate ${n} --check   then   ${cli} gate ${n} --approve --by agent "<what the checks showed>"`,
@@ -32,7 +37,7 @@ function gateAction(s, P, n, stage, cli) {
       run: `${cli} run ${stage}   then   ${cli} gate ${n} --request`,
       why: `gate ${n} was rejected` };
   }
-  return { next: `ask the user to review gate ${n}`, run: `${cli} gate ${n} --request`,
+  return { next: `ask the user to review gate ${n}`, run: `${cli} gate ${n} --check   then   ${cli} gate ${n} --request`,
     why: st === "approved (stale)" ? `gate ${n} files changed after approval` : `stage ${stage} is done; gate ${n} comes next` };
 }
 
@@ -75,9 +80,9 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
       if (st.name === "clean") {
         return { next: "remove the regenerable files (renders are kept)", run: `${cli} run clean --apply`, why: "the final video is done" };
       }
-      if (st.name === "storyboard" && cfg.scenes?.authoring === "claude" && !existsSync(join(P, "scenes.json"))) {
-        return { next: "the coordinator (Claude) writes scenes.json from references/direction.md", run: `(Claude writes scenes.json, then) ${cli} run storyboard`,
-          why: "authoring is claude: a worker never picks the visuals" };
+      if (st.name === "storyboard" && isDirected(cfg.scenes) && !existsSync(join(P, "scenes.json"))) {
+        return { next: "write scenes.json from references/direction.md (you are the director)", run: `(write scenes.json, then) ${cli} run storyboard`,
+          why: "a directed lesson: the solver never picks the visuals" };
       }
       if (st.name === "compile" && existsSync(join(P, "scenes.json")) && !s.stages.compile) {
         return { next: "review scenes.json (optional edits, see references/scene-spec.md), then compile", run: `${cli} run compile`,

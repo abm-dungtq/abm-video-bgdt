@@ -20,6 +20,8 @@ node tools/bin/abm-video.mjs next              inside a project (the folder with
 ```
 
 It prints three lines — `NEXT` (the task), `RUN` (the command), `WHY`. Run the command, then ask `next` again.
+There is no `abm-video` command on the PATH: wherever a page or a message says `abm-video …`, run
+`node tools/bin/abm-video.mjs …` inside the project (`node <skill>/bin/abm-video.mjs …` outside one).
 If the machine is not ready it says `doctor`; `abm-video doctor --fix` installs what is missing.
 
 ## The only things you write
@@ -29,18 +31,25 @@ If the machine is not ready it says `doctor`; `abm-video doctor --fix` installs 
    noun phrases as `*keywords*`; they become the on-screen labels. Give every chapter its own arc (§ Chapter arcs: no
    two chapters on the same scene hints), write a list's items on a `| a / b / c` line, and use `exercise` at most once
    in the whole video. Keep English words (product names, terms) as written; list them in the gate 1 probe, never respell them.
-3. **Scenes:** under `authoring: "claude"` (the default) the coordinator writes `scenes.json` by hand, one visual
-   `idea` per frame, following [references/direction.md](references/direction.md); a worker never does. Older projects
-   let the storyboard stage's solver write it. Shape and catalog: [references/scene-spec.md](references/scene-spec.md). At most 15 % of frames may be `custom` (hand-built with
+3. **Scenes:** under `authoring: "director"` (the default; `"claude"` is its older name) the agent making the video
+   writes `scenes.json` by hand before gate 2, one visual `idea` per frame, following
+   [references/direction.md](references/direction.md). Older projects let the storyboard stage's solver write it. Shape and catalog: [references/scene-spec.md](references/scene-spec.md). At most 15 % of frames may be `custom` (hand-built with
    [references/custom-frame.md](references/custom-frame.md)).
 4. **Gate answers:** when `next` asks for a gate, show the user the file it names, then record the user's own words:
    `abm-video gate <n> --approve "<what they said>"` or `--reject "<the changes>"`. The gates: pronunciation and pace (1),
-   script (2), screenshots (2b, only with real UI), karaoke style (3), draft video (4).
+   script (2), screenshots (2b, only with real UI), karaoke style (3), draft video (4). In a directed lesson you approve
+   gates 2 and 3 yourself, only after `gate <n> --check` shows every check `✓`:
+   `abm-video gate <n> --approve --by agent "<what the checks showed>"`.
+
+**Making the whole video alone:** follow [references/autonomous-run.md](references/autonomous-run.md), the step table
+with the command and the pass condition of every step.
 
 ## Never
 
 - Never edit `index.html` or a compiled frame's HTML; change `scenes.json` and run `abm-video run compile`.
-- Never approve a gate yourself, and never skip one; a gate goes stale when its files change.
+- Never approve gate 1 or 4 yourself, and never skip a gate; a gate goes stale when its files change.
+- Never edit files in the skill folder or in the project's `tools/`, and never loosen a threshold in
+  `video.config.json`; report a skill problem to the user instead (autonomous-run.md § When you are stuck).
 - Never run `hyperframes upgrade`, `skills update` or `add` in a project; the CLI stays pinned (`video.config.json` `cli.pin`).
 - Never use `--force`; it exists for the skill's own tests.
 - Never put private data on screen; screenshots go through gate 2b and `privacy-check`.

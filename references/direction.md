@@ -1,16 +1,16 @@
-# Direction — the coordinator writes scenes.json
+# Direction — the director writes scenes.json
 
-Under `"scenes": { "authoring": "claude" }` (the default for new projects) the solver does not pick the visuals. The
-coordinator (Claude) writes every frame of `scenes.json` by hand, and a worker (agy, codex…) only runs stages. The
-storyboard stage stops with `scenes.json missing: authoring is "claude"` until the file exists; `run storyboard
---regenerate` still runs the solver, as a deliberate escape hatch.
+Under `"scenes": { "authoring": "director" }` (the default for new projects; `"claude"` is the older name and still
+works) the solver does not pick the visuals. The director, the agent making the video, writes every frame of
+`scenes.json` by hand. The storyboard stage stops with `scenes.json missing: authoring is "director"` until the file
+exists; `run storyboard --regenerate` still runs the solver, as a deliberate escape hatch.
 
 Shape, windows, cues, slots and the template catalog are in [scene-spec.md](scene-spec.md). This file is about what
 to put there.
 
 ## When
 
-After gate 2 (script approved) and before stage storyboard. `STORYBOARD.md` exists from the script stage, so
+After the script stage and before gate 2, which lints it. `STORYBOARD.md` exists from the script stage, so
 `node tools/compiler/lint.mjs --estimated` can check the file before any audio: it reads durations from the outline.
 After the voice stage, the storyboard stage lints it again with real timings; fix windows there if a cue moved.
 
@@ -18,8 +18,8 @@ After the voice stage, the storyboard stage lints it again with real timings; fi
 
 1. **Read the sentences aloud.** What does the viewer need to *see* while hearing them — a number, a change, a
    choice, a place, a sequence, one idea landing?
-2. **Pick a visual idea and write it down** in the frame's `"idea"` (10–400 characters, required under authoring
-   claude). One object, one scene or one comparison: "a building with one floor per service", "the price tag flips
+2. **Pick a visual idea and write it down** in the frame's `"idea"` (10–400 characters, required in a directed
+   lesson). One object, one scene or one comparison: "a building with one floor per service", "the price tag flips
    from free to 30 USD", "two roads split at a sign: chat or API". The idea is for the reviewer too: at gate 3 it
    explains why the frame looks the way it does.
 3. **Choose the template by meaning, not habit.** A trend over time is `line-graph`, a ranking that changes is
@@ -31,7 +31,13 @@ After the voice stage, the storyboard stage lints it again with real timings; fi
   "shots": [ { "template": "layers", "variant": "stack", "window": ["start", "end"], "slots": { … } } ] }
 ```
 
-## Variety rules (lint errors under authoring claude)
+## Pinning and variety (lint errors in a directed lesson)
+
+- **Every copy reveal is pinned to the voice:** `"reveals": { "<slot>": "word:<its word>-0.1" }` (or `kw:`, or a
+  range `word:a..word:b`). Slot text says what the voice says in that frame; code the voice only talks about is a
+  warning, not an error.
+- **Change the layout axis:** a frame does not open with a family that a shot of one of the two frames before it used
+  (title and accent shots excluded).
 
 - **Uses per template:** at most `scenes.maxUsesPerTemplate` (2 for a video up to 5 minutes, else 3), title excluded.
 - **Gap:** a template does not come back within `scenes.pairGap` shots (6).
@@ -40,7 +46,7 @@ After the voice stage, the storyboard stage lints it again with real timings; fi
 - **One accent per chapter:** a template whose schema has `"accent": true` appears at most once in a chapter.
 - **Custom frames:** at most 15 % (`scenes.customBudget`), kept for the single biggest moment of the lesson.
 
-Not enforced, but reviewed at gate 3:
+Not enforced by lint, but part of your own review before gate 3:
 
 - **Dense, then sparse.** After a frame full of text or data, give one frame a single image or a single sentence.
 - **Change the axis.** Alternate what moves: numbers, then space (map, flow), then words, then an interface.
@@ -58,7 +64,6 @@ per chapter. They may last up to 12 s, so give them a frame long enough, and nev
 
 1. `node tools/compiler/lint.mjs --estimated` (before audio) or `node tools/compiler/lint.mjs` → `0 error(s)`.
    Read the warnings too: a V1 pair repeat or a chapter with no signature shot is worth fixing.
-2. `node <skill>/dev/variety-report.mjs .` → check the template share and distinct-pair ratio.
-3. Read every `idea` in order, as a list. If two in a row say the same thing in different words, change one.
-4. After compile, look at the end-of-frame snapshot of every frame (gate 3 checklist): no empty card, no clipped
-   Vietnamese text, nothing under the karaoke band.
+2. Read every `idea` in order, as a list. If two in a row say the same thing in different words, change one.
+3. After compile, `node tools/visible-check.mjs` → `visible-check ok`: every slot is on screen, readable and above
+   the karaoke band at the end of its shot. Gate 3 runs it too.

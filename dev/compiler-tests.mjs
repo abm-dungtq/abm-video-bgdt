@@ -237,11 +237,13 @@ test("funnel: a stage over 999 999 drops the numbers, not the funnel", () => {
   const b = BUILD.funnel(c); valid("funnel", b); eq(b.slots.stages.some((s) => "value" in s), false);
 });
 
-// authoring "claude": ideas and repetition are errors
+// a directed lesson: ideas and repetition are errors ("claude" is the older name of "director")
 const AUTH = { authoring: "claude", maxUsesPerTemplate: 2, pairGap: 6, uniqueChapterOpeners: true };
 const aShot = (frame, template, variant = "a") => ({ frame, template, variant, family: template });
 test("authored frame without idea is an error", () => {
   eq(ideaErrors([{ frame: 1, idea: "a tower with one floor per service" }, { frame: 2 }], AUTH), ['frame 2: needs "idea" (directed lesson, see references/direction.md)']);
+  eq(ideaErrors([{ frame: 2 }], { authoring: "director" }), ['frame 2: needs "idea" (directed lesson, see references/direction.md)']);
+  eq(ideaErrors([{ frame: 2 }], { authoring: "solver" }), []);
   eq(ideaErrors([{ frame: 2 }], {}), []);
 });
 test("authored: a template over maxUsesPerTemplate is an error", () => {

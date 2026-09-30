@@ -164,6 +164,17 @@ After the voice stage, `--check` prints `real=` and `ratio=` (real ÷ estimate).
 Give each chapter from ch1 on a different arc (§ Chapter arcs). End the lesson with one recap (`anchor`); inside
 the lesson, close a chapter however its arc ends best.
 
+## Writing with viet-pro
+
+Write the narration with the viet-pro skill (installed next to this one), in its script-for-video mode:
+
+1. Give it the brief: audience (beginners), length (`budget.targetS`), the facts file, and the chapter plan above.
+2. Let it draft the sentences; then put them into the grammar of this page yourself (`##` frames, `*keywords*`,
+   `{F-NN}`, `|` labels). viet-pro does not know that grammar.
+3. Run its AI-pattern audit ("audit dấu hiệu AI") on the finished `script.src.txt` and fix every pattern it reports.
+   Keep the facts, numbers and English terms unchanged while fixing (its `compare-preserved-content.mjs` checks that).
+4. `abm-video run script` then checks the grammar, the budget and the depth.
+
 ## Language for beginners
 
 - Use short sentences in the second person ("bạn"), with one idea per sentence.

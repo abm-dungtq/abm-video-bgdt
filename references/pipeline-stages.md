@@ -79,11 +79,12 @@ Mark each content chapter's DNA roles with `### hook|core|case|action` lines (sc
    approve, or a list of changes. Loop until approved.
 5. Record the approval in `script.json` → `meta.approved` (for example `"2026-09-25 by user"`).
    `src-to-script` keeps it on later runs.
-6. Run `node tools/script-to-md.mjs script.json` **once**. It writes `SCRIPT.md` and the outline
-   `STORYBOARD.md`, where every frame has `src`, `duration`, `transition_in`, `scene`, `chapter` and `voiceover`.
-   Never run write mode again after stage 4 has started.
-7. **authoring claude:** the coordinator writes `scenes.json` ([direction.md](direction.md)) before stage storyboard,
-   and checks it with `node tools/compiler/lint.mjs --estimated`; a worker never does.
+6. The script stage also writes `SCRIPT.md` and the outline `STORYBOARD.md` (`script-to-md.mjs script.json`), where
+   every frame has `src`, `duration`, `transition_in`, `scene`, `chapter` and `voiceover`. It stops rewriting the
+   outline once `audio_meta.json` exists; never run write mode by hand after that.
+7. **Directed lesson** (`authoring: "director"`): the director writes `scenes.json` ([direction.md](direction.md))
+   before gate 2 and checks it with `node tools/compiler/lint.mjs --estimated`. The agent then approves gates 2 and 3
+   on their checks ([autonomous-run.md](autonomous-run.md)).
 
 ## Stage 2b: Screenshots (only when the lesson shows real UI)
 
@@ -265,15 +266,15 @@ What the script never touches:
 
 ## Gate verifiers
 
-Before approval, mechanical verifiers ensure gate prerequisites pass. Run `abm-video gate <n> --check` to verify current files (exits 0 on success). `abm-video gate <n> --approve` runs the same verifiers and refuses approval if any fail (legacy projects warn and proceed).
+Before approval, mechanical verifiers ensure gate prerequisites pass. Run `abm-video gate <n> --check` to verify current files (exits 0 on success). The result is recorded in `.abm/gates/<n>-check.json`. `abm-video gate <n> --approve` runs the same verifiers and refuses approval if any fail (legacy projects warn and proceed, except an agent approval). In a directed lesson, `--approve --by agent` is accepted for gates 2 and 3 only.
 
 | Gate | Verifiers |
 |---|---|
 | `1` | (none; human listening only) |
-| `2` | `facts-check --urls` (sources defined, URLs return 200), `script-to-md --check`, `hints` (no consecutive repeated `scene_hint`, required DNA hints in content chapters) |
+| `2` | `facts-check --urls` (sources defined, URLs return 200), `script-to-md --check`, `hints` (no consecutive repeated `scene_hint`, required DNA hints in content chapters); directed lessons add `lint --estimated` on `scenes.json` and `config` (`depth.*` not looser than the skill's defaults) |
 | `2b` | `privacy-check` (if present in tools) |
-| `3` | `asr` (`audio/asr-report.json` present; no clip with WER > 2× `maxWer`, a cut end, or an edge error, unless in `audio/qa-accepted.txt`) |
-| `4` | `lint` (compiler lint exits 0), `asr` (same as gate 3) |
+| `3` | `asr` (`audio/asr-report.json` present; no clip with WER > 2× `maxWer`, a cut end, or an edge error, unless in `audio/qa-accepted.txt`); directed lessons add `lint`, `visible` (`visible-check.mjs`) and `config` (`scenes.*`, `voice.*` not looser than the skill's defaults) |
+| `4` | `lint` (compiler lint exits 0), `asr` (same as gate 3), `blank` (`blank-check.mjs renders/draft.mp4`) |
 
 ## Stage map of `run-pipeline.ps1`
 
