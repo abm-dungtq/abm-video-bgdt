@@ -66,7 +66,7 @@ export function render(ctx) {
 #${S}-kwl { position: absolute; left: ${TX}px; top: ${top + txtH + 40}px; font-size: ${kwFs}px; font-weight: 800; line-height: 1.3; color: var(--gold); }`;
     const sweep = `<span class="${S}-sw"><i id="${S}-swb"></i></span>`;
     const body = split
-      ? `${esc(split[0])}<span class="${S}-kw">${esc(split[1])}<span class="${S}-kwg" id="${S}-kwg">${esc(split[1])}</span>${sweep}</span>${esc(split[2])}`
+      ? `${esc(split[0])}<span class="${S}-kw">${esc(split[1])}<span class="${S}-kwg" id="${S}-kwg" aria-hidden="true">${esc(split[1])}</span>${sweep}</span>${esc(split[2])}`
       : esc(slots.text);
     const html = `    <div id="${S}-id"><div id="${S}-idi">${ctx.icon("key")}</div><div id="${S}-idl">${esc("NGUYÊN LÝ CỐT LÕI")}</div></div>
     <div id="${S}-keyw"><div id="${S}-keyi">${ctx.icon("key")}</div></div>

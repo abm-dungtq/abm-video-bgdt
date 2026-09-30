@@ -31,7 +31,8 @@ export function render(ctx) {
   const rows = steps.reduce((s, st) => s + 1 + (st.output?.length ?? 0), 0) + 1;
   const winW = side ? 1000 : 1400, winX = side ? 740 : 180;
   const BAR = 52, PAD = 26;
-  const maxChars = Math.max(30, ...steps.flatMap((st) => [[...prompt].length + 1 + [...st.cmd].length, ...(st.output ?? []).map((o) => [...o.text].length + 3)]));
+  const inlineLabel = (st) => (!side && st.label ? st.label : "");
+  const maxChars = Math.max(30, ...steps.flatMap((st) => [[...prompt].length + 1 + [...st.cmd].length + (inlineLabel(st) ? 4 + [...inlineLabel(st)].length : 0),...(st.output ?? []).map((o) => [...o.text].length + 3)]));
   const LH = Math.min(52, Math.floor(660 / rows));
   const fs = Math.max(16, Math.min(Math.round(LH * 0.6), Math.floor((winW - 90) / (maxChars * CHAR))));
   const winH = BAR + 2 * PAD + rows * LH;
@@ -75,7 +76,7 @@ ${caretCss(S, { color: "var(--cyan)", w: 0.6 })}
   const feed = [];
   const promptSpan = (id) => `<span class="${S}-pr">${esc(prompt)}<i class="${S}-cr" id="${id}"></i></span>`;
   steps.forEach((st, i) => {
-    feed.push(`<div class="${S}-row" id="${S}-p${i}">${promptSpan(`${S}-pc${i}`)} <span class="${S}-cmd">${caretChars(st.cmd, { S, esc, cls: `${S}-k${i}`, idp: `${S}-c${i}-` })}</span></div>`);
+    feed.push(`<div class="${S}-row" id="${S}-p${i}">${promptSpan(`${S}-pc${i}`)} <span class="${S}-cmd">${caretChars(st.cmd, { S, esc, cls: `${S}-k${i}`, idp: `${S}-c${i}-` })}</span>${inlineLabel(st) ? `<span class="${S}-dim" id="${S}-lb${i}">  # ${esc(st.label)}</span>` : ""}</div>`);
     r++;
     (st.output ?? []).forEach((o, j) => {
       const kind = o.kind ?? "text";
@@ -128,12 +129,13 @@ ${steps.map((st, i) => `    <div class="${S}-it" id="${S}-it${i}"><div class="${
       events.push({ t: at, id: `${S}-c${i}-${k}c` });
     });
     events.push({ t: enter, id: null });
+    if (inlineLabel(st)) sw.push({ prim: "swap", target: `#${S}-lb${i}`, at: enter, props: { opacity: 1 } });
     outs.forEach((_, j) => sw.push({ prim: "swap", target: `#${S}-o${i}-${j}`, at: enter + 0.05 + j * ostep, props: { opacity: 1 } }));
     prevEnd = enter + 0.05 + outs.length * ostep;
     marks.push([start, prevEnd]);
   });
   // a long plan in a short window: squeeze the whole typing timeline so the last output still lands inside it
-  const t0 = w.a + 0.35, room = w.b - 0.3 - t0, used = prevEnd - t0;
+  const t0 = w.a + 0.35, room = w.b - 1.1 - t0, used = prevEnd - t0;
   const squeeze = used > room ? (x) => t0 + ((x - t0) * room) / used : (x) => x;
   for (const e of sw) m.push({ ...e, at: squeeze(e.at) });
   for (const e of events) e.t = squeeze(e.t);
@@ -149,7 +151,8 @@ ${steps.map((st, i) => `    <div class="${S}-it" id="${S}-it${i}"><div class="${
   if (d) m.push(d);
   // rows after the first prompt start hidden
   const hiddenRows = [...steps.map((_, i) => (i ? `#${S}-p${i}` : null)).filter(Boolean),
-    ...steps.flatMap((st, i) => (st.output ?? []).map((_, j) => `#${S}-o${i}-${j}`)), `#${S}-pend`];
+    ...steps.flatMap((st, i) => (st.output ?? []).map((_, j) => `#${S}-o${i}-${j}`)), `#${S}-pend`,
+    ...steps.map((st, i) => (inlineLabel(st) ? `#${S}-lb${i}` : null)).filter(Boolean)];
   const css2 = `\n${hiddenRows.join(", ")} { opacity: 0; }`;
   return { css: css + css2, html, motions: keepInside(m, w.b) };
 }

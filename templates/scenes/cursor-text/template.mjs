@@ -38,20 +38,24 @@ export function render(ctx) {
   const draftDone = tS + (nL + nD) * step;
   const fstepMin = 0.02;
   let tFix = Math.max(fixWant, draftDone + hold + delDur);
-  tFix = Math.min(tFix, w.b - 0.3 - (nF + nT) * fstepMin);
-  const fstep = Math.max(fstepMin, Math.min(0.06, (w.b - 0.5 - tFix) / (nF + nT)));
+  const noteRoom = slots.note ? 0.8 : 0; // the note needs to be on screen for a second before the shot ends
+  tFix = Math.min(tFix, w.b - 0.3 - noteRoom - (nF + nT) * fstepMin);
+  const fstep = Math.max(fstepMin, Math.min(0.06, (w.b - 0.5 - noteRoom - tFix) / (nF + nT)));
   const tDel = tFix - delDur;
   const typedEnd = tFix + (nF + nT) * fstep;
   const fitT = (t, dur) => Math.max(w.a, Math.min(t, w.b - dur - 0.05));
 
   // ── html ──────────────────────────────────────────────────────────────────────
   const chars = (text, cls, idp) => caretChars(text, { S, esc, cls: `${S}-${cls}`, idp: `${S}-${idp}` });
+  // the struck draft is one unbreakable run set over the start of the fix: when lead + it would run past the box, the edit starts a new line
+  const box = sel ? { x: 120, y: 150, w: 1520, h: 520 } : { x: 180, y: 170, w: 1400, h: 480 };
+  const brk = !sel && (nL + Math.max(nD, nF + nT)) * fs * 0.56 > box.w;
   const text = `<div id="${S}-txt"><i class="${S}-cr" id="${S}-c0"></i>${chars(leadText, "l", "l")}<span id="${S}-fx"><span id="${S}-dr">${sel ? `<span id="${S}-sel"></span>` : ""}${chars(draft, "d", "d")}</span>${chars(fix, "f", "f")}${chars(tailText, "t", "t")}</span></div>`;
   const note = slots.note ? `<div id="${S}-note"><span id="${S}-nbar"></span><span>${esc(slots.note)}</span></div>` : "";
   const TOOL = ["B", "I", "U"].map((c, i) => `<span class="${S}-tb" style="${i === 1 ? "font-style: italic;" : i === 2 ? "text-decoration: underline;" : ""}">${c}</span>`).join("");
-  const box = sel ? { x: 120, y: 150, w: 1520, h: 520 } : { x: 180, y: 170, w: 1400, h: 480 };
   // centre the finished text in the open stage (an estimate: 0.56 em per letter of the bold body face)
-  const estLines = Math.max(1, Math.ceil((Math.max(nL + nD, total) * fs * 0.56) / box.w));
+  const perLine = (c) => Math.ceil((c * fs * 0.56) / box.w);
+  const estLines = brk ? Math.max(1, perLine(nL) + perLine(Math.max(nD, nF + nT))) : Math.max(1, perLine(Math.max(nL + nD, total)));
   const txtTop = sel ? 130 : Math.max(20, Math.round((box.h - 60 - estLines * fs * 1.3) / 2));
   const css = `
 #${S}-root { position: absolute; inset: 0; }
@@ -67,7 +71,7 @@ export function render(ctx) {
 #${S}-dots span { width: 14px; height: 14px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 55%, transparent); }
 #${S}-txt { position: absolute; left: ${sel ? 70 : 0}px; right: ${sel ? 70 : 0}px; top: ${txtTop}px; font-size: ${fs}px; font-weight: 800;
   line-height: 1.3; color: var(--ink); }
-#${S}-fx { position: relative; }
+#${S}-fx { position: relative;${brk ? " display: block;" : ""} }
 #${S}-dr { position: absolute; left: 0; top: 0; white-space: nowrap; color: color-mix(in srgb, var(--ink) 88%, var(--warn)); }
 #${S}-sel { position: absolute; left: -4px; right: -4px; top: 0.06em; bottom: 0.02em; border-radius: 6px; background: color-mix(in srgb, var(--gold) 34%, transparent);
   transform-origin: 0 50%; }
@@ -128,7 +132,7 @@ ${caretCss(S, { color: "var(--gold)", w: 0.07 })}
   m.push({ prim: "slide", target: `#${S}-sweep`, at: sweepAt, dur: 0.9, from: { x: 0 }, to: { x: box.w + 520 }, ease: "power1.inOut" });
   let end = typedEnd;
   if (slots.note) {
-    const at = fitT(Math.max(ctx.at("note"), typedEnd + 0.15), 0.5);
+    const at = fitT(Math.max(ctx.at("note"), typedEnd + 0.15), 1);
     m.push({ prim: "reveal", target: `#${S}-note`, at, dur: 0.5, from: ctx.motionFrom(), ease: ctx.ease });
     end = Math.max(end, at + 0.5);
   }

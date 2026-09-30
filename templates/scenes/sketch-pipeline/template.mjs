@@ -114,8 +114,8 @@ ${steps.map((s, i) => `  <div class="${S}-step" id="${S}-s${i}" style="left: ${b
       at += 0.3;
     }
     m.push({ prim: "draw", target: `#${S}-r${i}`, at, dur: 0.65, ease: "power2.inOut" },
-      { prim: "reveal", target: `#${S}-l${i}`, at: at + 0.4, dur: 0.35, from: { opacity: 0, y: 8 } });
-    if (s.note) m.push({ prim: "reveal", target: `#${S}-n${i}`, at: at + 0.55, dur: 0.35, from: { opacity: 0, y: 8 } });
+      { prim: "reveal", target: `#${S}-l${i}`, at: Math.min(at + 0.4, Math.max(w.a, w.b - 0.6)), dur: 0.35, from: { opacity: 0, y: 8 } });
+    if (s.note) m.push({ prim: "reveal", target: `#${S}-n${i}`, at: Math.min(at + 0.55, Math.max(w.a, w.b - 0.6)), dur: 0.35, from: { opacity: 0, y: 8 } });
   });
   // boil: every step and arrow wrapper jitters on its own, 8 times a second
   const boil = [...steps.map((_, i) => `#${S}-b${i}`), ...arrows.map((_, k) => `#${S}-ab${k}`)];

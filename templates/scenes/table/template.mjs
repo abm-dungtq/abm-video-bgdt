@@ -168,12 +168,12 @@ ${r.cells.map((c, j) => `  <div class="${S}-cell" id="${S}-x${i + 1}-${j + 1}">$
     let penEnd = -1, penOn = false;
     rows.forEach((r, i) => {
       const k = i + 1;
-      m.push({ prim: "reveal", target: `#${S}-rl${k}`, at: clamp(t[i], 0.45), dur: 0.45, from: { opacity: 0, x: -24 }, ease: ctx.ease });
+      m.push({ prim: "reveal", target: `#${S}-rl${k}`, at: clamp(t[i], 1.05), dur: 0.45, from: { opacity: 0, x: -24 }, ease: ctx.ease });
       m.push({ prim: "draw", target: `#${S}-ru${k}`, at: clamp(t[i], 0.7), dur: 0.7, ease: "power1.inOut" });
       // the pen runs the row; the next row waits for it, and it never runs past the shot
       const at = Math.max(clamp(t[i], 0.3), penEnd + 0.03);
-      const d = Math.min(0.7, w.b - 0.05 - at);
-      const run = d >= 0.2;
+      const d = Math.min(0.7, Math.max(0.25, w.b - 0.6 - at));
+      const run = d >= 0.2 && at + d <= w.b - 0.55;
       if (run) {
         if (!penOn) { m.push({ prim: "reveal", target: `#${S}-pen`, at, dur: 0.2, from: { opacity: 0 } }); penOn = true; }
         m.push({ prim: "slide", target: `#${S}-pen`, at, dur: d, from: { x: penX0, y: ys[i] }, to: { x: penX1, y: ys[i] }, ease: "power1.inOut" });
