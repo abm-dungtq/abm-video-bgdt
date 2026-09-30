@@ -9,7 +9,8 @@
 // The synthetic voice: 0.35 s per token w1 w2 …, every 4th token a keyword, sentences of 8 tokens, silent wav. Each shot
 // uses its preview.json slots and variant with window start → end and default reveals (the solver's path); an optional
 // preview.json "stress" object (slots at their length limits) adds one more frame per variant.
-// Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %; its errors count too —
+// Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %, 18 frames per assembled
+// index (a page of every frame loads slower than the check timeout); its errors, with their message, count too —
 // the assemble stage runs the same check on a real lesson, so a template must be check-clean, not only lint-clean.
 // Last line: template-ci: <t> templates, <v> variants, <n> frames, <e> lint errors  (exit 1 when e > 0).
 
@@ -29,6 +30,7 @@ const HF = `hyperframes@${cfg.cli.pin}`;
 const TPL = join(S, "templates/scenes");
 const DURS = [4, 7, 10];
 const STEP = 0.35, LEAD = 0.3;
+const BATCH = 18; // frames per assembled index for check and snapshot
 
 const sh = (cmd, cwd = W) => execSync(cmd, { cwd, stdio: "pipe", encoding: "utf8", env: { ...process.env, HYPERFRAMES_SKIP_SKILLS: "1" } });
 const shTry = (cmd, cwd = W) => { try { return { ok: true, out: sh(cmd, cwd) }; } catch (e) { return { ok: false, out: `${e.stdout ?? ""}${e.stderr ?? ""}` }; } };
@@ -108,52 +110,62 @@ const SK = `${(await import(pathToFileURL(join(W, "tools/lib/machine.mjs")).href
 if (compiled.length) {
   const a = shTry(`node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
   if (!a.ok) { console.error(`✗ assemble-index failed\n${a.out.slice(-1200)}`); process.exit(1); }
+  const project = (e) => (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(e);
   const lint = shTry(`npx -y ${HF} lint`).out;
   for (const line of lint.split("\n").filter((l) => /✗/.test(l))) {
     const c = compiled.find((x) => line.includes(`${x.fid}.html`));
-    (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line.trim()}`);
+    c ? errs.get(c.id).push(`${c.variant} ${c.dur}s: ${line.trim()}`) : project(line.trim());
   }
-  // layout / runtime / contrast check, three samples per frame
-  {
-    let t0 = 0;
-    const at = compiled.flatMap((c) => { const s = t0; t0 += c.dur; return [0.2, 0.55, 0.9].map((f) => (s + f * c.dur).toFixed(2)); });
-    // Windows caps a command line at 8191 characters, so a full run samples in chunks of 400 timestamps
-    const seen = new Set();
-    for (let k = 0; k < at.length; k += 400) {
-      const r = shTry(`npx -y ${HF} check --json --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --max-issues 400 --at ${at.slice(k, k + 400).join(",")}`);
-      let report = null;
-      try { report = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1)); } catch { errs.set("_project", [...(errs.get("_project") ?? []), `check did not return JSON: ${r.out.slice(-300)}`]); }
-      for (const section of ["runtime", "layout", "contrast"]) {
-        for (const f of report?.[section]?.findings ?? []) {
-          if (f.severity !== "error") continue;
-          const n = Number((f.selector ?? "").match(/[#.]f(\d+)-/)?.[1]);
-          const c = compiled.find((x) => x.n === n);
-          const line = `check ${f.code} ${f.selector}${f.text ? ` "${f.text}"` : ""} at ${f.time}s`;
-          if (seen.has(line)) continue;
-          seen.add(line);
-          (c ? errs.get(c.id) : (errs.get("_project") ?? errs.set("_project", []).get("_project"))).push(`${c ? `${c.variant} ${c.dur}s: ` : ""}${line}`);
-        }
-      }
-    }
-  }
-  // previews of the middle duration, at 20 % and 85 % of each frame. The renderer's page load has a fixed 10 s navigation
-  // deadline, so the snapshots run in batches of 18 frames, each on an index assembled from that batch alone.
-  const snaps = compiled.filter((c) => c.snap);
+  // The browser checks and the previews run on an index assembled from one batch of frames at a time: an index of
+  // every frame (≈ 4000 s) takes longer to load than the check's navigation timeout, and the snapshot renderer has a
+  // fixed 10 s navigation deadline.
   const header = md.join("\n").split(/(?=^## Frame \d+ )/m)[0];
   const blocks = new Map(md.join("\n").split(/(?=^## Frame \d+ )/m).filter((b) => /^## Frame \d+ /.test(b))
     .map((b) => [Number(b.match(/^## Frame (\d+) /)[1]), b]));
-  for (let s = 0; s < snaps.length; s += 18) {
-    const batch = snaps.slice(s, s + 18);
+  const assembleBatch = (batch) => {
     writeFileSync(join(W, "STORYBOARD.md"), header + batch.map((c) => blocks.get(c.n)).join(""));
-    const a = shTry(`node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
-    if (!a.ok) { (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`assemble for previews failed: ${a.out.slice(-300)}`); break; }
+    return shTry(`node "${SK}/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .`);
+  };
+  // layout / runtime / contrast check, three samples per frame
+  const seen = new Set();
+  for (let s = 0; s < compiled.length; s += BATCH) {
+    const batch = compiled.slice(s, s + BATCH);
+    const tag = `batch ${s / BATCH + 1} (frames ${batch[0].n}–${batch.at(-1).n})`;
+    const a = assembleBatch(batch);
+    if (!a.ok) { project(`${tag}: assemble for check failed: ${a.out.slice(-300)}`); continue; }
+    let t0 = 0;
+    const spans = batch.map((c) => { const x = t0; t0 += c.dur; return { c, from: x, to: t0 }; });
+    const at = spans.flatMap(({ c, from }) => [0.2, 0.55, 0.9].map((f) => (from + f * c.dur).toFixed(2)));
+    const r = shTry(`npx -y ${HF} check --json --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --max-issues 400 --at ${at.join(",")}`);
+    let report = null;
+    try { report = JSON.parse(r.out.slice(r.out.indexOf("{"), r.out.lastIndexOf("}") + 1)); } catch { project(`${tag}: check did not return JSON: ${r.out.slice(-300)}`); }
+    for (const section of ["runtime", "layout", "contrast"]) {
+      for (const f of report?.[section]?.findings ?? []) {
+        if (f.severity !== "error") continue;
+        const n = Number((f.selector ?? "").match(/[#.]f(\d+)-/)?.[1]);
+        // a finding on the root (a page that never loaded, a runtime exception) belongs to the batch, not to a frame
+        const c = compiled.find((x) => x.n === n)
+          ?? (f.selector !== "[data-composition-id]" ? spans.find((x) => f.time >= x.from && f.time < x.to)?.c : undefined);
+        const line = `check ${f.code} ${f.selector}${f.text ? ` "${f.text}"` : ""} at ${f.time}s: ${String(f.message ?? "").slice(0, 300)}`;
+        if (seen.has(line)) continue;
+        seen.add(line);
+        c ? errs.get(c.id).push(`${c.variant} ${c.dur}s: ${line}`) : project(`${tag}: ${line}`);
+      }
+    }
+  }
+  // previews of the middle duration, at 20 % and 85 % of each frame
+  const snaps = compiled.filter((c) => c.snap);
+  for (let s = 0; s < snaps.length; s += BATCH) {
+    const batch = snaps.slice(s, s + BATCH);
+    const a = assembleBatch(batch);
+    if (!a.ok) { project(`assemble for previews failed: ${a.out.slice(-300)}`); break; }
     let t = 0;
     const at = batch.flatMap((c) => { const x = t; t += c.dur; return [(x + 0.2 * c.dur).toFixed(2), (x + 0.85 * c.dur).toFixed(2)]; });
     rmSync(join(W, "snapshots"), { recursive: true, force: true });
     const snap = () => shTry(`npx -y ${HF} snapshot --no-end --timeout ${cfg.cli.checkTimeoutMs ?? 240000} --at ${at.join(",")}`);
     let r = snap();
     if (!r.ok) r = snap();
-    if (!r.ok) { (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`snapshot failed twice: ${r.out.slice(-300)}`); continue; }
+    if (!r.ok) { project(`snapshot failed twice: ${r.out.slice(-300)}`); continue; }
     const files = existsSync(join(W, "snapshots")) ? readdirSync(join(W, "snapshots")).filter((f) => /^frame-\d+-at-/.test(f))
       .sort((x, y) => Number(x.match(/^frame-(\d+)/)[1]) - Number(y.match(/^frame-(\d+)/)[1])) : []; // numeric order
     batch.forEach((c, k) => {
