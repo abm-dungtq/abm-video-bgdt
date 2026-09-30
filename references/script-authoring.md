@@ -112,6 +112,17 @@ Người đặt *mục* *tiêu,* trợ lý *soạn* *thảo,* người *kiểm* 
 Chọn *một* *việc* *lặp* *lại,* viết *quy* *trình,* rồi *giao* *cho* *AI*. {F-08}
 ```
 
+## Depth: facts and an example in every content chapter
+
+`script-to-md.mjs --check` (gate 2) enforces `video.config.json` `depth` in every chapter but the first and the last:
+
+- **Facts:** at least `depth.factsPerChapter` (2) distinct `{F-NN}` cited in the chapter.
+- **An example:** one frame under `### case`, a `card-case`, `card-antipattern` or `myth-fact` scene hint, or a sentence
+  that starts the example in words ("Ví dụ", "Chẳng hạn", "Giả sử", "Thử hình dung", "Hãy tưởng tượng"). Name a
+  real situation the learner knows (a team, a document, a customer), not a generic "một công ty".
+- **No slide talk:** at most `depth.maxListRun` (3) list sentences in a row (three or more short comma parts). Turn the
+  fourth into an example or a comparison.
+
 ## Budget math
 
 `script-to-md.mjs --check` estimates each frame as:
