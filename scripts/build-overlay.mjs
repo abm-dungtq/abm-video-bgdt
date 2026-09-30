@@ -3,8 +3,10 @@
 // above the frames and below the karaoke band.
 //   - progress bar (y 0–6 px, gold fill over the whole video, a tick per chapter start)
 //   - chapter label (top-left, video.config.json `chapterLabel.overlay`, swaps at each chapter start)
-//   - courier trail: at every chapter start a golden S-curve draws across the frame with a
-//     winged spark riding its head (the "Sứ giả" signature motif)
+//   - courier trail: at every chapter start a golden swoosh draws across the frame with a
+//     winged spark riding its head (the "Sứ giả" signature motif). It runs in the strip between the copy limit (the
+//     karaoke band starts at y 918) and the caption text (a two-line caption starts near y 942), because this layer sits
+//     above the frames and a curve through the stage would strike through their copy (tools/visible-check.mjs)
 //   - role chip (top-right, only when the storyboard has - role: bullets; labels from dna.roleLabels)
 //   - the director's overlays (scenes.json frame "overlays": lower-third, callout, note, ticker), timed on the voice
 //     with the compiler's cues and checked by compiler/lint.mjs
@@ -123,17 +125,19 @@ const ticks = chapters.slice(1).map((c) => `<i class="ov-tick" style="left:${pct
 const labels = chapters
   .map((c, i) => `<div class="ov-label" id="ov-label-${i}">${chapterLabel(cfg.chapterLabel.overlay, c.n, c.title)}</div>`)
   .join("\n      ");
+// the swoosh keeps to y 921-939 (stroke 4); odd chapters run it right to left, so the spark changes direction
+const TRAIL = ["M -60 930 C 480 922, 1440 938, 1980 928", "M 1980 930 C 1440 922, 480 938, -60 928"];
 const trails = chapters
   .slice(1)
   .map(
     (c, i) => `<svg class="ov-trail" id="ov-trail-${i}" viewBox="0 0 1920 1080" width="1920" height="1080">
-        <path id="ov-path-${i}" d="M -60 ${760 - (i % 3) * 120} C 420 ${420 + (i % 2) * 180}, 1100 ${980 - (i % 2) * 260}, 1980 ${300 + (i % 3) * 110}"
-          fill="none" stroke="${GOLD}" stroke-width="5" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000" stroke-dashoffset="1000"/>
-        <g id="ov-spark-${i}" opacity="0">
+        <path id="ov-path-${i}" d="${TRAIL[i % 2]}"
+          fill="none" stroke="${GOLD}" stroke-width="4" stroke-linecap="round" pathLength="1000" stroke-dasharray="1000" stroke-dashoffset="1000"/>
+        <g id="ov-spark-${i}" opacity="0"><g transform="scale(0.45)">
           <circle r="9" fill="${GOLD}"/>
           <path d="M -4 -4 C -26 -30, -46 -18, -52 -6 C -38 -10, -24 -6, -4 0 Z" fill="${INK}" opacity="0.9"/>
           <path d="M -4 4 C -26 30, -46 18, -52 6 C -38 10, -24 6, -4 0 Z" fill="${INK}" opacity="0.7"/>
-        </g>
+        </g></g>
       </svg>`,
   )
   .join("\n      ");
@@ -170,7 +174,7 @@ const html = `<template id="overlay-template">
     .ov-tick { position: absolute; top: 0; width: 3px; height: 10px; margin-left: -1px; background: ${INK}; opacity: 0.7; }
     .ov-label { position: absolute; left: 40px; top: 22px; font-family: "JetBrains Mono", monospace; font-size: 22px;
       letter-spacing: 0.04em; color: ${INK}; opacity: 0; white-space: nowrap; }
-    .ov-trail { position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 10px rgba(${rgb(GOLD)},0.7)); }${roleCss}${noteCss}
+    .ov-trail { position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 6px rgba(${rgb(GOLD)},0.7)); }${roleCss}${noteCss}
   </style>
   <script src="${cfg.gsap}"></script>
   <script>

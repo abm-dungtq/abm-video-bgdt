@@ -81,7 +81,7 @@ export function render(ctx) {
         <div class="${S}-head" id="${S}-${side}h">${esc(slots[side].label)}</div>
         <ul class="${S}-list" id="${S}-${side}b">${items(side)}</ul>
 ${side === "wrong"
-    ? `        <svg id="${S}-st" viewBox="0 0 ${BW} ${BH}"><path id="${S}-st1" pathLength="1000" d="${s1}"/><path id="${S}-st2" pathLength="1000" d="${s2}"/></svg>`
+    ? `        <svg id="${S}-st" viewBox="0 0 ${BW} ${BH}" data-layout-allow-overlap><path id="${S}-st1" pathLength="1000" d="${s1}"/><path id="${S}-st2" pathLength="1000" d="${s2}"/></svg>`
     : `        <svg id="${S}-ck" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/><path id="${S}-ckp" pathLength="1000" d="${CHECK}"/></svg>`}
       </div>`;
     const html = `    <div id="${S}-id"><div id="${S}-idi">${icon}</div><div id="${S}-idl">${esc("CÁCH SAI · CÁCH ĐÚNG")}</div></div>

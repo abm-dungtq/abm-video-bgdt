@@ -223,7 +223,7 @@ function stickyNote(ctx) {
 #${S}-pen { position: absolute; left: ${P.x}px; top: ${P.y}px; width: ${P.d}px; height: ${P.d}px; overflow: visible; }
 ${steps.map((_, i) => `#${S}-s${i + 1} { top: ${yS + i * rowH - 6}px; }`).join("\n")}
 ${boxes.map((b, k) => `#${S}-b${k} { left: ${b.x}px; top: ${b.y}px; width: ${b.s}px; height: ${b.s}px; }`).join("\n")}`;
-  const penSvg = `<svg id="${S}-pen" viewBox="0 0 ${P.d} ${P.d}"><g transform="rotate(45)">
+  const penSvg = `<svg id="${S}-pen" data-layout-allow-overlap viewBox="0 0 ${P.d} ${P.d}"><g transform="rotate(45)">
       <polygon points="0,0 48,-16 48,16" style="fill: ${PAPER_INK}; stroke: var(--ink); stroke-width: 2"/>
       <rect x="48" y="-18" width="26" height="36" style="fill: color-mix(in srgb, var(--ink) 80%, var(--canvas))"/>
       <rect x="74" y="-18" width="230" height="36" rx="6" style="fill: var(--cyan)"/>

@@ -61,7 +61,7 @@ export function render(ctx) {
   ${feed ? "" : `padding: 12px 32px; border-radius: ${Math.round(R * 1.6)}px; background: color-mix(in srgb, var(--ink) 10%, var(--surface));`} }
 .${S}-row.recv .${S}-msg { ${feed ? "" : "border-bottom-left-radius: 8px;"} }
 .${S}-row.sent .${S}-msg { ${feed ? "" : `border-bottom-right-radius: 8px; background: var(--cyan); color: var(--canvas); font-weight: 600;`} }
-.${S}-dots { position: absolute; left: ${AV + 18}px; top: 38px; display: flex; gap: 10px; align-items: center; height: ${feed ? lh : 52}px; ${feed ? "" : `padding: 0 26px;
+.${S}-dots { opacity: 0; position: absolute; left: ${AV + 18}px; top: 38px; display: flex; gap: 10px; align-items: center; height: ${feed ? lh : 52}px; ${feed ? "" : `padding: 0 26px;
   border-radius: ${Math.round(R * 1.6)}px; border-bottom-left-radius: 8px; background: color-mix(in srgb, var(--ink) 10%, var(--surface));`} }
 .${S}-dots i { width: 12px; height: 12px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 85%, transparent); }`;
 

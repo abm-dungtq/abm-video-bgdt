@@ -92,7 +92,7 @@ export function render(ctx) {
       <circle class="${S}-end" id="${S}-endb" cx="${ex}" cy="${ey}" r="12"/>
       <text id="${S}-txt" text-anchor="middle" data-layout-allow-overlap><textPath id="${S}-tp" href="#${S}-p" startOffset="50%">${tspans}</textPath></text>
     </svg>
-    <div id="${S}-pen"></div>
+    <div id="${S}-pen" data-layout-allow-overlap></div>
   </div>
   ${slots.from ? `<div class="${S}-lab" id="${S}-la">${esc(slots.from)}</div>` : ""}
   ${slots.to ? `<div class="${S}-lab" id="${S}-lb">${esc(slots.to)}</div>` : ""}

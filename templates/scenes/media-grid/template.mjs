@@ -94,7 +94,7 @@ export function render(ctx) {
 
   const cells = rs.map((r, i) => `  <div class="${S}-cell" id="${S}-cell${i}" style="left: ${Math.round(r.x)}px; top: ${Math.round(r.y)}px; width: ${Math.round(r.w)}px; height: ${Math.round(r.h)}px">
     <div class="${S}-well" id="${S}-well${i}" style="background: linear-gradient(135deg, color-mix(in srgb, ${WELLS[i % 4]} 55%, var(--surface)) 0%, color-mix(in srgb, ${WELLS[i % 4]} 14%, var(--surface)) 100%)"><span class="${S}-num" id="${S}-num${i}">${i + 1}</span></div>
-    <div class="${S}-scr" id="${S}-scr${i}" data-layout-allow-overflow>${screen(tiles[i].kind, S, ctx.rng)}</div>
+    <div class="${S}-scr" id="${S}-scr${i}" data-layout-allow-overflow data-layout-allow-overlap>${screen(tiles[i].kind, S, ctx.rng)}</div>
     <div class="${S}-lab" id="${S}-lab${i}">${esc(tiles[i].label)}</div>
   </div>`).join("\n");
   const html = `<div id="${S}-root">

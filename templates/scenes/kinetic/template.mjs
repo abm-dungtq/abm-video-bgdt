@@ -109,7 +109,7 @@ ${words.map((x, i) => `    <div class="${S}-w" id="${S}-w${i + 1}">${esc(x)}</di
 #${S}-root { position: absolute; inset: 0; }
 #${S}-sky { position: absolute; left: 0; top: 0; width: 1760px; height: 820px; overflow: visible; }
 .${S}-st { fill: none; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1000; }
-.${S}-st:nth-of-type(3n) { stroke: color-mix(in srgb, var(--cyan) 55%, transparent); }
+.${S}-st:nth-of-type(3n) { stroke: color-mix(in srgb, var(--cyan) 40%, transparent); }
 .${S}-st:nth-of-type(3n+1), .${S}-st:nth-of-type(3n+2) { stroke: color-mix(in srgb, var(--ink) 22%, transparent); }
 #${S}-rain { position: absolute; inset: 0; }
 .${S}-row { position: absolute; height: ${lh}px; font-size: ${fs}px; line-height: ${lh}px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; color: var(--ink); }

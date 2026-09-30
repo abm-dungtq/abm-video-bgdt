@@ -84,7 +84,7 @@ ${tokenCss(S)}
   ${pal ? `<div id="${S}-chip">${ctx.icon("spark")}<span>${esc(slots.file)}</span></div>` : ""}
   <div id="${S}-win">
     ${pal ? "" : `<div id="${S}-bar">${dots}<div id="${S}-ttl">${esc(slots.file)}</div></div>`}
-    <div id="${S}-cy">${pal ? "" : `<div id="${S}-band"></div>`}<div id="${S}-cx"></div></div>
+    <div id="${S}-cy">${pal ? "" : `<div id="${S}-band"></div>`}<div id="${S}-cx" data-layout-allow-overlap></div></div>
 ${lines.map(rowHtml).join("\n")}
     ${pal ? `<div id="${S}-key">Enter ↵</div>` : ""}
   </div>

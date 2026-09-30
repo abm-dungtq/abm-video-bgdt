@@ -69,7 +69,7 @@ ${flip ? `
   <div id="${S}-panel">
     <div id="${S}-bar"><span class="${S}-tl" style="background: var(--warn)"></span><span class="${S}-tl" style="background: var(--gold)"></span><span class="${S}-tl" style="background: var(--cyan)"></span>${lang ? `<span id="${S}-lang">${lang}</span>` : ""}</div>
     ${codeEl}
-    <div id="${S}-wall" aria-hidden="true">${Array.from({ length: STRIPS }, (_, i) => `<div class="${S}-strip" id="${S}-p${i + 1}"></div>`).join("")}</div>
+    <div id="${S}-wall" aria-hidden="true" data-layout-allow-overlap>${Array.from({ length: STRIPS }, (_, i) => `<div class="${S}-strip" id="${S}-p${i + 1}"></div>`).join("")}</div>
   </div>`;
   } else {
     const bands = Array.from({ length: BANDS }, (_, i) => `<div class="${S}-line ${S}-band" id="${S}-b${i + 1}" aria-hidden="true" data-layout-allow-overlap

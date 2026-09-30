@@ -74,7 +74,7 @@ ${caretCss(S, { color: "var(--cyan)", w: 0.6 })}
   // ── html ──────────────────────────────────────────────────────────────────────
   let r = 0;
   const feed = [];
-  const promptSpan = (id) => `<span class="${S}-pr">${esc(prompt)}<i class="${S}-cr" id="${id}"></i></span>`;
+  const promptSpan = (id) => `<span class="${S}-pr">${esc(prompt)}<i class="${S}-cr" id="${id}" data-layout-allow-overlap></i></span>`;
   steps.forEach((st, i) => {
     feed.push(`<div class="${S}-row" id="${S}-p${i}">${promptSpan(`${S}-pc${i}`)} <span class="${S}-cmd">${caretChars(st.cmd, { S, esc, cls: `${S}-k${i}`, idp: `${S}-c${i}-` })}</span>${inlineLabel(st) ? `<span class="${S}-dim" id="${S}-lb${i}">  # ${esc(st.label)}</span>` : ""}</div>`);
     r++;

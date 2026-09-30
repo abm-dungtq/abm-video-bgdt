@@ -201,6 +201,8 @@ ${nodes.map((it, i) => `  <div class="${S}-badge" id="${S}-n${i + 1}"><div class
 #${S}-cring { position: absolute; left: ${cx - R}px; top: ${cy - R}px; width: ${2 * R}px; height: ${2 * R}px; border-radius: 50%; border: 4px solid var(--gold); }
 #${S}-clab { position: absolute; left: ${cx - 320}px; top: ${cy + R + 22}px; width: 640px; text-align: center; font-family: ${mono};
   font-size: 34px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+/* solid backing: the spokes run behind the label instead of through its letters */
+#${S}-clab span { display: inline-block; padding: 4px 26px; border-radius: ${radius}px; background: var(--surface); }
 .${S}-anc { position: absolute; width: 0; height: 0; }
 .${S}-pill { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 16px;
   padding: 16px 28px; border-radius: ${radius}px; background: var(--surface); border: 2px solid color-mix(in srgb, var(--cyan) 30%, transparent);
@@ -218,7 +220,7 @@ ${pts.map(([x, y], i) => `    <path class="${S}-spoke" id="${S}-sp${i + 1}" path
   <div class="${S}-dot" id="${S}-dot"></div>
   <div id="${S}-cring"></div>
   <div id="${S}-core"><div id="${S}-disc"></div><div id="${S}-cin">${ctx.icon(slots.center.icon)}</div></div>
-  <div id="${S}-clab">${esc(slots.center.label)}</div>
+  <div id="${S}-clab"><span>${esc(slots.center.label)}</span></div>
 ${nodes.map((it, i) => `  <div class="${S}-anc" id="${S}-n${i + 1}"><div class="${S}-pill"><div class="${S}-lit" id="${S}-nk${i + 1}"></div>
     <span class="${S}-num">${num(i)}</span>${it.icon ? `<span class="${S}-ni" id="${S}-ni${i + 1}">${ctx.icon(it.icon)}</span>` : ""}<span class="${S}-nl" id="${S}-nl${i + 1}">${esc(it.label)}</span></div></div>`).join("\n")}
 </div>`;

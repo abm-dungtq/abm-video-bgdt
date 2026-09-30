@@ -96,10 +96,10 @@ ${sparkCss}`;
       <g id="${S}-chevs">${chev.join("")}</g>
     </svg>
     <div id="${S}-core">${ctx.icon("gear")}</div>
+    ${spark}
     ${steps.map((s, i) => `<div class="${S}-slot" style="left: ${pos[i][0]}px; top: ${pos[i][1]}px"><div class="${S}-node" id="${S}-n${i + 1}">
       <div class="${S}-lit" id="${S}-k${i + 1}"></div><div class="${S}-num">${num(i)}</div>
       <div class="${S}-ico" id="${S}-i${i + 1}">${ctx.icon(s.icon)}</div><div class="${S}-lab" id="${S}-l${i + 1}">${esc(s.label)}</div></div></div>`).join("\n    ")}
-    ${spark}
   </div>
 </div>`;
     m.push(

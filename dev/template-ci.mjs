@@ -12,7 +12,9 @@
 // Then `hyperframes check` (layout, runtime, contrast) samples every frame at 20 %, 55 % and 90 %, 18 frames per assembled
 // index (a page of every frame loads slower than the check timeout); its errors, with their message, count too —
 // the assemble stage runs the same check on a real lesson, so a template must be check-clean, not only lint-clean.
-// Before that, tools/visible-check.mjs proves every shot's copy is on screen at the end of the shot.
+// Before that, tools/visible-check.mjs proves every shot's copy is on screen at the end of the shot and that no decoration
+// (the frame's own, or the chapter trail of the overlay) crosses it; frames are grouped CHAPTER_FRAMES to a chapter so the
+// overlay stays as small as a real lesson's (a page holds it whole: one chapter per frame makes each probe minutes long).
 // Last line: template-ci: <t> templates, <v> variants, <n> frames, <e> lint errors  (exit 1 when e > 0).
 
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -32,6 +34,7 @@ const TPL = join(S, "templates/scenes");
 const DURS = [4, 7, 10];
 const STEP = 0.35, LEAD = 0.3;
 const BATCH = 18; // frames per assembled index for check and snapshot
+const CHAPTER_FRAMES = 8; // frames per chapter of the synthetic script
 
 const sh = (cmd, cwd = W) => execSync(cmd, { cwd, stdio: "pipe", encoding: "utf8", env: { ...process.env, HYPERFRAMES_SKIP_SKILLS: "1" } });
 const shTry = (cmd, cwd = W) => { try { return { ok: true, out: sh(cmd, cwd) }; } catch (e) { return { ok: false, out: `${e.stdout ?? ""}${e.stderr ?? ""}` }; } };
@@ -65,7 +68,7 @@ for (const id of ids) {
 }
 
 // ── synthetic script, voice, storyboard and scenes ────────────────────────────
-const frames = [], voices = [], scenes = [];
+const chapters = [], voices = [], scenes = [];
 const md = ["---", "format: 1920x1080", `duration: ${combos.reduce((s, c) => s + c.dur, 0)}s`, 'message: "template CI"', "mode: autonomous", "music: none", "---", ""];
 combos.forEach((c, i) => {
   const n = i + 1;
@@ -75,15 +78,17 @@ combos.forEach((c, i) => {
   const tokens = Array.from({ length: count }, (_, k) => ({ display: `w${k + 1}`, spoken: `w${k + 1}`, ...(k % 4 === 1 ? { keyword: true } : {}) }));
   const sentences = [];
   for (let k = 0; k < tokens.length; k += 8) sentences.push({ id: `s${n}-${k / 8 + 1}`, tokens: tokens.slice(k, k + 8), facts: [] });
-  frames.push({ id: n, scene_hint: c.schema.family, title: `${c.id} ${c.variant}`, sentences });
+  const ch = Math.ceil(n / CHAPTER_FRAMES);
+  if (!chapters[ch - 1]) chapters.push({ id: `ch${ch}`, title: `CI ${ch}`, level: "basic", frames: [] });
+  chapters[ch - 1].frames.push({ id: n, scene_hint: c.schema.family, title: `${c.id} ${c.variant}`, sentences });
   voices.push({ frame: n, path: `assets/voice/${String(n).padStart(2, "0")}.wav`, duration_s: c.dur,
     words: tokens.map((t, k) => ({ id: `w${n}-${k}`, text: t.display, start: +(LEAD + k * STEP).toFixed(3), end: +(LEAD + k * STEP + 0.3).toFixed(3) })) });
   execSync(`ffmpeg -v error -y -f lavfi -i anullsrc=r=48000:cl=mono -t ${c.dur} -c:a pcm_s16le "${join(W, voices[i].path)}"`);
   md.push(`## Frame ${n} — ${c.id} ${c.variant} ${c.dur}s`, "", "- status: outline", `- src: compositions/frames/${c.fid}.html`,
-    `- duration: ${c.dur}s`, "- transition_in: cut", `- scene: ${c.schema.family}`, "- chapter: ch1", "");
+    `- duration: ${c.dur}s`, "- transition_in: cut", `- scene: ${c.schema.family}`, `- chapter: ch${ch}`, "");
   scenes.push({ frame: n, shots: [{ template: c.id, variant: c.variant, window: ["start", "end"], slots: c.preview.slots, ...(c.preview.params ? { params: c.preview.params } : {}) }] });
 });
-writeFileSync(join(W, "script.json"), JSON.stringify({ meta: { title: "template CI", rate: 1 / STEP * 1.0 }, chapters: [{ id: "ch1", title: "CI", level: "basic", frames }] }, null, 1));
+writeFileSync(join(W, "script.json"), JSON.stringify({ meta: { title: "template CI", rate: 1 / STEP * 1.0 }, chapters }, null, 1));
 writeFileSync(join(W, "audio_meta.json"), JSON.stringify({ bgm: null, bgm_pending: false, voices, sfx: [] }));
 writeFileSync(join(W, "STORYBOARD.md"), md.join("\n"));
 writeFileSync(join(W, "scenes.json"), JSON.stringify({ version: 1, seed: 7, frames: scenes }, null, 1));
@@ -107,16 +112,22 @@ const compiled = combos.filter((c) => existsSync(join(W, `compositions/frames/${
 // assemble only the frames that compiled
 const board = md.join("\n").split(/(?=^## Frame \d+ )/m).filter((b) => !/^## Frame (\d+) /.test(b) || compiled.some((c) => c.n === Number(b.match(/^## Frame (\d+) /)[1])));
 writeFileSync(join(W, "STORYBOARD.md"), board.join(""));
-// the copy of every shot is on screen at the end of the shot (tools/visible-check.mjs, the check of gate 3). A template
-// that draws its copy twice for an effect marks the decorative copy aria-hidden="true", or this fails.
+// the copy of every shot is on screen at the end of the shot (tools/visible-check.mjs, the check of gate 3), and no shape
+// crosses it: not the frame's own decoration, not the chapter trail of the overlay layer (built for this check only). A
+// template that draws its copy twice for an effect marks the decorative copy aria-hidden="true", or this fails.
 if (compiled.length) {
-  const v = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: W, encoding: "utf8", timeout: 900000 });
+  const ov = spawnSync(process.execPath, ["tools/build-overlay.mjs"], { cwd: W, encoding: "utf8" });
+  if (ov.status !== 0) (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`build-overlay failed: ${(ov.stdout + ov.stderr).slice(-300)}`);
+  const tVisible = Date.now();
+  const v = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: W, encoding: "utf8", timeout: 3600000 });
   const out = `${v.stdout ?? ""}${v.stderr ?? ""}`;
-  if (!/^visible-check (ok|FAILED)/m.test(out)) (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`visible-check did not run: ${out.slice(-300)}`);
+  console.log(`visible-check: ${compiled.length} frames in ${Math.round((Date.now() - tVisible) / 1000)} s`);
+  if (!/^visible-check (ok|FAILED)/m.test(out)) (errs.get("_project") ?? errs.set("_project", []).get("_project")).push(`visible-check did not run (status ${v.status}, signal ${v.signal}, ${v.error?.code ?? "no error"}): ${out.slice(-300)}`);
   for (const line of out.split("\n").filter((l) => l.startsWith("✗ frame "))) {
     const c = compiled.find((x) => x.n === Number(line.match(/^✗ frame (\d+) /)[1]));
     if (c) errs.get(c.id).push(`${c.variant} ${c.dur}s: visible ${line.slice(2).trim()}`);
   }
+  rmSync(join(W, "compositions/overlay.html"), { force: true }); // hyperframes lint and check below run on the frames alone
 }
 const SK = `${(await import(pathToFileURL(join(W, "tools/lib/machine.mjs")).href)).findSkillsDir()}/faceless-explainer/scripts`;
 if (compiled.length) {
