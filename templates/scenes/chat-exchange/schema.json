@@ -16,7 +16,7 @@
         "items": {
           "type": "object", "required": ["who", "text"], "additionalProperties": false,
           "properties": {
-            "who": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the speaker label shown over the turn; a turn whose who equals the bot name is the bot's, any other is the user's" },
+            "who": { "type": "string", "minLength": 1, "maxLength": 24, "description": "the speaker label shown over the turn; a turn whose who equals the bot name is the bot's, any other is the user's. A directed lesson needs a turn of each side (lint error otherwise), and who is never a part of the prompt such as a role or a task" },
             "text": { "type": "string", "minLength": 1, "maxLength": 140 }
           }
         }

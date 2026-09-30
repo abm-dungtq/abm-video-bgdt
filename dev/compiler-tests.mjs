@@ -11,7 +11,8 @@ import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
 import { BUILD, fitOk, numbers, splitShots, withLabels } from "../compiler/solver.mjs";
-import { copyReveals, ideaErrors, overlayErrors, pinnedToVoice, resolveOverlays, transitionErrors, transitionsIn, TRANSITIONS, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
+import { copyReveals, ideaErrors, missingLabels, overlayErrors, pinnedToVoice, resolveOverlays, transitionErrors, transitionsIn, TRANSITIONS, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
+import { slotIssues } from "../templates/scenes/chat-exchange/template.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -340,5 +341,19 @@ test("voice sync: code content the voice never reads is marked code (a warning, 
   const schema = { reveals: { lines: { default: "kw", range: true, code: true } } };
   eq(voiceSyncIssues({ slots: { lines: "npm run build" } }, { lines: [2, 4] }, ctx, schema).map((v) => [v.key, v.spoken, v.code]), [["lines", null, true]]);
 });
+test("| labels: a frame that shows a list must say every label, a frame without a list is left alone", () => {
+  eq(missingLabels(["Role", "Task", "Format"], [{ items: ["Role: nhập vai", "Task", "Định dạng"] }]), ["Format"]);
+  eq(missingLabels(["Role", "Task"], [{ items: [{ label: "ROLE" }, { label: "Task!" }] }]), []);
+  eq(missingLabels(["Role", "Task"], [{ title: "Một câu" }]), []);
+  eq(missingLabels([], [{ items: ["a", "b"] }]), []);
+});
+
+test("chat-exchange: a directed lesson needs a turn of each side", () => {
+  const t = (who) => ({ who, text: "x" });
+  eq(slotIssues({ name: "Bot", turns: [t("Bot"), t("Bạn")] }), []);
+  eq(slotIssues({ name: "Bot", turns: [t("Bạn"), t("Tôi")] }).length, 1);
+  eq(slotIssues({ name: "Bot", turns: [t("Bot"), t("Bot")] }).length, 1);
+});
+
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

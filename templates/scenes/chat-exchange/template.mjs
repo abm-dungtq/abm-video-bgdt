@@ -12,6 +12,16 @@ import { keepInside, lines } from "../_shared/dna-card.mjs";
 export const revealKeys = (slots) => slots.turns.map((_, i) => `turns.${i}`);
 
 const r2 = (x) => Math.round(x * 100) / 100;
+const key = (x) => String(x).normalize("NFC").trim().toLocaleLowerCase("vi");
+
+// A directed lesson (lint) must say who speaks: the assistant's turns carry the bot name in who, every other label is the
+// user's. Without a match the renderer falls back to alternating user, bot, ..., which puts a second user line on the bot side.
+export function slotIssues(slots) {
+  const bot = slots.turns.filter((x) => key(x.who) === key(slots.name)).length;
+  if (bot === 0) return [`turns: no turn has who "${slots.name}" (the name in the header), so the sides are guessed by alternation: give the assistant's turns who "${slots.name}" and the user's turns their own label`];
+  if (bot === slots.turns.length) return [`turns: every turn has who "${slots.name}": give the user's turn its own label (any other who is the user's)`];
+  return [];
+}
 
 export function render(ctx) {
   const { S, slots, esc, theme, window: w } = ctx;
@@ -20,7 +30,6 @@ export function render(ctx) {
   const accent = claude ? "var(--gold)" : "var(--cyan)";
   const turns = slots.turns;
   // a turn is the bot's when its speaker label is the bot name; if no label matches, the turns alternate user, bot, …
-  const key = (x) => String(x).normalize("NFC").trim().toLocaleLowerCase("vi");
   const named = turns.some((x) => key(x.who) === key(slots.name));
   const isAi = turns.map((x, i) => (named ? key(x.who) === key(slots.name) : i % 2 === 1));
   const t = turns.map((_, i) => ctx.at(`turns.${i}`));
@@ -63,7 +72,7 @@ export function render(ctx) {
 .${S}-row.user .${S}-msg { box-sizing: border-box; max-width: ${userW}px; padding: 12px 32px; ${claude
     ? `border-radius: ${R}px; background: color-mix(in srgb, var(--ink) 7%, var(--surface)); border: 2px solid color-mix(in srgb, var(--ink) 12%, transparent);`
     : `border-radius: ${Math.round(R * 1.6)}px; background: color-mix(in srgb, ${accent} 20%, var(--surface));`} }
-.${S}-dots { position: absolute; left: 62px; top: 34px; display: flex; gap: 10px; align-items: center; height: ${lh}px; }
+.${S}-dots { opacity: 0; position: absolute; left: 62px; top: 34px; display: flex; gap: 10px; align-items: center; height: ${lh}px; }
 .${S}-dots i { width: 12px; height: 12px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 80%, transparent); }
 #${S}-comp { position: absolute; left: 48px; right: 48px; bottom: 18px; height: 60px; border-radius: 30px; box-sizing: border-box; padding: 0 12px 0 28px;
   display: flex; align-items: center; justify-content: space-between; background: color-mix(in srgb, var(--ink) 6%, var(--surface));

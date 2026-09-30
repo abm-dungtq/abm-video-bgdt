@@ -25,7 +25,9 @@ After the voice stage, the storyboard stage lints it again with real timings; fi
 3. **Choose the template by meaning, not habit.** A trend over time is `line-graph`, a ranking that changes is
    `rank-race`, "if … then use …" is `decision-tree`, a command is `terminal-window` or `code-typing`, a key sentence
    is `callout-sentence`. A conversation with an assistant is `chat-exchange` (in `turns`, a turn whose `who` equals
-   `name` is the assistant's; with no match the turns alternate), an answer that cites its sources is `ai-answer`, a
+   `name` is the assistant's and any other `who` is the user's; lint rejects an exchange without an assistant turn or
+   without a user turn, so a prompt split in two turns still needs the assistant's answer, and `who` is never a part of
+   the prompt such as "Yêu cầu"), an answer that cites its sources is `ai-answer`, a
    chat between two people is `message-thread` (`who` equal to `contact` is the received side), events arriving one
    after another are `notify-stack`, one alert that matters is `notify-single`, a few live figures side by side are
    `glass-widgets`, and ordered steps read top to bottom are `flow-vertical`. `opener-shard` (a chapter title) and
@@ -57,7 +59,8 @@ Not enforced by lint, but part of your own review before gate 3:
 - **Change the axis.** Alternate what moves: numbers, then space (map, flow), then words, then an interface.
 - **Match the chapter's arc.** A chapter that argues needs comparisons (`split`, `balance`, `bar-line-chart`); one
   that teaches a tool needs interfaces (`editor-window`, `terminal-window`, `ui-reveal`).
-- **Labels are the script's keywords.** Slot text comes from the `*keywords*` and `|` labels, not new wording.
+- **Labels are the script's keywords.** Slot text comes from the `*keywords*` and `|` labels, not new wording. When a
+  frame has a `|` line and its shots show a list, lint warns for every `|` label that no slot of the frame says.
 
 ## The accent layer
 
@@ -104,3 +107,7 @@ share the right) are an error. Use them sparingly: a note covers part of the tem
    the karaoke band at the end of its shot. Some copy leaves the stage by design (a card flipped away, a milestone
    passed, a line scrolled out; the schema marks it `transient`). That copy is checked 0.7 s after its cue instead.
    Identifiers such as an icon name, an image path or a region code are not checked. Gate 3 runs it too.
+   It also fails when a shape without copy (a curve, a dot, a thin bar) paints across a line of text, over the letters or
+   under them at half strength or more, at any moment the copy is on screen. The overlay layer counts: its chapter trail
+   stays in the strip above the captions. A faint shape under the letters (the theme motif) is only a `⚠` line. Shapes that
+   belong to a slot (the caret of typed code, a pen writing the text) carry `data-layout-allow-overlap`.

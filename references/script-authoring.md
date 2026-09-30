@@ -122,6 +122,12 @@ Chọn *một* *việc* *lặp* *lại,* viết *quy* *trình,* rồi *giao* *ch
   real situation the learner knows (a team, a document, a customer), not a generic "một công ty".
 - **No slide talk:** at most `depth.maxListRun` (3) list sentences in a row (three or more short comma parts). Turn the
   fourth into an example or a comparison.
+- **A worked example for a formula:** a lesson that teaches a formula or template of N named parts (a `|` list of four
+  or more on one frame, such as ROLE / TASK / DETAILS / CONTENT / FORMAT & STYLE / NOTE) includes one frame that fills
+  every part with a concrete case and names each part as it goes ("Role: bạn là …", "Task: …"). One or two sentences
+  per part explain the parts; only the worked example shows that they fit together. `--check` warns when no frame
+  other than the list frame names every part of a list of four or more. It cannot tell whether the example is a good
+  one (it finds the part names, not their content), so the check is a floor and the rule stays yours.
 
 ## Budget math
 
@@ -178,6 +184,11 @@ Write the narration with the viet-pro skill (installed next to this one, in the 
    - claims no fact backs (#3);
    - forced triads (#6);
    - a closing wish instead of a point (#2).
+
+   A fix must not swap one hype word for another. `--check` warns on the absolute words "luôn", "tối đa", "trọn vẹn",
+   "hoàn toàn", "tuyệt đối", "mọi lúc", "chắc chắn" and "100%" in a sentence that cites no fact: "khai thác tối đa
+   năng lực", "luôn bám sát thực tế" and "kiểm soát trọn vẹn" are the same hype (#13, #3, #2) in new words. Say what
+   the source shows (a number, a condition, an example), or cite it with `{F-NN}`.
 
    Keep the facts, numbers and English terms unchanged while fixing (its `compare-preserved-content.mjs` checks that).
 4. Record the audit in `script.viet-pro.md`, in this shape:

@@ -92,6 +92,20 @@ export async function loadTemplate(id) {
 }
 
 const ruleFor = (schema, key) => schema.reveals?.[key] ?? schema.reveals?.[key.replace(/\.\d+$/, ".*")];
+/** true when a slot value holds a list of labels: an array of two or more strings, or of objects with a string label */
+const hasList = (v) => (Array.isArray(v) ? (v.length >= 2 && v.every((x) => typeof x === "string" || typeof x?.label === "string")) || v.some(hasList)
+  : v && typeof v === "object" ? Object.values(v).some(hasList) : false);
+const wordsOf = (x) => String(x).normalize("NFC").toLocaleLowerCase("vi").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+/**
+ * The `|` labels of a frame that no slot of its shots says. Only a frame whose shots show a list is held to its labels
+ * (a shot without a list slot may use them as it likes); a slot says a label when one contains the other, ignoring case
+ * and punctuation.
+ */
+export function missingLabels(labels, slotsOfShots) {
+  if (!labels?.length || !slotsOfShots.some(hasList)) return [];
+  const shown = slotsOfShots.flatMap(strings).map(wordsOf).filter((t) => t.length >= 3);
+  return labels.filter((l) => !shown.some((t) => t.includes(wordsOf(l)) || wordsOf(l).includes(t)));
+}
 const strings = (v) => (typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(strings) : v && typeof v === "object" ? Object.values(v).flatMap(strings) : []);
 
 /** frame-relative start times of the keyword phrases of a frame */
@@ -204,6 +218,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   const scenes = read("scenes.json");
   const script = read("script.json");
   const hintOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.scene_hint])));
+  const labelsOf = new Map(script.chapters.flatMap((c) => c.frames.map((f) => [f.id, f.labels ?? []])));
   const audioMeta = estimated ? null : read("audio_meta.json");
   const board = readStoryboard(readFileSync(join(P, "STORYBOARD.md"), "utf8"));
   const rate = existsSync(join(P, ".probe/rate.json")) ? read(".probe/rate.json").syllables_per_s : script.meta?.rate ?? 4.3;
@@ -285,6 +300,8 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
         if (v.spoken == null) (v.code ? warnings : strict).push(`${at}: slot text ${v.key} "${v.text.slice(0, 40)}" is never said in this frame: write only what the voice says`);
         else strict.push(`${at}: reveal ${v.key} "${v.text.slice(0, 40)}" at ${v.at} s is said at ${v.spoken} s: pin it with "reveals": { "${v.key}": "word:<its word>-0.1" }`);
       }
+      // a template can refuse slots its schema cannot express; in a directed lesson that is an error (chat-exchange roles)
+      if (directed && valid) errors.push(...(tpl.mod.slotIssues?.(s.slots, variant) ?? []).map((m) => `${at}: ${m}`));
       const firstKey = Math.min(...Object.values(times).map((v) => (Array.isArray(v) ? v[0] : v)));
       if (Number.isFinite(firstKey) && firstKey - a > 2.0) warnings.push(`${at}: the first reveal comes ${r2(firstKey - a)} s after the shot starts: move the window start nearer its first keyword`);
       shots.push({ spec: s, schema: tpl.schema, mod: tpl.mod, variant, a, b, times });
@@ -292,6 +309,9 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       flat.push({ frame: bf.no, template: s.template, variant, family: tpl.schema.family, accent: tpl.schema.accent === true, signature: (tpl.schema.signatures ?? []).includes(variant) && s.template !== "title" });
       prevEnd = b;
     }
+    // a frame's `|` line is the words of its list on screen (direction.md): a frame that shows a list says every label
+    const missing = directed ? missingLabels(labelsOf.get(bf.no), shots.map((x) => x.spec.slots)) : [];
+    if (missing.length) warnings.push(`${where}: the script's | labels ${missing.map((l) => `"${l}"`).join(", ")} are on no slot of its shots: list slots take their words from the | line, not from new wording (references/direction.md)`);
     if (prevEnd != null && Math.abs(prevEnd - duration) > TOL) errors.push(`${where}: the last shot ends at ${prevEnd}, the frame lasts ${duration}`);
     let rail = null;
     if (spec.rail) {

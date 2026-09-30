@@ -121,8 +121,27 @@ if (cfg.depth) {
   }
 }
 
+// Warnings (they never fail the check). Absolute words promise more than a source shows: "luôn nhận về kết quả chất
+// lượng", "khai thác tối đa". A sentence that cites a fact ({F-..}) is backed by its source and is left alone.
+const ABSOLUTE = /(?<![\p{L}\p{N}])(luôn|tối đa|trọn vẹn|hoàn toàn|tuyệt đối|mọi lúc|chắc chắn|100\s?%)(?![\p{L}\p{N}])/giu;
+const warnings = [];
+for (const s of frames.flatMap((f) => f.sentences ?? [])) {
+  const words = [...new Set([...displayText(s).matchAll(ABSOLUTE)].map((m) => m[1].toLowerCase()))];
+  if (words.length && !s.facts?.length) warnings.push(`${s.id}: absolute word ${words.map((w) => `"${w}"`).join(", ")} in "${displayText(s).slice(0, 60)}": say what the source shows (a number, a condition) or drop it; a sentence that cites a fact is left alone`);
+}
+// A "|" list of four or more parts on a frame teaches a formula: another frame must name every part, as the worked example.
+const said = (x) => x.normalize("NFC").toLowerCase().replace(/\s+/g, " ");
+for (const f of frames) {
+  const parts = f.labels ?? [];
+  if (parts.length < 4) continue;
+  const namesAll = (g) => { const t = said(g.sentences.map(displayText).join(" ")); return parts.every((p) => t.includes(said(p))); };
+  if (!frames.some((g) => g !== f && namesAll(g)))
+    warnings.push(`frame ${f.id}: lists ${parts.length} parts (${parts.join(" / ")}) but no other frame names all of them: if this is a formula, add a worked example that fills every part (references/script-authoring.md § Depth)`);
+}
+
 if (mode === "check") {
   for (const e of errors) console.error(`✗ ${e}`);
+  for (const w of warnings) console.warn(`⚠ ${w}`);
   // spokenOverrides applied silently in src-to-script; show how many tokens they reached so a
   // matching bug (e.g. punctuation eating "5.5") is visible at gate 2
   const tokens = frames.flatMap((f) => f.sentences.flatMap((s) => s.tokens));

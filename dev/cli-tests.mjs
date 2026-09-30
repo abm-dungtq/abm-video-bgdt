@@ -6,7 +6,7 @@
 // Scratch folder: <workspace>/.regress/cli-test (recreated each run). Needs video.config.json, script.json and
 // SCRIPT-REVIEW.md in the source (default: the Hermes lesson beside the skill's workspace, or $ABM_REGRESS_SOURCE).
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import { dirname, join, resolve } from "node:path";
@@ -504,6 +504,19 @@ if (!existsSync(join(DIR_SRC, "scenes.json"))) {
   rmSync(G, { recursive: true, force: true });
   // audio clips are not read by the gate 3 checks, only the ASR report
   cpSync(DIR_SRC, G, { recursive: true, filter: (p) => !/[\\/]audio[\\/].+/.test(p.slice(DIR_SRC.length)) || p.endsWith("asr-report.json") });
+  // the fixture keeps the frames of the release that built it: recompile them with the current tools and rebuild the
+  // overlay, so the visible check judges what these tools draw
+  const up = spawnSync(process.execPath, [join(S, "scripts/new-project.mjs"), G, "--update-tools"], { encoding: "utf8" });
+  const rebuilt = spawnSync(process.execPath, ["--input-type=module", "-e", [
+    'import { readFileSync } from "node:fs";',
+    'import { pathToFileURL } from "node:url";',
+    'const cfg = JSON.parse(readFileSync("video.config.json", "utf8"));',
+    'const { compile } = await import(pathToFileURL(process.cwd() + "/tools/compiler/compile.mjs").href);',
+    "const r = await compile({ P: process.cwd(), cfg });",
+    "process.exit(r.ok ? 0 : 1);"].join("\n")], { cwd: G, encoding: "utf8" });
+  const ov = spawnSync(process.execPath, ["tools/build-overlay.mjs"], { cwd: G, encoding: "utf8" });
+  check("gate 3 fixture: tools updated, frames recompiled and overlay rebuilt", up.status === 0 && rebuilt.status === 0 && ov.status === 0,
+    [up, rebuilt, ov].map((x) => x.stdout + x.stderr).join("\n"));
   mkdirSync(join(G, "renders"), { recursive: true });
   writeFileSync(join(G, "renders/karaoke-preview.mp4"), "preview"); // the gate's artifact (content does not matter here)
   const gs = load(G);
@@ -523,6 +536,35 @@ if (!existsSync(join(DIR_SRC, "scenes.json"))) {
   check("gate 3 --check fails a loosened threshold", rAgent.code === 1 && rAgent.out.includes("✗ config: scenes.maxUsesPerTemplate is 9"), rAgent.out + rAgent.err);
   rAgent = await cliIn(G, "gate", "3", "--approve", "--by", "agent", "x");
   check("gate 3 --approve --by agent is refused when a check fails", rAgent.code !== 0 && load(G).gates["3"].note !== "x", rAgent.out + rAgent.err);
+
+  // script-to-md --check: an absolute word with no fact tag and a 4-part list no other frame names are warnings, not errors
+  const sc = JSON.parse(readFileSync(join(G, "script.json"), "utf8"));
+  const [first, second] = sc.chapters.flatMap((ch) => ch.frames);
+  first.labels = ["Alpha", "Bravo", "Charlie", "Delta"];
+  const luon = { display: "luôn", spoken: "luôn" };
+  const withLuon = second.sentences.find((x) => !x.facts?.length);
+  withLuon.tokens.splice(1, 0, luon);
+  writeFileSync(join(G, "script-warn.json"), JSON.stringify(sc));
+  const w = spawnSync(process.execPath, ["tools/script-to-md.mjs", "--check", "script-warn.json"], { cwd: G, encoding: "utf8" });
+  const wOut = w.stdout + w.stderr;
+  check("script-to-md --check warns on an absolute word with no fact tag", wOut.includes('absolute word "luôn"'), wOut);
+  check("script-to-md --check warns on a 4-part list no other frame names", wOut.includes("lists 4 parts") && wOut.includes("worked example"), wOut);
+  rmSync(join(G, "script-warn.json"), { force: true });
+
+  // visible-check: a stroke drawn over the copy (a sweep of thin lines above the whole frame) fails, and it is not the copy's own shape
+  const frameFile = join(G, "compositions/frames", readdirSync(join(G, "compositions/frames")).find((n) => n.startsWith("02-")));
+  const frameHtml = readFileSync(frameFile, "utf8");
+  const sweep = Array.from({ length: 24 }, (_, k) => `<line x1="0" x2="1920" y1="${20 + k * 36}" y2="${20 + k * 36}"/>`).join("");
+  writeFileSync(frameFile, frameHtml.replace(/<template[^>]*>/, (m) =>
+    `${m}<svg id="strike-test" style="position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:9999" stroke="#f0c040" stroke-width="4">${sweep}</svg>`));
+  const vc = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: G, encoding: "utf8" });
+  const vcOut = vc.stdout + vc.stderr;
+  check("visible-check fails a stroke drawn over the copy", vc.status !== 0 && /frame 2 .*is crossed by a decoration \(#strike-test.*over the text\)/.test(vcOut), vcOut);
+  writeFileSync(frameFile, frameHtml.replace(/<template[^>]*>/, (m) =>
+    `${m}<svg id="strike-test" data-layout-allow-overlap style="position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:9999" stroke="#f0c040" stroke-width="4">${sweep}</svg>`));
+  const vcOk = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: G, encoding: "utf8" });
+  check("visible-check lets a stroke marked data-layout-allow-overlap through", vcOk.status === 0, vcOk.stdout + vcOk.stderr);
+  writeFileSync(frameFile, frameHtml);
 }
 
 srv.close();
