@@ -5,6 +5,7 @@
 // the on-screen copy (visible-check) and the thresholds of video.config.json (configGuard).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -87,6 +88,61 @@ const configCheck = (P, n) => () => {
   const bad = configGuard(P, n);
   return bad.length ? { ok: false, detail: bad.join("; ") } : { ok: true, detail: "thresholds at the skill's defaults or stricter" };
 };
+
+// viet-pro: the narration is written and audited with the viet-pro skill (script-authoring.md § Writing with viet-pro).
+// Its lint alone passes a flat, AI-sounding draft, so the proof is the audit file script.viet-pro.md, bound to the
+// current script.src.txt: a brief, and viet-pro humanizer patterns (#1–#25) with at least one "before" → "after" fix
+// whose "after" is in the script and whose "before" no longer is. The lint must show no ERROR, and every WARN it
+// reports must be named in the audit (fixed, or kept with a reason).
+export const VIET_PRO_AUDIT = "script.viet-pro.md";
+const scriptSha = (P) => createHash("sha256").update(readFileSync(join(P, "script.src.txt"), "utf8").replace(/\r\n/g, "\n")).digest("hex").slice(0, 16);
+const flat = (s) => s.replace(/\{F-[^}]*\}/g, "").replace(/\*/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+/** The spoken lines of script.src.txt: no comments, headings, visual notes, list labels or fact tags. */
+export function scriptProse(src) {
+  return src.split(/\r?\n/).filter((l) => l.trim() && !/^\s*(\/\/|#|>|\|)/.test(l))
+    .map((l) => l.replace(/\{F-[^}]*\}/g, "").replace(/\*/g, "").replace(/\s+/g, " ").trim()).join("\n") + "\n";
+}
+export function vietProCheck(P, vietProDir = process.env.VIET_PRO_DIR ?? join(INSTALLED_SKILL, "..", "viet-pro")) {
+  const header = () => `<!-- viet-pro audit · script.src.txt sha256:${scriptSha(P)} -->`;
+  const f = join(P, VIET_PRO_AUDIT);
+  if (!existsSync(join(P, "script.src.txt"))) return { ok: false, detail: "script.src.txt missing" };
+  if (!existsSync(f)) return { ok: false, detail: `${VIET_PRO_AUDIT} missing: write the narration with the viet-pro skill, audit it, and record the audit (script-authoring.md § Writing with viet-pro); its first line is ${header()}` };
+  const audit = readFileSync(f, "utf8");
+  const bad = [];
+  const sha = audit.match(/sha256:([0-9a-f]{16})/)?.[1];
+  if (sha !== scriptSha(P)) bad.push(`the audit is for another version of script.src.txt (edited after the audit): audit the final script again; first line ${header()}`);
+  const section = (name) => audit.split(/^## /m).find((s) => s.toLowerCase().startsWith(name))?.split(/\r?\n/).slice(1).join("\n").trim() ?? "";
+  if (!section("brief")) bad.push("## Brief is missing or empty: audience, length, facts file, chapter plan");
+  const items = section("patterns").split(/\r?\n/).filter((l) => /^\s*-\s/.test(l));
+  const nums = items.map((l) => Number(l.match(/#(\d+)/)?.[1]));
+  if (!items.length) bad.push("## Patterns lists no viet-pro pattern (- #<n> <name> · \"before\" → \"after\")");
+  if (nums.some((n) => !(n >= 1 && n <= 25))) bad.push("every pattern line names a viet-pro humanizer pattern #1–#25 (references/review/humanizer-patterns.md)");
+  const prose = flat(scriptProse(readFileSync(join(P, "script.src.txt"), "utf8")));
+  let fixes = 0;
+  for (const l of items) {
+    const m = l.match(/["“]([^"”]+)["”]\s*(?:→|->)\s*["“]([^"”]+)["”]/);
+    if (!m) continue;
+    const [before, after] = [flat(m[1]), flat(m[2])];
+    if (!prose.includes(after)) bad.push(`fix "${m[2]}" is not in script.src.txt`);
+    else if (prose.includes(before)) bad.push(`"${m[1]}" is still in script.src.txt`);
+    else fixes++;
+  }
+  if (items.length && !fixes) bad.push("no fix recorded: at least one pattern line is \"before\" → \"after\", the before gone from the script and the after in it");
+  const lint = join(vietProDir, "scripts/lint-vietnamese-content.mjs");
+  if (!existsSync(lint)) bad.push(`viet-pro not found at ${vietProDir} (install the viet-pro skill next to abm-video-bgdt, or set VIET_PRO_DIR)`);
+  else {
+    mkdirSync(join(P, ".abm"), { recursive: true });
+    const tmp = join(P, ".abm/script-prose.md");
+    writeFileSync(tmp, scriptProse(readFileSync(join(P, "script.src.txt"), "utf8")));
+    const r = spawnSync(process.execPath, [lint, tmp], { cwd: P, encoding: "utf8" });
+    const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+    if (r.status !== 0) bad.push(`viet-pro lint: ${out.split(/\r?\n/).filter((l) => l.startsWith("ERROR")).join("; ") || out.trim()}`);
+    const warns = [...new Set([...out.matchAll(/^WARN .*?\[([a-z-]+)\]/gm)].map((x) => x[1]))];
+    const unnamed = warns.filter((w) => !audit.includes(w));
+    if (unnamed.length) bad.push(`viet-pro lint warns ${unnamed.join(", ")}: fix each, or name it in the audit with the reason it stays`);
+  }
+  return bad.length ? { ok: false, detail: bad.join("; ") } : { ok: true, detail: `${items.length} patterns, ${fixes} fixes, viet-pro lint clean` };
+}
 
 function asrCheck(P) {
   const reportPath = join(P, "audio/asr-report.json");
@@ -253,6 +309,7 @@ export function gateChecks(P, n) {
         },
       });
       checks.push({ name: "config", run: configCheck(P, "2") });
+      checks.push({ name: "viet-pro", run: () => vietProCheck(P) });
     }
 
     return checks;

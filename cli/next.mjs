@@ -5,6 +5,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { agentApproves, gateOk, gateStatus } from "./gates.mjs";
+import { VIET_PRO_AUDIT, vietProCheck } from "./gate-checks.mjs";
 import { MCP } from "./paths.mjs";
 import { activeStages, untouched } from "./stages.mjs";
 import { isStale, load } from "./state.mjs";
@@ -53,8 +54,12 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
           run: "(edit the file)", why: "the facts file is still the template" };
       }
       if (untouched(P, "script.src.txt", "script.src.txt")) {
-        return { next: "write script.src.txt following references/script-authoring.md", run: "(edit the file)",
-          why: "the script is still the template" };
+        return { next: "write script.src.txt with the viet-pro skill (load its SKILL.md), following references/script-authoring.md § Writing with viet-pro",
+          run: "(edit the file)", why: "the script is still the template" };
+      }
+      if (isDirected(cfg.scenes) && !gateOk(s, P, "2") && !vietProCheck(P).ok) {
+        return { next: `audit script.src.txt with the viet-pro skill and record it in ${VIET_PRO_AUDIT} (script-authoring.md § Writing with viet-pro)`,
+          run: `${cli} gate 2 --check`, why: `viet-pro: ${vietProCheck(P).detail}` };
       }
     }
     for (const g of st.needs.gates) {

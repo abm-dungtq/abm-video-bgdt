@@ -166,14 +166,38 @@ the lesson, close a chapter however its arc ends best.
 
 ## Writing with viet-pro
 
-Write the narration with the viet-pro skill (installed next to this one), in its script-for-video mode:
+Write the narration with the viet-pro skill (installed next to this one, in the same skills folder). Load its
+`SKILL.md` and follow it; reading this section is not using it.
 
 1. Give it the brief: audience (beginners), length (`budget.targetS`), the facts file, and the chapter plan above.
 2. Let it draft the sentences; then put them into the grammar of this page yourself (`##` frames, `*keywords*`,
    `{F-NN}`, `|` labels). viet-pro does not know that grammar.
-3. Run its AI-pattern audit ("audit dấu hiệu AI") on the finished `script.src.txt` and fix every pattern it reports.
+3. Run its AI-pattern audit ("audit dấu hiệu AI", `references/review/humanizer-patterns.md`, 25 patterns) on the
+   finished `script.src.txt`, and fix what it finds. Watch for these in lesson scripts:
+   - hype (#13, #16);
+   - claims no fact backs (#3);
+   - forced triads (#6);
+   - a closing wish instead of a point (#2).
+
    Keep the facts, numbers and English terms unchanged while fixing (its `compare-preserved-content.mjs` checks that).
-4. `abm-video run script` then checks the grammar, the budget and the depth.
+4. Record the audit in `script.viet-pro.md`, in this shape:
+
+   ```
+   <!-- viet-pro audit · script.src.txt sha256:<the hash gate 2 --check prints> -->
+   ## Brief
+   Người học mới bắt đầu; 120 s; facts capture/extracted/visible-text.txt; ch1 định nghĩa, ch2 so sánh, ch3 thực hành.
+   ## Patterns
+   - #13 Thổi phồng tầm quan trọng · "Đây là nền tảng quan trọng giúp bạn làm việc chuyên nghiệp" → "Thiếu một phần, AI phải đoán"
+   - #6 Bộ ba cưỡng ép · kept: the three items are the three steps of F-04
+   ```
+
+   In a directed lesson, gate 2 `viet-pro` checks this file:
+   - the hash matches the current `script.src.txt`, so audit the final text; any later edit needs a new audit;
+   - the Brief is filled in;
+   - every line names a pattern `#1`–`#25`;
+   - at least one line is a fix: the "before" is gone from the script and the "after" is in it;
+   - viet-pro's `lint-vietnamese-content.mjs` shows no ERROR, and every WARN it prints is named in the file.
+5. `abm-video run script` then checks the grammar, the budget and the depth.
 
 ## Language for beginners
 

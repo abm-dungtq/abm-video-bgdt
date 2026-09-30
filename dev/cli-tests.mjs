@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { hashes, isStale, load, markStage, save } from "../cli/state.mjs";
 import { gateStatus, GATES } from "../cli/gates.mjs";
 import { activeStages } from "../cli/stages.mjs";
-import { gateChecks } from "../cli/gate-checks.mjs";
+import { gateChecks, VIET_PRO_AUDIT, vietProCheck } from "../cli/gate-checks.mjs";
 import { headDb, tailDb } from "../cli/tts.mjs";
 
 const S = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -373,6 +373,34 @@ writeFileSync(join(Adir, "audio/qa-accepted.txt"), "s002-1\n");
 ra = asrGate([clean, { id: "s002-1", wer: 0, head_db: -80, tail_db: -15, edge: false }]);
 check("gate 3 asr passes an end-cut clip listed in qa-accepted.txt", ra.ok, ra.detail);
 
+// gate 2 viet-pro: the audit file is bound to the script, names real patterns and records a fix that is in the script
+const Vdir = join(dirname(R), "cli-gate-vietpro");
+rmSync(Vdir, { recursive: true, force: true });
+mkdirSync(Vdir, { recursive: true });
+const vsrc = "// comment\n# ch0 | Mở đầu | basic\n## 1 | title | Sáu phần của prompt\n| Vai trò / Nhiệm vụ\nThiếu một phần, *AI* phải tự đoán. {F-01}\n";
+writeFileSync(join(Vdir, "script.src.txt"), vsrc);
+let vr = vietProCheck(Vdir);
+check("gate 2 viet-pro fails without the audit file and prints the header to use", !vr.ok && vr.detail.includes("sha256:"), vr.detail);
+const vsha = vr.detail.match(/sha256:([0-9a-f]{16})/)[1];
+const vaudit = (body, sha = vsha) => { writeFileSync(join(Vdir, VIET_PRO_AUDIT), `<!-- viet-pro audit · script.src.txt sha256:${sha} -->\n${body}`); return vietProCheck(Vdir); };
+const vbrief = "## Brief\nNgười học mới; 60 s; facts visible-text.txt.\n";
+vr = vaudit(`${vbrief}## Patterns\n- #13 Thổi phồng · "Đây là nền tảng quan trọng" → "Thiếu một phần, AI phải tự đoán"\n`);
+check("gate 2 viet-pro passes a bound audit with a fix that is in the script", vr.ok, vr.detail);
+vr = vaudit(`${vbrief}## Patterns\n- #13 Thổi phồng · "Đây là nền tảng quan trọng" → "Thiếu một phần, AI phải tự đoán"\n`, "0123456789abcdef");
+check("gate 2 viet-pro fails an audit of another script version", !vr.ok && vr.detail.includes("another version"), vr.detail);
+vr = vaudit(`${vbrief}## Patterns\n- #13 Thổi phồng · "Thiếu một phần" → "Một câu khác"\n`);
+check("gate 2 viet-pro fails a fix that never reached the script", !vr.ok && vr.detail.includes("not in script.src.txt"), vr.detail);
+vr = vaudit(`${vbrief}## Patterns\n- #30 Không có · "a" → "Thiếu một phần"\n`);
+check("gate 2 viet-pro fails a pattern number outside #1–#25", !vr.ok && vr.detail.includes("#1–#25"), vr.detail);
+vr = vaudit(`## Brief\n\n## Patterns\n- #6 Bộ ba · kept: ba bước của F-04\n`);
+check("gate 2 viet-pro fails an empty brief and an audit with no fix", !vr.ok && vr.detail.includes("Brief") && vr.detail.includes("no fix"), vr.detail);
+writeFileSync(join(Vdir, "script.src.txt"), vsrc.replace("phải tự đoán.", "phải tự đoán — và sai."));
+const vsha2 = vietProCheck(Vdir).detail.match(/sha256:([0-9a-f]{16})/)?.[1];
+vr = vaudit(`${vbrief}## Patterns\n- #13 Thổi phồng · "Đây là nền tảng quan trọng" → "Thiếu một phần, AI phải tự đoán"\n`, vsha2);
+check("gate 2 viet-pro fails a viet-pro lint WARN the audit does not name", !vr.ok && vr.detail.includes("em-dash"), vr.detail);
+vr = vaudit(`${vbrief}## Patterns\n- #13 Thổi phồng · "Đây là nền tảng quan trọng" → "Thiếu một phần, AI phải tự đoán"\n- #8 em-dash · kept: nhịp đọc cần ngắt\n`, vsha2);
+check("gate 2 viet-pro passes a WARN named in the audit", vr.ok, vr.detail);
+
 // tts-manifest --pending: a clip spoken from an older text is pending again; a clip without a text record is done
 const Mdir = join(dirname(R), "cli-tts-pending");
 rmSync(Mdir, { recursive: true, force: true });
@@ -447,9 +475,17 @@ check("src-to-script: a label over 32 characters fails", rLong.status !== 0 && r
 out = scenario("agent-gate", (D, st) => {
   const c = JSON.parse(readFileSync(join(D, "video.config.json"), "utf8"));
   writeFileSync(join(D, "video.config.json"), JSON.stringify({ ...c, scenes: { ...(c.scenes ?? {}), authoring: "director" } }, null, 2));
+  writeFileSync(join(D, "script.src.txt"), vsrc);
   done(D, st, "doctor", "init", "probe", "script");
   approveAll(D, st, "1");
 });
+check("next: a directed lesson whose script has no viet-pro audit asks for it", /NEXT: audit script\.src\.txt with the viet-pro skill/.test(out), out);
+{
+  const AG = join(dirname(R), "cli-next-agent-gate");
+  const sha = vietProCheck(AG).detail.match(/sha256:([0-9a-f]{16})/)[1];
+  writeFileSync(join(AG, VIET_PRO_AUDIT), `<!-- viet-pro audit · script.src.txt sha256:${sha} -->\n${vbrief}## Patterns\n- #13 Thổi phồng · "Đây là nền tảng quan trọng" → "Thiếu một phần, AI phải tự đoán"\n`);
+  out = spawnSync(process.execPath, [join(S, "bin/abm-video.mjs"), "next"], { cwd: AG, encoding: "utf8" }).stdout;
+}
 check("next: a directed lesson without scenes.json asks for it before gate 2", /NEXT: write scenes\.json from references\/direction\.md/.test(out), out);
 writeFileSync(join(dirname(R), "cli-next-agent-gate", "scenes.json"), "{}");
 out = spawnSync(process.execPath, [join(S, "bin/abm-video.mjs"), "next"], { cwd: join(dirname(R), "cli-next-agent-gate"), encoding: "utf8" }).stdout;

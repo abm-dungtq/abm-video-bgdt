@@ -27,7 +27,8 @@ If the machine is not ready it says `doctor`; `abm-video doctor --fix` installs 
 ## The only things you write
 
 1. **Facts:** `capture/extracted/visible-text.txt`, one `[F-NN] fact — source` per line, from real sources only.
-2. **Script:** `script.src.txt`, following [references/script-authoring.md](references/script-authoring.md). Mark 2–4 word
+2. **Script:** `script.src.txt`, written and audited with the **viet-pro** skill (load its SKILL.md; the audit goes in
+   `script.viet-pro.md`, which gate 2 checks), following [references/script-authoring.md](references/script-authoring.md). Mark 2–4 word
    noun phrases as `*keywords*`; they become the on-screen labels. Give every chapter its own arc (§ Chapter arcs: no
    two chapters on the same scene hints), write a list's items on a `| a / b / c` line, and use `exercise` at most once
    in the whole video. Keep English words (product names, terms) as written; list them in the gate 1 probe, never respell them.
