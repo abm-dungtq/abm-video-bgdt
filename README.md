@@ -61,7 +61,8 @@ flowchart LR
 - **Máy kiểm thay mắt người:**
   - lint bắt chữ trên hình phải khớp lời đọc và bắt hình phải đa dạng;
   - `visible-check` xác nhận mọi chữ thật sự hiện trên màn hình. Chữ rời hình theo thiết kế (`transient` trong schema)
-    được kiểm ngay sau lúc nó xuất hiện; mã icon, đường dẫn ảnh và mã vùng không bị coi là chữ;
+    được kiểm ngay sau lúc nó xuất hiện; mã icon, đường dẫn ảnh và mã vùng không bị coi là chữ. Hình trang trí (đường cong,
+    chấm, thanh mảnh, kể cả vệt vàng của lớp phủ) vạch ngang một dòng chữ cũng bị bắt;
   - `blank-check` bắt những đoạn sân khấu trống.
 - **Script làm phần còn lại:** giọng đọc, căn thời gian, chọn template và điền nội dung, karaoke, ghép, render, QA, dọn dẹp.
 - **Cổng duyệt gắn với file:** câu trả lời của người dùng được ghi bằng `abm-video gate`; file đổi sau khi duyệt thì cổng
@@ -173,6 +174,17 @@ node dev/build-examples.mjs <dự-án>…                          # dựng lạ
 
 Mỗi thay đổi ở `scripts/` phải qua `regression-check` trên các dự án đã giao. Muốn nâng bản HyperFrames đang ghim, trước hết
 cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates/worker-kit/worker-delta-<pin>.md.tmpl` cho bản đó.
+
+## Thay đổi ở 1.0.1
+
+Rút từ video thử do một agent làm trọn:
+
+- `visible-check` bắt hình trang trí (đường cong, chấm, thanh mảnh, vệt vàng của lớp phủ) vạch ngang chữ. Các template có
+  caret, bút hay dải quét cố ý đè chữ được đánh dấu `data-layout-allow-overlap`.
+- `chat-exchange` trong bài có đạo diễn phải ghi rõ vai: lượt của trợ lý có `who` bằng `name`, mọi nhãn khác là của người dùng.
+- Lint cảnh báo khi một khung có danh sách mà không nói nhãn nào đó ở dòng `|` của kịch bản.
+- Lint kịch bản cảnh báo từ tuyệt đối ("luôn", "tối đa", "trọn vẹn"…) ở câu không dẫn fact, và cảnh báo khi bài liệt kê
+  từ 4 phần trở lên mà không khung nào ghép đủ các phần thành một ví dụ.
 
 ## Thay đổi ở 1.0.0
 
