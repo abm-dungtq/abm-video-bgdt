@@ -11,7 +11,7 @@ import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
 import { BUILD, fitOk, numbers, splitShots, withLabels } from "../compiler/solver.mjs";
-import { copyReveals, ideaErrors, pinnedToVoice, transitionErrors, transitionsIn, TRANSITIONS, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
+import { copyReveals, ideaErrors, overlayErrors, pinnedToVoice, resolveOverlays, transitionErrors, transitionsIn, TRANSITIONS, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -245,6 +245,31 @@ test("authored frame without idea is an error", () => {
   eq(ideaErrors([{ frame: 2 }], { authoring: "director" }), ['frame 2: needs "idea" (directed lesson, see references/direction.md)']);
   eq(ideaErrors([{ frame: 2 }], { authoring: "solver" }), []);
   eq(ideaErrors([{ frame: 2 }], {}), []);
+});
+// one frame whose voice says "mở nguồn ra đọc" at 2.0–2.6 s and "tòa nhà" at 4.0–4.2 s
+const oCtx = {
+  frame: 6, duration: 8,
+  tokens: ["mở", "nguồn", "ra", "đọc", "tòa", "nhà"].map((d) => ({ display: d, norm: d, keyword: false, sent: 1 })),
+  times: [2.0, 2.2, 2.4, 2.6, 4.0, 4.2].map((s) => ({ start: s, end: s + 0.2 })),
+};
+const oFrame = (overlays, no = 6, chapter = "c1") => ({ no, chapter, overlays, ctx: { ...oCtx, frame: no } });
+test("overlays: times resolve on the voice and default to the frame's end", () => {
+  const [o] = resolveOverlays([{ kind: "callout", text: "Mở nguồn ra đọc", at: "word:mở-0.1" }], oCtx);
+  eq([o.a, o.b, o.zone], [1.9, 8, "tr"]);
+  eq(overlayErrors([oFrame([{ kind: "note", text: "Mở nguồn", at: "word:mở-0.1", until: "word:tòa" }])]), []);
+});
+test("overlays: text the voice never says in the frame is an error", () => {
+  eq(overlayErrors([oFrame([{ kind: "lower-third", text: "Siêu máy tính", sub: "Colossus", at: "word:mở" }])]).length, 1);
+  if (!/never said/.test(overlayErrors([oFrame([{ kind: "lower-third", text: "Siêu máy tính", at: "word:mở" }])])[0])) throw new Error("message");
+  // said, but far from where it shows
+  if (!/said at 4/.test(overlayErrors([oFrame([{ kind: "note", text: "Tòa nhà", at: "start" }])])[0] ?? "")) throw new Error("no timing error");
+});
+test("overlays: two in one place at once, place/skin on the wrong kind and two tickers in a chapter are errors", () => {
+  const clash = overlayErrors([oFrame([{ kind: "lower-third", text: "Tòa nhà", at: "word:tòa-0.1" }, { kind: "ticker", text: "Tòa nhà", at: "word:nhà-0.1" }])]);
+  if (!clash.some((m) => /overlaps overlay 1 \(lower-third\) in the same place \(low\)/.test(m))) throw new Error(clash.join(" | "));
+  eq(overlayErrors([oFrame([{ kind: "note", place: "tl", skin: "bar", text: "Mở nguồn", at: "word:mở-0.1" }])]).length, 2);
+  const two = overlayErrors([oFrame([{ kind: "ticker", text: "Mở nguồn", at: "word:mở-0.1" }], 6), oFrame([{ kind: "ticker", text: "Mở nguồn", at: "word:mở-0.1" }], 7)]);
+  eq(two, ["chapter c1: 2 tickers (frames 6, 7), at most 1"]);
 });
 // five frames in two chapters, as readStoryboard gives them
 const tBoard = [1, 2, 3, 4, 5].map((no) => ({ no, bullets: { chapter: no < 4 ? "c1" : "c2", transition_in: "squeeze" } }));

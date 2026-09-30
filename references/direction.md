@@ -79,6 +79,22 @@ other frame `crossfade`; compile writes the result as `transition_in` in `STORYB
 Lint: the name must be one of these (or `cut`), the first frame takes none, and three boundaries in a row with the
 same type other than `crossfade` are an error. A strong transition marks a turn; repeated, it marks nothing.
 
+## Overlays
+
+A frame may carry up to 3 timed notes on the overlay layer, above its template:
+`"overlays": [ { "kind": "lower-third", "text": "Grok là một tòa nhà", "sub": "Hình dung", "at": "word:tòa-0.1",
+"until": "word:móng" } ]`. `until` defaults to the frame's end; a note shows for at least 1 s.
+
+- `lower-third`: who or what is on screen (a name, a product), left, just above the karaoke band. `skin`: `kicker`
+  (the default, `sub` above as a small caps line) or `bar` (a gold bar, `sub` under the text).
+- `callout`: one phrase to remember, in a corner: `place` `tr` (the default), `tl` or `mr`.
+- `note`: a side remark, a number to keep, on a paper card at the right.
+- `ticker`: a news line in a strip above the karaoke band; `sub` is its tag (Mới, Tin). At most one per chapter.
+
+Lint: `text` is words the voice says in that frame, shown near where it says them (1.2 s); `sub` may say more. Two
+notes in one place at once (a lower-third and a ticker share the strip above the band; a note and an `mr` callout
+share the right) are an error. Use them sparingly: a note covers part of the template, so check the snapshot.
+
 ## Self-review before handing over
 
 1. `node tools/compiler/lint.mjs --estimated` (before audio) or `node tools/compiler/lint.mjs` → `0 error(s)`.

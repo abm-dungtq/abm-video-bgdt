@@ -37,6 +37,9 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 - `rail` (optional) lights 2–4 pills across the top of the frame on their cues; keep that frame's content below y 140.
 - `transition` (optional) names the transition into the frame, e.g. `"whip-pan RIGHT"` ([direction.md](direction.md)
   § Transitions); compile writes it to `transition_in`.
+- `overlays` (optional, 1–3) are timed notes drawn on the overlay layer: `{ kind: lower-third|callout|note|ticker,
+  text≤60, sub?≤48, at, until?, place?: tl|tr|mr (callout), skin?: kicker|bar (lower-third) }`
+  ([direction.md](direction.md) § Overlays).
 
 ## Cues (frame-relative seconds from the aligned voice)
 

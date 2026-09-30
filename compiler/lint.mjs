@@ -31,6 +31,19 @@ export const TRANSITIONS = new Map((REGISTRY ? JSON.parse(readFileSync(REGISTRY,
 export const isDirected = (sc) => sc?.authoring === "director" || sc?.authoring === "claude";
 const r2 = (x) => Math.round(x * 100) / 100;
 
+// Overlays: timed notes on the overlay layer, above the frames (scripts/build-overlay.mjs draws them).
+export const OVERLAY_KINDS = ["lower-third", "callout", "note", "ticker"];
+const OVERLAY_SCHEMA = {
+  type: "array", minItems: 1, maxItems: 3, items: {
+    type: "object", required: ["kind", "text", "at"], additionalProperties: false,
+    properties: {
+      kind: { type: "string", enum: OVERLAY_KINDS }, text: { type: "string", minLength: 1, maxLength: 60 },
+      sub: { type: "string", minLength: 1, maxLength: 48 }, at: { type: "string" }, until: { type: "string" },
+      place: { type: "string", enum: ["tl", "tr", "mr"] }, skin: { type: "string", enum: ["kicker", "bar"] },
+    },
+  },
+};
+
 const SCENES_SCHEMA = {
   type: "object", required: ["version", "frames"],
   properties: {
@@ -43,7 +56,7 @@ const SCENES_SCHEMA = {
         rail: { type: ["object", "null"], required: ["slots", "at"], additionalProperties: false, properties: {
           slots: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", minLength: 1, maxLength: 18 } },
           at: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" } } } },
-        role: { type: "string" }, transition: { type: "string", minLength: 1 },
+        role: { type: "string" }, transition: { type: "string", minLength: 1 }, overlays: OVERLAY_SCHEMA,
         shots: { type: "array", minItems: 1, maxItems: 6, items: {
           type: "object", required: ["template", "window", "slots"], additionalProperties: false,
           properties: {
@@ -297,11 +310,74 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     const msg = `custom frames ${custom}/${out.length} = ${Math.round((100 * custom) / out.length)} % is above scenes.customBudget ${Math.round(budget * 100)} %`;
     (legacy ? warnings : errors).push(msg);
   }
+  const withOverlays = [];
+  for (const f of out) {
+    const spec = byNo.get(f.no);
+    if (!spec.overlays) continue;
+    try {
+      const ctx = f.ctx ?? frameCtx(f.no, script, audioMeta, f.duration, { estimated, timing: cfg.timing, rate });
+      withOverlays.push({ no: f.no, chapter: f.board.bullets.chapter, overlays: spec.overlays, ctx });
+    } catch (e) { errors.push(`frame ${f.no} overlays: ${e.message}`); }
+  }
+  errors.push(...overlayErrors(withOverlays, estimated));
   const into = transitionsIn(board, byNo, directed);
   for (const f of out) f.transition = into.get(f.no);
   errors.push(...transitionErrors(board, byNo, into, directed));
   const shots = out.reduce((n, f) => n + (f.shots?.length ?? 0), 0);
   return { frames: out, errors, warnings, stats: { frames: out.length, shots, custom }, scenes };
+}
+
+/** Where an overlay sits: a lower third and a ticker share the strip above the karaoke band. */
+export const overlayZone = (o) => (o.kind === "lower-third" || o.kind === "ticker" ? "low" : o.kind === "note" ? "mr" : o.place ?? "tr");
+
+/** The overlays of one frame with their frame-relative times a..b (until defaults to the frame's end). Throws on a bad cue. */
+export function resolveOverlays(list, ctx) {
+  return list.map((o, i) => {
+    const where = `overlay ${i + 1} (${o.kind})`;
+    let a, b;
+    try {
+      a = resolve(o.at, ctx, 0);
+      b = o.until ? resolve(o.until, ctx, 0) : r2(ctx.duration);
+    } catch (e) { throw new Error(`${where}: ${e.message}`); }
+    if (b - a < 1) throw new Error(`${where}: shows for ${r2(b - a)} s, at least 1 s`);
+    return { ...o, a, b, zone: overlayZone(o) };
+  });
+}
+
+/**
+ * Overlay errors, for [{ no, chapter, overlays, ctx }]: cues that do not resolve, place/skin on the wrong kind, text the
+ * voice never says in the frame (or, with an aligned voice, says more than SYNC_TOL_S from `at`; `sub` is exempt), two
+ * overlays in one zone at the same time, and more than one ticker in a chapter.
+ */
+export function overlayErrors(frames, estimated = false) {
+  const e = [];
+  const tickers = new Map();
+  for (const f of frames) {
+    const where = `frame ${f.no}`;
+    f.overlays.forEach((o, i) => {
+      if (o.place && o.kind !== "callout") e.push(`${where} overlay ${i + 1} (${o.kind}): "place" is for a callout only`);
+      if (o.skin && o.kind !== "lower-third") e.push(`${where} overlay ${i + 1} (${o.kind}): "skin" is for a lower-third only`);
+      if (o.kind === "ticker") tickers.set(f.chapter, [...(tickers.get(f.chapter) ?? []), f.no]);
+    });
+    let list;
+    try { list = resolveOverlays(f.overlays, f.ctx); } catch (err) { e.push(`${where} ${err.message}`); continue; }
+    const spokenAt = f.ctx.tokens.map((t, i) => [norm(t.display).replace(/(\d)\.(?=\d)/g, "$1"), f.ctx.times[i].start]);
+    list.forEach((o, i) => {
+      const at = `${where} overlay ${i + 1} (${o.kind})`;
+      const want = new Set(words(o.text));
+      const hits = spokenAt.filter(([w]) => want.has(w)).map(([, s]) => s);
+      if (!hits.length) e.push(`${at}: "${o.text.slice(0, 40)}" is never said in this frame: an overlay shows what the voice says (put the rest in "sub")`);
+      else if (!estimated) {
+        const near = hits.reduce((p, s) => (Math.abs(s - o.a) < Math.abs(p - o.a) ? s : p));
+        if (Math.abs(near - o.a) > SYNC_TOL_S) e.push(`${at}: shows at ${o.a} s, but its words are said at ${r2(near)} s: pin "at" to "word:<its word>-0.1"`);
+      }
+      for (const p of list.slice(0, i)) {
+        if (p.zone === o.zone && p.a < o.b && o.a < p.b) e.push(`${at}: overlaps overlay ${list.indexOf(p) + 1} (${p.kind}) in the same place (${o.zone}) from ${r2(Math.max(p.a, o.a))} s`);
+      }
+    });
+  }
+  for (const [ch, nos] of tickers) if (nos.length > 1) e.push(`chapter ${ch}: ${nos.length} tickers (frames ${nos.join(", ")}), at most 1`);
+  return e;
 }
 
 /**
