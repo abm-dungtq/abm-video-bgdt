@@ -20,7 +20,7 @@
     }
   },
   "reveals": {
-    "focus": { "default": "kw", "range": false },
+    "focus": { "default": "kw", "range": false, "code": true },
     "note": { "default": "spread", "range": false, "after": "focus" }
   },
   "duration": { "min": 3, "max": 10 }

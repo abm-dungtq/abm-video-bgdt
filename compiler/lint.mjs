@@ -6,9 +6,9 @@
 // Errors: scenes.json shape (C2), template/variant, slots against the template schema, cues that do not resolve,
 // shots that do not tile [0, duration] (±0.2 s) or break the template's duration range, custom share above
 // scenes.customBudget (legacy projects excepted), glyphs the fonts lack, and two consecutive shots (also across
-// frames) with the same template+variant or the same family. Voice sync (aligned voice only): a reveal whose words are
-// never said in the frame or are said more than SYNC_TOL_S away is an error under authoring "claude" when the time came
-// from a default, a warning when the author pinned it.
+// frames) with the same template+variant or the same family. In a directed lesson (authoring "director", or its older
+// name "claude"): every copy reveal is pinned to the voice (a word: or kw: cue), and, with an aligned voice, slot text
+// that is never said in the frame or is said more than SYNC_TOL_S away is an error (a warning elsewhere).
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
@@ -22,6 +22,8 @@ export const TEMPLATES = resolvePath(HERE, "../templates/scenes");
 // quiz needs all of its sentences, and cutting a 12 s frame in two leaves the hint shot with half of them.
 export const WHOLE_FRAME_MAX_S = 16;
 const TOL = 0.2;
+/** A directed lesson: the agent making the video writes scenes.json by hand (references/direction.md). */
+export const isDirected = (sc) => sc?.authoring === "director" || sc?.authoring === "claude";
 const r2 = (x) => Math.round(x * 100) / 100;
 
 const SCENES_SCHEMA = {
@@ -127,20 +129,35 @@ const words = (s) => norm(s).replace(/(\d)\.(?=\d)/g, "$1").split(/\s+/).filter(
 const textOf = (v) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : Array.isArray(v) ? v.map(textOf).join(" ")
   : v && typeof v === "object" ? Object.entries(v).filter(([k]) => k !== "icon" && k !== "kind").map(([, x]) => textOf(x)).join(" ") : "");
 
-/** [{ key, text, at, spoken, explicit }] for the reveals whose words are never said in the frame or land > SYNC_TOL_S away. */
-export function voiceSyncIssues(spec, times, ctx) {
-  const spokenAt = ctx.tokens.map((t, i) => [norm(t.display).replace(/(\d)\.(?=\d)/g, "$1"), ctx.times[i].start]);
+/** [{ key, text, at }] for the reveals that show copy: framing keys, indexes and empty text are left out. */
+export function copyReveals(spec, times) {
   const out = [];
   for (const [key, t] of Object.entries(times)) {
     if (FRAMING_KEYS.has(key.split(".")[0])) continue;
     const slot = key.split(".").reduce((v, k) => (v == null ? v : v[k]), spec.slots);
     if (typeof slot === "number" && key !== "value") continue; // an index (pick, hero, current), not copy
-    const text = textOf(slot), want = new Set(words(text));
-    if (!want.size) continue;
-    const at = Array.isArray(t) ? t[0] : t;
+    const text = textOf(slot);
+    if (words(text).length) out.push({ key, text, at: Array.isArray(t) ? t[0] : t });
+  }
+  return out;
+}
+
+/** A reveal cue tied to a spoken word: word:… or kw:… (a range starts with one). */
+export const pinnedToVoice = (cue) => typeof cue === "string" && /^(word|kw):/.test(cue);
+
+/**
+ * [{ key, text, at, spoken, explicit, code }] for the reveals whose words are never said in the frame or land > SYNC_TOL_S
+ * away. `code`: the template marks the key as code content (schema reveals "code": true), which the voice cannot read
+ * word for word.
+ */
+export function voiceSyncIssues(spec, times, ctx, schema = {}) {
+  const spokenAt = ctx.tokens.map((t, i) => [norm(t.display).replace(/(\d)\.(?=\d)/g, "$1"), ctx.times[i].start]);
+  const out = [];
+  for (const { key, text, at } of copyReveals(spec, times)) {
+    const want = new Set(words(text));
     const hits = spokenAt.filter(([w]) => want.has(w)).map(([, s]) => s);
     const spoken = hits.length ? hits.reduce((p, s) => (Math.abs(s - at) < Math.abs(p - at) ? s : p)) : null;
-    if (spoken == null || Math.abs(at - spoken) > SYNC_TOL_S) out.push({ key, text, at, spoken: spoken == null ? null : r2(spoken), explicit: !!spec.reveals?.[key] });
+    if (spoken == null || Math.abs(at - spoken) > SYNC_TOL_S) out.push({ key, text, at, spoken: spoken == null ? null : r2(spoken), explicit: !!spec.reveals?.[key], code: ruleFor(schema, key)?.code === true });
   }
   return out;
 }
@@ -160,6 +177,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
   const rate = existsSync(join(P, ".probe/rate.json")) ? read(".probe/rate.json").syllables_per_s : script.meta?.rate ?? 4.3;
   const glyphs = [...(cfg.guard?.missingGlyphs ?? "①②③✳✕✓→")];
   const types = new Set(cfg.scenes?.types ?? []);
+  const directed = isDirected(cfg.scenes) && !legacy;
 
   const scriptFrames = script.chapters.flatMap((c) => c.frames).length;
   if (scriptFrames !== board.length) {
@@ -224,11 +242,16 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       if (valid) {
         try { times = revealTimes(tpl.mod.revealKeys(s.slots, variant), tpl.schema, s, ctx, a, b); } catch (e) { errors.push(`${at}: ${e.message}`); }
       }
-      // under authoring claude a defaulted reveal that misses its words is an error; an explicit cue is the author's call
-      if (!estimated) for (const v of voiceSyncIssues(s, times, ctx)) {
-        const what = v.spoken == null ? "is never said in this frame" : `is said at ${v.spoken} s`;
-        const msg = `${at}: reveal ${v.key} "${v.text.slice(0, 40)}" at ${v.at} s ${what}: pin it with "reveals": { "${v.key}": "word:<its word>-0.1" } or change the copy to what the voice says`;
-        (cfg.scenes?.authoring === "claude" && !v.explicit && !legacy ? errors : warnings).push(msg);
+      // a directed lesson shows only what the voice says, when it says it: an unpinned reveal, copy the voice never
+      // says and copy said too far from its reveal are errors (warnings in other projects)
+      const strict = directed ? errors : warnings;
+      if (directed) for (const r of copyReveals(s, times)) {
+        if (!pinnedToVoice(s.reveals?.[r.key])) errors.push(`${at}: reveal ${r.key} "${r.text.slice(0, 40)}" is not pinned: add "reveals": { "${r.key}": "word:<its word>-0.1" }`);
+      }
+      if (!estimated) for (const v of voiceSyncIssues(s, times, ctx, tpl.schema)) {
+        // code the voice only talks about is still pinned and still reported, as a warning
+        if (v.spoken == null) (v.code ? warnings : strict).push(`${at}: slot text ${v.key} "${v.text.slice(0, 40)}" is never said in this frame: write only what the voice says`);
+        else strict.push(`${at}: reveal ${v.key} "${v.text.slice(0, 40)}" at ${v.at} s is said at ${v.spoken} s: pin it with "reveals": { "${v.key}": "word:<its word>-0.1" }`);
       }
       const firstKey = Math.min(...Object.values(times).map((v) => (Array.isArray(v) ? v[0] : v)));
       if (Number.isFinite(firstKey) && firstKey - a > 2.0) warnings.push(`${at}: the first reveal comes ${r2(firstKey - a)} s after the shot starts: move the window start nearer its first keyword`);
@@ -288,10 +311,10 @@ if (resolvePath(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
   process.exit(res.errors.length ? 1 : 0);
 }
 
-/** Under authoring "claude" every frame records its visual idea (references/direction.md). */
+/** In a directed lesson every frame records its visual idea (references/direction.md). */
 export function ideaErrors(frames, sc = {}) {
-  if (sc?.authoring !== "claude") return [];
-  return frames.filter((f) => !f.idea).map((f) => `frame ${f.frame}: needs "idea" (authoring claude, see references/direction.md)`);
+  if (!isDirected(sc)) return [];
+  return frames.filter((f) => !f.idea).map((f) => `frame ${f.frame}: needs "idea" (directed lesson, see references/direction.md)`);
 }
 
 /**
@@ -300,12 +323,13 @@ export function ideaErrors(frames, sc = {}) {
  * layouts bores the viewer even when no pair repeats back to back.
  * Under authoring "claude" (sc = cfg.scenes), at any length, title excluded: E3 a template is used more than
  * sc.maxUsesPerTemplate times · E4 a template comes back within sc.pairGap shots · E5 (sc.uniqueChapterOpeners) two
- * chapters open with the same template/variant · E6 a chapter has more than one accent shot (schema "accent": true).
+ * chapters open with the same template/variant · E6 a chapter has more than one accent shot (schema "accent": true) ·
+ * E7 a frame opens with a family that a shot of one of the two frames before it used (title and accent shots excluded).
  * `chapters` lists each chapter's frame numbers.
  */
 export function varietyErrors(flat, sc = {}, chapters = []) {
   const e = [];
-  if (sc?.authoring === "claude") e.push(...authoredErrors(flat, sc, chapters));
+  if (isDirected(sc)) e.push(...authoredErrors(flat, sc, chapters));
   const body = flat.filter((s) => s.family !== "title");
   if (body.length < 10) return e;
   const byFamily = new Map();
@@ -335,6 +359,14 @@ function authoredErrors(flat, sc, chapters) {
       if (back.some((x) => x.template === s.template)) e.push(`frame ${s.frame}: ${s.template} comes back within ${gap} shots (scenes.pairGap)`);
     });
   }
+  const frameNos = [...new Set(flat.map((s) => s.frame))];
+  frameNos.forEach((no, i) => {
+    const first = flat.find((s) => s.frame === no);
+    if (first.family === "title" || first.accent) return;
+    const near = frameNos.slice(Math.max(0, i - 2), i);
+    const hit = flat.find((s) => near.includes(s.frame) && s.family === first.family && !s.accent);
+    if (hit) e.push(`frame ${no}: opens with family "${first.family}", which frame ${hit.frame} just used: change the layout axis (references/direction.md)`);
+  });
   chapters.forEach((frames, ci) => {
     const n = flat.filter((s) => s.accent && frames.includes(s.frame)).length;
     if (n > 1) e.push(`chapter ${ci}: ${n} accent shots, at most 1`);

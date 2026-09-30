@@ -34,7 +34,7 @@
     }
   },
   "reveals": {
-    "steps.*": { "default": "kw", "range": false }
+    "steps.*": { "default": "kw", "range": false, "code": true }
   },
   "duration": { "min": 3, "max": 10 }
 }

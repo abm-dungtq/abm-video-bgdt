@@ -19,7 +19,7 @@
     }
   },
   "reveals": {
-    "lines": { "default": "kw", "range": true },
+    "lines": { "default": "kw", "range": true, "code": true },
     "note": { "default": "spread", "range": false, "after": "lines" }
   },
   "duration": { "min": 3, "max": 10 }

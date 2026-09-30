@@ -11,7 +11,7 @@ import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
 import { BUILD, fitOk, numbers, splitShots, withLabels } from "../compiler/solver.mjs";
-import { ideaErrors, varietyErrors } from "../compiler/lint.mjs";
+import { copyReveals, ideaErrors, pinnedToVoice, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -241,7 +241,7 @@ test("funnel: a stage over 999 999 drops the numbers, not the funnel", () => {
 const AUTH = { authoring: "claude", maxUsesPerTemplate: 2, pairGap: 6, uniqueChapterOpeners: true };
 const aShot = (frame, template, variant = "a") => ({ frame, template, variant, family: template });
 test("authored frame without idea is an error", () => {
-  eq(ideaErrors([{ frame: 1, idea: "a tower with one floor per service" }, { frame: 2 }], AUTH), ['frame 2: needs "idea" (authoring claude, see references/direction.md)']);
+  eq(ideaErrors([{ frame: 1, idea: "a tower with one floor per service" }, { frame: 2 }], AUTH), ['frame 2: needs "idea" (directed lesson, see references/direction.md)']);
   eq(ideaErrors([{ frame: 2 }], {}), []);
 });
 test("authored: a template over maxUsesPerTemplate is an error", () => {
@@ -262,5 +262,24 @@ test("authored: two chapters opening alike is an error", () => {
   eq(varietyErrors(flat, {}, [[1, 2], [3, 4]]), []);
 });
 
+test("authored: a frame opening with a family one of the two frames before used is an error", () => {
+  const flat = [aShot(1, "hub"), aShot(2, "cards"), { ...aShot(3, "hub-ring"), family: "hub" }, aShot(4, "flow"), aShot(5, "split"), { ...aShot(6, "hub-ring"), family: "hub" }];
+  eq(varietyErrors(flat, { ...AUTH, pairGap: 0 }), ["frame 3: opens with family \"hub\", which frame 1 just used: change the layout axis (references/direction.md)"]);
+});
+
+// directed lesson: copy on screen is what the voice says, pinned to it (Hermes frame 8: “vòng lặp” at 2.06 s)
+test("voice sync: slot text never said in the frame is reported", () => {
+  const spec = { slots: { heading: "Sáu bước", items: ["6 PHÚT", "vòng lặp"] } };
+  eq(voiceSyncIssues(spec, { heading: 0.3, "items.0": 2.0, "items.1": 2.0 }, ctx).map((v) => [v.key, v.spoken]), [["items.0", null]]);
+});
+test("copy reveals skip framing keys and indexes; pins are word: or kw: cues", () => {
+  eq(copyReveals({ slots: { heading: "Tiêu đề", pick: 1, items: ["vòng lặp"] } }, { heading: 0.3, pick: 1, "items.0": 2 }).map((r) => r.key), ["items.0"]);
+  eq(["word:vòng-0.1", "kw:suy..kw:hành", "start+0.3", undefined].map(pinnedToVoice), [true, true, false, false]);
+});
+
+test("voice sync: code content the voice never reads is marked code (a warning, not an error)", () => {
+  const schema = { reveals: { lines: { default: "kw", range: true, code: true } } };
+  eq(voiceSyncIssues({ slots: { lines: "npm run build" } }, { lines: [2, 4] }, ctx, schema).map((v) => [v.key, v.spoken, v.code]), [["lines", null, true]]);
+});
 console.log(ok === n ? `compiler-tests ok (${ok}/${n})` : `compiler-tests FAILED (${ok}/${n})`);
 process.exit(ok === n ? 0 : 1);

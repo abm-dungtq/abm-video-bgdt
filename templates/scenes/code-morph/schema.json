@@ -24,7 +24,7 @@
     }
   },
   "reveals": {
-    "after": { "default": "kw", "range": false },
+    "after": { "default": "kw", "range": false, "code": true },
     "note": { "default": "spread", "range": false, "after": "after" }
   },
   "duration": { "min": 3, "max": 10 }

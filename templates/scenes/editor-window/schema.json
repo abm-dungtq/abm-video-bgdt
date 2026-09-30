@@ -30,7 +30,7 @@
     }
   },
   "reveals": {
-    "code": { "default": "kw", "range": true },
+    "code": { "default": "kw", "range": true, "code": true },
     "run": { "default": "kw", "range": false, "after": "code" }
   },
   "duration": { "min": 4, "max": 10 }

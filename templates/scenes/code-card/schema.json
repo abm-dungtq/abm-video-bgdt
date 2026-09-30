@@ -22,7 +22,7 @@
   },
   "reveals": {
     "caption": { "default": "spread", "range": false },
-    "focus": { "default": "kw", "range": false }
+    "focus": { "default": "kw", "range": false, "code": true }
   },
   "duration": { "min": 3, "max": 10 }
 }

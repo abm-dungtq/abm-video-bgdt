@@ -25,8 +25,8 @@
     }
   },
   "reveals": {
-    "del": { "default": "kw", "range": false },
-    "add": { "default": "kw", "range": false, "after": "del" },
+    "del": { "default": "kw", "range": false, "code": true },
+    "add": { "default": "kw", "range": false, "after": "del", "code": true },
     "note": { "default": "spread", "range": false }
   },
   "duration": { "min": 3, "max": 10 }
