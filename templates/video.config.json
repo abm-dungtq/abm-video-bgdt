@@ -23,6 +23,11 @@
     "tail": 0.7,
     "pad": 0.08
   },
+  "depth": {
+    "factsPerChapter": 2,
+    "examplePerChapter": true,
+    "maxListRun": 3
+  },
   "budget": {
     "targetS": [
       570,

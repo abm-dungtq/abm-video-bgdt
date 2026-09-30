@@ -33,6 +33,13 @@ const slug = (s) =>
 const syllables = (sentence) =>
   sentence.tokens.reduce((n, t) => n + t.spoken.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length, 0);
 const displayText = (sentence) => sentence.tokens.map((t) => t.display).join(" ");
+const EXAMPLE_HINTS = new Set(["card-case", "card-antipattern", "myth-fact"]);
+const EXAMPLE_WORDS = /(^|[\s,.:;])(ví dụ|chẳng hạn|giả sử|thử hình dung|hãy tưởng tượng)/iu;
+// a list sentence: three or more comma/semicolon parts, at least three of them four words or shorter
+const isListSentence = (text) => {
+  const parts = text.split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+  return parts.length >= 3 && parts.filter((x) => x.split(/\s+/).length <= 4).length >= 3;
+};
 const spokenText = (sentence) => sentence.tokens.map((t) => t.spoken).join(" ");
 
 const frames = script.chapters.flatMap((ch, ci) =>
@@ -90,6 +97,28 @@ if (frames.length < FRAMES_RANGE[0] || frames.length > FRAMES_RANGE[1])
   errors.push(`frames=${frames.length} outside ${FRAMES_RANGE.join("–")}`);
 if (totalEst < TARGET_S[0] || totalEst > TARGET_S[1])
   errors.push(`estimated duration ${totalEst.toFixed(1)}s outside ${TARGET_S.join("–")}s`);
+
+// depth (video.config.json `depth`, in projects made from 1.0.0 on). Content chapters (all but the first and the last
+// when there are three or more) cite facts and show an example; a run of short list sentences reads like a slide.
+if (cfg.depth) {
+  const { factsPerChapter = 0, examplePerChapter = false, maxListRun = 0 } = cfg.depth;
+  const content = script.chapters.length >= 3 ? script.chapters.slice(1, -1) : script.chapters;
+  for (const ch of content) {
+    const sents = ch.frames.flatMap((f) => f.sentences ?? []);
+    const facts = new Set(sents.flatMap((s) => s.facts ?? [])).size;
+    if (facts < factsPerChapter) errors.push(`chapter ${ch.id}: cites ${facts} fact(s), at least ${factsPerChapter} ({F-..} in script.src.txt)`);
+    const example = ch.frames.some((f) => f.role === "case" || EXAMPLE_HINTS.has(f.scene_hint))
+      || sents.some((s) => EXAMPLE_WORDS.test(displayText(s)));
+    if (examplePerChapter && !example) errors.push(`chapter ${ch.id}: no example: give a frame "### case", a case/antipattern/myth-fact scene hint, or a sentence starting "Ví dụ", "Chẳng hạn", "Giả sử"`);
+  }
+  if (maxListRun) {
+    let run = [];
+    for (const s of frames.flatMap((f) => f.sentences ?? [])) {
+      run = isListSentence(displayText(s)) ? [...run, s.id] : [];
+      if (run.length === maxListRun + 1) errors.push(`${run[0]}…${s.id}: more than ${maxListRun} list sentences in a row: turn one into an example or a comparison`);
+    }
+  }
+}
 
 if (mode === "check") {
   for (const e of errors) console.error(`✗ ${e}`);
