@@ -11,6 +11,7 @@
     "properties": {
       "image": {
         "type": "string",
+        "copy": false,
         "description": "a screenshot under assets/screens/ (16:9), or \"placeholder\" for a neutral mock browser window",
         "pattern": "^(placeholder|assets/screens/[A-Za-z0-9._/-]+\\.(png|jpg|jpeg|webp))$"
       },

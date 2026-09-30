@@ -144,18 +144,32 @@ const FRAMING_KEYS = new Set(["heading", "title", "kicker", "subtitle", "app", "
 const STOP = new Set(("của và cho một là có các những trong với từ để thì mà rồi này đó nó bạn ra lên vào được cũng như khi nếu "
   + "đã sẽ không chỉ còn đều hay hoặc ở trên dưới qua lại mình ai gì nào").split(" "));
 const words = (s) => norm(s).replace(/(\d)\.(?=\d)/g, "$1").split(/\s+/).filter((w) => w && !STOP.has(w));
-const textOf = (v) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : Array.isArray(v) ? v.map(textOf).join(" ")
-  : v && typeof v === "object" ? Object.entries(v).filter(([k]) => k !== "icon" && k !== "kind").map(([, x]) => textOf(x)).join(" ") : "");
+// The copy leaves of a slot value, walking its schema: a value the schema limits to an enum (a region code, a kind), a
+// property marked "copy": false (an icon name, an image path) and the icon/kind keys are identifiers, not copy.
+function copyLeaves(node, v) {
+  if (node?.enum || node?.copy === false) return [];
+  if (typeof v === "string") return [v];
+  if (typeof v === "number") return [String(v)];
+  if (Array.isArray(v)) return v.flatMap((x) => copyLeaves(node?.items, x));
+  if (v && typeof v === "object") return Object.entries(v).filter(([k]) => k !== "icon" && k !== "kind").flatMap(([k, x]) => copyLeaves(node?.properties?.[k], x));
+  return [];
+}
+const slotSchema = (schema, key) => key.split(".").reduce((n, k) => (n == null ? n : /^\d+$/.test(k) ? n.items : n.properties?.[k]), schema?.slots);
 
-/** [{ key, text, at }] for the reveals that show copy: framing keys, indexes and empty text are left out. */
-export function copyReveals(spec, times) {
+/**
+ * [{ key, text, leaves, at, transient }] for the reveals that show copy: framing keys, indexes, identifiers and empty text
+ * are left out. `transient`: the template takes this copy off the stage before the shot ends by design (schema reveals
+ * "transient": true: a card flipped away, a milestone passed, a line scrolled out).
+ */
+export function copyReveals(spec, times, schema = {}) {
   const out = [];
   for (const [key, t] of Object.entries(times)) {
     if (FRAMING_KEYS.has(key.split(".")[0])) continue;
     const slot = key.split(".").reduce((v, k) => (v == null ? v : v[k]), spec.slots);
     if (typeof slot === "number" && key !== "value") continue; // an index (pick, hero, current), not copy
-    const text = textOf(slot);
-    if (words(text).length) out.push({ key, text, at: Array.isArray(t) ? t[0] : t });
+    const leaves = copyLeaves(slotSchema(schema, key), slot);
+    const text = leaves.join(" ");
+    if (words(text).length) out.push({ key, text, leaves, at: Array.isArray(t) ? t[0] : t, transient: ruleFor(schema, key)?.transient === true });
   }
   return out;
 }
@@ -171,7 +185,7 @@ export const pinnedToVoice = (cue) => typeof cue === "string" && /^(word|kw):/.t
 export function voiceSyncIssues(spec, times, ctx, schema = {}) {
   const spokenAt = ctx.tokens.map((t, i) => [norm(t.display).replace(/(\d)\.(?=\d)/g, "$1"), ctx.times[i].start]);
   const out = [];
-  for (const { key, text, at } of copyReveals(spec, times)) {
+  for (const { key, text, at } of copyReveals(spec, times, schema)) {
     const want = new Set(words(text));
     const hits = spokenAt.filter(([w]) => want.has(w)).map(([, s]) => s);
     const spoken = hits.length ? hits.reduce((p, s) => (Math.abs(s - at) < Math.abs(p - at) ? s : p)) : null;
@@ -263,7 +277,7 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
       // a directed lesson shows only what the voice says, when it says it: an unpinned reveal, copy the voice never
       // says and copy said too far from its reveal are errors (warnings in other projects)
       const strict = directed ? errors : warnings;
-      if (directed) for (const r of copyReveals(s, times)) {
+      if (directed) for (const r of copyReveals(s, times, tpl.schema)) {
         if (!pinnedToVoice(s.reveals?.[r.key])) errors.push(`${at}: reveal ${r.key} "${r.text.slice(0, 40)}" is not pinned: add "reveals": { "${r.key}": "word:<its word>-0.1" }`);
       }
       if (!estimated) for (const v of voiceSyncIssues(s, times, ctx, tpl.schema)) {

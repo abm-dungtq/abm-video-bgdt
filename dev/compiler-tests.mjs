@@ -328,6 +328,14 @@ test("copy reveals skip framing keys and indexes; pins are word: or kw: cues", (
   eq(["word:vòng-0.1", "kw:suy..kw:hành", "start+0.3", undefined].map(pinnedToVoice), [true, true, false, false]);
 });
 
+test("copy reveals leave out identifiers (enum, copy: false) and flag transient copy", () => {
+  eq(copyReveals({ slots: { pictos: ["folder", "book"], labels: ["Hồ sơ"] } }, { "pictos.0": 1, "pictos.1": 2 }, schemaOf("pictogram-scene")), []);
+  eq(copyReveals({ slots: { image: "placeholder" } }, { image: 1 }, schemaOf("screen")), []);
+  eq(copyReveals({ slots: { regions: [{ region: "vn", label: "Việt Nam" }] } }, { "regions.0": 1 }, schemaOf("world-map")).map((r) => r.text), ["Việt Nam"]);
+  eq(copyReveals({ slots: { question: "Vì sao AI trả lời sai?" } }, { question: 1 }, schemaOf("question-hook")).map((r) => r.key), ["question"]);
+  eq(copyReveals({ slots: { wrong: "Viết giúp tôi", right: "Viết 3 đoạn" } }, { wrong: 1, right: 2 }, schemaOf("card-antipattern")).map((r) => [r.key, r.transient]), [["wrong", true], ["right", false]]);
+});
+
 test("voice sync: code content the voice never reads is marked code (a warning, not an error)", () => {
   const schema = { reveals: { lines: { default: "kw", range: true, code: true } } };
   eq(voiceSyncIssues({ slots: { lines: "npm run build" } }, { lines: [2, 4] }, ctx, schema).map((v) => [v.key, v.spoken, v.code]), [["lines", null, true]]);
