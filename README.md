@@ -30,21 +30,24 @@ Hình được dựng bằng [HyperFrames](https://hyperframes.heygen.com) (HTML
   - lint cảnh báo khi hình lặp lại.
 - **Chuẩn DNA BGĐT** (Hook → Core → Case → Action), với 6 thẻ sư phạm: Mục tiêu chương, Nguyên lý cốt lõi, Cách sai · Cách đúng,
   Tình huống, Bài tập nhanh 5 phút, Câu hỏi tình huống.
-- **4 cổng duyệt của người dùng:** phát âm và nhịp đọc, kịch bản (trước khi tạo giọng), kiểu karaoke, bản nháp (trước bản cuối).
+- **4 cổng duyệt:** người dùng duyệt cổng 1 (phát âm và nhịp đọc) và cổng 4 (bản nháp). Trong bài có đạo diễn, agent tự duyệt
+  cổng 2 (kịch bản và `scenes.json`) và cổng 3 (karaoke), và chỉ được duyệt khi mọi bước kiểm tự động của cổng đều đạt.
+- **Một agent làm trọn video:** [`references/autonomous-run.md`](references/autonomous-run.md) là bảng 18 bước. Mỗi bước ghi
+  lệnh, điều kiện xong và cách xử lý khi hỏng, để một agent (Claude Code, Antigravity…) tự làm từ chủ đề đến bản nháp.
 - **Giao hàng đúng chuẩn:** 1920×1080, −16 LUFS, file `chapters.txt` cho YouTube/LMS, bản 720p gửi điện thoại, báo cáo QA.
 - **Theme ABM tùy chọn** (Navy #030548, vàng cam #F9B508, Montserrat) và bước dọn file trung gian sau khi giao.
 
 ## Cách hoạt động
 
 Skill là một dây chuyền sản xuất, không phải một bản hướng dẫn: CLI `abm-video` giữ trạng thái từng giai đoạn và các cổng
-duyệt, còn khung hình được **biên dịch** từ thư viện 64 template cảnh (158 biến thể; 8 template nhấn 3D/showcase chuyển từ registry HyperFrames), không phải do model tự viết HTML.
+duyệt, còn khung hình được **biên dịch** từ thư viện 73 template cảnh (176 biến thể; 10 template nhấn chuyển từ registry HyperFrames), không phải do model tự viết HTML.
 
 ```mermaid
 flowchart LR
   A[script.src.txt<br/>kịch bản + fact sheet] -->|Gate 2| B[TTS theo lô<br/>API VieNeu]
   B --> C[trim + ghép theo khung<br/>MMS_FA căn từng từ]
   C --> D[audio_meta.json]
-  D --> E[Claude đạo diễn<br/>scenes.json]
+  D --> E[agent đạo diễn<br/>scenes.json]
   E --> F[trình biên dịch template<br/>emitter luật 0.7.99]
   D --> G[karaoke 162 px<br/>+ overlay chương]
   F --> H[assemble + transitions<br/>lint · check]
@@ -52,7 +55,14 @@ flowchart LR
   H -->|Gate 4| I[render → ghép giọng gốc<br/>−16 LUFS → MP4]
 ```
 
-- **Model chỉ viết:** fact sheet, kịch bản (giữ nguyên từ tiếng Anh), và `scenes.json`: điều phối viên (Claude) chọn ý tưởng hình và template cho từng khung theo [`references/direction.md`](references/direction.md), worker chỉ chạy các giai đoạn. Tối đa 15 % khung được tự dựng tay (`custom`).
+- **Model chỉ viết:** fact sheet, kịch bản (giữ nguyên từ tiếng Anh) và `scenes.json`. Trong `scenes.json`, đạo diễn (agent
+  làm video) chọn cho từng khung ý tưởng hình, template, chuyển cảnh và chú thích trên lớp phủ, theo
+  [`references/direction.md`](references/direction.md). Tối đa 15 % khung được tự dựng tay (`custom`).
+- **Máy kiểm thay mắt người:**
+  - lint bắt chữ trên hình phải khớp lời đọc và bắt hình phải đa dạng;
+  - `visible-check` xác nhận mọi chữ thật sự hiện trên màn hình. Chữ rời hình theo thiết kế (`transient` trong schema)
+    được kiểm ngay sau lúc nó xuất hiện; mã icon, đường dẫn ảnh và mã vùng không bị coi là chữ;
+  - `blank-check` bắt những đoạn sân khấu trống.
 - **Script làm phần còn lại:** giọng đọc, căn thời gian, chọn template và điền nội dung, karaoke, ghép, render, QA, dọn dẹp.
 - **Cổng duyệt gắn với file:** câu trả lời của người dùng được ghi bằng `abm-video gate`; file đổi sau khi duyệt thì cổng
   mất hiệu lực và giai đoạn sau từ chối chạy.
@@ -119,9 +129,9 @@ node tools/bin/abm-video.mjs next                trong dự án
 |---|---|---|
 | 0 | `doctor`, `init` | kiểm máy (`doctor --fix` tự cài skill HeyGen thiếu); tạo dự án, `--theme abm-brand` nếu cần |
 | 1 | `probe` | thử giọng; **Gate 1**: phát âm thuật ngữ, nhịp đọc |
-| 2 | `script` | fact sheet `[F-NN]`, `script.src.txt`; **Gate 2**: duyệt kịch bản |
+| 2 | `script` | fact sheet `[F-NN]`, `script.src.txt` (viết cùng skill viet-pro), rồi `scenes.json`; **Gate 2**: kịch bản và cảnh |
 | 3 | `tts`, `voice` | TTS theo lô qua API, căn thời gian từng từ, `audio_meta.json` |
-| 4 | `storyboard`, `compile` | Claude viết `scenes.json` (dự án cũ: solver); biên dịch mọi khung từ template, lint + snapshot |
+| 4 | `storyboard`, `compile` | biên dịch mọi khung từ template theo `scenes.json` (dự án cũ: solver), lint + snapshot |
 | 5 | `karaoke` | phụ đề karaoke; **Gate 3**: xem thử karaoke |
 | 6 | `assemble`, `draft` | ghép, lint/check; bản nháp, đo độ khớp; **Gate 4**: duyệt nháp |
 | 7 | `final`, `clean` | render cuối, −16 LUFS; dọn khoảng 400 MB file trung gian vào Thùng rác |
@@ -153,13 +163,37 @@ dev/                     kiểm tra hồi quy, test lint, dựng thư viện m�
 ## Phát triển skill
 
 ```bash
-node dev/run-lint-tests.mjs                                   # lint-tests ok (2/2)
+node dev/compiler-tests.mjs                                   # compiler-tests ok
+node dev/cli-tests.mjs                                        # cli-tests ok
+node dev/run-lint-tests.mjs                                   # lint-tests ok
+node dev/template-ci.mjs [--only a,b]                         # mọi template × biến thể: lint, check, chữ hiện, ảnh xem trước
 node dev/regression-check.mjs --baseline v0.4.0 <dự-án>…      # đầu ra phải giống từng byte bản mốc
 node dev/build-examples.mjs <dự-án>…                          # dựng lại examples/
 ```
 
 Mỗi thay đổi ở `scripts/` phải qua `regression-check` trên các dự án đã giao. Muốn nâng bản HyperFrames đang ghim, trước hết
 cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates/worker-kit/worker-delta-<pin>.md.tmpl` cho bản đó.
+
+## Thay đổi ở 1.0.0
+
+- **Agent tự làm trọn video:**
+  - chế độ `authoring: "director"` trở thành mặc định;
+  - có `references/autonomous-run.md`;
+  - agent tự duyệt cổng 2 và 3 bằng `gate <n> --check` và `--approve --by agent`;
+  - kịch bản được viết cùng skill viet-pro, và cổng 2 đòi file audit `script.viet-pro.md` gắn với đúng bản kịch bản.
+- **Máy kiểm chặt hơn:**
+  - chữ trên hình phải được đọc và hiện đúng lúc đọc;
+  - kịch bản phải có đủ độ sâu (số liệu, ví dụ, câu liệt kê);
+  - `visible-check.mjs` kiểm mọi chữ trên hình;
+  - ngưỡng trong `video.config.json` không được nới lỏng hơn mặc định của skill.
+- **9 template mới:**
+  - chat với trợ lý AI, câu trả lời có trích nguồn, tin nhắn;
+  - thông báo (một cái hoặc xếp chồng), widget kính;
+  - luồng dọc, `opener-shard` và `code-hero` (hai template accent).
+- **Chuyển cảnh:** bộ chèn chuyển cảnh được đưa hẳn vào skill. Có 5 kiểu mới (`whip-pan`, `flash-white`, `blur-slide`,
+  `zoom-out`, `elastic-push`), và đạo diễn chọn kiểu cho từng khung.
+- **Lớp phủ:** có thêm lower-third, callout, ghi chú và ticker, hẹn giờ theo lời đọc.
+- **Template CI:** chạy theo lô 18 khung, nên không còn lỗi `check_runtime_failure` do trang tải quá lâu.
 
 ## Giới hạn đã biết
 
@@ -181,9 +215,12 @@ cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates
 - a CLI (`bin/abm-video.mjs`) with recorded state runs every stage; the agent loops on `abm-video next`;
 - narration from VieNeu-TTS through its HTTP API in batches (an MCP server is included for trying voices);
 - word-by-word karaoke captions aligned with MMS_FA;
-- HyperFrames frames compiled from 64 scene templates (158 variants, 8 of them 3D/showcase accents ported from the HyperFrames registry) through a `scenes.json` the coordinator directs, not hand-written HTML.
+- HyperFrames frames compiled from 73 scene templates (176 variants, 10 accents ported from the HyperFrames registry) through a
+  `scenes.json` the directing agent writes, with per-frame transitions and timed overlays, not hand-written HTML;
+- one agent can make a whole video alone (`references/autonomous-run.md`): it approves the script and karaoke gates itself
+  once their automated checks pass, and the user approves pronunciation and the draft.
 
-It adds four human review gates bound to file hashes, the DNA BGĐT lesson structure, lint for variety and timing, an
+It adds four review gates bound to file hashes, the DNA BGĐT lesson structure, lint for variety and timing, an
 optional ABM brand theme, regression tests, and an example library of 142 real frames with previews. Setup for Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, OpenCode and Windsurf/Devin on Windows, macOS and
 Linux is in [SETUP.md](SETUP.md) (in Vietnamese; commands and config snippets are universal). No machine-specific paths:
 scripts discover the HeyGen skills and a `VieNeu-TTS/` folder, or read `VIENEU_TTS_DIR` / `HF_SKILLS_DIR`.
