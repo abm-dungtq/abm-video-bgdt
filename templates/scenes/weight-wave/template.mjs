@@ -46,7 +46,7 @@ export function render(ctx) {
   const wordsHtml = text.split(" ").map((word, wi, all) => {
     const cs = [...word].map((c) => {
       const i = idx++;
-      return `<span class="${S}-ch" id="${S}-c${i}"><span class="${S}-lt" id="${S}-l${i}">${esc(c)}</span><span class="${S}-bd${focusSet.has(i) ? ` ${S}-fo` : ""}" id="${S}-b${i}" data-layout-allow-overlap data-layout-allow-occlusion data-layout-allow-overflow>${esc(c)}</span></span>`;
+      return `<span class="${S}-ch" id="${S}-c${i}"><span class="${S}-lt" id="${S}-l${i}">${esc(c)}</span><span class="${S}-bd${focusSet.has(i) ? ` ${S}-fo` : ""}" id="${S}-b${i}" aria-hidden="true" data-layout-allow-overlap data-layout-allow-occlusion data-layout-allow-overflow>${esc(c)}</span></span>`;
     }).join("");
     const sp = wi < all.length - 1 ? (() => { const i = idx++; return `<span class="${S}-ch ${S}-sp" id="${S}-c${i}"> </span>`; })() : "";
     return `<span class="${S}-wd">${cs}</span>${sp}`;

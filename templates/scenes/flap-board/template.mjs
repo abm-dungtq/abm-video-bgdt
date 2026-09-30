@@ -53,10 +53,12 @@ export function render(ctx) {
   }));
 
   const glyph = (g, top) => `<span class="${S}-g" style="top: ${top}px">${g === " " ? "" : esc(g)}</span>`;
+  // only the settled top half carries the text; passing letters and bottom halves are drawing (visible-check reads the rest)
+  const hide = (j, n, top) => (top && j === n - 1 ? "" : ' aria-hidden="true"');
   const cellHtml = (seq, r, c) => {
     const id = `${S}-c${r}x${c}`;
-    const halves = seq.map((g, j) => `<div class="${S}-h ${S}-top" id="${id}t${j}" style="z-index: ${20 - j}">${glyph(g, 0)}</div>`
-      + `<div class="${S}-h ${S}-bot" id="${id}b${j}" style="z-index: ${j + 1}">${glyph(g, -hh)}</div>`).join("");
+    const halves = seq.map((g, j) => `<div class="${S}-h ${S}-top" id="${id}t${j}" style="z-index: ${20 - j}"${hide(j, seq.length, true)}>${glyph(g, 0)}</div>`
+      + `<div class="${S}-h ${S}-bot" id="${id}b${j}" style="z-index: ${j + 1}"${hide(j, seq.length, false)}>${glyph(g, -hh)}</div>`).join("");
     return `<div class="${S}-cell" style="left: ${c * (cw + GAP)}px" data-layout-allow-overlap data-layout-allow-occlusion data-layout-allow-overflow>${halves}<div class="${S}-seam"></div></div>`;
   };
   const rowHtml = (r) => `    <div class="${S}-row" id="${S}-r${r}" style="top: ${padV + r * (ch + RG)}px">
