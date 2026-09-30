@@ -32,7 +32,7 @@
   },
   "reveals": {
     "title": { "default": "spread", "range": false },
-    "milestones.*": { "default": "kw", "range": false }
+    "milestones.*": { "default": "kw", "range": false, "transient": true }
   },
   "duration": { "min": 2.5, "max": 10 }
 }

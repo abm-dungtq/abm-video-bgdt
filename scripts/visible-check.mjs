@@ -3,7 +3,10 @@
 // template frame it seeks the frame's own timeline near the end of the shot and checks, in the real browser, that every
 // slot text the voice pins is present, visible (opacity product ≥ 0.3, so a dimmed side still
 // reads; not display:none), inside the canvas, above the
-// karaoke band (bottom 15 %) and not cut by an overflow:hidden box.
+// karaoke band (bottom 15 %) and not cut by an overflow:hidden box (unless the box declares data-layout-allow-overflow,
+// a tile that shows one slice of a big word). Copy the schema marks "transient" in its reveals (a card flipped away, a
+// milestone passed, a line scrolled out) is checked 0.7 s after its cue, before the next cue, not at the end.
+// Identifiers are not copy: a value the schema limits to an enum, or a property marked "copy": false.
 //
 //   node tools/visible-check.mjs [frame numbers…]
 //
@@ -36,11 +39,7 @@ const cfg = JSON.parse(readFileSync(join(P, "video.config.json"), "utf8"));
 const res = await analyze({ P, cfg, variety: false });
 if (!res.frames.length) fail(`lint could not resolve the frames: ${res.errors.slice(0, 3).join(" | ")}`);
 
-// the string leaves of a slot value: each must show somewhere on screen
-const leaves = (v) => (typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(leaves)
-  : v && typeof v === "object" ? Object.entries(v).filter(([k]) => k !== "icon" && k !== "kind").flatMap(([, x]) => leaves(x)) : []);
-const slotAt = (slots, key) => key.split(".").reduce((v, k) => (v == null ? v : v[k]), slots);
-
+const r2 = (x) => Math.round(x * 100) / 100;
 const jobs = [];
 let customSkipped = 0;
 for (const f of res.frames) {
@@ -49,12 +48,29 @@ for (const f of res.frames) {
   const src = f.board.bullets.src;
   if (!src || !existsSync(join(P, src))) fail(`frame ${f.no}: ${src ?? "no src"} is not compiled yet (run the storyboard stage)`);
   f.shots.forEach((s, k) => {
-    const copy = copyReveals(s.spec, s.times);
+    // each copy leaf (identifiers left out by the schema) must show somewhere on screen: lasting copy at the end of the
+    // shot, transient copy (schema reveals "transient": true) 0.7 s after its cue, before the next cue takes the stage
+    const copy = copyReveals(s.spec, s.times, s.schema);
     if (!copy.length) return;
-    const last = Math.max(...copy.map((r) => r.at));
-    const t = Math.min(s.b - 0.1, Math.max(s.a + 0.85 * (s.b - s.a), last + 0.7));
-    const texts = copy.flatMap((r) => leaves(slotAt(s.spec.slots, r.key)).filter((x) => /\p{L}/u.test(x)).map((x) => ({ key: r.key, text: x })));
-    jobs.push({ frame: f.no, shot: k + 1, template: s.spec.template, src, id: src.split("/").pop().replace(/\.html$/, ""), t: Math.round(t * 100) / 100, texts });
+    const lasting = copy.filter((r) => !r.transient);
+    const cues = [...new Set(Object.values(s.times).map((v) => (Array.isArray(v) ? v[0] : v)))].sort((x, y) => x - y);
+    const at = new Map();
+    const add = (t, r) => {
+      t = r2(t);
+      if (!at.has(t)) at.set(t, []);
+      at.get(t).push(...r.leaves.filter((x) => /\p{L}/u.test(x)).map((x) => ({ key: r.key, text: x })));
+    };
+    if (lasting.length) {
+      const last = Math.max(...lasting.map((r) => r.at));
+      const t = Math.min(s.b - 0.1, Math.max(s.a + 0.85 * (s.b - s.a), last + 0.7));
+      for (const r of lasting) add(t, r);
+    }
+    for (const r of copy.filter((x) => x.transient)) {
+      const next = cues.find((c) => c > r.at + 0.05) ?? Infinity;
+      add(Math.min(r.at + 0.7, next - 0.05, s.b - 0.1), r);
+    }
+    const id = src.split("/").pop().replace(/\.html$/, "");
+    for (const [t, texts] of [...at].sort((x, y) => x[0] - y[0])) if (texts.length) jobs.push({ frame: f.no, shot: k + 1, template: s.spec.template, src, id, t, texts });
   });
 }
 if (!jobs.length) fail("no template shot with copy to check");
@@ -179,6 +195,8 @@ async function probe({ id, t, texts, karaokeTop, w, h }) {
     for (let n = e.parentElement; n && n !== document.body; n = n.parentElement) {
       const cs = getComputedStyle(n);
       if (cs.overflow === "visible" && cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      // a box the template declares clipping on purpose (a tile that shows one slice of a big word)
+      if (n.hasAttribute("data-layout-allow-overflow")) continue;
       const b = n.getBoundingClientRect();
       if (r.left < b.left - 2 || r.top < b.top - 2 || r.right > b.right + 2 || r.bottom > b.bottom + 2) return `cut by ${n.id ? `#${n.id}` : n.className || n.tagName}`;
     }

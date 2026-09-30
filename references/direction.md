@@ -101,4 +101,6 @@ share the right) are an error. Use them sparingly: a note covers part of the tem
    Read the warnings too: a V1 pair repeat or a chapter with no signature shot is worth fixing.
 2. Read every `idea` in order, as a list. If two in a row say the same thing in different words, change one.
 3. After compile, `node tools/visible-check.mjs` → `visible-check ok`: every slot is on screen, readable and above
-   the karaoke band at the end of its shot. Gate 3 runs it too.
+   the karaoke band at the end of its shot. Some copy leaves the stage by design (a card flipped away, a milestone
+   passed, a line scrolled out; the schema marks it `transient`). That copy is checked 0.7 s after its cue instead.
+   Identifiers such as an icon name, an image path or a region code are not checked. Gate 3 runs it too.

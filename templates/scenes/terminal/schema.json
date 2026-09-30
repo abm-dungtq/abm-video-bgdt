@@ -24,7 +24,7 @@
     }
   },
   "reveals": {
-    "lines.*": { "default": "spread", "range": false, "code": true }
+    "lines.*": { "default": "spread", "range": false, "code": true, "transient": true }
   },
   "duration": { "min": 3, "max": 12 }
 }

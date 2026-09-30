@@ -29,7 +29,7 @@
   },
   "reveals": {
     "label": { "default": "spread", "range": false },
-    "wrong": { "default": "kw", "range": false },
+    "wrong": { "default": "kw", "range": false, "transient": true },
     "right": { "default": "kw", "range": false, "after": "wrong" }
   },
   "duration": { "min": 4, "max": 10 }
