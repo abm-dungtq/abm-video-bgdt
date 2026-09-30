@@ -10,9 +10,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { cfg } from "./lib/config.mjs";
 import { isVietnamese } from "./lib/spoken.mjs";
+import { transitionsByName } from "./transitions/lib/transition-registry.mjs";
 
 const SCENE_TYPES = new Set(cfg.scenes.types);
-const TRANSITIONS = new Set(["cut", "crossfade", "blur-crossfade", "push-slide", "zoom-through", "squeeze"]);
+const TRANSITIONS = new Set(["cut", ...transitionsByName().keys()]);
 // Pause layout (video.config.json `timing`, shared with tools/build-voice.py).
 const { lead: LEAD_S, titleLead: TITLE_LEAD_S, gap: GAP_S, tail: TAIL_S, pad: PAD_S } = cfg.timing;
 const TARGET_S = cfg.budget.targetS;

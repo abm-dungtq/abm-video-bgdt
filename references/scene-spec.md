@@ -35,6 +35,8 @@ again. Everything below is checked by `node tools/compiler/lint.mjs` (it runs in
 - Icons: `person people doc docs folder card-stack terminal cloud server key lock shield target timer question check
   cross arrow spark chat mail calendar chart gear plug book lightbulb rocket globe image briefcase`.
 - `rail` (optional) lights 2–4 pills across the top of the frame on their cues; keep that frame's content below y 140.
+- `transition` (optional) names the transition into the frame, e.g. `"whip-pan RIGHT"` ([direction.md](direction.md)
+  § Transitions); compile writes it to `transition_in`.
 
 ## Cues (frame-relative seconds from the aligned voice)
 

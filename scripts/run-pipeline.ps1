@@ -71,9 +71,9 @@ Step karaoke {
 }
 Step assemble {
   node "$SK/assemble-index.mjs" --storyboard ./STORYBOARD.md --hyperframes .
-  node "$SK/transitions.mjs" inject --storyboard ./STORYBOARD.md --hyperframes .
+  node tools/transitions/transitions.mjs inject --storyboard ./STORYBOARD.md --hyperframes .
   node tools/inject-overlay.mjs
-  node "$SK/transitions.mjs" verify --storyboard ./STORYBOARD.md --index ./index.html
+  node tools/transitions/transitions.mjs verify --storyboard ./STORYBOARD.md --index ./index.html
 }
 Step check {
   npx -y $HF lint

@@ -11,7 +11,7 @@ import { frameCtx, resolve, resolveRange } from "../compiler/cues.mjs";
 import { emit } from "../compiler/emitter-0.7.99.mjs";
 import { compose } from "../compiler/compose.mjs";
 import { BUILD, fitOk, numbers, splitShots, withLabels } from "../compiler/solver.mjs";
-import { copyReveals, ideaErrors, pinnedToVoice, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
+import { copyReveals, ideaErrors, pinnedToVoice, transitionErrors, transitionsIn, TRANSITIONS, varietyErrors, voiceSyncIssues } from "../compiler/lint.mjs";
 import { isVietnamese, readNumeric } from "../scripts/lib/spoken.mjs";
 
 const argv = process.argv.slice(2);
@@ -245,6 +245,30 @@ test("authored frame without idea is an error", () => {
   eq(ideaErrors([{ frame: 2 }], { authoring: "director" }), ['frame 2: needs "idea" (directed lesson, see references/direction.md)']);
   eq(ideaErrors([{ frame: 2 }], { authoring: "solver" }), []);
   eq(ideaErrors([{ frame: 2 }], {}), []);
+});
+// five frames in two chapters, as readStoryboard gives them
+const tBoard = [1, 2, 3, 4, 5].map((no) => ({ no, bullets: { chapter: no < 4 ? "c1" : "c2", transition_in: "squeeze" } }));
+const tBy = (o) => new Map([1, 2, 3, 4, 5].map((no) => [no, { frame: no, ...(o[no] ? { transition: o[no] } : {}) }]));
+test("transitions: a directed lesson defaults to cut, crossfade and blur-crossfade at a chapter's first frame", () => {
+  eq([...transitionsIn(tBoard, tBy({ 3: "whip-pan RIGHT" }), true).values()], ["cut", "crossfade", "whip-pan RIGHT", "blur-crossfade", "crossfade"]);
+  eq([...transitionsIn(tBoard, tBy({ 3: "zoom-out" }), false).values()], ["squeeze", "squeeze", "zoom-out", "squeeze", "squeeze"]);
+});
+test("transitions: every new registry type is known", () => {
+  for (const t of ["whip-pan", "flash-white", "blur-slide", "zoom-out", "elastic-push"]) if (!TRANSITIONS.has(t)) throw new Error(`${t} missing`);
+});
+test("transitions: unknown names, bad directions and a transition into frame 1 are errors", () => {
+  const by = tBy({ 1: "crossfade", 2: "wipe", 3: "push-slide SIDEWAYS", 4: "elastic-push RIGHT 0.8s" });
+  eq(transitionErrors(tBoard, by, transitionsIn(tBoard, by, true), true).map((m) => m.split(" — ")[0].split(" (")[0]), [
+    'frame 1: transition "crossfade"', 'frame 2: unknown transition "wipe"', 'frame 3: transition push-slide has no direction "SIDEWAYS"']);
+});
+test("transitions: three strong transitions in a row are an error in a directed lesson only", () => {
+  const by = tBy({ 2: "flash-white", 3: "flash-white", 4: "flash-white", 5: "flash-white" });
+  const msg = (d) => transitionErrors(tBoard, by, transitionsIn(tBoard, by, d), d);
+  eq(msg(true).length, 1);
+  if (!/^frames 2–4: three transitions in a row are flash-white/.test(msg(true)[0])) throw new Error(msg(true)[0]);
+  eq(msg(false), []);
+  const calm = tBy({ 2: "crossfade", 3: "crossfade", 4: "crossfade" });
+  eq(transitionErrors(tBoard, calm, transitionsIn(tBoard, calm, true), true), []);
 });
 test("authored: a template over maxUsesPerTemplate is an error", () => {
   const flat = ["stat", "cards", "hub", "flow", "split", "zoom", "stat", "table", "kinetic", "layers", "matrix", "funnel", "stat"].map((t, i) => aShot(i + 1, t));

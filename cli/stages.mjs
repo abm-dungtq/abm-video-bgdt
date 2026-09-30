@@ -191,9 +191,9 @@ export const STAGES = [
     inputs: ["STORYBOARD.md", "compositions/frames", "compositions/captions.html", "compositions/overlay.html"],
     run: (c) => seq(
       () => sh(c.P, [process.execPath, `${c.SK}/assemble-index.mjs`, "--storyboard", "./STORYBOARD.md", "--hyperframes", "."]),
-      () => sh(c.P, [process.execPath, `${c.SK}/transitions.mjs`, "inject", "--storyboard", "./STORYBOARD.md", "--hyperframes", "."]),
+      () => sh(c.P, [process.execPath, tool(c, "transitions/transitions.mjs"), "inject", "--storyboard", "./STORYBOARD.md", "--hyperframes", "."]),
       () => sh(c.P, [process.execPath, tool(c, "inject-overlay.mjs")]),
-      () => sh(c.P, [process.execPath, `${c.SK}/transitions.mjs`, "verify", "--storyboard", "./STORYBOARD.md", "--index", "./index.html"]),
+      () => sh(c.P, [process.execPath, tool(c, "transitions/transitions.mjs"), "verify", "--storyboard", "./STORYBOARD.md", "--index", "./index.html"]),
       () => sh(c.P, ["npx", "-y", c.HF, "lint"]),
       () => sh(c.P, [process.execPath, tool(c, "privacy-check.mjs")]),
       () => {

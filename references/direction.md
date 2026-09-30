@@ -65,6 +65,20 @@ Accent templates (`opener-*`, `accent-*`; 3D and showcase blocks ported from the
 Use them only to open the video or a chapter, for the climax of a chapter, or to close the lesson, and at most once
 per chapter. They may last up to 12 s, so give them a frame long enough, and never two accents in a row.
 
+## Transitions
+
+A frame may name the transition into it: `"transition": "<name> [direction] [seconds]"`, e.g. `"whip-pan RIGHT"` or
+`"flash-white 0.7s"`. Without it, the first frame cuts in, a chapter's first frame gets `blur-crossfade` and every
+other frame `crossfade`; compile writes the result as `transition_in` in `STORYBOARD.md`.
+
+- **Calm, the default:** `crossfade`, `blur-crossfade`. Most boundaries stay here; the voice carries the lesson.
+- **Medium, for a change of subject inside a chapter:** `push-slide` (LEFT, RIGHT, UP, DOWN), `elastic-push` (LEFT,
+  RIGHT), `blur-slide`, `squeeze`, `zoom-out` (back to the big picture).
+- **Strong, for a chapter's opening or its climax:** `whip-pan` (LEFT, RIGHT), `flash-white`, `zoom-through`.
+
+Lint: the name must be one of these (or `cut`), the first frame takes none, and three boundaries in a row with the
+same type other than `crossfade` are an error. A strong transition marks a turn; repeated, it marks nothing.
+
 ## Self-review before handing over
 
 1. `node tools/compiler/lint.mjs --estimated` (before audio) or `node tools/compiler/lint.mjs` → `0 error(s)`.

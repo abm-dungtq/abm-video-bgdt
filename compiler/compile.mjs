@@ -132,6 +132,8 @@ export async function compile({ P, cfg, estimated = false, only = null, legacy =
     });
     written++;
   }
+  // custom frames too: the transition into a frame belongs to the boundary, not to the frame's own HTML
+  for (const f of res.frames) if (f.transition) md = setBullets(md, f.no, { transition_in: f.transition });
   writeFileSync(join(P, "STORYBOARD.md"), md);
   for (const w of res.warnings) console.log(`⚠ ${w}`);
   console.log(`compile: ${written} frames written, ${skipped} custom skipped${changed.length ? ` (changed: ${changed.join(",")})` : ""}`);

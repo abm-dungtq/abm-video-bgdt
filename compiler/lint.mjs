@@ -9,6 +9,7 @@
 // frames) with the same template+variant or the same family. In a directed lesson (authoring "director", or its older
 // name "claude"): every copy reveal is pinned to the voice (a word: or kw: cue), and, with an aligned voice, slot text
 // that is never said in the frame or is said more than SYNC_TOL_S away is an error (a warning elsewhere).
+// A frame's "transition" must name a registry type (transitionErrors); compile writes it as transition_in.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
@@ -22,6 +23,10 @@ export const TEMPLATES = resolvePath(HERE, "../templates/scenes");
 // quiz needs all of its sentences, and cutting a 12 s frame in two leaves the hint shot with half of them.
 export const WHOLE_FRAME_MAX_S = 16;
 const TOL = 0.2;
+// The transition registry sits next to the compiler in a project (tools/transitions) and under scripts/ in the skill.
+const REGISTRY = [resolvePath(HERE, "../transitions/lib/transitions.json"), resolvePath(HERE, "../scripts/transitions/lib/transitions.json")]
+  .find((p) => existsSync(p));
+export const TRANSITIONS = new Map((REGISTRY ? JSON.parse(readFileSync(REGISTRY, "utf8")).transitions : []).map((t) => [t.name, t]));
 /** A directed lesson: the agent making the video writes scenes.json by hand (references/direction.md). */
 export const isDirected = (sc) => sc?.authoring === "director" || sc?.authoring === "claude";
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -38,7 +43,7 @@ const SCENES_SCHEMA = {
         rail: { type: ["object", "null"], required: ["slots", "at"], additionalProperties: false, properties: {
           slots: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", minLength: 1, maxLength: 18 } },
           at: { type: "array", minItems: 2, maxItems: 4, items: { type: "string" } } } },
-        role: { type: "string" },
+        role: { type: "string" }, transition: { type: "string", minLength: 1 },
         shots: { type: "array", minItems: 1, maxItems: 6, items: {
           type: "object", required: ["template", "window", "slots"], additionalProperties: false,
           properties: {
@@ -292,8 +297,55 @@ export async function analyze({ P, cfg, estimated = false, legacy = false, varie
     const msg = `custom frames ${custom}/${out.length} = ${Math.round((100 * custom) / out.length)} % is above scenes.customBudget ${Math.round(budget * 100)} %`;
     (legacy ? warnings : errors).push(msg);
   }
+  const into = transitionsIn(board, byNo, directed);
+  for (const f of out) f.transition = into.get(f.no);
+  errors.push(...transitionErrors(board, byNo, into, directed));
   const shots = out.reduce((n, f) => n + (f.shots?.length ?? 0), 0);
   return { frames: out, errors, warnings, stats: { frames: out.length, shots, custom }, scenes };
+}
+
+/**
+ * The transition_in of every frame: the frame's "transition" in scenes.json, else (directed lesson) a cut into frame 1,
+ * blur-crossfade into a chapter's first frame and crossfade elsewhere, else (older projects) what STORYBOARD.md has.
+ */
+export function transitionsIn(board, byNo, directed) {
+  const m = new Map();
+  board.forEach((bf, i) => {
+    const own = byNo.get(bf.no)?.transition;
+    const fallback = !directed ? bf.bullets.transition_in
+      : i === 0 ? "cut" : bf.bullets.chapter !== board[i - 1].bullets.chapter ? "blur-crossfade" : "crossfade";
+    if (own ?? fallback) m.set(bf.no, own ?? fallback);
+  });
+  return m;
+}
+
+/**
+ * A frame's "transition" is `<name> [direction] [seconds]` with a name from tools/transitions/lib/transitions.json (or
+ * cut). Frame 1 has nothing before it. In a directed lesson three boundaries in a row with the same type, crossfade
+ * excepted, are an error: a strong transition marks a turn, and repeated it marks nothing.
+ */
+export function transitionErrors(board, byNo, into, directed) {
+  const e = [];
+  for (const [i, bf] of board.entries()) {
+    const t = byNo.get(bf.no)?.transition;
+    if (t === undefined) continue;
+    const [name, ...rest] = t.trim().split(/\s+/);
+    const rec = TRANSITIONS.get(name);
+    if (i === 0 && name !== "cut") e.push(`frame ${bf.no}: transition "${t}" — the first frame has no frame before it; use cut or leave it out`);
+    if (name !== "cut" && !rec) { e.push(`frame ${bf.no}: unknown transition "${name}" (known: cut, ${[...TRANSITIONS.keys()].join(", ")})`); continue; }
+    for (const p of rest) {
+      if (/^\d+(\.\d+)?s?$/.test(p)) continue;
+      if (!rec?.directions?.includes(p.toUpperCase())) e.push(`frame ${bf.no}: transition ${name} has no direction "${p}"${rec?.directions?.length ? ` (${rec.directions.join(", ")})` : ""}`);
+    }
+  }
+  if (!directed) return e;
+  const types = board.slice(1).map((bf) => [bf.no, (into.get(bf.no) ?? "cut").split(/\s+/)[0]]);
+  for (let i = 2; i < types.length; i++) {
+    const [a, b, c] = [types[i - 2], types[i - 1], types[i]];
+    if (a[1] !== "crossfade" && a[1] === b[1] && b[1] === c[1] && (i === 2 || types[i - 3][1] !== a[1]))
+      e.push(`frames ${a[0]}–${c[0]}: three transitions in a row are ${a[1]} — keep strong transitions for turns (references/direction.md § Transitions)`);
+  }
+  return e;
 }
 
 export function report({ errors, warnings, stats }) {

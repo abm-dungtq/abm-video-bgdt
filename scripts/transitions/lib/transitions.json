@@ -1,0 +1,150 @@
+{
+  "_comment": "Vendored transition registry for the product-launch workflow — the curated Tier-B subset (transform/opacity/filter on the two frame clip wrappers #el-<id>, no overlay DOM, no per-frame cooperation). Each type carries its GSAP template; the transitions.mjs injector stamps it onto window.__timelines[\"main\"]. Recipes originate from the shared catalog skills/hyperframes-animation/transitions/ (css-*.md) — keep in step if those change. Token placeholders the injector substitutes: __OLD__ (#el-<from>), __NEW__ (#el-<to>), __T__ (overlap-start s), __DUR__ (this boundary's duration), __DX__/__DXIN__ (horizontal travel + incoming offset), __DY__/__DYIN__ (vertical). abm-video-bgdt adds whip-pan, flash-white, blur-slide, zoom-out and elastic-push (2026-09-30), written from the HyperFrames registry blocks whip-pan-cut, transitions-light (overexposure burn), transitions-blur (directional blur), transitions-scale (zoom out) and transitions-push (elastic push); same rule: transform, opacity and filter on the two wrappers only. Templates may use JS arithmetic on the tokens (__DUR__ * 0.5).",
+  "transitions": [
+    {
+      "name": "crossfade",
+      "energy": "any",
+      "default_duration_s": 0.5,
+      "directions": [],
+      "source": "css-dissolve.md",
+      "gsap_template": [
+        "tl.to(__OLD__, { opacity: 0, duration: __DUR__, ease: \"power2.inOut\" }, __T__);",
+        "tl.fromTo(__NEW__, { opacity: 0 }, { opacity: 1, duration: __DUR__, ease: \"power2.inOut\" }, __T__);"
+      ]
+    },
+    {
+      "name": "blur-crossfade",
+      "energy": "calm",
+      "default_duration_s": 0.6,
+      "directions": [],
+      "source": "css-dissolve.md",
+      "note": "Default when the two frames' #root backgrounds differ a lot — the blur masks the background-color clash a plain crossfade would expose.",
+      "gsap_template": [
+        "tl.to(__OLD__, { filter: \"blur(10px)\", scale: 1.03, opacity: 0, duration: __DUR__, ease: \"power2.inOut\" }, __T__);",
+        "tl.fromTo(__NEW__, { filter: \"blur(10px)\", scale: 0.97, opacity: 0 }, { filter: \"blur(0px)\", scale: 1, opacity: 1, duration: __DUR__, ease: \"power2.inOut\" }, __T__);"
+      ]
+    },
+    {
+      "name": "push-slide",
+      "energy": "medium",
+      "default_duration_s": 0.5,
+      "directions": [
+        "LEFT",
+        "RIGHT",
+        "UP",
+        "DOWN"
+      ],
+      "default_direction": "LEFT",
+      "source": "css-push.md",
+      "note": "Directional. The injector picks __DX__/__DY__ from the direction and emits the horizontal OR vertical pair (not both).",
+      "gsap_template_horizontal": [
+        "tl.to(__OLD__, { x: __DX__, duration: __DUR__, ease: \"power3.inOut\" }, __T__);",
+        "tl.fromTo(__NEW__, { x: __DXIN__, opacity: 1 }, { x: 0, opacity: 1, duration: __DUR__, ease: \"power3.inOut\" }, __T__);"
+      ],
+      "gsap_template_vertical": [
+        "tl.to(__OLD__, { y: __DY__, duration: __DUR__, ease: \"power3.inOut\" }, __T__);",
+        "tl.fromTo(__NEW__, { y: __DYIN__, opacity: 1 }, { y: 0, opacity: 1, duration: __DUR__, ease: \"power3.inOut\" }, __T__);"
+      ]
+    },
+    {
+      "name": "zoom-through",
+      "energy": "high",
+      "default_duration_s": 0.4,
+      "directions": [],
+      "source": "css-scale.md",
+      "gsap_template": [
+        "tl.to(__OLD__, { scale: 2.5, opacity: 0, filter: \"blur(8px)\", duration: __DUR__, ease: \"power3.in\" }, __T__);",
+        "tl.fromTo(__NEW__, { scale: 0.5, opacity: 0, filter: \"blur(8px)\" }, { scale: 1, opacity: 1, filter: \"blur(0px)\", duration: __DUR__, ease: \"power3.out\" }, __T__);"
+      ]
+    },
+    {
+      "name": "squeeze",
+      "energy": "medium",
+      "default_duration_s": 0.4,
+      "directions": [],
+      "source": "css-push.md",
+      "note": "Old compresses to a vertical line on the left edge; new expands from the right edge. Incoming starts off (scaleX 0) so its higher-track stacking is harmless.",
+      "gsap_template": [
+        "tl.to(__OLD__, { scaleX: 0, transformOrigin: \"left center\", duration: __DUR__, ease: \"power3.inOut\" }, __T__);",
+        "tl.fromTo(__NEW__, { scaleX: 0, transformOrigin: \"right center\", opacity: 1 }, { scaleX: 1, transformOrigin: \"right center\", opacity: 1, duration: __DUR__, ease: \"power3.inOut\" }, __T__);"
+      ]
+    },
+    {
+      "name": "whip-pan",
+      "energy": "high",
+      "default_duration_s": 0.35,
+      "directions": [
+        "LEFT",
+        "RIGHT"
+      ],
+      "default_direction": "LEFT",
+      "source": "registry whip-pan-cut",
+      "note": "A fast camera whip: both frames travel the full width with a motion blur that peaks mid-way. Horizontal only.",
+      "gsap_template_horizontal": [
+        "tl.to(__OLD__, { x: __DX__, duration: __DUR__, ease: \"power3.inOut\" }, __T__);",
+        "tl.to(__OLD__, { filter: \"blur(16px)\", duration: __DUR__ / 2, ease: \"power3.in\" }, __T__);",
+        "tl.fromTo(__NEW__, { x: __DXIN__, opacity: 1, filter: \"blur(16px)\" }, { x: 0, opacity: 1, duration: __DUR__, ease: \"power3.inOut\" }, __T__);",
+        "tl.to(__NEW__, { filter: \"blur(0px)\", duration: __DUR__ / 2, ease: \"power3.out\" }, __T__ + __DUR__ / 2);"
+      ]
+    },
+    {
+      "name": "flash-white",
+      "energy": "high",
+      "default_duration_s": 0.6,
+      "directions": [],
+      "source": "registry transitions-light (overexposure burn)",
+      "note": "The outgoing frame burns out to white (brightness), the incoming one comes back from white. No overlay: the white is the frames' own brightness, desaturated. Every filter tween names its start: from \"none\" GSAP would pass through brightness(0), a black flash.",
+      "gsap_template": [
+        "tl.fromTo(__OLD__, { filter: \"brightness(1) saturate(1)\", scale: 1 }, { filter: \"brightness(8) saturate(0.3)\", scale: 1.05, duration: __DUR__ * 0.5, ease: \"power2.in\" }, __T__);",
+        "tl.to(__OLD__, { opacity: 0, duration: __DUR__ * 0.1, ease: \"none\" }, __T__ + __DUR__ * 0.45);",
+        "tl.fromTo(__NEW__, { filter: \"brightness(8) saturate(0.3)\", opacity: 0 }, { filter: \"brightness(8) saturate(0.3)\", opacity: 1, duration: __DUR__ * 0.1, ease: \"none\" }, __T__ + __DUR__ * 0.45);",
+        "tl.to(__NEW__, { filter: \"brightness(1) saturate(1)\", duration: __DUR__ * 0.45, ease: \"power2.out\" }, __T__ + __DUR__ * 0.55);"
+      ]
+    },
+    {
+      "name": "blur-slide",
+      "energy": "medium",
+      "default_duration_s": 0.45,
+      "directions": [],
+      "source": "registry transitions-blur (directional blur)",
+      "note": "A short sideways slip with blur and skew: lighter than push-slide, livelier than blur-crossfade.",
+      "gsap_template": [
+        "tl.to(__OLD__, { filter: \"blur(12px)\", skewX: -8, x: -200, opacity: 0, duration: __DUR__, ease: \"power3.in\" }, __T__);",
+        "tl.fromTo(__NEW__, { filter: \"blur(12px)\", skewX: 8, x: 200, opacity: 0 }, { filter: \"blur(0px)\", skewX: 0, x: 0, opacity: 1, duration: __DUR__, ease: \"power3.out\" }, __T__ + __DUR__ * 0.3);"
+      ]
+    },
+    {
+      "name": "zoom-out",
+      "energy": "medium",
+      "default_duration_s": 0.5,
+      "directions": [],
+      "source": "registry transitions-scale (zoom out)",
+      "note": "The outgoing frame shrinks away while the incoming one settles from slightly large: a step back to the big picture.",
+      "gsap_template": [
+        "tl.to(__OLD__, { scale: 0.4, opacity: 0, duration: __DUR__ * 0.8, ease: \"power3.in\" }, __T__);",
+        "tl.fromTo(__NEW__, { scale: 1.12, opacity: 0 }, { scale: 1, opacity: 1, duration: __DUR__, ease: \"power2.out\" }, __T__);"
+      ]
+    },
+    {
+      "name": "elastic-push",
+      "energy": "medium",
+      "default_duration_s": 0.75,
+      "directions": [
+        "LEFT",
+        "RIGHT"
+      ],
+      "default_direction": "LEFT",
+      "source": "registry transitions-push (elastic push)",
+      "note": "push-slide whose incoming frame lands short, swings past and settles. Horizontal only.",
+      "gsap_template_horizontal": [
+        "tl.to(__OLD__, { x: __DX__, duration: __DUR__ * 0.67, ease: \"power3.in\" }, __T__);",
+        "tl.fromTo(__NEW__, { x: __DXIN__, opacity: 1 }, { x: Math.sign(__DXIN__) * 30, opacity: 1, duration: __DUR__ * 0.53, ease: \"power4.out\" }, __T__ + __DUR__ * 0.13);",
+        "tl.to(__NEW__, { x: Math.sign(__DXIN__) * -15, duration: __DUR__ * 0.2, ease: \"sine.inOut\" }, __T__ + __DUR__ * 0.67);",
+        "tl.to(__NEW__, { x: 0, duration: __DUR__ * 0.13, ease: \"sine.out\" }, __T__ + __DUR__ * 0.87);"
+      ]
+    }
+  ],
+  "default_high_energy": "zoom-through",
+  "default_calm": "blur-crossfade",
+  "max_duration_s": 2
+}
