@@ -177,6 +177,13 @@ node dev/build-examples.mjs <dự-án>…                          # dựng lạ
 Mỗi thay đổi ở `scripts/` phải qua `regression-check` trên các dự án đã giao. Muốn nâng bản HyperFrames đang ghim, trước hết
 cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates/worker-kit/worker-delta-<pin>.md.tmpl` cho bản đó.
 
+## Thay đổi ở 1.0.2
+
+- viet-pro thành phần bắt buộc của môi trường: `doctor` báo lỗi khi thiếu, nên `abm-video init` không tạo dự án. Trình cài
+  có bước `vietpro` (clone `viet-pro-codex`, liên kết cạnh skill và vào thư mục skill của từng agent).
+- `setup/AGENT-SETUP.md` là hướng dẫn cho agent ở môi trường khác: cài đủ abm-video-bgdt, viet-pro, HyperFrames và VieNeu-TTS,
+  kiểm bằng `doctor`, rồi mới làm video.
+
 ## Thay đổi ở 1.0.1
 
 Rút từ video thử do một agent làm trọn:
