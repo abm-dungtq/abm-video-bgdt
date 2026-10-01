@@ -4,7 +4,7 @@
 //   node setup/setup.mjs                         plan, ask, then run every step
 //   node setup/setup.mjs --yes                   run without asking (agents: only after the user agreed)
 //   node setup/setup.mjs --dry-run               print the plan and the commands, change nothing
-//   node setup/setup.mjs --only vieneu           run one step: link | hyperframes | vieneu | mcp
+//   node setup/setup.mjs --only vieneu           run one step: link | hyperframes | vietpro | vieneu | mcp
 //   node setup/setup.mjs --skip hyperframes      skip steps (comma-separated)
 //   node setup/setup.mjs --vieneu-dir <path>     use or clone VieNeu-TTS there (default: found, else ~/VieNeu-TTS)
 //   node setup/setup.mjs --profile cpu           force a VieNeu profile: auto | cuda | cpu | mps (default auto)
@@ -13,17 +13,20 @@
 // Steps
 //   link         link this skill into the skill folders of the agents found (Claude Code, Codex; ~/.agents/skills)
 //   hyperframes  install the full HeyGen HyperFrames skill set: npx -y hyperframes@0.7.99 skills
+//   vietpro      clone the viet-pro skill (github.com/abm-dungtq/viet-pro-codex) to ~/.agents/viet-pro-codex if it is
+//                not installed, and link it next to this skill and into the same agent skill folders
 //   vieneu       clone VieNeu-TTS if needed, install the profile that fits the hardware (setup/hardware.mjs),
 //                add torchaudio 2.8 + uroman for word alignment, write the machine profile
 //   mcp          register the vieneu-tts MCP server with every agent found (setup/register-mcp.mjs)
 // Then setup/doctor.mjs checks the result.
 
-import { existsSync, lstatSync, mkdirSync, symlinkSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, realpathSync, symlinkSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import { VIET_PRO } from "../cli/paths.mjs";
 import { findVieneuDir, PROFILE_PATH, writeProfile } from "../scripts/lib/machine.mjs";
 import { detect, recipe } from "./hardware.mjs";
 import { registerMcp } from "./register-mcp.mjs";
@@ -36,7 +39,7 @@ const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(n);
 const opt = (n, d) => (flag(n) ? argv[argv.indexOf(n) + 1] : d);
 const DRY = flag("--dry-run");
-const ALL = ["link", "hyperframes", "vieneu", "mcp"];
+const ALL = ["link", "hyperframes", "vietpro", "vieneu", "mcp"];
 const only = opt("--only");
 const skip = (opt("--skip", "") || "").split(",").filter(Boolean);
 const steps = (only ? only.split(",") : ALL).filter((s) => !skip.includes(s));
@@ -87,32 +90,53 @@ if (!DRY && !flag("--yes")) {
 }
 
 // ── link ──────────────────────────────────────────────────────────────────────
-if (steps.includes("link")) {
-  console.log("\n== link the skill into agent skill folders");
+function skillRoots() {
   const targets = [join(H, ".agents/skills")];
   if (has("claude") || existsSync(join(H, ".claude"))) targets.push(join(H, ".claude/skills"));
   if (has("codex") || existsSync(join(H, ".codex"))) targets.push(join(H, ".codex/skills"));
   // Gemini CLI reads ~/.gemini/skills; the Antigravity CLI (agy) reads ~/.gemini/antigravity/skills
   if (has("gemini") || existsSync(join(H, ".gemini"))) targets.push(join(H, ".gemini/skills"));
   if (has("agy") || existsSync(join(H, ".gemini/antigravity"))) targets.push(join(H, ".gemini/antigravity/skills"));
-  for (const root of targets) {
-    const dest = join(root, basename(SKILL));
-    if (resolve(dest) === SKILL) { console.log(`  ${dest}: this is the skill itself`); continue; }
+  return targets;
+}
+/** Link src as root/<name> in every root, leaving what is already there. */
+function linkInto(roots, src, name) {
+  for (const root of roots) {
+    const dest = join(root, name);
+    if (resolve(dest) === resolve(src)) { console.log(`  ${dest}: this is the skill itself`); continue; }
     let present = false;
     try { lstatSync(dest); present = true; } catch { /* absent */ }
     if (present) { console.log(`  ${dest}: already present`); continue; }
-    console.log(`  link ${dest} → ${SKILL}`);
+    console.log(`  link ${dest} → ${src}`);
     if (!DRY) {
       mkdirSync(root, { recursive: true });
-      symlinkSync(SKILL, dest, win ? "junction" : "dir");
+      symlinkSync(src, dest, win ? "junction" : "dir");
     }
   }
+}
+if (steps.includes("link")) {
+  console.log("\n== link the skill into agent skill folders");
+  linkInto(skillRoots(), SKILL, basename(SKILL));
 }
 
 // ── hyperframes ───────────────────────────────────────────────────────────────
 if (steps.includes("hyperframes")) {
   console.log("\n== HyperFrames skills (full published set)");
   run("npx", ["-y", "hyperframes@0.7.99", "skills"]);
+}
+
+// ── vietpro ───────────────────────────────────────────────────────────────────
+// gate 2 needs viet-pro next to this skill (cli/paths.mjs VIET_PRO); agents load it by name from their skill folders
+if (steps.includes("vietpro")) {
+  console.log("\n== viet-pro skill");
+  let src = VIET_PRO;
+  if (!existsSync(join(src, "SKILL.md"))) {
+    const repo = join(H, ".agents/viet-pro-codex");
+    if (!existsSync(join(repo, "skills/viet-pro/SKILL.md"))) run("git", ["clone", "https://github.com/abm-dungtq/viet-pro-codex.git", repo]);
+    src = join(repo, "skills/viet-pro");
+    if (!process.env.VIET_PRO_DIR) linkInto([dirname(SKILL)], src, "viet-pro");
+  } else console.log(`  ${src}: present`);
+  linkInto(skillRoots(), DRY && !existsSync(src) ? src : realpathSync(src), "viet-pro");
 }
 
 // ── vieneu ────────────────────────────────────────────────────────────────────

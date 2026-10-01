@@ -6,12 +6,16 @@
 //   node setup/doctor.mjs --fix     when the HeyGen faceless-explainer scripts are missing or broken, install them
 //                                   (hyperframes skills update faceless-explainer, at the pinned CLI) and check again
 //
+// Required: the base tools, the HyperFrames skills, the viet-pro skill (it writes and audits every script; gate 2 needs
+// it) and VieNeu-TTS with its alignment env. No lesson starts before doctor passes: abm-video next asks for it first.
+//
 // Exit 1 when a required item fails (✗). Warnings (⚠) do not fail: the speech API may simply not be running yet.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { VIET_PRO } from "../cli/paths.mjs";
 import { findSkillsDir, findVieneuDir, PROFILE_PATH, readProfile } from "../scripts/lib/machine.mjs";
 import { detect } from "./hardware.mjs";
 import { registerMcp } from "./register-mcp.mjs";
@@ -75,6 +79,15 @@ if (process.argv.includes("--fix") && upstream.some(([, ok]) => !ok)) {
 }
 for (const [name, ok, detail] of upstream) add(name, ok ? "ok" : "fail", detail, FIX);
 const upstreamOk = upstream.every(([, ok]) => ok);
+
+// ── viet-pro skill ────────────────────────────────────────────────────────────
+// the agent loads its SKILL.md to write the script; gate 2 runs its lint and names its humanizer patterns
+const vpSkill = join(VIET_PRO, "SKILL.md");
+const vpOk = [vpSkill, "scripts/lint-vietnamese-content.mjs", "references/review/humanizer-patterns.md"]
+  .every((p) => existsSync(p === vpSkill ? p : join(VIET_PRO, p)));
+const vpVersion = existsSync(vpSkill) ? readFileSync(vpSkill, "utf8").match(/version:\s*"?([\d.]+)/)?.[1] : null;
+add("viet-pro skill", vpOk ? "ok" : "fail", vpOk ? `${VIET_PRO} (${vpVersion ?? "version unknown"})` : `not found at ${VIET_PRO}`,
+  "node setup/setup.mjs --only vietpro   (or set VIET_PRO_DIR)");
 
 // ── VieNeu-TTS ────────────────────────────────────────────────────────────────
 let vieneu = null;

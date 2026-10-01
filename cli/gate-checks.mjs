@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { chapterOverlap } from "../compiler/scorecard.mjs";
 import { isDirected } from "../compiler/lint.mjs";
-import { SKILL_ROOT as INSTALLED_SKILL } from "./paths.mjs";
+import { SKILL_ROOT as INSTALLED_SKILL, VIET_PRO } from "./paths.mjs";
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -102,7 +102,7 @@ export function scriptProse(src) {
   return src.split(/\r?\n/).filter((l) => l.trim() && !/^\s*(\/\/|#|>|\|)/.test(l))
     .map((l) => l.replace(/\{F-[^}]*\}/g, "").replace(/\*/g, "").replace(/\s+/g, " ").trim()).join("\n") + "\n";
 }
-export function vietProCheck(P, vietProDir = process.env.VIET_PRO_DIR ?? join(INSTALLED_SKILL, "..", "viet-pro")) {
+export function vietProCheck(P, vietProDir = VIET_PRO) {
   const header = () => `<!-- viet-pro audit · script.src.txt sha256:${scriptSha(P)} -->`;
   const f = join(P, VIET_PRO_AUDIT);
   if (!existsSync(join(P, "script.src.txt"))) return { ok: false, detail: "script.src.txt missing" };

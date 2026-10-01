@@ -15,6 +15,8 @@ export const SKILL_ROOT = existsSync(join(TOOLS_ROOT, "setup"))
 export const SETUP = `${SKILL_ROOT}/setup`;
 export const MCP = `${SKILL_ROOT}/mcp/vieneu-tts`;
 export const REFS = `${SKILL_ROOT}/references`;
+/** The viet-pro skill that writes and audits the narration: next to this skill, or VIET_PRO_DIR. */
+export const VIET_PRO = slash(process.env.VIET_PRO_DIR ?? join(SKILL_ROOT, "..", "viet-pro"));
 
 /** The lesson project: the nearest folder from cwd upwards that holds video.config.json, else null. */
 export function findProject(start = process.cwd()) {

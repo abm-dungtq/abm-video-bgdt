@@ -90,11 +90,13 @@ TTS của HeyGen) và phụ đề (karaoke 15 % thay cho phụ đề 180 px). T�
 Chạy **một lệnh**. Trình cài làm lần lượt:
 1. cài công cụ nền còn thiếu;
 2. cài toàn bộ skill HyperFrames;
-3. dò phần cứng và cài VieNeu-TTS đúng cấu hình (GPU NVIDIA, Mac Apple Silicon hoặc CPU);
-4. đăng ký MCP cho mọi agent tìm thấy;
-5. kiểm tra lại.
+3. cài skill [viet-pro](https://github.com/abm-dungtq/viet-pro-codex), dùng để viết và audit kịch bản;
+4. dò phần cứng và cài VieNeu-TTS đúng cấu hình (GPU NVIDIA, Mac Apple Silicon hoặc CPU);
+5. đăng ký MCP cho mọi agent tìm thấy;
+6. kiểm tra lại.
 
-Trước khi thay đổi gì, trình cài đều hỏi xác nhận.
+Trước khi thay đổi gì, trình cài đều hỏi xác nhận. Chưa cài đủ thì chưa làm được video: `abm-video init` từ chối tạo dự án
+khi `doctor` còn báo lỗi.
 
 ```powershell
 # Windows

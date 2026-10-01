@@ -1,6 +1,8 @@
 # Cài đặt abm-video-bgdt cho mọi agent và hệ điều hành
 
-Tài liệu này hướng dẫn cài skill trên máy của bạn, với agent bạn đang dùng. Không có đường dẫn nào gắn cứng với một máy:
+Tài liệu này hướng dẫn cài skill trên máy của bạn, với agent bạn đang dùng. Phải cài **đủ** ba skill (abm-video-bgdt,
+viet-pro, HyperFrames) cùng VieNeu-TTS, và `doctor` phải in `doctor ok`, trước khi làm video: `abm-video init` từ chối tạo
+dự án khi `doctor` còn lỗi. Không có đường dẫn nào gắn cứng với một máy:
 những chỗ cần đường dẫn đều dùng biến môi trường hoặc tự dò (mục 6).
 
 - Ký hiệu `<SKILL_DIR>` là thư mục bạn clone repo này về.
@@ -12,9 +14,10 @@ những chỗ cần đường dẫn đều dùng biến môi trường hoặc t�
 1. cài các công cụ nền còn thiếu;
 2. clone skill vào `~/.agents/skills/abm-video-bgdt`;
 3. cài **toàn bộ** skill HyperFrames;
-4. dò phần cứng và cài VieNeu-TTS đúng cấu hình máy (GPU NVIDIA → CUDA, Mac Apple Silicon → MPS, còn lại → CPU);
-5. đăng ký MCP cho mọi agent tìm thấy;
-6. kiểm tra lại toàn bộ.
+4. cài skill viet-pro (viết và audit kịch bản) cạnh skill này;
+5. dò phần cứng và cài VieNeu-TTS đúng cấu hình máy (GPU NVIDIA → CUDA, Mac Apple Silicon → MPS, còn lại → CPU);
+6. đăng ký MCP cho mọi agent tìm thấy;
+7. kiểm tra lại toàn bộ.
 
 Trước khi thay đổi gì, trình cài đều in kế hoạch và hỏi xác nhận.
 
@@ -35,7 +38,7 @@ Tùy chọn hay dùng (thêm vào sau `setup.mjs`, sau `-SetupArgs "…"` trên 
 | `--vieneu-dir <đường-dẫn>` | dùng bản VieNeu-TTS có sẵn, hoặc clone vào chỗ bạn chọn (mặc định `~/VieNeu-TTS`) |
 | `--profile cpu\|cuda\|mps` | ép cấu hình thay vì để tự dò |
 | `--agents claude,codex` | chỉ đăng ký MCP cho các agent này |
-| `--only link\|hyperframes\|vieneu\|mcp` | chỉ chạy một bước |
+| `--only link\|hyperframes\|vietpro\|vieneu\|mcp` | chỉ chạy một bước |
 | `--dry-run` | chỉ in kế hoạch, không thay đổi gì |
 
 **Cách 2: để agent tự cài.** Nói với agent của bạn:
@@ -65,6 +68,7 @@ Các mục dưới đây là cách **cài thủ công**, và giải thích trìn
 |---|---|---|
 | Thư mục skill (`SKILL.md`, `scripts/`, `references/`, `templates/`) | agent đọc để biết quy trình; mỗi dự án nhận một bản sao `scripts/` | 3 |
 | Skill HyperFrames của HeyGen (`faceless-explainer` và các skill lõi) | trình đọc storyboard, ghép khung, chuyển cảnh | 4 |
+| Skill viet-pro | agent dùng nó để viết và audit kịch bản; cổng 2 chạy lint của nó | 4b |
 | VieNeu-TTS + API giọng đọc | model tiếng Việt; venv của nó chạy các bước căn thời gian | 5 |
 | MCP server `vieneu-tts` (`<SKILL_DIR>/mcp/vieneu-tts`) | agent gọi `text_to_speech` qua MCP | 5, 7 |
 | Node, ffmpeg, uv, PowerShell 7 | chạy script và render | 2 |
@@ -134,6 +138,25 @@ tự tìm `faceless-explainer` lần lượt trong `~/.agents/skills`, `~/.claud
 `~/.gemini/skills` và `~/.config/opencode/skills`. Nếu bạn cài ở chỗ khác, đặt `HF_SKILLS_DIR` trỏ tới thư mục chứa
 `faceless-explainer/`.
 
+## 4b. Skill viet-pro
+
+Kịch bản được viết bằng skill [viet-pro](https://github.com/abm-dungtq/viet-pro-codex). Cổng 2 đòi file audit
+`script.viet-pro.md` và chạy lint của viet-pro, nên thiếu viet-pro thì không qua được cổng 2.
+
+```bash
+git clone https://github.com/abm-dungtq/viet-pro-codex.git ~/.agents/viet-pro-codex
+ln -s ~/.agents/viet-pro-codex/skills/viet-pro ~/.agents/skills/viet-pro      # cạnh abm-video-bgdt
+```
+
+```powershell
+git clone https://github.com/abm-dungtq/viet-pro-codex.git "$HOME\.agents\viet-pro-codex"
+New-Item -ItemType Junction -Path "$HOME\.agents\skills\viet-pro" -Target "$HOME\.agents\viet-pro-codex\skills\viet-pro"
+```
+
+- viet-pro phải nằm **cùng thư mục cha** với `abm-video-bgdt`, hoặc đặt biến `VIET_PRO_DIR` trỏ tới nó.
+- Tạo thêm liên kết vào thư mục skill của agent bạn dùng (bảng ở mục 3), để agent nạp được viet-pro theo tên.
+- `node setup/setup.mjs --only vietpro` làm cả hai việc trên. `doctor` in `✓ viet-pro skill <đường dẫn> (<phiên bản>)`.
+
 ## 5. VieNeu-TTS, API giọng đọc và MCP server
 
 **Cài model:**
@@ -180,6 +203,7 @@ API nghe ở `http://127.0.0.1:8000`. Mặc định nó chạy fp32 (nhanh hơn 
 | `VIENEU_TTS_DIR` | không (trình cài ghi vào hồ sơ máy) | `vieneuDir` trong `~/.config/abm-video-bgdt/machine.json`, rồi thư mục `VieNeu-TTS/` gần nhất khi dò ngược từ dự án |
 | `ABM_VIDEO_PROFILE` | không | đường dẫn khác cho file hồ sơ máy |
 | `HF_SKILLS_DIR` | khi skill HeyGen nằm ngoài các thư mục ở mục 4 | thư mục đầu tiên có `faceless-explainer/` |
+| `VIET_PRO_DIR` | khi viet-pro không nằm cạnh abm-video-bgdt | `<thư mục cha của skill>/viet-pro` |
 | `HF_CACHE_DIR` | không | `<dự án>/.hf-cache` (bước dọn dẹp sẽ xóa) |
 | `VIENEU_API_URL` | không | `http://127.0.0.1:8000` (dùng trong cấu hình MCP) |
 
@@ -295,6 +319,7 @@ bằng `orca orchestration worker-start --agent <id> --worktree current`. Mọi 
 
 | Triệu chứng | Nguyên nhân thường gặp | Cách sửa |
 |---|---|---|
+| `viet-pro skill … not found`, hoặc cổng 2 báo `viet-pro not found` | chưa cài viet-pro, hoặc nó không nằm cạnh skill | `node setup/setup.mjs --only vietpro`, hoặc đặt `VIET_PRO_DIR` (mục 4b) |
 | `VieNeu-TTS not found` | chưa cài, hoặc hồ sơ máy chưa ghi đường dẫn | `node setup/setup.mjs --only vieneu [--vieneu-dir <path>]` |
 | `Cannot reach the VieNeu API` | API chưa chạy | `node mcp/vieneu-tts/start-api.mjs` (mục 5) |
 | `faceless-explainer … not found` hoặc lỗi import `storyboard.mjs` | chưa cài skill HeyGen hoặc cài ở chỗ lạ | chạy mục 4, hoặc đặt `HF_SKILLS_DIR` |
