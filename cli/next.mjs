@@ -72,7 +72,7 @@ export async function nextAction(P, cfg, cli = "node tools/bin/abm-video.mjs") {
       const missing = customWithoutHtml(P);
       if (missing.length) {
         const [f] = missing;
-        return { next: `build compositions/frames/${f.src.split("/").pop()} by hand (frame ${f.no} is custom), following references/custom-frame.md`,
+        return { next: `build compositions/frames/${f.src.split("/").pop()} by hand (frame ${f.no} is custom), following references/custom-frame.md; ideas: node tools/gallery-refs.mjs search <words>, then adopt (references/motion-craft.md)`,
           run: `node tools/wave-check.mjs ${f.no}`,
           why: `scenes.json marks frame${missing.length > 1 ? `s ${missing.map((x) => x.no).join(", ")}` : ` ${f.no}`} custom and its HTML does not exist yet` };
       }

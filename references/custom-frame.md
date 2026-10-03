@@ -1,6 +1,7 @@
 # Custom frames: hand-building one frame
 
-Read this only for a frame that `scenes.json` marks `{ "frame": N, "custom": true }`. Every other frame is compiled
+Read this only for a frame that `scenes.json` marks `{ "frame": N, "custom": true, "idea": "…" }` (a directed lesson
+needs the `idea` on a custom frame too; lint stops the storyboard stage without it). Every other frame is compiled
 from templates. Custom frames are for what no template expresses well — a chapter's opening hook, one special metaphor —
 and are capped at `video.config.json` `scenes.customBudget` (15 % of frames; lint fails above it).
 
@@ -23,6 +24,9 @@ and are capped at `video.config.json` `scenes.customBudget` (15 % of frames; lin
    the self-check list.
 4. `tools/worker-layouts.md` — layout pieces and zone boxes, and the DNA card identity if the frame is a DNA card.
 5. `tools/worker-screen-addendum.md` — only when the frame shows a real screenshot.
+6. A staging idea, optional: `node tools/gallery-refs.mjs search <words>` then `adopt <slug>` copies a gallery prompt to
+   `.hyperframes/gallery-ref/<slug>.md` (read-only, never a spec). Build it with
+   [motion-craft.md](motion-craft.md), which says how each gallery motion rule is done deterministically here.
 
 ## Rules that matter most
 

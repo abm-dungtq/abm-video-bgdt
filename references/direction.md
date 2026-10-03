@@ -68,6 +68,10 @@ Accent templates (`opener-*`, `accent-*`; 3D and showcase blocks ported from the
 Use them only to open the video or a chapter, for the climax of a chapter, or to close the lesson, and at most once
 per chapter. They may last up to 12 s, so give them a frame long enough, and never two accents in a row.
 
+Before choosing an accent or marking a frame custom, look for a staging idea: `node tools/gallery-refs.mjs search <words>`
+lists motion ideas from a gallery of videos made with Claude Opus 5.5, and `adopt <slug>` copies one to
+`.hyperframes/gallery-ref/`. Apply it through [motion-craft.md](motion-craft.md): a lesson, not a launch.
+
 ## Transitions
 
 A frame may name the transition into it: `"transition": "<name> [direction] [seconds]"`, e.g. `"whip-pan RIGHT"` or

@@ -61,6 +61,7 @@ const RULES = {
     [`../.wave-${cfg.name}-*`, "wave-check scratch projects"],
     [`../.fixture-${cfg.name}-*`, "fixture-check scratch projects"],
     [`../.registry-${cfg.name}-*`, "fetch-registry-refs scratch projects"],
+    [".hyperframes/gallery-ref", "gallery idea copies (gallery-refs.mjs adopt)"],
   ],
   archive: [
     ["assets/voice", "per-frame voice wavs (-From voice -To meta rebuilds them byte for byte)"],

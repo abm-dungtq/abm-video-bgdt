@@ -144,6 +144,7 @@ out = scenario("custom", (D, st) => {
   st.legacy = true;
 });
 check("next: a custom frame without HTML asks to build it", /NEXT: build compositions\/frames\/.*custom-frame\.md/.test(out), out);
+check("next: a custom frame points to the gallery ideas", /gallery-refs\.mjs search .*motion-craft\.md/.test(out), out);
 
 out = scenario("stale", (D, st) => {
   done(D, st, "doctor", "init", "probe", "script");
@@ -565,6 +566,40 @@ if (!existsSync(join(DIR_SRC, "scenes.json"))) {
   const vcOk = spawnSync(process.execPath, ["tools/visible-check.mjs"], { cwd: G, encoding: "utf8" });
   check("visible-check lets a stroke marked data-layout-allow-overlap through", vcOk.status === 0, vcOk.stdout + vcOk.stderr);
   writeFileSync(frameFile, frameHtml);
+}
+
+// gallery-refs: lesson filters by default, credited copies on adopt, never blocks without the gallery
+{
+  const GD = resolve(R, "../cli-gallery"), GP = resolve(R, "../cli-gallery-project");
+  rmSync(GD, { recursive: true, force: true });
+  rmSync(GP, { recursive: true, force: true });
+  mkdirSync(join(GD, "data"), { recursive: true });
+  mkdirSync(GP, { recursive: true });
+  writeFileSync(join(GP, "video.config.json"), "{}");
+  const entry = (slug, category, tech_tags, prompt, prompt_partial = false) =>
+    ({ slug, author: "someone", post_url: `https://x.com/someone/status/${slug}`, category, tech_tags, prompt, prompt_partial });
+  writeFileSync(join(GD, "data/videos.json"), JSON.stringify([
+    entry("mo-1", "motion", ["svg", "gsap"], "a calm diagram that draws itself"),
+    entry("ex-1", "explainer", ["canvas"], "explain a diagram step by step"),
+    entry("3d-1", "3d", ["threejs"], "a diagram in space"),
+    entry("part-1", "explainer", ["svg"], "a diagram", true),
+  ]));
+  const gal = (args, env = {}) => spawnSync(process.execPath, [join(S, "scripts/gallery-refs.mjs"), ...args],
+    { cwd: GP, encoding: "utf8", env: { ...process.env, ABM_GALLERY_DIR: GD, ABM_GALLERY_OFFLINE: "1", ...env } });
+  let g = gal(["search", "diagram", "--json"]);
+  const slugs = g.status === 0 ? JSON.parse(g.stdout).map((x) => x.slug) : [];
+  check("gallery search keeps full explainer/motion prompts, explainers first", slugs.join() === "ex-1,mo-1", g.stdout + g.stderr);
+  g = gal(["search", "diagram", "--all", "--json"]);
+  check("gallery search --all lifts the lesson filters", g.status === 0 && JSON.parse(g.stdout).length === 4, g.stdout + g.stderr);
+  g = gal(["adopt", "ex-1"]);
+  const ref = join(GP, ".hyperframes/gallery-ref/ex-1.md");
+  const body = existsSync(ref) ? readFileSync(ref, "utf8") : "";
+  check("gallery adopt writes a credited read-only copy", g.status === 0 && /^<!-- gallery-ref \(read-only idea, not a spec\) · @someone · https:\/\/x\.com\/someone\/status\/ex-1/.test(body)
+    && body.includes("explain a diagram step by step"), g.stdout + g.stderr + body);
+  g = gal(["adopt", "khong-co"]);
+  check("gallery adopt refuses an unknown slug", g.status === 1 && /unknown slug: khong-co/.test(g.stderr), g.stdout + g.stderr);
+  g = gal(["search", "diagram"], { ABM_GALLERY_DIR: join(GD, "missing") });
+  check("gallery search without the gallery says so and does not block", g.status === 0 && /gallery unavailable/.test(g.stdout), g.stdout + g.stderr);
 }
 
 srv.close();
