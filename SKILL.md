@@ -5,7 +5,7 @@ user-invocable: true
 argument-hint: "<topic or project dir>"
 metadata:
   author: ABM
-  version: "1.0.2"
+  version: "1.0.3"
   proven-on: "videos/hermes-agent-explainer (612 s, 63 frames) rebuilt from templates; videos/claude-intro-explainer (875 s, 79 frames)"
 ---
 

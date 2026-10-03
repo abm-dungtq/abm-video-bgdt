@@ -177,6 +177,16 @@ node dev/build-examples.mjs <dự-án>…                          # dựng lạ
 Mỗi thay đổi ở `scripts/` phải qua `regression-check` trên các dự án đã giao. Muốn nâng bản HyperFrames đang ghim, trước hết
 cho `fixture-check.mjs` chạy đạt trên bản mới, rồi viết `templates/worker-kit/worker-delta-<pin>.md.tmpl` cho bản đó.
 
+## Thay đổi ở 1.0.3
+
+- Nguồn ý tưởng chuyển động cho khung custom và accent: `node tools/gallery-refs.mjs search <từ khoá>` tìm trong gallery
+  awesome-opus5-5-videos (MIT, ghim một commit), `adopt <slug>` chép prompt vào `.hyperframes/gallery-ref/` để đọc, không
+  phải đặc tả. Không có mạng thì báo và làm tiếp không cần gallery.
+- `references/motion-craft.md`: các quy tắc chuyển động rút từ gallery, viết lại cho HyperFrames tất định (một khối không
+  cắt, đổi theo cue lời đọc, ease gọn, camera chậm, không hạt hay hào quang đè chữ). Bài giảng, không phải ra mắt sản phẩm.
+- `direction.md`, `custom-frame.md` và câu nhắc của `next` khi dựng khung custom trỏ tới công cụ này. `custom-frame.md`
+  ghi rõ khung custom trong bài director vẫn cần `idea`. `clean-project` dọn `.hyperframes/gallery-ref` khi đã giao.
+
 ## Thay đổi ở 1.0.2
 
 - viet-pro thành phần bắt buộc của môi trường: `doctor` báo lỗi khi thiếu, nên `abm-video init` không tạo dự án. Trình cài
